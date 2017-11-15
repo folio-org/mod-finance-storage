@@ -1,0 +1,6 @@
+.idea/
+*.iml
+/target
+/src/main/java/org/folio/rest/client/*
+/src/main/java/org/folio/rest/jaxrs/*
+/src/main/java/storage/model/*

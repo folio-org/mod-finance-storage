@@ -1,0 +1,10 @@
+{
+  "host" : "localhost",
+  "port" : 5432,
+  "maxPoolSize" : 50,
+  "username" : "db-username",
+  "password" : "db-password",
+  "database" : "db-name",
+  "charset"  : "UTF8",
+  "queryTimeout" : 10000
+}

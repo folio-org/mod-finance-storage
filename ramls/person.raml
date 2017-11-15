@@ -1,0 +1,43 @@
+#%RAML 0.8
+title: "Sample-Module"
+baseUri: http://github.com/org/folio/sample-module
+version: v1
+
+documentation:
+  - title: Sample Module
+    content: <b>CRUD API</b>
+
+schemas:
+  - person: !include schemas/person.json
+  - personCollection: !include schemas/personCollection.json
+
+traits:
+  - secured: !include raml-util/traits/auth.raml
+  - orderable: !include raml-util/traits/orderable.raml
+  - pageable:  !include raml-util/traits/pageable.raml
+  - searchable: !include raml-util/traits/searchable.raml
+  - language: !include raml-util/traits/language.raml
+
+resourceTypes:
+  - collection: !include raml-util/rtypes/collection.raml
+  - collection-item: !include raml-util/rtypes/item-collection.raml
+
+/person:
+  type:
+    collection:
+      exampleCollection: !include examples/person_collection.sample
+      exampleItem: !include examples/person.sample.sample
+      schemaCollection: personCollection
+      schemaItem: person
+  get:
+    description: Get list of vendors
+    is: [
+      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
+  /{person_id}:
+    type:
+      collection-item:
+        exampleItem: !include examples/person.sample
+        schema: person

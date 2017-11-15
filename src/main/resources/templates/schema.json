@@ -1,0 +1,25 @@
+{
+  "tables": [
+    {
+      "tableName": "purchase_order",
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "generateId": true,
+      "ginIndex": true
+    },
+    {
+    	"tableName": "purchase_order_line",
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "generateId": true,
+      "ginIndex": true,
+      "foreignKeys": [
+      	{
+      		"fieldName": "purchase_order_id",
+      		"targetTable": "purchase_order",
+      		"tOps": "ADD"
+      	}
+      ]
+    }
+  ]
+}

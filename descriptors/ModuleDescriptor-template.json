@@ -1,0 +1,48 @@
+{
+  "id": "sample-module",
+  "name": "Sample FOLIO Module",
+  "provides": [
+    {
+      "id": "some-feature",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/endpoint",
+          "permissionsRequired": ["some.permission.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/endpoint",
+          "permissionsRequired": ["some.permission.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/endpoint/{id}",
+          "permissionsRequired": ["some.permission.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/endpoint/{id}",
+          "permissionsRequired": ["some.permission.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/endpoint/{id}",
+          "permissionsRequired": ["some.permission.delete"]
+        }
+      ]
+    },
+    {
+      "id": "_tenant",
+      "version": "1.0",
+      "interfaceType": "system",
+      "handlers": [
+        {
+          "methods": [ "POST" ],
+          "pathPattern": "/_/tenant"
+        }
+      ]
+    }
+  ]
+}
