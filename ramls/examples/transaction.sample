@@ -1,0 +1,15 @@
+{
+  "id": null,
+  "allocated": 65403961,
+  "amount": 32015534,
+  "available": "aliquip magna",
+  "awaiting_payment": 48728149,
+  "encumbered": -34711609,
+  "expenditures": -25613648,
+  "note": "in laboris",
+  "overcharge": 35925628,
+  "timestamp": "4425-06-27T19:03:02.778Z",
+  "source_id": null,
+  "transaction_type": "ut",
+  "budget_id": "abf1db4a-5d31-1c0e-dFED-b70e90Ab450d"
+}

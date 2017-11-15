@@ -2,12 +2,12 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "persons": {
+    "funds": {
       "type": "array",
-      "id": "personData",
+      "id": "fund",
       "items": {
         "type": "object",
-        "$ref": "person"
+        "$ref": "fund"
       }
     },
     "total_records": {
@@ -22,7 +22,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "persons",
+    "funds",
     "total_records"
   ]
 }
