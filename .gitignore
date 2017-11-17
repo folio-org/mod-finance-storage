@@ -1,3 +1,4 @@
+.vertx/
 .idea/
 *.iml
 /target

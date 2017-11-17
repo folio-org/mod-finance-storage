@@ -2,9 +2,9 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "values": {
+    "distributions": {
       "type": "array",
-      "id": "values",
+      "id": "distributions",
       "items": {
         "type": "object",
         "$ref": "fund_distribution"
@@ -22,7 +22,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "values",
+    "distributions",
     "total_records"
   ]
 }

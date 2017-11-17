@@ -2,9 +2,9 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "values": {
+    "tags": {
       "type": "array",
-      "id": "values",
+      "id": "tags",
       "items": {
         "type": "object",
         "$ref": "tag"
@@ -22,7 +22,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "values",
+    "tags",
     "total_records"
   ]
 }

@@ -2,9 +2,9 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "values": {
+    "transactions": {
       "type": "array",
-      "id": "values",
+      "id": "transactions",
       "items": {
         "type": "object",
         "$ref": "transaction"
@@ -22,7 +22,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "values",
+    "transactions",
     "total_records"
   ]
 }

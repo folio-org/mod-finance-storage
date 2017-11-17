@@ -2,9 +2,9 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "values": {
+    "fiscal_years": {
       "type": "array",
-      "id": "fiscal_year",
+      "id": "fiscal_years",
       "items": {
         "type": "object",
         "$ref": "fiscal_year"
@@ -22,7 +22,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "values",
+    "fiscal_years",
     "total_records"
   ]
 }

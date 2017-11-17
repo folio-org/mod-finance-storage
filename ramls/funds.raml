@@ -1,20 +1,27 @@
 #%RAML 0.8
-title: "Sample-Module"
+title: "mod-funds"
 baseUri: http://github.com/org/folio/sample-module
 version: v1
 
 documentation:
-  - title: Sample Module
-    content: <b>CRUD API</b>
+  - title: mod-funds
+    content: <b>The following are the CRUD APIs used to manage funds-related objects.</b>
 
 schemas:
   - budget: !include schemas/budget.json
+  - budget_collection: !include schemas/budget_collection.json
   - fiscal_year: !include schemas/fiscal_year.json
+  - fiscal_year_collection: !include schemas/fiscal_year_collection.json
   - fund: !include schemas/fund.json
+  - fund_collection: !include schemas/fund_collection.json
   - fund_distribution: !include schemas/fund_distribution.json
+  - fund_distribution_collection: !include schemas/fund_distribution_collection.json
   - ledger: !include schemas/ledger.json
+  - ledger_collection: !include schemas/ledger_collection.json
   - tag: !include schemas/tag.json
+  - tag_collection: !include schemas/tag_collection.json
   - transaction: !include schemas/transaction.json
+  - transaction_collection: !include schemas/transaction_collection.json
 
 traits:
   - secured: !include raml-util/traits/auth.raml
@@ -27,42 +34,149 @@ resourceTypes:
   - collection: !include raml-util/rtypes/collection.raml
   - collection-item: !include raml-util/rtypes/item-collection.raml
 
-/fund:
+
+/budget:
   type:
     collection:
-      exampleCollection: !include examples/person_collection.sample
-      exampleItem: !include examples/person.sample
-      schemaCollection: personCollection
-      schemaItem: person
+      exampleCollection: !include examples/budget_collection.sample
+      exampleItem: !include examples/budget.sample
+      schemaCollection: budget_collection
+      schemaItem: budget
   get:
-    description: Get list of vendors
+    description: Get list of budgets
     is: [
       searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
       orderable: {fieldsList: "field A, field B"},
       pageable
     ]
-  /{person_id}:
+  /{id}:
     type:
       collection-item:
-        exampleItem: !include examples/person.sample
-        schema: person
+        exampleItem: !include examples/budget.sample
+        schema: budget
 
-#/person:
-#  type:
-#    collection:
-#      exampleCollection: !include examples/person_collection.sample
-#      exampleItem: !include examples/person.sample
-#      schemaCollection: personCollection
-#      schemaItem: person
-#  get:
-#    description: Get list of vendors
-#    is: [
-#      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
-#      orderable: {fieldsList: "field A, field B"},
-#      pageable
-#    ]
-#  /{person_id}:
-#    type:
-#      collection-item:
-#        exampleItem: !include examples/person.sample
-#        schema: person
+
+/fiscal_year:
+  type:
+    collection:
+      exampleCollection: !include examples/fiscal_year_collection.sample
+      exampleItem: !include examples/fiscal_year.sample
+      schemaCollection: fiscal_year_collection
+      schemaItem: fiscal_year
+  get:
+    description: Get list of fiscal years
+    is: [
+      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
+  /{id}:
+    type:
+      collection-item:
+        exampleItem: !include examples/fiscal_year.sample
+        schema: fiscal_year
+
+
+/fund:
+  type:
+    collection:
+      exampleCollection: !include examples/fund_collection.sample
+      exampleItem: !include examples/fund.sample
+      schemaCollection: fund_collection
+      schemaItem: fund
+  get:
+    description: Get list of funds
+    is: [
+      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
+  /{id}:
+    type:
+      collection-item:
+        exampleItem: !include examples/fund.sample
+        schema: fund
+
+
+/fund_distribution:
+  type:
+    collection:
+      exampleCollection: !include examples/fund_distribution_collection.sample
+      exampleItem: !include examples/fund_distribution.sample
+      schemaCollection: fund_distribution_collection
+      schemaItem: fund_distribution
+  get:
+    description: Get list of fund distributions
+    is: [
+      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
+  /{id}:
+    type:
+      collection-item:
+        exampleItem: !include examples/fund_distribution.sample
+        schema: fund_distribution
+
+
+/ledger:
+  type:
+    collection:
+      exampleCollection: !include examples/ledger_collection.sample
+      exampleItem: !include examples/ledger.sample
+      schemaCollection: ledger_collection
+      schemaItem: ledger
+  get:
+    description: Get list of ledgers
+    is: [
+      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
+  /{id}:
+    type:
+      collection-item:
+        exampleItem: !include examples/ledger.sample
+        schema: ledger
+
+
+/tag:
+  type:
+    collection:
+      exampleCollection: !include examples/tag_collection.sample
+      exampleItem: !include examples/tag.sample
+      schemaCollection: tag_collection
+      schemaItem: tag
+  get:
+    description: Get list of tags
+    is: [
+      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
+  /{id}:
+    type:
+      collection-item:
+        exampleItem: !include examples/tag.sample
+        schema: tag
+
+
+/transaction:
+  type:
+    collection:
+      exampleCollection: !include examples/transaction_collection.sample
+      exampleItem: !include examples/transaction.sample
+      schemaCollection: transaction_collection
+      schemaItem: transaction
+  get:
+    description: Get list of transactions
+    is: [
+      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
+  /{id}:
+    type:
+      collection-item:
+        exampleItem: !include examples/transaction.sample
+        schema: transaction
