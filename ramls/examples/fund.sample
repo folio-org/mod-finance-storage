@@ -1,18 +1,15 @@
 {
-  "id": null,
-  "name": "qui sit ",
-  "code": "AXKVN",
+  "id": "172364c7-AaAa-A0C2-C12C-e35CeCcbfaF2",
+  "name": "History",
+  "code": "HIST",
   "created_date": "2775-01-01T13:06:34.186Z",
-  "fund_status": "esse",
-  "currency": "tempor id",
-  "description": "proident ea eiusmod in",
+  "fund_status": "Active",
+  "currency": "USD",
+  "description": "Tracking fund for the History department",
   "ledger_id": "7cef8378-7CBd-BFaE-BCdd-8b9d7c0af9De",
   "allocation_from": [
     "45cf58eb-BbDf-C4c6-97e1-33C8F3ddEd65",
-    "7e4112ec-89F0-08eD-1eD5-0bE3fD9FCcFF",
-    "b726c7d6-858A-baA2-b2ca-24DA7b84Daed",
-    "3772380e-DfCe-0cEC-dD86-F55f57b898DB",
-    "072364c7-AaAa-A0C2-C12C-e35CeCcbfaF3"
+    "7e4112ec-89F0-08eD-1eD5-0bE3fD9FCcFF"
   ],
   "allocation_to": [
     "f8d4511a-f6B8-ccec-ad4c-FA5bEAbaD092"

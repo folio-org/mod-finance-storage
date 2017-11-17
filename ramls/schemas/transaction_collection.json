@@ -7,7 +7,7 @@
       "id": "values",
       "items": {
         "type": "object",
-        "$ref": "fund"
+        "$ref": "transaction"
       }
     },
     "total_records": {

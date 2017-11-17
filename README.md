@@ -1,20 +1,17 @@
-# MOD-SAMPLE
+# mod-funds
 
 Copyright (C) 2017 The Open Library Foundation
 
 This software is distributed under the terms of the Apache License, Version 2.0. See the file "LICENSE" for more information.
 
-#Introduction
+# Introduction
 
-This module is responsible for the persistence of People data.
+This module is responsible for the persistence of Funds-related data.
 
-This is an RMB-based module.
-
-
-For additional information please refer to the [WIKI](https://wiki.folio.org).
+For additional information regarding this module, please refer to the [Funds Module WIKI](https://wiki.folio.org/display/RM/Acquisitions+Fund+Module).
 
 
-For API documentation, run this project locally and then go to [http://localhost:8081/apidocs/index.html?raml=raml/person.raml](http://localhost:8081/apidocs/index.html?raml=raml/person.raml)
+For API documentation, run this project locally and then go to [http://localhost:8081/apidocs/index.html?raml=raml/funds.raml](http://localhost:8081/apidocs/index.html?raml=raml/funds.raml)
 
 
 

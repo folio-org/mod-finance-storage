@@ -27,25 +27,25 @@ resourceTypes:
   - collection: !include raml-util/rtypes/collection.raml
   - collection-item: !include raml-util/rtypes/item-collection.raml
 
-#/fund:
-#  type:
-#    collection:
-#      exampleCollection: !include examples/person_collection.sample
-#      exampleItem: !include examples/person.sample
-#      schemaCollection: personCollection
-#      schemaItem: person
-#  get:
-#    description: Get list of vendors
-#    is: [
-#      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
-#      orderable: {fieldsList: "field A, field B"},
-#      pageable
-#    ]
-#  /{person_id}:
-#    type:
-#      collection-item:
-#        exampleItem: !include examples/person.sample
-#        schema: person
+/fund:
+  type:
+    collection:
+      exampleCollection: !include examples/person_collection.sample
+      exampleItem: !include examples/person.sample
+      schemaCollection: personCollection
+      schemaItem: person
+  get:
+    description: Get list of vendors
+    is: [
+      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
+  /{person_id}:
+    type:
+      collection-item:
+        exampleItem: !include examples/person.sample
+        schema: person
 
 #/person:
 #  type:

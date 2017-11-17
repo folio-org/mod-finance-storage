@@ -14,7 +14,7 @@
       "type": "number"
     },
     "available": {
-      "type": "string"
+      "type": "number"
     },
     "awaiting_payment": {
       "type": "number"

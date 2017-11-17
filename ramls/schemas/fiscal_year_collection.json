@@ -4,10 +4,10 @@
   "properties": {
     "values": {
       "type": "array",
-      "id": "values",
+      "id": "fiscal_year",
       "items": {
         "type": "object",
-        "$ref": "fund"
+        "$ref": "fiscal_year"
       }
     },
     "total_records": {
