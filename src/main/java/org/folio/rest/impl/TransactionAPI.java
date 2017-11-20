@@ -7,9 +7,9 @@ import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.jaxrs.model.FiscalYear;
-import org.folio.rest.jaxrs.model.FiscalYearCollection;
-import org.folio.rest.jaxrs.resource.FiscalYearResource;
+import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.model.TransactionCollection;
+import org.folio.rest.jaxrs.resource.TransactionResource;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
@@ -25,11 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class FiscalYearAPI implements FiscalYearResource {
-  private static final String FISCAL_YEAR_TABLE = "fiscal_year";
-  private static final String FY_LOCATION_PREFIX = "/fiscal_year/";
+public class TransactionAPI implements TransactionResource {
+  private static final String TRANSACTION_TABLE = "transaction";
+  private static final String TRANSACTION_LOCATION_PREFIX = "/transaction/";
 
-  private static final Logger log = LoggerFactory.getLogger(FiscalYearAPI.class);
+  private static final Logger log = LoggerFactory.getLogger(TransactionAPI.class);
   private final Messages messages = Messages.getInstance();
   private String idFieldName = "_id";
 
@@ -57,7 +57,7 @@ public class FiscalYearAPI implements FiscalYearResource {
   }
 
   @Override
-  public void getFiscalYear(String query, String orderBy, Order order, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
+  public void getTransaction(String query, String orderBy, Order order, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     vertxContext.runOnContext((Void v) -> {
       try {
         String tenantId = TenantTool.calculateTenantId( okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT) );
@@ -73,14 +73,14 @@ public class FiscalYearAPI implements FiscalYearResource {
           criterion.setOrder(or);
         }
 
-        PostgresClient.getInstance(vertxContext.owner(), tenantId).get(FISCAL_YEAR_TABLE, FiscalYear.class, criterion, true,
+        PostgresClient.getInstance(vertxContext.owner(), tenantId).get(TRANSACTION_TABLE, Transaction.class, criterion, true,
           reply -> {
             try {
-              if (reply.succeeded()){
-                FiscalYearCollection collection = new FiscalYearCollection();
+              if(reply.succeeded()){
+                TransactionCollection collection = new TransactionCollection();
                 @SuppressWarnings("unchecked")
-                List<FiscalYear> results = (List<FiscalYear>)reply.result().getResults();
-                collection.setFiscalYears(results);
+                List<Transaction> results = (List<Transaction>)reply.result().getResults();
+                collection.setTransactions(results);
                 Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
                 collection.setTotalRecords(totalRecords);
                 Integer first = 0, last = 0;
@@ -90,19 +90,18 @@ public class FiscalYearAPI implements FiscalYearResource {
                 }
                 collection.setFirst(first);
                 collection.setLast(last);
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearResponse.withJsonOK(
-                  collection)));
+                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionResponse
+                  .withJsonOK(collection)));
               }
               else{
                 log.error(reply.cause().getMessage(), reply.cause());
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearResponse
+                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionResponse
                   .withPlainBadRequest(reply.cause().getMessage())));
               }
             } catch (Exception e) {
               log.error(e.getMessage(), e);
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearResponse
-                .withPlainInternalServerError(messages.getMessage(
-                  lang, MessageConsts.InternalServerError))));
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionResponse
+                .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
             }
           });
       } catch (Exception e) {
@@ -111,14 +110,14 @@ public class FiscalYearAPI implements FiscalYearResource {
         if(e.getCause() != null && e.getCause().getClass().getSimpleName().endsWith("CQLParseException")){
           message = " CQL parse error " + e.getLocalizedMessage();
         }
-        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearResponse
+        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionResponse
           .withPlainInternalServerError(message)));
       }
     });
   }
 
   @Override
-  public void postFiscalYear(String lang, FiscalYear entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
+  public void postTransaction(String lang, Transaction entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     vertxContext.runOnContext(v -> {
 
       try {
@@ -132,7 +131,7 @@ public class FiscalYearAPI implements FiscalYearResource {
 
         String tenantId = TenantTool.calculateTenantId( okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT) );
         PostgresClient.getInstance(vertxContext.owner(), tenantId).save(
-          FISCAL_YEAR_TABLE, id, entity,
+          TRANSACTION_TABLE, id, entity,
           reply -> {
             try {
               if (reply.succeeded()) {
@@ -141,19 +140,20 @@ public class FiscalYearAPI implements FiscalYearResource {
                 OutStream stream = new OutStream();
                 stream.setData(entity);
 
-                Response response = PostFiscalYearResponse.withJsonCreated(FY_LOCATION_PREFIX + persistenceId, stream);
+                Response response = TransactionResource.PostTransactionResponse
+                  .withJsonCreated(TRANSACTION_LOCATION_PREFIX + persistenceId, stream);
                 respond(asyncResultHandler, response);
               }
               else {
                 log.error(reply.cause().getMessage(), reply.cause());
-                Response response = PostFiscalYearResponse.withPlainInternalServerError(reply.cause().getMessage());
+                Response response = TransactionResource.PostTransactionResponse.withPlainInternalServerError(reply.cause().getMessage());
                 respond(asyncResultHandler, response);
               }
             }
             catch (Exception e) {
               log.error(e.getMessage(), e);
 
-              Response response = PostFiscalYearResponse.withPlainInternalServerError(e.getMessage());
+              Response response = TransactionResource.PostTransactionResponse.withPlainInternalServerError(e.getMessage());
               respond(asyncResultHandler, response);
             }
 
@@ -164,7 +164,7 @@ public class FiscalYearAPI implements FiscalYearResource {
         log.error(e.getMessage(), e);
 
         String errMsg = messages.getMessage(lang, MessageConsts.InternalServerError);
-        Response response = PostFiscalYearResponse.withPlainInternalServerError(errMsg);
+        Response response = TransactionResource.PostTransactionResponse.withPlainInternalServerError(errMsg);
         respond(asyncResultHandler, response);
       }
 
@@ -172,7 +172,7 @@ public class FiscalYearAPI implements FiscalYearResource {
   }
 
   @Override
-  public void getFiscalYearById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
+  public void getTransactionById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     vertxContext.runOnContext(v -> {
       try {
         String tenantId = TenantTool.calculateTenantId( okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT) );
@@ -181,48 +181,48 @@ public class FiscalYearAPI implements FiscalYearResource {
         Criterion c = new Criterion(
           new Criteria().addField(idFieldName).setJSONB(false).setOperation("=").setValue(idArgument));
 
-        PostgresClient.getInstance(vertxContext.owner(), tenantId).get(FISCAL_YEAR_TABLE, FiscalYear.class, c, true,
+        PostgresClient.getInstance(vertxContext.owner(), tenantId).get(TRANSACTION_TABLE, Transaction.class, c, true,
           reply -> {
             try {
-              if (reply.succeeded()) {
+              if(reply.succeeded()){
                 @SuppressWarnings("unchecked")
-                List<FiscalYear> results = (List<FiscalYear>) reply.result().getResults();
+                List<Transaction> results = (List<Transaction>) reply.result().getResults();
                 if(results.isEmpty()){
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearByIdResponse
+                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionByIdResponse
                     .withPlainNotFound(id)));
                 }
                 else{
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearByIdResponse
+                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionByIdResponse
                     .withJsonOK(results.get(0))));
                 }
               }
               else{
                 log.error(reply.cause().getMessage(), reply.cause());
                 if(isInvalidUUID(reply.cause().getMessage())){
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearByIdResponse
+                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionByIdResponse
                     .withPlainNotFound(id)));
                 }
                 else{
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearByIdResponse
+                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionByIdResponse
                     .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
                 }
               }
             } catch (Exception e) {
               log.error(e.getMessage(), e);
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearByIdResponse
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionByIdResponse
                 .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
             }
           });
       } catch (Exception e) {
         log.error(e.getMessage(), e);
-        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetFiscalYearByIdResponse
+        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.GetTransactionByIdResponse
           .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
       }
     });
   }
 
   @Override
-  public void deleteFiscalYearById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
+  public void deleteTransactionById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     String tenantId = TenantTool.tenantId(okapiHeaders);
 
     try {
@@ -231,33 +231,33 @@ public class FiscalYearAPI implements FiscalYearResource {
           vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
         try {
-          postgresClient.delete(FISCAL_YEAR_TABLE, id, reply -> {
+          postgresClient.delete(TRANSACTION_TABLE, id, reply -> {
             if (reply.succeeded()) {
               asyncResultHandler.handle(Future.succeededFuture(
-                FiscalYearResource.DeleteFiscalYearByIdResponse.noContent()
+                TransactionResource.DeleteTransactionByIdResponse.noContent()
                   .build()));
             } else {
               asyncResultHandler.handle(Future.succeededFuture(
-                FiscalYearResource.DeleteFiscalYearByIdResponse.
-                  withPlainInternalServerError(reply.cause().getMessage())));
+                TransactionResource.DeleteTransactionByIdResponse
+                  .withPlainInternalServerError(reply.cause().getMessage())));
             }
           });
         } catch (Exception e) {
           asyncResultHandler.handle(Future.succeededFuture(
-            FiscalYearResource.DeleteFiscalYearByIdResponse.
-              withPlainInternalServerError(e.getMessage())));
+            TransactionResource.DeleteTransactionByIdResponse
+              .withPlainInternalServerError(e.getMessage())));
         }
       });
     }
     catch(Exception e) {
       asyncResultHandler.handle(Future.succeededFuture(
-        FiscalYearResource.DeleteFiscalYearByIdResponse.
-          withPlainInternalServerError(e.getMessage())));
+        TransactionResource.DeleteTransactionByIdResponse
+          .withPlainInternalServerError(e.getMessage())));
     }
   }
 
   @Override
-  public void putFiscalYearById(String id, String lang, FiscalYear entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
+  public void putTransactionById(String id, String lang, Transaction entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     vertxContext.runOnContext(v -> {
       String tenantId = TenantTool.calculateTenantId( okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT) );
       try {
@@ -265,33 +265,33 @@ public class FiscalYearAPI implements FiscalYearResource {
           entity.setId(id);
         }
         PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
-          FISCAL_YEAR_TABLE, entity, id,
+          TRANSACTION_TABLE, entity, id,
           reply -> {
             try {
               if (reply.succeeded()) {
-                if(reply.result().getUpdated() == 0){
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFiscalYearByIdResponse
+                if (reply.result().getUpdated() == 0) {
+                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.PutTransactionByIdResponse
                     .withPlainNotFound(messages.getMessage(lang, MessageConsts.NoRecordsUpdated))));
                 }
                 else{
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFiscalYearByIdResponse
+                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.PutTransactionByIdResponse
                     .withNoContent()));
                 }
               }
               else{
                 log.error(reply.cause().getMessage());
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFiscalYearByIdResponse
+                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.PutTransactionByIdResponse
                   .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
               }
             } catch (Exception e) {
               log.error(e.getMessage(), e);
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFiscalYearByIdResponse
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.PutTransactionByIdResponse
                 .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
             }
           });
       } catch (Exception e) {
         log.error(e.getMessage(), e);
-        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFiscalYearByIdResponse
+        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(TransactionResource.PutTransactionByIdResponse
           .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
       }
     });
