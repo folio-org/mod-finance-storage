@@ -7,7 +7,7 @@
       "id": "transactions",
       "items": {
         "type": "object",
-        "$ref": "transaction"
+        "$ref": "transaction.json"
       }
     },
     "total_records": {

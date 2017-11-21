@@ -7,7 +7,7 @@
       "id": "ledgers",
       "items": {
         "type": "object",
-        "$ref": "ledger"
+        "$ref": "ledger.json"
       }
     },
     "total_records": {

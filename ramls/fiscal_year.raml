@@ -4,12 +4,12 @@ baseUri: https://github.com/folio-org/mod-funds
 version: v1
 
 documentation:
-  - title: mod-funds
-    content: <b>CRUD APIs used to manage funds.</b>
+  - title: mod-funds (Fiscal Year)
+    content: <b>CRUD APIs used to manage fiscal years.</b>
 
 schemas:
-  - fund.json: !include schemas/fund.json
-  - fund_collection: !include schemas/fund_collection.json
+  - fiscal_year.json: !include schemas/fiscal_year.json
+  - fiscal_year_collection: !include schemas/fiscal_year_collection.json
 
 traits:
   - secured: !include raml-util/traits/auth.raml
@@ -23,15 +23,15 @@ resourceTypes:
   - collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/fund:
+/fiscal_year:
   type:
     collection:
-      exampleCollection: !include examples/fund_collection.sample
-      exampleItem: !include examples/fund.sample
-      schemaCollection: fund_collection
-      schemaItem: fund.json
+      exampleCollection: !include examples/fiscal_year_collection.sample
+      exampleItem: !include examples/fiscal_year.sample
+      schemaCollection: fiscal_year_collection
+      schemaItem: fiscal_year.json
   get:
-    description: Get list of funds
+    description: Get list of fiscal years
     is: [
       searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
       orderable: {fieldsList: "field A, field B"},
@@ -40,5 +40,5 @@ resourceTypes:
   /{id}:
     type:
       collection-item:
-        exampleItem: !include examples/fund.sample
-        schema: fund.json
+        exampleItem: !include examples/fiscal_year.sample
+        schema: fiscal_year.json

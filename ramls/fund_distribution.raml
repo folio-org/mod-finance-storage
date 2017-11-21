@@ -4,12 +4,12 @@ baseUri: https://github.com/folio-org/mod-funds
 version: v1
 
 documentation:
-  - title: mod-funds
-    content: <b>CRUD APIs used to manage funds.</b>
+  - title: mod-funds (Fund Distributions)
+    content: <b>CRUD APIs used to manage fund-distributions.</b>
 
 schemas:
-  - fund.json: !include schemas/fund.json
-  - fund_collection: !include schemas/fund_collection.json
+  - fund_distribution.json: !include schemas/fund_distribution.json
+  - fund_distribution_collection: !include schemas/fund_distribution_collection.json
 
 traits:
   - secured: !include raml-util/traits/auth.raml
@@ -23,15 +23,15 @@ resourceTypes:
   - collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/fund:
+/fund_distribution:
   type:
     collection:
-      exampleCollection: !include examples/fund_collection.sample
-      exampleItem: !include examples/fund.sample
-      schemaCollection: fund_collection
-      schemaItem: fund.json
+      exampleCollection: !include examples/fund_distribution_collection.sample
+      exampleItem: !include examples/fund_distribution.sample
+      schemaCollection: fund_distribution_collection
+      schemaItem: fund_distribution.json
   get:
-    description: Get list of funds
+    description: Get list of fund distributions
     is: [
       searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
       orderable: {fieldsList: "field A, field B"},
@@ -40,5 +40,5 @@ resourceTypes:
   /{id}:
     type:
       collection-item:
-        exampleItem: !include examples/fund.sample
-        schema: fund.json
+        exampleItem: !include examples/fund_distribution.sample
+        schema: fund_distribution.json

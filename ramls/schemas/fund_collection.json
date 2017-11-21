@@ -7,7 +7,7 @@
       "id": "funds",
       "items": {
         "type": "object",
-        "$ref": "fund"
+        "$ref": "fund.json"
       }
     },
     "total_records": {

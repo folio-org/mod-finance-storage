@@ -7,7 +7,7 @@
       "id": "tags",
       "items": {
         "type": "object",
-        "$ref": "tag"
+        "$ref": "tag.json"
       }
     },
     "total_records": {

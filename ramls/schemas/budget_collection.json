@@ -7,7 +7,7 @@
       "id": "budgets",
       "items": {
         "type": "object",
-        "$ref": "budget"
+        "$ref": "budget.json"
       }
     },
     "total_records": {

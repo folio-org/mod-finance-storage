@@ -4,12 +4,12 @@ baseUri: https://github.com/folio-org/mod-funds
 version: v1
 
 documentation:
-  - title: mod-funds
-    content: <b>CRUD APIs used to manage funds.</b>
+  - title: mod-funds (Tags)
+    content: <b>CRUD APIs used to manage tags.</b>
 
 schemas:
-  - fund.json: !include schemas/fund.json
-  - fund_collection: !include schemas/fund_collection.json
+  - tag.json: !include schemas/tag.json
+  - tag_collection: !include schemas/tag_collection.json
 
 traits:
   - secured: !include raml-util/traits/auth.raml
@@ -23,15 +23,15 @@ resourceTypes:
   - collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/fund:
+/tag:
   type:
     collection:
-      exampleCollection: !include examples/fund_collection.sample
-      exampleItem: !include examples/fund.sample
-      schemaCollection: fund_collection
-      schemaItem: fund.json
+      exampleCollection: !include examples/tag_collection.sample
+      exampleItem: !include examples/tag.sample
+      schemaCollection: tag_collection
+      schemaItem: tag.json
   get:
-    description: Get list of funds
+    description: Get list of tags
     is: [
       searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
       orderable: {fieldsList: "field A, field B"},
@@ -40,5 +40,5 @@ resourceTypes:
   /{id}:
     type:
       collection-item:
-        exampleItem: !include examples/fund.sample
-        schema: fund.json
+        exampleItem: !include examples/tag.sample
+        schema: tag.json

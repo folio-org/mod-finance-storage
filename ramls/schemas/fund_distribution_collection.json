@@ -7,7 +7,7 @@
       "id": "fund_distributions",
       "items": {
         "type": "object",
-        "$ref": "fund_distribution"
+        "$ref": "fund_distribution.json"
       }
     },
     "total_records": {

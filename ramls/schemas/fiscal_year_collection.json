@@ -7,7 +7,7 @@
       "id": "fiscal_years",
       "items": {
         "type": "object",
-        "$ref": "fiscal_year"
+        "$ref": "fiscal_year.json"
       }
     },
     "total_records": {
