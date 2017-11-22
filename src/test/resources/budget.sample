@@ -1,0 +1,17 @@
+{
+  "id": null,
+  "name": "History 2017",
+  "code": "HIST-2017",
+  "budget_status": "Active",
+  "limit_enc_percent": 95,
+  "limit_exp_percent": 100,
+  "allocation": 20000,
+  "awaiting_payment": 3500,
+  "available": 10000,
+  "encumbered": 2000,
+  "expenditures": 4500,
+  "over_encumbrance": 0,
+  "fund_id": "172364c7-AaAa-A0C2-C12C-e35CeCcbfaF2",
+  "fiscal_year_id": "AC2164c7-Ba3d-AbC2-C12C-e35CeCcbfaF2",
+  "tags": []
+}
