@@ -1,9 +1,6 @@
 package org.folio.rest.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.*;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.folio.rest.RestVerticle;
@@ -31,7 +28,7 @@ public class TransactionAPI implements TransactionResource {
 
   private static final Logger log = LoggerFactory.getLogger(TransactionAPI.class);
   private final Messages messages = Messages.getInstance();
-  private String idFieldName = "_id";
+  private String idFieldName = "id";
 
   private org.folio.rest.persist.Criteria.Order getOrder(Order order, String field) {
     if (field == null) {
@@ -56,6 +53,10 @@ public class TransactionAPI implements TransactionResource {
     return (errorMessage != null && errorMessage.contains("invalid input syntax for uuid"));
   }
 
+  public TransactionAPI(Vertx vertx, String tenantId) {
+    PostgresClient.getInstance(vertx, tenantId).setIdField(idFieldName);
+  }
+
   @Override
   public void getTransaction(String query, String orderBy, Order order, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     vertxContext.runOnContext((Void v) -> {
@@ -63,8 +64,6 @@ public class TransactionAPI implements TransactionResource {
         String tenantId = TenantTool.calculateTenantId( okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT) );
 
         Criterion criterion = Criterion.json2Criterion(query);
-//        Criteria criteria = new Criteria("/ramls/schemas/" +PURCHASE_ORDER_TABLE + ".json");
-//        criterion.addCriterion(criteria);
         criterion.setLimit(new Limit(limit));
         criterion.setOffset(new Offset(offset));
 

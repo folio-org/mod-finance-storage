@@ -1,25 +1,93 @@
 {
   "tables": [
     {
-      "tableName": "purchase_order",
+      "tableName": "ledger",
+      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "generateId": true,
-      "ginIndex": true
+      "ginIndex": true,
+      "populateJsonWithId": true
     },
     {
-    	"tableName": "purchase_order_line",
+      "tableName": "fund",
+      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "generateId": true,
       "ginIndex": true,
+      "populateJsonWithId": true,
       "foreignKeys": [
-      	{
-      		"fieldName": "purchase_order_id",
-      		"targetTable": "purchase_order",
-      		"tOps": "ADD"
-      	}
+        {
+          "fieldName": "ledger_id",
+          "targetTable": "ledger",
+          "tOps": "ADD"
+        }
       ]
+    },
+    {
+      "tableName": "fiscal_year",
+      "generateId": true,
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "ginIndex": true,
+      "populateJsonWithId": true
+    },
+    {
+      "tableName": "budget",
+      "generateId": true,
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "ginIndex": true,
+      "populateJsonWithId": true,
+      "foreignKeys": [
+        {
+          "fieldName": "fund_id",
+          "targetTable": "fund",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fiscal_year_id",
+          "targetTable": "fiscal_year",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
+      "tableName": "fund_distribution",
+      "generateId": true,
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "ginIndex": true,
+      "populateJsonWithId": true,
+      "foreignKeys": [
+        {
+          "fieldName": "budget_id",
+          "targetTable": "budget",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
+      "tableName": "transaction",
+      "generateId": true,
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "ginIndex": true,
+      "populateJsonWithId": true,
+      "foreignKeys": [
+        {
+          "fieldName": "budget_id",
+          "targetTable": "budget",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
+      "tableName": "tag",
+      "generateId": true,
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "ginIndex": true,
+      "populateJsonWithId": true
     }
   ]
 }
