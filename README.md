@@ -1,4 +1,4 @@
-# mod-funds
+# mod-finance
 
 Copyright (C) 2017 The Open Library Foundation
 
@@ -6,32 +6,33 @@ This software is distributed under the terms of the Apache License, Version 2.0.
 
 # Introduction
 
-This module is responsible for the persistence of Funds-related data.
+This RMB-module is responsible for the persistence of finance-related data (i.e. funds, ledgers, transactions, etc.)
 
-For additional information regarding this module, please refer to the [Funds Module WIKI](https://wiki.folio.org/display/RM/Acquisitions+Fund+Module).
-
-
-For API documentation, run this project locally and then go to [http://localhost:8081/apidocs/index.html?raml=raml/funds.raml](http://localhost:8081/apidocs/index.html?raml=raml/funds.raml)
+For additional information regarding this module, please refer to the [Finance Module WIKI](https://wiki.folio.org/display/RM/Acquisitions+Fund+Module).
 
 
+## Building the Project
 
-Mod-Sample leverages RMB to build the code.
-
-The database connection must be configured in the following file:
+To compile this module, head to the root-folder and run the following command in your Terminal:
 
 ```
-src/main/resources/postgres-conf.json
+mvn clean install
 ```
 
-The DB schema is defined in  
+To run the module in standalone mode (i.e. without involving Okapi):
 ```
-src/main/resources/templates/schema.json
-```
-
-Deploying the module in OKAPI should initialize the schema. Nonetheless, for testing purposes, the following files have been included to build the DB schema from scratch:
-
-```
-src/main/resources/create_tenant.sql
-src/main/resources/delete_tenant.sql
+java -jar target/mod-finance-fat.jar -Dhttp.port=8081 embed_postgres=true
 ```
 
+>Note that the above command launches an embedded Postgres server and is accessible using the default creds found in the *Credentials* section [here](https://github.com/folio-org/raml-module-builder).
+
+## API Documentation
+
+When running in standalone mode, you may access the module's API docs through the following links: 
+* [Budgets](http://localhost:8081/apidocs/index.html?raml=raml/budget.raml)
+* [Fiscal Year](http://localhost:8081/apidocs/index.html?raml=raml/fiscal_year.raml)
+* [Fund Distribution](http://localhost:8081/apidocs/index.html?raml=raml/fund_distribution.raml)
+* [Funds](http://localhost:8081/apidocs/index.html?raml=raml/funds.raml)
+* [Ledgers](http://localhost:8081/apidocs/index.html?raml=raml/ledger.raml)
+* [Tags](http://localhost:8081/apidocs/index.html?raml=raml/tag.raml)
+* [Transaction](http://localhost:8081/apidocs/index.html?raml=raml/transaction.raml)
