@@ -2,7 +2,7 @@
 
 Copyright (C) 2017 The Open Library Foundation
 
-This software is distributed under the terms of the Apache License, Version 2.0. See the file "LICENSE" for more information.
+This software is distributed under the terms of the Apache License, Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
 
 # Introduction
 
@@ -28,7 +28,7 @@ java -jar target/mod-finance-fat.jar -Dhttp.port=8081 embed_postgres=true
 
 ## API Documentation
 
-When running in standalone mode, you may access the module's API docs through the following links: 
+When running in standalone mode, you may access the module's API docs through the following links:
 * [Budgets](http://localhost:8081/apidocs/index.html?raml=raml/budget.raml)
 * [Fiscal Year](http://localhost:8081/apidocs/index.html?raml=raml/fiscal_year.raml)
 * [Fund Distribution](http://localhost:8081/apidocs/index.html?raml=raml/fund_distribution.raml)
