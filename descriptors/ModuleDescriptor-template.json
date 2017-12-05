@@ -499,7 +499,7 @@
     },
 
     {
-      "permissionName" : "finance.all",
+      "permissionName" : "finance.module.all",
       "displayName" : "All finance-module perms",
       "description" : "All permissions for the finance module",
       "subPermissions" : [
