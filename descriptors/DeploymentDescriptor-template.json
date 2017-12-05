@@ -1,7 +1,7 @@
 {
-  "srvcId" : "sample-module",
-  "nodeId" : "localhost",
-  "descriptor" : {
-    "exec" : "java -jar ../target/sample-module-fat.jar -Dhttp.port=%p"
+  "srvcId": "${artifactId}-${version}",
+  "nodeId": "localhost",
+  "descriptor": {
+    "exec": "java -jar ../${artifactId}/target/${artifactId}-fat.jar -Dhttp.port=%p embed_postgres=true"
   }
 }
