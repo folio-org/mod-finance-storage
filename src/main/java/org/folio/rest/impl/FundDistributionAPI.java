@@ -12,10 +12,12 @@ import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -29,20 +31,6 @@ public class FundDistributionAPI implements FundDistributionResource {
   private static final Logger log = LoggerFactory.getLogger(FundDistributionAPI.class);
   private final Messages messages = Messages.getInstance();
   private String idFieldName = "id";
-
-  private org.folio.rest.persist.Criteria.Order getOrder(Order order, String field) {
-    if (field == null) {
-      return null;
-    }
-
-    String sortOrder = org.folio.rest.persist.Criteria.Order.ASC;
-    if (order.name().equals("desc")) {
-      sortOrder = org.folio.rest.persist.Criteria.Order.DESC;
-    }
-
-    String fieldTemplate = String.format("jsonb->'%s'", field);
-    return new org.folio.rest.persist.Criteria.Order(fieldTemplate, org.folio.rest.persist.Criteria.Order.ORDER.valueOf(sortOrder.toUpperCase()));
-  }
 
   private static void respond(Handler<AsyncResult<Response>> handler, Response response) {
     AsyncResult<Response> result = Future.succeededFuture(response);
@@ -58,22 +46,18 @@ public class FundDistributionAPI implements FundDistributionResource {
   }
 
   @Override
-  public void getFundDistribution(String query, String orderBy, Order order, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
+  public void getFundDistribution(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     vertxContext.runOnContext((Void v) -> {
       try {
         String tenantId = TenantTool.calculateTenantId( okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT) );
 
-        Criterion criterion = Criterion.json2Criterion(query);
-        criterion.setLimit(new Limit(limit));
-        criterion.setOffset(new Offset(offset));
+        String[] fieldList = {"*"};
+        CQL2PgJSON cql2PgJSON = new CQL2PgJSON(String.format("%s.jsonb", FUND_DISTRIBUTION_TABLE));
+        CQLWrapper cql = new CQLWrapper(cql2PgJSON, query)
+          .setLimit(new Limit(limit))
+          .setOffset(new Offset(offset));
 
-        org.folio.rest.persist.Criteria.Order or = getOrder(order, orderBy);
-        if (or != null) {
-          criterion.setOrder(or);
-        }
-
-        PostgresClient.getInstance(vertxContext.owner(), tenantId).get(FUND_DISTRIBUTION_TABLE, Distribution.class, criterion, true,
-          reply -> {
+        PostgresClient.getInstance(vertxContext.owner(), tenantId).get(FUND_DISTRIBUTION_TABLE, Distribution.class, fieldList, cql, true, false, reply -> {
             try {
               if(reply.succeeded()){
                 FundDistributionCollection collection = new FundDistributionCollection();
