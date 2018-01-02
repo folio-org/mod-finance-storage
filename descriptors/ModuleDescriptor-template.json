@@ -269,7 +269,6 @@
         "budget.item.delete"
       ]
     },
-
     {
       "permissionName" : "fiscal_year.collection.get",
       "displayName" : "fiscal-year-collection get",
@@ -307,7 +306,6 @@
         "fiscal_year.item.delete"
       ]
     },
-
     {
       "permissionName" : "fund_distribution.collection.get",
       "displayName" : "fund-distribution-collection get",
@@ -345,7 +343,6 @@
         "fund_distribution.item.delete"
       ]
     },
-
     {
       "permissionName" : "fund.collection.get",
       "displayName" : "fund-collection get",
@@ -383,7 +380,6 @@
         "fund.item.delete"
       ]
     },
-
     {
       "permissionName" : "ledger.collection.get",
       "displayName" : "ledger-collection get",
@@ -421,7 +417,6 @@
         "ledger.item.delete"
       ]
     },
-
     {
       "permissionName" : "tag.collection.get",
       "displayName" : "tag-collection get",
@@ -459,7 +454,6 @@
         "tag.item.delete"
       ]
     },
-
     {
       "permissionName" : "transaction.collection.get",
       "displayName" : "transaction-collection get",
@@ -497,7 +491,6 @@
         "transaction.item.delete"
       ]
     },
-
     {
       "permissionName" : "finance.module.all",
       "displayName" : "All finance-module perms",
