@@ -5,21 +5,59 @@
       "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "ginIndex": true,
-      "populateJsonWithId": true
+      "populateJsonWithId": true,
+      "ginIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ]
     },
     {
       "tableName": "fund",
       "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "ginIndex": true,
       "populateJsonWithId": true,
       "foreignKeys": [
         {
           "fieldName": "ledger_id",
           "targetTable": "ledger",
           "tOps": "ADD"
+        }
+      ],
+      "ginIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "fund_status",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "currency",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
         }
       ]
     },
@@ -28,15 +66,27 @@
       "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "ginIndex": true,
-      "populateJsonWithId": true
+      "populateJsonWithId": true,
+      "ginIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ]
     },
     {
       "tableName": "budget",
       "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "ginIndex": true,
       "populateJsonWithId": true,
       "foreignKeys": [
         {
@@ -49,6 +99,26 @@
           "targetTable": "fiscal_year",
           "tOps": "ADD"
         }
+      ],
+      "ginIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "budget_status",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
       ]
     },
     {
@@ -56,13 +126,26 @@
       "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "ginIndex": true,
       "populateJsonWithId": true,
       "foreignKeys": [
         {
           "fieldName": "budget_id",
           "targetTable": "budget",
           "tOps": "ADD"
+        }
+      ],
+      "ginIndex": [
+        {
+          "fieldName": "currency",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "source_type",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
         }
       ]
     },
@@ -71,13 +154,26 @@
       "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "ginIndex": true,
       "populateJsonWithId": true,
       "foreignKeys": [
         {
           "fieldName": "budget_id",
           "targetTable": "budget",
           "tOps": "ADD"
+        }
+      ],
+      "ginIndex": [
+        {
+          "fieldName": "amount",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "note",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
         }
       ]
     },
@@ -86,8 +182,15 @@
       "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "ginIndex": true,
-      "populateJsonWithId": true
+      "populateJsonWithId": true,
+      "ginIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ]
     }
   ]
 }
