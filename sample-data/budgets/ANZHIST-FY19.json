@@ -1,0 +1,16 @@
+{
+  "name": "ANZHIST-FY19",
+  "code": "ANZHIST-FY19",
+  "budget_status": "Active",
+  "limit_enc_percent": 110,
+  "limit_exp_percent": 100,
+  "allocation": 11000.00,
+  "awaiting_payment": 66.26,
+  "available": 6737.92,
+  "encumbered": 3215.26,
+  "expenditures": 980.56,
+  "over_encumbrance": 0,
+  "fund_id": "172364c7-AaAa-A0C2-C12C-e35CeCcbfaF2",
+  "fiscal_year_id": "AC2164c7-Ba3d-AbC2-C12C-e35CeCcbfaF2",
+  "tags": null
+}
