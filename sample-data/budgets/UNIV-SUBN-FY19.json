@@ -2,7 +2,7 @@
   "name": "UNIV-SUBN-FY19",
   "code": "UNIV-SUBN-FY19",
   "budget_status": "Active",
-  "limit_enc_percent": 0,
+  "limit_enc_percent": 100,
   "limit_exp_percent": 100,
   "allocation": 400000.00,
   "awaiting_payment": 13200.00,

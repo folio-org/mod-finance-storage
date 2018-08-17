@@ -2,7 +2,7 @@
   "name": "GIFT-SUBN-FY19",
   "code": "GIFT-SUBN-FY19",
   "budget_status": "Active",
-  "limit_enc_percent": 0,
+  "limit_enc_percent": 100,
   "limit_exp_percent": 100,
   "allocation": 25000.00,
   "awaiting_payment": 4800.00,
