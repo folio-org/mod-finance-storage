@@ -1,0 +1,16 @@
+{
+  "id": "172364c7-AaAa-A0C2-C12C-e35CeCcbfaF2",
+  "name": "Can/LatAm History",
+  "code": "CANLATHIST",
+  "created_date": "2018-01-01T13:06:34.186Z",
+  "fund_status": "Inactive",
+  "currency": "USD",
+  "description": "used for all North/South America & Caribbean countries except US; will be inactivated once separate funds for Can and LatAm are approved",
+  "ledger_id": "7cef8378-7CBd-BFaE-BCdd-8b9d7c0af9De",
+  "allocation_from": [
+    "f8d4511a-f6B8-ccec-ad4c-FA5bEAbaD092"
+  ],
+  "allocation_to": [
+    "f8d4511a-f6B8-ccec-ad4c-FA5bEAbaD092"
+  ]
+}
