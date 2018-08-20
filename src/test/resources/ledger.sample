@@ -3,8 +3,6 @@
   "name": "Main Library",
   "code": "MAIN-LIB",
   "description": "This is the ledger for the Main Library",
-  "period_start": "2017-07-01T00:00:00Z",
-  "period_end": "2017-06-31T23:59:59Z",
   "fiscal_years": [
     "AC2164c7-Ba3d-AbC2-C12C-e35CeCcbfaF2"
   ]
