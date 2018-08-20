@@ -16,14 +16,6 @@
     "description": {
       "type": "string"
     },
-    "period_start": {
-      "type": ["string", "null"],
-      "format": "date-time"
-    },
-    "period_end": {
-      "type": ["string", "null"],
-      "format": "date-time"
-    },
     "fiscal_years": {
       "id": "fiscal_years",
       "type": "array",
