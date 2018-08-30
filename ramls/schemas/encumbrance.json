@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": ["string", "null"],
+      "description": "UUID",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    },
+    "amount_encumbered": {
+      "type": "number"
+    },
+    "current_encumbered": {
+      "type": "number"
+    },
+    "amount_expended": {
+      "type": "number"
+    },
+    "encumbrance_status": {
+      "type": "string"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "exchange_rate": {
+      "type": "string"
+    },
+    "po_line_id": {
+      "type": ["string", "null"],
+      "description": "UUID",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    },
+    "fund_id": {
+      "type": ["string", "null"],
+      "description": "UUID",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "code"
+  ]
+}
