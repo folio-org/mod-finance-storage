@@ -8,8 +8,8 @@ documentation:
     content: <b>CRUD APIs used to manage tags.</b>
 
 schemas:
-  - tag.json: !include schemas/tag.json
-  - tag_collection: !include schemas/tag_collection.json
+  - tag.json: !include acq-models/mod-finance/schemas/tag.json
+  - tag_collection: !include acq-models/mod-finance/schemas/tag_collection.json
 
 traits:
   - secured: !include raml-util/traits/auth.raml
@@ -26,8 +26,8 @@ resourceTypes:
 /tag:
   type:
     collection:
-      exampleCollection: !include examples/tag_collection.sample
-      exampleItem: !include examples/tag.sample
+      exampleCollection: !include acq-models/mod-finance/examples/tag_collection.sample
+      exampleItem: !include acq-models/mod-finance/examples/tag.sample
       schemaCollection: tag_collection
       schemaItem: tag.json
   get:
@@ -39,5 +39,5 @@ resourceTypes:
   /{id}:
     type:
       collection-item:
-        exampleItem: !include examples/tag.sample
+        exampleItem: !include acq-models/mod-finance/examples/tag.sample
         schema: tag.json

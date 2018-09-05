@@ -8,8 +8,8 @@ documentation:
     content: <b>CRUD APIs used to manage funds.</b>
 
 schemas:
-  - fund.json: !include schemas/fund.json
-  - fund_collection: !include schemas/fund_collection.json
+  - fund.json: !include acq-models/mod-finance/schemas/fund.json
+  - fund_collection: !include acq-models/mod-finance/schemas/fund_collection.json
 
 traits:
   - secured: !include raml-util/traits/auth.raml
@@ -26,7 +26,7 @@ resourceTypes:
 /fund:
   type:
     collection:
-      exampleCollection: !include examples/fund_collection.sample
+      exampleCollection: !include acq-models/mod-finance/examples/fund_collection.sample
       exampleItem: !include examples/fund.sample
       schemaCollection: fund_collection
       schemaItem: fund.json
@@ -39,5 +39,5 @@ resourceTypes:
   /{id}:
     type:
       collection-item:
-        exampleItem: !include examples/fund.sample
+        exampleItem: !include acq-models/mod-finance/examples/fund.sample
         schema: fund.json
