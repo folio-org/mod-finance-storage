@@ -31,7 +31,7 @@ resourceTypes:
       schemaCollection: encumbrance_collection
       schemaItem: encumbrance.json
   get:
-    description: Get list of budgets
+    description: Get list of encumbrances
     is: [
       searchable: {description: "with valid searchable fields: e.g.", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
       pageable
@@ -40,4 +40,4 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/encumbrance.sample
-        schema: budget.json
+        schema: encumbrance.json
