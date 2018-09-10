@@ -31,5 +31,7 @@
     }
   },
   "additionalProperties": false,
-  "required": null
+  "required": [
+    "amount"
+  ]
 }
