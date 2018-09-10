@@ -1,4 +1,4 @@
-## 1.0.0 Unreleased
+## 1.0.0
 CRUD APIs for the following endpoints:
 * `/budget`
 * `/fiscal_year`
