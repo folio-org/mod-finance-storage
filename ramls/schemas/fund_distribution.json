@@ -32,7 +32,6 @@
   },
   "additionalProperties": false,
   "required": [
-    "name",
-    "code"
+    "amount"
   ]
 }
