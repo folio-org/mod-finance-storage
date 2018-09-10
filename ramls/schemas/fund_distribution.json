@@ -31,8 +31,5 @@
     }
   },
   "additionalProperties": false,
-  "required": [
-    "name",
-    "code"
-  ]
+  "required": null
 }
