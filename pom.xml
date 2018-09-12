@@ -1,9 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.folio</groupId>
   <artifactId>mod-finance</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <licenses>
@@ -125,7 +124,7 @@
           </execution>
         </executions>
       </plugin>
-      
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
@@ -335,13 +334,10 @@
             <phase>prepare-package</phase>
             <configuration>
               <tasks>
-                <replace token="baseUri: http://github.com/org/folio/lsp-apis"
-                         value="baseUri: http://localhost:${http.port}/apis"
-                         dir="${basedir}/target/classes/apidocs/raml">
+                <replace token="baseUri: http://github.com/org/folio/lsp-apis" value="baseUri: http://localhost:${http.port}/apis" dir="${basedir}/target/classes/apidocs/raml">
                   <include name="**/*.raml" />
                 </replace>
-                <replace token="protocols: [ HTTPS ]" value="protocols: [ HTTP ]"
-                         dir="${basedir}/target/classes/apidocs/raml">
+                <replace token="protocols: [ HTTPS ]" value="protocols: [ HTTP ]" dir="${basedir}/target/classes/apidocs/raml">
                   <include name="**/*.raml" />
                 </replace>
               </tasks>
@@ -409,8 +405,7 @@
             </goals>
             <configuration>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <Main-Class>org.folio.rest.RestLauncher</Main-Class>
                     <Main-Verticle>org.folio.rest.RestVerticle</Main-Verticle>
@@ -454,5 +449,12 @@
       <layout>default</layout>
     </snapshotRepository>
   </distributionManagement>
+
+  <scm>
+    <url>https://github.com/folio-org/mod-finance</url>
+    <connection>scm:git:git://github.com/folio-org/mod-finance.git</connection>
+    <developerConnection>scm:git:git@github.com:folio-org/mod-finance.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
 </project>
