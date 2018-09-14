@@ -5,11 +5,11 @@ version: v1
 
 documentation:
   - title: mod-funds (Budgets)
-    content: <b>CRUD APIs used to manage budgets.</b>
+    content: <b>CRUD APIs used to manage encumbrances.</b>
 
 schemas:
-  - budget.json: !include acq-models/mod-finance/schemas/budget.json
-  - budget_collection: !include acq-models/mod-finance/schemas/budget_collection.json
+  - encumbrance.json: !include acq-models/mod-finance/schemas/encumbrance.json
+  - encumbrance_collection: !include acq-models/mod-finance/schemas/encumbrance_collection.json
 
 traits:
   - secured: !include raml-util/traits/auth.raml
@@ -23,15 +23,15 @@ resourceTypes:
   - collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/budget:
+/encumbrance:
   type:
     collection:
-      exampleCollection: !include acq-models/mod-finance/examples/budget_collection.sample
-      exampleItem: !include acq-models/mod-finance/examples/budget.sample
-      schemaCollection: budget_collection
-      schemaItem: budget.json
+      exampleCollection: !include acq-models/mod-finance/examples/encumbrance_collection.sample
+      exampleItem: !include acq-models/mod-finance/examples/encumbrance.sample
+      schemaCollection: encumbrance_collection
+      schemaItem: encumbrance.json
   get:
-    description: Get list of budgets
+    description: Get list of encumbrances
     is: [
       searchable: {description: "with valid searchable fields: e.g.", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
       pageable
@@ -39,5 +39,5 @@ resourceTypes:
   /{id}:
     type:
       collection-item:
-        exampleItem: !include acq-models/mod-finance/examples/budget.sample
-        schema: budget.json
+        exampleItem: !include acq-models/mod-finance/examples/encumbrance.sample
+        schema: encumbrance.json

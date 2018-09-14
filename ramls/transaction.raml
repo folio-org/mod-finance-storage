@@ -8,8 +8,8 @@ documentation:
     content: <b>CRUD APIs used to manage transactions.</b>
 
 schemas:
-  - transaction.json: !include schemas/transaction.json
-  - transaction_collection: !include schemas/transaction_collection.json
+  - transaction.json: !include acq-models/mod-finance/schemas/transaction.json
+  - transaction_collection: !include acq-models/mod-finance/schemas/transaction_collection.json
 
 traits:
   - secured: !include raml-util/traits/auth.raml
@@ -26,8 +26,8 @@ resourceTypes:
 /transaction:
   type:
     collection:
-      exampleCollection: !include examples/transaction_collection.sample
-      exampleItem: !include examples/transaction.sample
+      exampleCollection: !include acq-models/mod-finance/examples/transaction_collection.sample
+      exampleItem: !include acq-models/mod-finance/examples/transaction.sample
       schemaCollection: transaction_collection
       schemaItem: transaction.json
   get:
@@ -39,5 +39,5 @@ resourceTypes:
   /{id}:
     type:
       collection-item:
-        exampleItem: !include examples/transaction.sample
+        exampleItem: !include acq-models/mod-finance/examples/transaction.sample
         schema: transaction.json

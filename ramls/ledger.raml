@@ -8,8 +8,8 @@ documentation:
     content: <b>CRUD APIs used to manage ledgers.</b>
 
 schemas:
-  - ledger.json: !include schemas/ledger.json
-  - ledger_collection: !include schemas/ledger_collection.json
+  - ledger.json: !include acq-models/mod-finance/schemas/ledger.json
+  - ledger_collection: !include acq-models/mod-finance/schemas/ledger_collection.json
 
 traits:
   - secured: !include raml-util/traits/auth.raml
@@ -26,8 +26,8 @@ resourceTypes:
 /ledger:
   type:
     collection:
-      exampleCollection: !include examples/ledger_collection.sample
-      exampleItem: !include examples/ledger.sample
+      exampleCollection: !include acq-models/mod-finance/examples/ledger_collection.sample
+      exampleItem: !include acq-models/mod-finance/examples/ledger.sample
       schemaCollection: ledger_collection
       schemaItem: ledger.json
   get:
@@ -39,5 +39,5 @@ resourceTypes:
   /{id}:
     type:
       collection-item:
-        exampleItem: !include examples/ledger.sample
+        exampleItem: !include acq-models/mod-finance/examples/ledger.sample
         schema: ledger.json
