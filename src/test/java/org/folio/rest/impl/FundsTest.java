@@ -123,11 +123,6 @@ public class FundsTest {
       .body("total_records", equalTo(0))
       .body("ledgers", empty());
 
-    getData("tag").then()
-      .statusCode(200)
-      .body("total_records", equalTo(0))
-      .body("tags", empty());
-
     getData("transaction").then()
       .statusCode(200)
       .body("total_records", equalTo(0))
@@ -264,9 +259,6 @@ public class FundsTest {
       fundJSON.put("id", fund_id);
       fundJSON.put("code", "MAIN-LIB-FUND");
       fundJSON.put("ledger_id", ledger_id);
-      JSONArray tagArray = fundJSON.getJSONArray("tags");
-      tagArray.put(tag_id);
-      fundJSON.put("tags", tagArray);
       response = putData("fund", fund_id, fundJSON.toString());
       response.then()
         .statusCode(204);
@@ -282,9 +274,6 @@ public class FundsTest {
       JSONObject budgetJSON = new JSONObject(budgetSample);
       budgetJSON.put("fund_id", fund_id);
       budgetJSON.put("fiscal_year_id", fy_id);
-      tagArray = budgetJSON.getJSONArray("tags");
-      tagArray.put(tag_id);
-      budgetJSON.put("tags", tagArray);
       response = postData("budget", budgetJSON.toString());
       response.then()
         .statusCode(201)
@@ -403,10 +392,7 @@ public class FundsTest {
       logger.info("--- mod-finance-test: Deleting fiscal_year ... ");
       deleteData("fiscal_year", fy_id).then()
         .statusCode(204);
-
-      logger.info("--- mod-finance-test: Deleting tag ... ");
-      deleteData("tag", tag_id).then()
-        .statusCode(204);
+      
     }
     catch (Exception e) {
       context.fail("--- mod-finance-test: ERROR: " + e.getMessage());
