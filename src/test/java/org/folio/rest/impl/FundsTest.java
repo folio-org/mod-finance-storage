@@ -40,9 +40,9 @@ public class FundsTest {
   private final String TENANT_NAME = "testlib";
   private final Header TENANT_HEADER = new Header("X-Okapi-Tenant", TENANT_NAME);
 
-  private String moduleName;      // "mod_vendors";
+  private String moduleName;      // "mod_finance_storage";
   private String moduleVersion;   // "1.0.0"
-  private String moduleId;        // "mod-vendors-1.0.0"
+  private String moduleId;        // "mod-finance-storage-1.0.0"
 
   @Before
   public void before(TestContext context) {
@@ -152,7 +152,7 @@ public class FundsTest {
       getData("tag").then()
         .statusCode(200)
         .body("total_records", equalTo(1));
-      
+
       logger.info("--- mod-finance-test: Creating fiscal year ... ");
       String fySample = getFile("fiscal_year.sample");
       response = postData("fiscal_year", fySample);
