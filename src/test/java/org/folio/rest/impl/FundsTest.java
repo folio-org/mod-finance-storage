@@ -152,26 +152,7 @@ public class FundsTest {
       getData("tag").then()
         .statusCode(200)
         .body("total_records", equalTo(1));
-
-      logger.info("--- mod-finance-test: Fetching tag with ID:"+ tag_id);
-      getDataById("tag", tag_id).then()
-        .statusCode(200)
-        .body("id", equalTo(tag_id));
-
-      logger.info("--- mod-finance-test: Editing tag with ID:"+ tag_id);
-      JSONObject tagJSON = new JSONObject(tagSample);
-      tagJSON.put("id", tag_id);
-      tagJSON.put("code", "PSYCH-SER");
-      response = putData("tag", tag_id, tagJSON.toString());
-      response.then()
-        .statusCode(204);
-
-      logger.info("--- mod-finance-test: Fetching tag with ID:"+ tag_id);
-      getDataById("tag", tag_id).then()
-        .statusCode(200)
-        .body("code", equalTo("PSYCH-SER"));
-
-
+      
       logger.info("--- mod-finance-test: Creating fiscal year ... ");
       String fySample = getFile("fiscal_year.sample");
       response = postData("fiscal_year", fySample);
@@ -392,7 +373,7 @@ public class FundsTest {
       logger.info("--- mod-finance-test: Deleting fiscal_year ... ");
       deleteData("fiscal_year", fy_id).then()
         .statusCode(204);
-      
+
     }
     catch (Exception e) {
       context.fail("--- mod-finance-test: ERROR: " + e.getMessage());
