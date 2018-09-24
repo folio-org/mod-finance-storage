@@ -158,37 +158,6 @@
       ]
     },
     {
-      "id": "tag",
-      "version": "1.0",
-      "handlers": [
-        {
-          "methods": ["GET"],
-          "pathPattern": "/tag",
-          "permissionsRequired": ["tag.collection.get"]
-        },
-        {
-          "methods": ["POST"],
-          "pathPattern": "/tag",
-          "permissionsRequired": ["tag.item.post"]
-        },
-        {
-          "methods": ["GET"],
-          "pathPattern": "/tag/{id}",
-          "permissionsRequired": ["tag.item.get"]
-        },
-        {
-          "methods": ["PUT"],
-          "pathPattern": "/tag/{id}",
-          "permissionsRequired": ["tag.item.put"]
-        },
-        {
-          "methods": ["DELETE"],
-          "pathPattern": "/tag/{id}",
-          "permissionsRequired": ["tag.item.delete"]
-        }
-      ]
-    },
-    {
       "id": "transaction",
       "version": "1.0",
       "handlers": [
@@ -418,43 +387,6 @@
       ]
     },
     {
-      "permissionName" : "tag.collection.get",
-      "displayName" : "tag-collection get",
-      "description" : "Get collection of tags"
-    },
-    {
-      "permissionName" : "tag.item.post",
-      "displayName" : "tag-item post",
-      "description" : "Create a new tag"
-    },
-    {
-      "permissionName" : "tag.item.get",
-      "displayName" : "tag-item get",
-      "description" : "Fetch a tag"
-    },
-    {
-      "permissionName" : "tag.item.put",
-      "displayName" : "tag-item put",
-      "description" : "Update a tag"
-    },
-    {
-      "permissionName" : "tag.item.delete",
-      "displayName" : "tag-item delete",
-      "description" : "Delete a tag"
-    },
-    {
-      "permissionName" : "tag.all",
-      "displayName" : "All tag perms",
-      "description" : "All permissions for the tag",
-      "subPermissions" : [
-        "tag.collection.get",
-        "tag.item.post",
-        "tag.item.get",
-        "tag.item.put",
-        "tag.item.delete"
-      ]
-    },
-    {
       "permissionName" : "transaction.collection.get",
       "displayName" : "transaction-collection get",
       "description" : "Get collection of transactions"
@@ -481,7 +413,7 @@
     },
     {
       "permissionName" : "transaction.all",
-      "displayName" : "All tag perms",
+      "displayName" : "All transaction perms",
       "description" : "All permissions for the transaction",
       "subPermissions" : [
         "transaction.collection.get",
@@ -501,7 +433,6 @@
         "fund_distribution.all",
         "funds.all",
         "ledger.all",
-        "tag.all",
         "transaction.all"
       ]
     }

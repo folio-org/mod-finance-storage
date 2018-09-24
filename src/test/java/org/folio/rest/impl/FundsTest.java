@@ -40,9 +40,9 @@ public class FundsTest {
   private final String TENANT_NAME = "testlib";
   private final Header TENANT_HEADER = new Header("X-Okapi-Tenant", TENANT_NAME);
 
-  private String moduleName;      // "mod_vendors";
+  private String moduleName;      // "mod_finance_storage";
   private String moduleVersion;   // "1.0.0"
-  private String moduleId;        // "mod-vendors-1.0.0"
+  private String moduleId;        // "mod-finance-storage-1.0.0"
 
   @Before
   public void before(TestContext context) {
@@ -123,11 +123,6 @@ public class FundsTest {
       .body("total_records", equalTo(0))
       .body("ledgers", empty());
 
-    getData("tag").then()
-      .statusCode(200)
-      .body("total_records", equalTo(0))
-      .body("tags", empty());
-
     getData("transaction").then()
       .statusCode(200)
       .body("total_records", equalTo(0))
@@ -145,41 +140,9 @@ public class FundsTest {
       logger.info("--- mod-finance-test: Verifying empty database ... ");
       verifyInitialDBState();
 
-      logger.info("--- mod-finance-test: Creating tag ... ");
-      String tagSample = getFile("tag.sample");
-      Response response = postData("tag", tagSample);
-      response.then()
-        .statusCode(201)
-        .body("code", equalTo("HIST-SER"));
-      String tag_id = response.then().extract().path("id");
-
-      logger.info("--- mod-finance-test: Verifying only 1 tag was created ... ");
-      getData("tag").then()
-        .statusCode(200)
-        .body("total_records", equalTo(1));
-
-      logger.info("--- mod-finance-test: Fetching tag with ID:"+ tag_id);
-      getDataById("tag", tag_id).then()
-        .statusCode(200)
-        .body("id", equalTo(tag_id));
-
-      logger.info("--- mod-finance-test: Editing tag with ID:"+ tag_id);
-      JSONObject tagJSON = new JSONObject(tagSample);
-      tagJSON.put("id", tag_id);
-      tagJSON.put("code", "PSYCH-SER");
-      response = putData("tag", tag_id, tagJSON.toString());
-      response.then()
-        .statusCode(204);
-
-      logger.info("--- mod-finance-test: Fetching tag with ID:"+ tag_id);
-      getDataById("tag", tag_id).then()
-        .statusCode(200)
-        .body("code", equalTo("PSYCH-SER"));
-
-
       logger.info("--- mod-finance-test: Creating fiscal year ... ");
       String fySample = getFile("fiscal_year.sample");
-      response = postData("fiscal_year", fySample);
+      Response response = postData("fiscal_year", fySample);
       response.then()
         .statusCode(201)
         .body("name", equalTo("Fiscal Year 2017"));
@@ -264,9 +227,6 @@ public class FundsTest {
       fundJSON.put("id", fund_id);
       fundJSON.put("code", "MAIN-LIB-FUND");
       fundJSON.put("ledger_id", ledger_id);
-      JSONArray tagArray = fundJSON.getJSONArray("tags");
-      tagArray.put(tag_id);
-      fundJSON.put("tags", tagArray);
       response = putData("fund", fund_id, fundJSON.toString());
       response.then()
         .statusCode(204);
@@ -282,9 +242,6 @@ public class FundsTest {
       JSONObject budgetJSON = new JSONObject(budgetSample);
       budgetJSON.put("fund_id", fund_id);
       budgetJSON.put("fiscal_year_id", fy_id);
-      tagArray = budgetJSON.getJSONArray("tags");
-      tagArray.put(tag_id);
-      budgetJSON.put("tags", tagArray);
       response = postData("budget", budgetJSON.toString());
       response.then()
         .statusCode(201)
@@ -404,9 +361,6 @@ public class FundsTest {
       deleteData("fiscal_year", fy_id).then()
         .statusCode(204);
 
-      logger.info("--- mod-finance-test: Deleting tag ... ");
-      deleteData("tag", tag_id).then()
-        .statusCode(204);
     }
     catch (Exception e) {
       context.fail("--- mod-finance-test: ERROR: " + e.getMessage());
