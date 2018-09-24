@@ -176,21 +176,6 @@
           "removeAccents": true
         }
       ]
-    },
-    {
-      "tableName": "tag",
-      "generateId": true,
-      "fromModuleVersion": 1.0,
-      "withMetadata": true,
-      "populateJsonWithId": true,
-      "ginIndex": [
-        {
-          "fieldName": "code",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        }
-      ]
     }
   ]
 }
