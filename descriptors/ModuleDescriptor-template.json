@@ -413,7 +413,7 @@
     },
     {
       "permissionName" : "transaction.all",
-      "displayName" : "All tag perms",
+      "displayName" : "All transaction perms",
       "description" : "All permissions for the transaction",
       "subPermissions" : [
         "transaction.collection.get",

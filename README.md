@@ -34,5 +34,4 @@ When running in standalone mode, you may access the module's API docs through th
 * [Fund Distribution](http://localhost:8081/apidocs/index.html?raml=raml/fund_distribution.raml)
 * [Funds](http://localhost:8081/apidocs/index.html?raml=raml/funds.raml)
 * [Ledgers](http://localhost:8081/apidocs/index.html?raml=raml/ledger.raml)
-* [Tags](http://localhost:8081/apidocs/index.html?raml=raml/tag.raml)
 * [Transaction](http://localhost:8081/apidocs/index.html?raml=raml/transaction.raml)

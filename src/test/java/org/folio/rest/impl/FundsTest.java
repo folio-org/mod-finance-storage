@@ -140,22 +140,9 @@ public class FundsTest {
       logger.info("--- mod-finance-test: Verifying empty database ... ");
       verifyInitialDBState();
 
-      logger.info("--- mod-finance-test: Creating tag ... ");
-      String tagSample = getFile("tag.sample");
-      Response response = postData("tag", tagSample);
-      response.then()
-        .statusCode(201)
-        .body("code", equalTo("HIST-SER"));
-      String tag_id = response.then().extract().path("id");
-
-      logger.info("--- mod-finance-test: Verifying only 1 tag was created ... ");
-      getData("tag").then()
-        .statusCode(200)
-        .body("total_records", equalTo(1));
-
       logger.info("--- mod-finance-test: Creating fiscal year ... ");
       String fySample = getFile("fiscal_year.sample");
-      response = postData("fiscal_year", fySample);
+      Response response = postData("fiscal_year", fySample);
       response.then()
         .statusCode(201)
         .body("name", equalTo("Fiscal Year 2017"));
