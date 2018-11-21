@@ -4,7 +4,7 @@ Copyright (C) 2017-2018 The Open Library Foundation
 
 This software is distributed under the terms of the Apache License, Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
 
-# Introduction
+## Introduction
 
 This RMB-module is responsible for the persistence of finance-related data (i.e. funds, ledgers, transactions, etc.)
 
@@ -35,3 +35,11 @@ When running in standalone mode, you may access the module's API docs through th
 * [Funds](http://localhost:8081/apidocs/index.html?raml=raml/funds.raml)
 * [Ledgers](http://localhost:8081/apidocs/index.html?raml=raml/ledger.raml)
 * [Transaction](http://localhost:8081/apidocs/index.html?raml=raml/transaction.raml)
+
+## Additional information
+
+### Issue tracker
+
+See project [MODFISTO](https://issues.folio.org/browse/MODFISTO)
+at the [FOLIO issue tracker](https://dev.folio.org/guidelines/issue-tracker).
+
