@@ -7,3 +7,6 @@ CRUD APIs for the following endpoints:
 * `/ledger`
 * `/tag`
 * `/transaction`
+
+## 1.0.1
+* Model updates to support additional UI functionality
