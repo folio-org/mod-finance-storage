@@ -1,4 +1,4 @@
-#%RAML 0.8
+#%RAML 1.0
 title: "mod-funds"
 baseUri: https://github.com/folio-org/mod-funds
 version: v1
@@ -7,20 +7,19 @@ documentation:
   - title: mod-funds (Fiscal Year)
     content: <b>CRUD APIs used to manage fiscal years.</b>
 
-schemas:
-  - fiscal_year.json: !include acq-models/mod-finance/schemas/fiscal_year.json
-  - fiscal_year_collection: !include acq-models/mod-finance/schemas/fiscal_year_collection.json
+types:
+  fiscal_year: !include acq-models/mod-finance/schemas/fiscal_year.json
+  fiscal_year_collection: !include acq-models/mod-finance/schemas/fiscal_year_collection.json
 
 traits:
-  - secured: !include raml-util/traits/auth.raml
-  - orderable: !include raml-util/traits/orderable.raml
-  - pageable:  !include raml-util/traits/pageable.raml
-  - searchable: !include raml-util/traits/searchable.raml
-  - language: !include raml-util/traits/language.raml
+  orderable: !include raml-util/traits/orderable.raml
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
 
 resourceTypes:
-  - collection: !include raml-util/rtypes/collection.raml
-  - collection-item: !include raml-util/rtypes/item-collection.raml
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
 
 
 /fiscal_year:
@@ -29,7 +28,7 @@ resourceTypes:
       exampleCollection: !include acq-models/mod-finance/examples/fiscal_year_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/fiscal_year.sample
       schemaCollection: fiscal_year_collection
-      schemaItem: fiscal_year.json
+      schemaItem: fiscal_year
   get:
     description: Get list of fiscal years
     is: [
@@ -40,4 +39,4 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/fiscal_year.sample
-        schema: fiscal_year.json
+        schema: fiscal_year

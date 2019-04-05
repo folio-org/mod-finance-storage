@@ -1,4 +1,4 @@
-#%RAML 0.8
+#%RAML 1.0
 title: "mod-funds"
 baseUri: https://github.com/folio-org/mod-funds
 version: v1
@@ -7,20 +7,19 @@ documentation:
   - title: mod-funds (Fund Distributions)
     content: <b>CRUD APIs used to manage fund-distributions.</b>
 
-schemas:
-  - fund_distribution.json: !include acq-models/mod-finance/schemas/fund_distribution.json
-  - fund_distribution_collection: !include acq-models/mod-finance/schemas/fund_distribution_collection.json
+types:
+  fund_distribution: !include acq-models/mod-finance/schemas/fund_distribution.json
+  fund_distribution_collection: !include acq-models/mod-finance/schemas/fund_distribution_collection.json
 
 traits:
-  - secured: !include raml-util/traits/auth.raml
-  - orderable: !include raml-util/traits/orderable.raml
-  - pageable:  !include raml-util/traits/pageable.raml
-  - searchable: !include raml-util/traits/searchable.raml
-  - language: !include raml-util/traits/language.raml
+  orderable: !include raml-util/traits/orderable.raml
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
 
 resourceTypes:
-  - collection: !include raml-util/rtypes/collection.raml
-  - collection-item: !include raml-util/rtypes/item-collection.raml
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
 
 
 /fund_distribution:
@@ -29,7 +28,7 @@ resourceTypes:
       exampleCollection: !include acq-models/mod-finance/examples/fund_distribution_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/fund_distribution.sample
       schemaCollection: fund_distribution_collection
-      schemaItem: fund_distribution.json
+      schemaItem: fund_distribution
   get:
     description: Get list of fund distributions
     is: [
@@ -40,4 +39,4 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/fund_distribution.sample
-        schema: fund_distribution.json
+        schema: fund_distribution

@@ -14,10 +14,12 @@
 
   <properties>
     <aspectj.version>1.8.9</aspectj.version>
+    <module_name>mod-finance-storage</module_name>
     <http.port>8081</http.port>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
-    <ramlfiles_util_path>${basedir}/raml-util</ramlfiles_util_path>
-    <raml-module-builder.version>19.0.0</raml-module-builder.version>
+    <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
+    <ramlfiles_acq_models_path>${ramlfiles_path}/acq-models</ramlfiles_acq_models_path>
+    <raml-module-builder.version>23.12.0</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <postgres.driver.version>9.4.1212</postgres.driver.version>
   </properties>
@@ -45,13 +47,13 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-unit</artifactId>
-      <version>3.5.0</version>
+      <version>3.5.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-mysql-postgresql-client</artifactId>
-      <version>3.3.2</version>
+      <version>3.5.4</version>
     </dependency>
 
     <!-- test dependencies -->
@@ -268,6 +270,22 @@
               <resources>
                 <resource>
                   <directory>${ramlfiles_path}</directory>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-sample-data</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/target/classes/sample-data</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${basedir}/sample-data</directory>
                   <filtering>true</filtering>
                 </resource>
               </resources>
