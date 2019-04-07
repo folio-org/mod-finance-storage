@@ -23,12 +23,12 @@ public class TenantReferenceAPI extends TenantAPI {
 
   @Override
   public void postTenant(TenantAttributes tenantAttributes, Map<String, String> headers,
-                         Handler<AsyncResult<Response>> hndlr, Context cntxt) {
+                         Handler<AsyncResult<Response>> handler, Context cntxt) {
     log.info("postTenant");
     Vertx vertx = cntxt.owner();
     super.postTenant(tenantAttributes, headers, res -> {
       if (res.failed() || (res.succeeded() && (res.result().getStatus() < 200 || res.result().getStatus() > 299))) {
-        hndlr.handle(res);
+        handler.handle(res);
         return;
       }
 
@@ -42,15 +42,15 @@ public class TenantReferenceAPI extends TenantAPI {
           .add("ledgers", "ledger")
           .perform(tenantAttributes, headers, vertx, res1 -> {
             if (res1.failed()) {
-              hndlr.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse
+              handler.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse
                 .respond500WithTextPlain(res1.cause().getLocalizedMessage())));
               return;
             }
-            hndlr.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse
+            handler.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse
               .respond201WithApplicationJson("")));
           });
       } else {
-        hndlr.handle(res);
+        handler.handle(res);
         return;
       }
     }, cntxt);

@@ -28,7 +28,7 @@ public class FundDistributionAPI implements FundDistribution {
   @Override
   public void getFundDistribution(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     vertxContext.runOnContext((Void v) -> {
-      EntitiesMetadataHolder<org.folio.rest.jaxrs.model.FundDistribution, FundDistributionCollection> entitiesMetadataHolder = new EntitiesMetadataHolder<>(org.folio.rest.jaxrs.model.FundDistribution.class, FundDistributionCollection.class, GetFundDistributionResponse.class);
+      EntitiesMetadataHolder<org.folio.rest.jaxrs.model.Distribution, FundDistributionCollection> entitiesMetadataHolder = new EntitiesMetadataHolder<>(org.folio.rest.jaxrs.model.Distribution.class, FundDistributionCollection.class, GetFundDistributionResponse.class);
       QueryHolder cql = new QueryHolder(FUND_DISTRIBUTION_TABLE, query, offset, limit, lang);
       getEntitiesCollection(entitiesMetadataHolder, cql, asyncResultHandler, vertxContext, okapiHeaders);
     });
