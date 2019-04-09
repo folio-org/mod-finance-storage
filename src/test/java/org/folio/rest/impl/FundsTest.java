@@ -1,9 +1,10 @@
 package org.folio.rest.impl;
 
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.response.Header;
-import com.jayway.restassured.response.Response;
+
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import io.restassured.http.Header;
+import io.restassured.response.Response;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -17,7 +18,6 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.PomReader;
 import org.folio.rest.tools.client.test.HttpClientMock2;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -26,7 +26,7 @@ import org.junit.runner.RunWith;
 
 import java.io.InputStream;
 
-import static com.jayway.restassured.RestAssured.given;
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -40,8 +40,6 @@ public class FundsTest {
   private final String TENANT_NAME = "testlib";
   private final Header TENANT_HEADER = new Header("X-Okapi-Tenant", TENANT_NAME);
 
-  private String moduleName;      // "mod_finance_storage";
-  private String moduleVersion;   // "1.0.0"
   private String moduleId;        // "mod-finance-storage-1.0.0"
 
   @Before
@@ -49,10 +47,7 @@ public class FundsTest {
     logger.info("--- mod-finance-test: START ");
     vertx = Vertx.vertx();
 
-    moduleName = PomReader.INSTANCE.getModuleName();
-    moduleVersion = PomReader.INSTANCE.getVersion();
-
-    moduleId = String.format("%s-%s", moduleName, moduleVersion);
+    moduleId = String.format("%s-%s", PomReader.INSTANCE.getModuleName(), PomReader.INSTANCE.getVersion());
 
     // RMB returns a 'normalized' name, with underscores
     moduleId = moduleId.replaceAll("_", "-");
@@ -153,12 +148,12 @@ public class FundsTest {
         .statusCode(200)
         .body("total_records", equalTo(1));
 
-      logger.info("--- mod-finance-test: Fetching fiscal year with ID:"+ fy_id);
+      logger.info("--- mod-finance-test: Fetching fiscal year with ID:" + fy_id);
       getDataById("fiscal_year", fy_id).then()
         .statusCode(200)
         .body("id", equalTo(fy_id));
 
-      logger.info("--- mod-finance-test: Editing fiscal year with ID:"+ fy_id);
+      logger.info("--- mod-finance-test: Editing fiscal year with ID:" + fy_id);
       JSONObject fyJSON = new JSONObject(fySample);
       fyJSON.put("id", fy_id);
       fyJSON.put("name", "Fiscal Year 2017 B");
@@ -166,7 +161,7 @@ public class FundsTest {
       response.then()
         .statusCode(204);
 
-      logger.info("--- mod-finance-test: Fetching fiscal year with ID:"+ fy_id);
+      logger.info("--- mod-finance-test: Fetching fiscal year with ID:" + fy_id);
       getDataById("fiscal_year", fy_id).then()
         .statusCode(200)
         .body("name", equalTo("Fiscal Year 2017 B"));
@@ -185,12 +180,12 @@ public class FundsTest {
         .statusCode(200)
         .body("total_records", equalTo(1));
 
-      logger.info("--- mod-finance-test: Fetching ledger with ID:"+ ledger_id);
+      logger.info("--- mod-finance-test: Fetching ledger with ID:" + ledger_id);
       getDataById("ledger", ledger_id).then()
         .statusCode(200)
         .body("id", equalTo(ledger_id));
 
-      logger.info("--- mod-finance-test: Editing ledger with ID:"+ ledger_id);
+      logger.info("--- mod-finance-test: Editing ledger with ID:" + ledger_id);
       JSONObject ledgerJSON = new JSONObject(ledgerSample);
       ledgerJSON.put("id", ledger_id);
       ledgerJSON.put("code", "MAIN-LIB-B");
@@ -198,7 +193,7 @@ public class FundsTest {
       response.then()
         .statusCode(204);
 
-      logger.info("--- mod-finance-test: Fetching ledger with ID:"+ ledger_id);
+      logger.info("--- mod-finance-test: Fetching ledger with ID:" + ledger_id);
       getDataById("ledger", ledger_id).then()
         .statusCode(200)
         .body("code", equalTo("MAIN-LIB-B"));
@@ -217,12 +212,12 @@ public class FundsTest {
         .statusCode(200)
         .body("total_records", equalTo(1));
 
-      logger.info("--- mod-finance-test: Fetching fund with ID:"+ fund_id);
+      logger.info("--- mod-finance-test: Fetching fund with ID:" + fund_id);
       getDataById("fund", fund_id).then()
         .statusCode(200)
         .body("id", equalTo(fund_id));
 
-      logger.info("--- mod-finance-test: Editing fund with ID:"+ fund_id);
+      logger.info("--- mod-finance-test: Editing fund with ID:" + fund_id);
       JSONObject fundJSON = new JSONObject(fundSample);
       fundJSON.put("id", fund_id);
       fundJSON.put("code", "MAIN-LIB-FUND");
@@ -231,7 +226,7 @@ public class FundsTest {
       response.then()
         .statusCode(204);
 
-      logger.info("--- mod-finance-test: Fetching fund with ID:"+ fund_id);
+      logger.info("--- mod-finance-test: Fetching fund with ID:" + fund_id);
       getDataById("fund", fund_id).then()
         .statusCode(200)
         .body("code", equalTo("MAIN-LIB-FUND"));
@@ -254,18 +249,18 @@ public class FundsTest {
         .statusCode(200)
         .body("total_records", equalTo(1));
 
-      logger.info("--- mod-finance-test: Fetching budget with ID:"+ budget_id);
+      logger.info("--- mod-finance-test: Fetching budget with ID:" + budget_id);
       getDataById("budget", budget_id).then()
         .statusCode(200)
         .body("id", equalTo(budget_id));
 
-      logger.info("--- mod-finance-test: Editing fund with ID:"+ budget_id);
+      logger.info("--- mod-finance-test: Editing fund with ID:" + budget_id);
       budgetJSON.put("code", "MAIN-LIB-HIST-2017");
       response = putData("budget", budget_id, budgetJSON.toString());
       response.then()
         .statusCode(204);
 
-      logger.info("--- mod-finance-test: Fetching budget with ID:"+ budget_id);
+      logger.info("--- mod-finance-test: Fetching budget with ID:" + budget_id);
       getDataById("budget", budget_id).then()
         .statusCode(200)
         .body("code", equalTo("MAIN-LIB-HIST-2017"));
@@ -287,18 +282,18 @@ public class FundsTest {
         .statusCode(200)
         .body("total_records", equalTo(1));
 
-      logger.info("--- mod-finance-test: Fetching transaction with ID:"+ transaction_id);
+      logger.info("--- mod-finance-test: Fetching transaction with ID:" + transaction_id);
       getDataById("transaction", transaction_id).then()
         .statusCode(200)
         .body("id", equalTo(transaction_id));
 
-      logger.info("--- mod-finance-test: Editing transaction with ID:"+ transaction_id);
+      logger.info("--- mod-finance-test: Editing transaction with ID:" + transaction_id);
       transactionJSON.put("note", "PO_Line: The History of Incas");
       response = putData("transaction", transaction_id, transactionJSON.toString());
       response.then()
         .statusCode(204);
 
-      logger.info("--- mod-finance-test: Fetching transaction with ID:"+ transaction_id);
+      logger.info("--- mod-finance-test: Fetching transaction with ID:" + transaction_id);
       getDataById("transaction", transaction_id).then()
         .statusCode(200)
         .body("note", equalTo("PO_Line: The History of Incas"));
@@ -320,18 +315,18 @@ public class FundsTest {
         .statusCode(200)
         .body("total_records", equalTo(1));
 
-      logger.info("--- mod-finance-test: Fetching fund-distribution with ID:"+ distribution_id);
+      logger.info("--- mod-finance-test: Fetching fund-distribution with ID:" + distribution_id);
       getDataById("fund_distribution", distribution_id).then()
         .statusCode(200)
         .body("id", equalTo(distribution_id));
 
-      logger.info("--- mod-finance-test: Editing fund-distribution with ID:"+ distribution_id);
+      logger.info("--- mod-finance-test: Editing fund-distribution with ID:" + distribution_id);
       distributionJSON.put("currency", "CAD");
       response = putData("fund_distribution", distribution_id, distributionJSON.toString());
       response.then()
         .statusCode(204);
 
-      logger.info("--- mod-finance-test: Fetching fund-distribution with ID:"+ distribution_id);
+      logger.info("--- mod-finance-test: Fetching fund-distribution with ID:" + distribution_id);
       getDataById("fund_distribution", distribution_id).then()
         .statusCode(200)
         .body("currency", equalTo("CAD"));
@@ -361,8 +356,7 @@ public class FundsTest {
       deleteData("fiscal_year", fy_id).then()
         .statusCode(204);
 
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       context.fail("--- mod-finance-test: ERROR: " + e.getMessage());
     }
     async.complete();
@@ -392,7 +386,7 @@ public class FundsTest {
 
   private Response getData(String endpoint) {
     return given()
-      .header("X-Okapi-Tenant",TENANT_NAME)
+      .header("X-Okapi-Tenant", TENANT_NAME)
       .contentType(ContentType.JSON)
       .get(endpoint);
   }
@@ -400,7 +394,7 @@ public class FundsTest {
   private Response getDataById(String endpoint, String id) {
     return given()
       .pathParam("id", id)
-      .header("X-Okapi-Tenant",TENANT_NAME)
+      .header("X-Okapi-Tenant", TENANT_NAME)
       .contentType(ContentType.JSON)
       .get(endpoint + "/{id}");
   }

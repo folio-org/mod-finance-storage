@@ -7,10 +7,10 @@ import org.folio.rest.jaxrs.model.Ledger;
 
 
 public enum TestEntities {
-  BUDGET("/budget", Budget.class, "contact.sample", "notes", "ABC123", 13),
-  FISCAL_YEAR("/fiscal_year", FiscalYear.class, "vendor.sample", "code", "ABC123", 13),
-  FUND("/vendor-storage/vendors", Fund.class, "vendor.sample", "code", "ABC123", 13),
-  LEDGER("/ledger", Ledger.class, "vendor.sample", "code", "ABC123", 13);
+  FISCAL_YEAR("/fiscal_year", FiscalYear.class, "fy.json", "name", "FY19", 1),
+  LEDGER("/ledger", Ledger.class, "One-time.json", "code", "One-time", 2),
+  FUND("/fund", Fund.class, "AFRICAHIST.json", "name", "African History", 21),
+  BUDGET("/budget", Budget.class, "AFRICAHIST-FY19.json", "name", "AFRICAHIST-FY19", 21);
 
 
   TestEntities(String endpoint, Class<?> clazz, String sampleFileName, String updatedFieldName, String updatedFieldValue, int initialQuantity) {

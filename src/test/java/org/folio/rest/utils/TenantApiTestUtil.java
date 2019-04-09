@@ -5,6 +5,7 @@ import io.restassured.http.Header;
 import io.restassured.response.ValidatableResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.folio.rest.tools.PomReader;
 
 import java.net.MalformedURLException;
 
@@ -22,13 +23,16 @@ public class TenantApiTestUtil {
   }
 
   public static JsonObject prepareTenantBody(boolean isLoadSampleData, boolean isUpgrade) {
+    String moduleId = String.format("%s-%s", PomReader.INSTANCE.getModuleName(), PomReader.INSTANCE.getVersion());
+
     JsonArray parameterArray = new JsonArray();
+    parameterArray.add(new JsonObject().put("key", "loadReference").put("value", false));
     parameterArray.add(new JsonObject().put("key", "loadSample").put("value", isLoadSampleData));
     JsonObject jsonBody = new JsonObject();
-    jsonBody.put("module_to", "mod-finance-storage-1.0.0");
+    jsonBody.put("module_to", moduleId);
     jsonBody.put("parameters", parameterArray);
-    if(isUpgrade)
-      jsonBody.put("module_from", "mod-finance-storage-1.0.0");
+    if (isUpgrade)
+      jsonBody.put("module_from", moduleId);
     return jsonBody;
   }
 
@@ -39,22 +43,22 @@ public class TenantApiTestUtil {
 
   public static ValidatableResponse postToTenant(Header tenantHeader, JsonObject jsonBody) throws MalformedURLException {
     return given()
-        .header(tenantHeader)
-        .header(URL_TO_HEADER)
-        .header(USER_ID_HEADER)
-        .contentType(ContentType.JSON)
+      .header(tenantHeader)
+      .header(URL_TO_HEADER)
+      .header(USER_ID_HEADER)
+      .contentType(ContentType.JSON)
       .body(jsonBody.encodePrettily())
       .post(storageUrl(TENANT_ENDPOINT))
-        .then();
+      .then();
   }
 
   public static void deleteTenant(Header tenantHeader)
     throws MalformedURLException {
     given()
-        .header(tenantHeader)
-        .contentType(ContentType.JSON)
+      .header(tenantHeader)
+      .contentType(ContentType.JSON)
       .delete(storageUrl(TENANT_ENDPOINT))
-        .then()
-        .statusCode(204);
+      .then()
+      .statusCode(204);
   }
 }

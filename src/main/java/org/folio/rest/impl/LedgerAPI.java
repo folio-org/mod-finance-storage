@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.resource.Ledger;
 import org.folio.rest.persist.EntitiesMetadataHolder;
@@ -35,6 +36,7 @@ public class LedgerAPI implements Ledger {
   }
 
   @Override
+  @Validate
   public void postLedger(String lang, org.folio.rest.jaxrs.model.Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.post(LEDGER_TABLE, entity, okapiHeaders, vertxContext, PostLedgerResponse.class, asyncResultHandler);
   }
@@ -50,6 +52,7 @@ public class LedgerAPI implements Ledger {
   }
 
   @Override
+  @Validate
   public void putLedgerById(String id, String lang, org.folio.rest.jaxrs.model.Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(LEDGER_TABLE, entity, id, okapiHeaders, vertxContext, PutLedgerByIdResponse.class, asyncResultHandler);
   }

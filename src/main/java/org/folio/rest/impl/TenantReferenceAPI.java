@@ -35,11 +35,11 @@ public class TenantReferenceAPI extends TenantAPI {
       if (isLoadSample(tenantAttributes)) {
         TenantLoading tl = new TenantLoading();
         tl.withKey(PARAMETER_LOAD_SAMPLE)
-          .withLead("sample-data")
-          .add("budgets", "budget")
+          .withLead("data")
           .add("fiscal-years", "fiscal_year")
-          .add("funds", "fund")
           .add("ledgers", "ledger")
+          .add("funds", "fund")
+          .add("budgets", "budget")
           .perform(tenantAttributes, headers, vertx, res1 -> {
             if (res1.failed()) {
               handler.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse

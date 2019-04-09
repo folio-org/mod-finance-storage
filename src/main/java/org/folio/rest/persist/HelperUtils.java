@@ -6,8 +6,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
 
 import javax.ws.rs.core.Response;
 import java.lang.reflect.Method;
@@ -27,7 +25,7 @@ public class HelperUtils {
   }
 
   public static <T, E> void getEntitiesCollection(EntitiesMetadataHolder<T, E> entitiesMetadataHolder, QueryHolder queryHolder, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext, Map<String, String> okapiHeaders) {
-      String[] fieldList = { "*" };
+    String[] fieldList = {"*"};
 
     final Method respond500;
 
@@ -48,8 +46,8 @@ public class HelperUtils {
           if (reply.succeeded()) {
             E collection = entitiesMetadataHolder.getCollectionClazz().newInstance();
             List<T> results = reply.result().getResults();
-            Method setResults =  entitiesMetadataHolder.getSetResultsMethod();
-            Method setTotalRecordsMethod =  entitiesMetadataHolder.getSetTotalRecordsMethod();
+            Method setResults = entitiesMetadataHolder.getSetResultsMethod();
+            Method setTotalRecordsMethod = entitiesMetadataHolder.getSetTotalRecordsMethod();
             setResults.invoke(collection, results);
             Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
             setTotalRecordsMethod.invoke(collection, totalRecords);

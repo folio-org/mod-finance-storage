@@ -1,4 +1,5 @@
 {
+  "id": "5255e36f-4444-49d5-baa3-38f7f687f69d",
   "name": "USHIST-FY19",
   "code": "USHIST-FY19",
   "budget_status": "Active",
@@ -11,6 +12,5 @@
   "expenditures": 2674.26,
   "over_encumbrance": 0,
   "fund_id": "65032151-39a5-4cef-8810-5350eb316300",
-  "fiscal_year_id": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
-  "tags": null
+  "fiscal_year_id": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
 }

@@ -1,4 +1,5 @@
 {
+  "id": "012e7da4-003c-48ff-9feb-f3745044da35",
   "name": "ANZHIST-FY19",
   "code": "ANZHIST-FY19",
   "budget_status": "Active",
@@ -11,6 +12,5 @@
   "expenditures": 980.56,
   "over_encumbrance": 0,
   "fund_id": "69640328-788e-43fc-9c3c-af39e243f3b7",
-  "fiscal_year_id": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
-  "tags": null
+  "fiscal_year_id": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
 }

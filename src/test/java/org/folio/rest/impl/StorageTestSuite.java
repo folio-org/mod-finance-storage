@@ -40,9 +40,10 @@ public class StorageTestSuite {
 
   private static Vertx vertx;
   private static int port = NetworkUtils.nextFreePort();
-  public static final Header URL_TO_HEADER = new Header("X-Okapi-Url-to","http://localhost:"+port);
+  public static final Header URL_TO_HEADER = new Header("X-Okapi-Url-to", "http://localhost:" + port);
 
-  private StorageTestSuite() {}
+  private StorageTestSuite() {
+  }
 
   public static URL storageUrl(String path) throws MalformedURLException {
     return new URL("http", "localhost", port, path);
@@ -83,10 +84,9 @@ public class StorageTestSuite {
     CompletableFuture<String> undeploymentComplete = new CompletableFuture<>();
 
     vertx.close(res -> {
-      if(res.succeeded()) {
+      if (res.succeeded()) {
         undeploymentComplete.complete(null);
-      }
-      else {
+      } else {
         undeploymentComplete.completeExceptionally(res.cause());
       }
     });
@@ -104,10 +104,9 @@ public class StorageTestSuite {
     CompletableFuture<String> deploymentComplete = new CompletableFuture<>();
 
     vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
-      if(res.succeeded()) {
+      if (res.succeeded()) {
         deploymentComplete.complete(res.result());
-      }
-      else {
+      } else {
         deploymentComplete.completeExceptionally(res.cause());
       }
     });

@@ -2,11 +2,12 @@ package org.folio.rest.impl;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
+import io.restassured.response.Response;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import org.folio.rest.jaxrs.model.Fund;
-import org.folio.rest.jaxrs.model.FundCollection;
+import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.utils.TenantApiTestUtil;
 import org.folio.rest.utils.TestEntities;
 import org.junit.Test;
@@ -17,8 +18,7 @@ import static io.restassured.RestAssured.given;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
 import static org.folio.rest.utils.TenantApiTestUtil.*;
-import static org.folio.rest.utils.TestEntities.FUND;
-
+import static org.folio.rest.utils.TestEntities.BUDGET;
 
 
 public class TenantSampleDataTest extends TestBase {
@@ -86,21 +86,24 @@ public class TenantSampleDataTest extends TestBase {
 
   @Test
   public void testPartialSampleDataLoading() throws MalformedURLException {
-    logger.info("load sample date");
+    logger.info("load sample data");
 
     try {
       JsonObject jsonBody = TenantApiTestUtil.prepareTenantBody(true, false);
       postToTenant(PARTIAL_TENANT_HEADER, jsonBody)
         .assertThat()
         .statusCode(201);
-      FundCollection fundCollection = getData(FUND.getEndpoint(), PARTIAL_TENANT_HEADER)
-        .then()
-        .extract()
-        .response()
-        .as(FundCollection.class);
 
-      for (Fund vendor : fundCollection.getFunds()) {
-        deleteData(FUND.getEndpointWithId(), vendor.getId(), PARTIAL_TENANT_HEADER);
+      Response response = getData(BUDGET.getEndpoint(), PARTIAL_TENANT_HEADER)
+        .then()
+          .extract()
+          .response();
+
+      BudgetCollection budgetCollection = new JsonObject(response.asString()).mapTo(BudgetCollection.class);
+      //BudgetCollection budgetCollection = response.as(BudgetCollection.class);
+
+      for (Budget budget : budgetCollection.getBudgets()) {
+        deleteData(BUDGET.getEndpointWithId(), budget.getId(), PARTIAL_TENANT_HEADER);
       }
 
       jsonBody = TenantApiTestUtil.prepareTenantBody(true, true);
