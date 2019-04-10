@@ -2,7 +2,6 @@ package org.folio.rest.persist;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -16,9 +15,6 @@ import static org.folio.rest.persist.PgUtil.response;
 
 public class HelperUtils {
   private static final Logger log = LoggerFactory.getLogger(HelperUtils.class);
-
-  private static final String POL_NUMBER_PREFIX = "polNumber_";
-  private static final String QUOTES_SYMBOL = "\"";
 
   private HelperUtils() {
     throw new UnsupportedOperationException("Cannot instantiate utility class.");
@@ -64,40 +60,5 @@ public class HelperUtils {
       log.error(e.getMessage(), e);
       asyncResultHandler.handle(response(e.getMessage(), respond500, respond500));
     }
-
   }
-
-  public static void respond(Handler<AsyncResult<Response>> handler, Response response) {
-    AsyncResult<Response> result = Future.succeededFuture(response);
-    handler.handle(result);
-  }
-
-  public enum SequenceQuery {
-
-    CREATE_SEQUENCE {
-      @Override
-      public String getQuery(String purchaseOrderId) {
-        return "CREATE SEQUENCE IF NOT EXISTS " + constructSequenceName(purchaseOrderId) + " MINVALUE 1 MAXVALUE 999";
-      }
-    },
-    GET_POL_NUMBER_FROM_SEQUENCE {
-      @Override
-      public String getQuery(String purchaseOrderId) {
-        return "SELECT * FROM NEXTVAL('" + constructSequenceName(purchaseOrderId) + "')";
-      }
-    },
-    DROP_SEQUENCE {
-      @Override
-      public String getQuery(String purchaseOrderId) {
-        return "DROP SEQUENCE IF EXISTS " + constructSequenceName(purchaseOrderId);
-      }
-    };
-
-    private static String constructSequenceName(String purchaseOrderId) {
-      return QUOTES_SYMBOL + POL_NUMBER_PREFIX + purchaseOrderId + QUOTES_SYMBOL;
-    }
-
-    public abstract String getQuery(String purchaseOrderId);
-  }
-
 }
