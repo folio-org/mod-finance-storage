@@ -1,4 +1,4 @@
-#%RAML 0.8
+#%RAML 1.0
 title: "mod-funds"
 baseUri: https://github.com/folio-org/mod-funds
 version: v1
@@ -7,20 +7,19 @@ documentation:
   - title: mod-funds (Budgets)
     content: <b>CRUD APIs used to manage encumbrances.</b>
 
-schemas:
-  - encumbrance.json: !include acq-models/mod-finance/schemas/encumbrance.json
-  - encumbrance_collection: !include acq-models/mod-finance/schemas/encumbrance_collection.json
+types:
+  encumbrance: !include acq-models/mod-finance/schemas/encumbrance.json
+  encumbrance_collection: !include acq-models/mod-finance/schemas/encumbrance_collection.json
 
 traits:
-  - secured: !include raml-util/traits/auth.raml
-  - orderable: !include raml-util/traits/orderable.raml
-  - pageable:  !include raml-util/traits/pageable.raml
-  - searchable: !include raml-util/traits/searchable.raml
-  - language: !include raml-util/traits/language.raml
+  orderable: !include raml-util/traits/orderable.raml
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
 
 resourceTypes:
-  - collection: !include raml-util/rtypes/collection.raml
-  - collection-item: !include raml-util/rtypes/item-collection.raml
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
 
 
 /encumbrance:
@@ -29,7 +28,7 @@ resourceTypes:
       exampleCollection: !include acq-models/mod-finance/examples/encumbrance_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/encumbrance.sample
       schemaCollection: encumbrance_collection
-      schemaItem: encumbrance.json
+      schemaItem: encumbrance
   get:
     description: Get list of encumbrances
     is: [
@@ -40,4 +39,4 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/encumbrance.sample
-        schema: encumbrance.json
+        schema: encumbrance

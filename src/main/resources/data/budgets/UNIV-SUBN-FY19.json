@@ -1,4 +1,5 @@
 {
+  "id": "735fdf73-592b-4967-85ef-e8b82d09382c",
   "name": "UNIV-SUBN-FY19",
   "code": "UNIV-SUBN-FY19",
   "budget_status": "Active",
@@ -11,6 +12,5 @@
   "expenditures": 21600.00,
   "over_encumbrance": 0,
   "fund_id": "4428a37c-8bae-4f0d-865d-970d83d5ad55",
-  "fiscal_year_id": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
-  "tags": null
+  "fiscal_year_id": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
 }

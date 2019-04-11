@@ -1,4 +1,4 @@
-#%RAML 0.8
+#%RAML 1.0
 title: "mod-funds"
 baseUri: https://github.com/folio-org/mod-funds
 version: v1
@@ -7,20 +7,19 @@ documentation:
   - title: mod-funds (Budgets)
     content: <b>CRUD APIs used to manage budgets.</b>
 
-schemas:
-  - budget.json: !include acq-models/mod-finance/schemas/budget.json
-  - budget_collection: !include acq-models/mod-finance/schemas/budget_collection.json
+types:
+  budget: !include acq-models/mod-finance/schemas/budget.json
+  budget_collection: !include acq-models/mod-finance/schemas/budget_collection.json
 
 traits:
-  - secured: !include raml-util/traits/auth.raml
-  - orderable: !include raml-util/traits/orderable.raml
-  - pageable:  !include raml-util/traits/pageable.raml
-  - searchable: !include raml-util/traits/searchable.raml
-  - language: !include raml-util/traits/language.raml
+  orderable: !include raml-util/traits/orderable.raml
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
 
 resourceTypes:
-  - collection: !include raml-util/rtypes/collection.raml
-  - collection-item: !include raml-util/rtypes/item-collection.raml
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
 
 
 /budget:
@@ -29,7 +28,7 @@ resourceTypes:
       exampleCollection: !include acq-models/mod-finance/examples/budget_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/budget.sample
       schemaCollection: budget_collection
-      schemaItem: budget.json
+      schemaItem: budget
   get:
     description: Get list of budgets
     is: [
@@ -40,4 +39,4 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/budget.sample
-        schema: budget.json
+        schema: budget

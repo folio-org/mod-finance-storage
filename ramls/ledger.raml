@@ -1,4 +1,4 @@
-#%RAML 0.8
+#%RAML 1.0
 title: "mod-funds"
 baseUri: https://github.com/folio-org/mod-funds
 version: v1
@@ -7,20 +7,19 @@ documentation:
   - title: mod-funds (Ledgers)
     content: <b>CRUD APIs used to manage ledgers.</b>
 
-schemas:
-  - ledger.json: !include acq-models/mod-finance/schemas/ledger.json
-  - ledger_collection: !include acq-models/mod-finance/schemas/ledger_collection.json
+types:
+  ledger: !include acq-models/mod-finance/schemas/ledger.json
+  ledger_collection: !include acq-models/mod-finance/schemas/ledger_collection.json
 
 traits:
-  - secured: !include raml-util/traits/auth.raml
-  - orderable: !include raml-util/traits/orderable.raml
-  - pageable:  !include raml-util/traits/pageable.raml
-  - searchable: !include raml-util/traits/searchable.raml
-  - language: !include raml-util/traits/language.raml
+  orderable: !include raml-util/traits/orderable.raml
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
 
 resourceTypes:
-  - collection: !include raml-util/rtypes/collection.raml
-  - collection-item: !include raml-util/rtypes/item-collection.raml
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
 
 
 /ledger:
@@ -29,7 +28,7 @@ resourceTypes:
       exampleCollection: !include acq-models/mod-finance/examples/ledger_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/ledger.sample
       schemaCollection: ledger_collection
-      schemaItem: ledger.json
+      schemaItem: ledger
   get:
     description: Get list of ledgers
     is: [
@@ -40,4 +39,4 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/ledger.sample
-        schema: ledger.json
+        schema: ledger

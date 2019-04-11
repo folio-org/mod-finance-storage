@@ -1,4 +1,4 @@
-#%RAML 0.8
+#%RAML 1.0
 title: "mod-funds"
 baseUri: https://github.com/folio-org/mod-funds
 version: v1
@@ -7,20 +7,19 @@ documentation:
   - title: mod-funds (Transactions)
     content: <b>CRUD APIs used to manage transactions.</b>
 
-schemas:
-  - transaction.json: !include acq-models/mod-finance/schemas/transaction.json
-  - transaction_collection: !include acq-models/mod-finance/schemas/transaction_collection.json
+types:
+  transaction: !include acq-models/mod-finance/schemas/transaction.json
+  transaction_collection: !include acq-models/mod-finance/schemas/transaction_collection.json
 
 traits:
-  - secured: !include raml-util/traits/auth.raml
-  - orderable: !include raml-util/traits/orderable.raml
-  - pageable:  !include raml-util/traits/pageable.raml
-  - searchable: !include raml-util/traits/searchable.raml
-  - language: !include raml-util/traits/language.raml
+  orderable: !include raml-util/traits/orderable.raml
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
 
 resourceTypes:
-  - collection: !include raml-util/rtypes/collection.raml
-  - collection-item: !include raml-util/rtypes/item-collection.raml
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
 
 
 /transaction:
@@ -29,7 +28,7 @@ resourceTypes:
       exampleCollection: !include acq-models/mod-finance/examples/transaction_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/transaction.sample
       schemaCollection: transaction_collection
-      schemaItem: transaction.json
+      schemaItem: transaction
   get:
     description: Get list of transactions
     is: [
@@ -40,4 +39,4 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/transaction.sample
-        schema: transaction.json
+        schema: transaction
