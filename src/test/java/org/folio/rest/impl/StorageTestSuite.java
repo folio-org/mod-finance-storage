@@ -34,7 +34,7 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 @Suite.SuiteClasses({
   TenantSampleDataTest.class,
   FundsTest.class,
-  FundUnTest.class
+  FundCodeUniquenessTest.class
 })
 
 public class StorageTestSuite {

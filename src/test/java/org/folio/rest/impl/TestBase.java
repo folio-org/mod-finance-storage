@@ -72,14 +72,6 @@ public abstract class TestBase {
     return getData(endpoint, TENANT_HEADER);
   }
 
-  Response deleteData(String endpoint, String id, Header tenantHeader) throws MalformedURLException {
-    return given()
-      .pathParam("id", id)
-      .header(tenantHeader)
-      .contentType(ContentType.JSON)
-      .delete(storageUrl(endpoint));
-  }
-
   String getFile(String filename) {
     String value;
     try {
@@ -91,38 +83,58 @@ public abstract class TestBase {
     return value;
   }
 
-  Response postData(String endpoint, String input) {
+  Response postData(String endpoint, String input) throws MalformedURLException {
     return given()
-      .header("X-Okapi-Tenant", TENANT_NAME)
+      .header(TENANT_HEADER)
       .accept(ContentType.JSON)
       .contentType(ContentType.JSON)
       .body(input)
-      .post(endpoint);
+      .log()
+      .all()
+      .post(storageUrl(endpoint));
   }
 
-  Response getDataById(String endpoint, String id) {
+  Response getDataById(String endpoint, String id) throws MalformedURLException {
     return given()
       .pathParam("id", id)
-      .header("X-Okapi-Tenant", TENANT_NAME)
+      .header(TENANT_HEADER)
       .contentType(ContentType.JSON)
-      .get(endpoint + "/{id}");
+      .get(storageUrl(endpoint + "/{id}"));
   }
 
 
-  Response putData(String endpoint, String id, String input) {
+  Response putData(String endpoint, String id, String input) throws MalformedURLException {
     return given()
       .pathParam("id", id)
-      .header("X-Okapi-Tenant", TENANT_NAME)
+      .header(TENANT_HEADER)
       .contentType(ContentType.JSON)
       .body(input)
-      .put(endpoint + "/{id}");
+      .put(storageUrl(endpoint + "/{id}"));
   }
 
-  Response deleteData(String endpoint, String id) {
+  void deleteDataSuccess(String endpoint, String id) throws MalformedURLException {
+    deleteData(endpoint, id)
+      .then().log().ifValidationFails()
+      .statusCode(204);
+  }
+
+  Response deleteData(String endpoint, String id) throws MalformedURLException {
+    return deleteData(endpoint, id, TENANT_HEADER);
+  }
+
+  Response deleteData(String endpoint, String id, Header tenantHeader) throws MalformedURLException {
     return given()
       .pathParam("id", id)
-      .header("X-Okapi-Tenant", TENANT_NAME)
+      .header(tenantHeader)
       .contentType(ContentType.JSON)
-      .delete(endpoint + "/{id}");
+      .delete(storageUrl(endpoint + "/{id}"));
+  }
+
+  String createEntity(String endpoint, String entity) throws MalformedURLException {
+    return postData(endpoint, entity)
+      .then().log().all()
+      .statusCode(201)
+      .extract()
+      .path("id");
   }
 }

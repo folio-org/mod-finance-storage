@@ -12,20 +12,18 @@ import java.net.MalformedURLException;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.junit.Assert.fail;
 
-public class FundUnTest extends TestBase {
+public class FundCodeUniquenessTest extends TestBase {
 
-  private final Logger logger = LoggerFactory.getLogger(FundUnTest.class);
+  private final Logger logger = LoggerFactory.getLogger(FundCodeUniquenessTest.class);
 
   @Test
   public void testFundCodeUniqueness() throws MalformedURLException {
 
     String sampleId = null;
     try {
-      String fundSample = getFile("data/funds/" + FUND.getSampleFileName());
+      String fundSample = getFile("fund.sample");
 
-      Response response = postData(FUND.getEndpoint(), fundSample);
-
-      sampleId = response.then().statusCode(201).extract().path("id");
+      sampleId = createEntity(FUND.getEndpoint(), fundSample);
 
       logger.info("--- mod-finance-storage PO test: Creating fund with the same code ... ");
       JsonObject object = new JsonObject(fundSample);
@@ -37,7 +35,7 @@ public class FundUnTest extends TestBase {
       fail(e.getMessage());
     } finally {
       logger.info(String.format("--- mod-finance-storages %s test: Deleting %s with ID: %s", FUND.name(), FUND.name(), sampleId));
-      deleteData(FUND.getEndpointWithId(), sampleId, TENANT_HEADER);
+      deleteData(FUND.getEndpointWithId(), sampleId);
     }
   }
 
