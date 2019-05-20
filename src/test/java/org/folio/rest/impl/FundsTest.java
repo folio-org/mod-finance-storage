@@ -5,7 +5,6 @@ import io.restassured.response.Response;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.json.JSONObject;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.MalformedURLException;

@@ -35,7 +35,7 @@ public class FundCodeUniquenessTest extends TestBase {
       fail(e.getMessage());
     } finally {
       logger.info(String.format("--- mod-finance-storages %s test: Deleting %s with ID: %s", FUND.name(), FUND.name(), sampleId));
-      deleteData(FUND.getEndpointWithId(), sampleId);
+      deleteDataSuccess(FUND.getEndpoint(), sampleId);
     }
   }
 
