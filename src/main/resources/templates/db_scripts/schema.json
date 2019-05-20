@@ -24,6 +24,7 @@
     {
       "tableName": "fund",
       "generateId": true,
+      "customSnippetPath": "fund_table.sql",
       "fromModuleVersion": 1.0,
       "withMetadata": true,
       "populateJsonWithId": true,

@@ -1,137 +1,65 @@
 package org.folio.rest.impl;
 
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.http.Header;
 import io.restassured.response.Response;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.apache.commons.io.IOUtils;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.PomReader;
-import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.json.JSONObject;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import java.io.InputStream;
+import java.net.MalformedURLException;
 
-import static io.restassured.RestAssured.given;
+import static org.folio.rest.utils.TestEntities.BUDGET;
+import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
+import static org.folio.rest.utils.TestEntities.FUND;
+import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 
-@RunWith(VertxUnitRunner.class)
-public class FundsTest {
-  private Vertx vertx;
-  private Async async;
+public class FundsTest extends TestBase {
+  private static final String FUND_DISTRIBUTION_ENDPOINT = "/fund_distribution";
+  private static final String TRANSACTION_ENDPOINT = "/transaction";
   private final Logger logger = LoggerFactory.getLogger("okapi");
-  private final int port = Integer.parseInt(System.getProperty("port", "8081"));
-
-  private final String TENANT_NAME = "testlib";
-  private final Header TENANT_HEADER = new Header("X-Okapi-Tenant", TENANT_NAME);
-
-  private String moduleId;        // "mod-finance-storage-1.0.0"
-
-  @Before
-  public void before(TestContext context) {
-    logger.info("--- mod-finance-test: START ");
-    vertx = Vertx.vertx();
-
-    moduleId = String.format("%s-%s", PomReader.INSTANCE.getModuleName(), PomReader.INSTANCE.getVersion());
-
-    // RMB returns a 'normalized' name, with underscores
-    moduleId = moduleId.replaceAll("_", "-");
-
-    try {
-      // Run this test in embedded postgres mode
-      // IMPORTANT: Later we will initialize the schema by calling the tenant interface.
-      PostgresClient.setIsEmbedded(true);
-      PostgresClient.getInstance(vertx).startEmbeddedPostgres();
-      PostgresClient.getInstance(vertx).dropCreateDatabase(TENANT_NAME + "_" + PomReader.INSTANCE.getModuleName());
-
-    } catch (Exception e) {
-      e.printStackTrace();
-      context.fail(e);
-      return;
-    }
-
-    // Deploy a verticle
-    JsonObject conf = new JsonObject()
-      .put(HttpClientMock2.MOCK_MODE, "true")
-      .put("http.port", port);
-    DeploymentOptions opt = new DeploymentOptions()
-      .setConfig(conf);
-    vertx.deployVerticle(RestVerticle.class.getName(),
-      opt, context.asyncAssertSuccess());
-
-    // Set the default headers for the API calls to be tested
-    RestAssured.port = port;
-    RestAssured.baseURI = "http://localhost";
-  }
-
-  @After
-  public void after(TestContext context) {
-    async = context.async();
-    vertx.close(res -> {   // This logs a stack trace, ignore it.
-      PostgresClient.stopEmbeddedPostgres();
-      async.complete();
-      logger.info("--- mod-finance-test: END ");
-    });
-  }
 
   // Validates that there are zero vendor records in the DB
-  private void verifyInitialDBState() {
+  private void verifyInitialDBState() throws MalformedURLException {
 
     // Validate 200 response and that there are zero records
-    getData("budget").then()
+    getData(BUDGET.getEndpoint()).then()
       .statusCode(200)
       .body("total_records", equalTo(0))
       .body("budgets", empty());
 
-    getData("fiscal_year").then()
+    getData(FISCAL_YEAR.getEndpoint()).then()
       .statusCode(200)
       .body("total_records", equalTo(0))
       .body("fiscal_years", empty());
 
-    getData("fund_distribution").then()
+    getData(FUND_DISTRIBUTION_ENDPOINT).then()
       .statusCode(200)
       .body("total_records", equalTo(0))
       .body("distributions", empty());
 
-    getData("fund").then()
+    getData(FUND.getEndpoint()).then()
       .statusCode(200)
       .body("total_records", equalTo(0))
       .body("funds", empty());
 
-    getData("ledger").then()
+    getData(LEDGER.getEndpoint()).then()
       .statusCode(200)
       .body("total_records", equalTo(0))
       .body("ledgers", empty());
 
-    getData("transaction").then()
+    getData(TRANSACTION_ENDPOINT).then()
       .statusCode(200)
       .body("total_records", equalTo(0))
       .body("transactions", empty());
   }
 
   @Test
-  public void testOrders(TestContext context) {
-    async = context.async();
+  public void testOrders() {
     try {
-      // IMPORTANT: Call the tenant interface to initialize the tenant-schema
-      logger.info("--- mod-vendors-test: Preparing test tenant");
-      prepareTenant();
-
       logger.info("--- mod-finance-test: Verifying empty database ... ");
       verifyInitialDBState();
 
@@ -144,12 +72,12 @@ public class FundsTest {
       String fy_id = response.then().extract().path("id");
 
       logger.info("--- mod-finance-test: Verifying only 1 fiscal year was created ... ");
-      getData("fiscal_year").then()
+      getData(FISCAL_YEAR.getEndpoint()).then()
         .statusCode(200)
         .body("total_records", equalTo(1));
 
       logger.info("--- mod-finance-test: Fetching fiscal year with ID:" + fy_id);
-      getDataById("fiscal_year", fy_id).then()
+      getDataById(FISCAL_YEAR.getEndpoint(), fy_id).then()
         .statusCode(200)
         .body("id", equalTo(fy_id));
 
@@ -157,19 +85,19 @@ public class FundsTest {
       JSONObject fyJSON = new JSONObject(fySample);
       fyJSON.put("id", fy_id);
       fyJSON.put("name", "Fiscal Year 2017 B");
-      response = putData("fiscal_year", fy_id, fyJSON.toString());
+      response = putData(FISCAL_YEAR.getEndpoint(), fy_id, fyJSON.toString());
       response.then()
         .statusCode(204);
 
       logger.info("--- mod-finance-test: Fetching fiscal year with ID:" + fy_id);
-      getDataById("fiscal_year", fy_id).then()
+      getDataById(FISCAL_YEAR.getEndpoint(), fy_id).then()
         .statusCode(200)
         .body("name", equalTo("Fiscal Year 2017 B"));
 
 
       logger.info("--- mod-finance-test: Creating ledger ... ");
       String ledgerSample = getFile("ledger.sample");
-      response = postData("ledger", ledgerSample);
+      response = postData(LEDGER.getEndpoint(), ledgerSample);
       response.then()
         .statusCode(201)
         .body("code", equalTo("MAIN-LIB"));
@@ -353,75 +281,13 @@ public class FundsTest {
         .statusCode(204);
 
       logger.info("--- mod-finance-test: Deleting fiscal_year ... ");
-      deleteData("fiscal_year", fy_id).then()
+      deleteData(FISCAL_YEAR.getEndpoint(), fy_id).then()
         .statusCode(204);
 
     } catch (Exception e) {
-      context.fail("--- mod-finance-test: ERROR: " + e.getMessage());
+      Assert.fail(e.getMessage());
     }
-    async.complete();
   }
 
-  private void prepareTenant() {
-    String tenants = "{\"module_to\":\"" + moduleId + "\"}";
-    given()
-      .header(TENANT_HEADER)
-      .contentType(ContentType.JSON)
-      .body(tenants)
-      .post("/_/tenant")
-      .then().log().ifValidationFails()
-      .statusCode(201);
-  }
 
-  private String getFile(String filename) {
-    String value;
-    try {
-      InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filename);
-      value = IOUtils.toString(inputStream, "UTF-8");
-    } catch (Exception e) {
-      value = "";
-    }
-    return value;
-  }
-
-  private Response getData(String endpoint) {
-    return given()
-      .header("X-Okapi-Tenant", TENANT_NAME)
-      .contentType(ContentType.JSON)
-      .get(endpoint);
-  }
-
-  private Response getDataById(String endpoint, String id) {
-    return given()
-      .pathParam("id", id)
-      .header("X-Okapi-Tenant", TENANT_NAME)
-      .contentType(ContentType.JSON)
-      .get(endpoint + "/{id}");
-  }
-
-  private Response postData(String endpoint, String input) {
-    return given()
-      .header("X-Okapi-Tenant", TENANT_NAME)
-      .accept(ContentType.JSON)
-      .contentType(ContentType.JSON)
-      .body(input)
-      .post(endpoint);
-  }
-
-  private Response putData(String endpoint, String id, String input) {
-    return given()
-      .pathParam("id", id)
-      .header("X-Okapi-Tenant", TENANT_NAME)
-      .contentType(ContentType.JSON)
-      .body(input)
-      .put(endpoint + "/{id}");
-  }
-
-  private Response deleteData(String endpoint, String id) {
-    return given()
-      .pathParam("id", id)
-      .header("X-Okapi-Tenant", TENANT_NAME)
-      .contentType(ContentType.JSON)
-      .delete(endpoint + "/{id}");
-  }
 }

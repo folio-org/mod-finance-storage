@@ -4,10 +4,12 @@ import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
 import io.vertx.core.Vertx;
+import org.apache.commons.io.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -76,5 +78,51 @@ public abstract class TestBase {
       .header(tenantHeader)
       .contentType(ContentType.JSON)
       .delete(storageUrl(endpoint));
+  }
+
+  String getFile(String filename) {
+    String value;
+    try {
+      InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filename);
+      value = IOUtils.toString(inputStream, "UTF-8");
+    } catch (Exception e) {
+      value = "";
+    }
+    return value;
+  }
+
+  Response postData(String endpoint, String input) {
+    return given()
+      .header("X-Okapi-Tenant", TENANT_NAME)
+      .accept(ContentType.JSON)
+      .contentType(ContentType.JSON)
+      .body(input)
+      .post(endpoint);
+  }
+
+  Response getDataById(String endpoint, String id) {
+    return given()
+      .pathParam("id", id)
+      .header("X-Okapi-Tenant", TENANT_NAME)
+      .contentType(ContentType.JSON)
+      .get(endpoint + "/{id}");
+  }
+
+
+  Response putData(String endpoint, String id, String input) {
+    return given()
+      .pathParam("id", id)
+      .header("X-Okapi-Tenant", TENANT_NAME)
+      .contentType(ContentType.JSON)
+      .body(input)
+      .put(endpoint + "/{id}");
+  }
+
+  Response deleteData(String endpoint, String id) {
+    return given()
+      .pathParam("id", id)
+      .header("X-Okapi-Tenant", TENANT_NAME)
+      .contentType(ContentType.JSON)
+      .delete(endpoint + "/{id}");
   }
 }

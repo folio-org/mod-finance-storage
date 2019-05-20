@@ -32,7 +32,9 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 @RunWith(Suite.class)
 
 @Suite.SuiteClasses({
-  TenantSampleDataTest.class
+  TenantSampleDataTest.class,
+  FundsTest.class,
+  FundUnTest.class
 })
 
 public class StorageTestSuite {
@@ -58,7 +60,6 @@ public class StorageTestSuite {
 
     // tests expect English error messages only, no Danish/German/...
     Locale.setDefault(Locale.US);
-
 
     vertx = Vertx.vertx();
 
