@@ -10,6 +10,7 @@ import org.junit.Test;
 import java.net.MalformedURLException;
 
 import static org.folio.rest.utils.TestEntities.FUND;
+import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.junit.Assert.fail;
 
 public class FundCodeUniquenessTest extends TestBase {
@@ -21,8 +22,11 @@ public class FundCodeUniquenessTest extends TestBase {
 
     String sampleId = null;
     try {
-      String fundSample = getFile("fund.sample");
+       // prepare referenced object
+       String ledgerSample = getFile(LEDGER.getPathToSamples() + "One-time.json");
+       postData(LEDGER.getEndpoint(), ledgerSample);
 
+      String fundSample = getFile(FUND.getPathToSamples() + "AFRICAHIST.json");
       sampleId = createEntity(FUND.getEndpoint(), fundSample);
 
       logger.info("--- mod-finance-storage PO test: Creating fund with the same code ... ");
@@ -43,7 +47,7 @@ public class FundCodeUniquenessTest extends TestBase {
     response
       .then()
       .statusCode(400)
-      .body(Matchers.containsString("duplicate key value violates unique constraint \"fund_code_unique_idx\""));
+      .body(Matchers.containsString("duplicate key value violates unique constraint \"fund_code_idx_unique\""));
   }
 
 }
