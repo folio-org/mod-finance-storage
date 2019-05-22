@@ -6,7 +6,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.TransactionCollection;
-import org.folio.rest.jaxrs.resource.Transaction;
+import org.folio.rest.jaxrs.resource.FinanceStorageTransaction;
 import org.folio.rest.persist.EntitiesMetadataHolder;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
@@ -17,7 +17,7 @@ import java.util.Map;
 
 import static org.folio.rest.persist.HelperUtils.getEntitiesCollection;
 
-public class TransactionAPI implements Transaction {
+public class TransactionAPI implements FinanceStorageTransaction {
   private static final String TRANSACTION_TABLE = "transaction";
 
   private String idFieldName = "id";
@@ -28,9 +28,9 @@ public class TransactionAPI implements Transaction {
 
   @Override
   @Validate
-  public void getTransaction(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageTransaction(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     vertxContext.runOnContext((Void v) -> {
-      EntitiesMetadataHolder<org.folio.rest.jaxrs.model.Transaction, TransactionCollection> entitiesMetadataHolder = new EntitiesMetadataHolder<>(org.folio.rest.jaxrs.model.Transaction.class, TransactionCollection.class, GetTransactionResponse.class);
+      EntitiesMetadataHolder<org.folio.rest.jaxrs.model.Transaction, TransactionCollection> entitiesMetadataHolder = new EntitiesMetadataHolder<>(org.folio.rest.jaxrs.model.Transaction.class, TransactionCollection.class, GetFinanceStorageTransactionResponse.class);
       QueryHolder cql = new QueryHolder(TRANSACTION_TABLE, query, offset, limit, lang);
       getEntitiesCollection(entitiesMetadataHolder, cql, asyncResultHandler, vertxContext, okapiHeaders);
     });
@@ -38,27 +38,25 @@ public class TransactionAPI implements Transaction {
 
   @Override
   @Validate
-  public void postTransaction(String lang, org.folio.rest.jaxrs.model.Transaction entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.post(TRANSACTION_TABLE, entity, okapiHeaders, vertxContext, PostTransactionResponse.class, asyncResultHandler);
+  public void postFinanceStorageTransaction(String lang, org.folio.rest.jaxrs.model.Transaction entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.post(TRANSACTION_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageTransactionResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void getTransactionById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.getById(TRANSACTION_TABLE, org.folio.rest.jaxrs.model.Transaction.class, id, okapiHeaders, vertxContext, GetTransactionByIdResponse.class, asyncResultHandler);
+  public void getFinanceStorageTransactionById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.getById(TRANSACTION_TABLE, org.folio.rest.jaxrs.model.Transaction.class, id, okapiHeaders, vertxContext, GetFinanceStorageTransactionByIdResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void deleteTransactionById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.deleteById(TRANSACTION_TABLE, id, okapiHeaders, vertxContext, DeleteTransactionByIdResponse.class, asyncResultHandler);
-
+  public void deleteFinanceStorageTransactionById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.deleteById(TRANSACTION_TABLE, id, okapiHeaders, vertxContext, DeleteFinanceStorageTransactionByIdResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void putTransactionById(String id, String lang, org.folio.rest.jaxrs.model.Transaction entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.put(TRANSACTION_TABLE, entity, id, okapiHeaders, vertxContext, PutTransactionByIdResponse.class, asyncResultHandler);
-
+  public void putFinanceStorageTransactionById(String id, String lang, org.folio.rest.jaxrs.model.Transaction entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.put(TRANSACTION_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageTransactionByIdResponse.class, asyncResultHandler);
   }
 }

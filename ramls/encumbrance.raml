@@ -22,7 +22,7 @@ resourceTypes:
   collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/encumbrance:
+/finance-storage/encumbrance:
   type:
     collection:
       exampleCollection: !include acq-models/mod-finance/examples/encumbrance_collection.sample
@@ -32,7 +32,7 @@ resourceTypes:
   get:
     description: Get list of encumbrances
     is: [
-      searchable: {description: "with valid searchable fields: e.g.", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      searchable: {description: "with valid searchable fields: e.g.", example: "[\"status\", \"Unreleased\", \"=\"]"},
       pageable
     ]
   /{id}:

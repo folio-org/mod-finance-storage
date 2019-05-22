@@ -34,6 +34,37 @@
       ]
     },
     {
+      "id": "encumbrance",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/encumbrance",
+          "permissionsRequired": ["encumbrance.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/encumbrance",
+          "permissionsRequired": ["encumbrance.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/encumbrance/{id}",
+          "permissionsRequired": ["encumbrance.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/encumbrance/{id}",
+          "permissionsRequired": ["encumbrance.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/encumbrance/{id}",
+          "permissionsRequired": ["encumbrance.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "fiscal_year",
       "version": "1.0",
       "handlers": [
@@ -239,6 +270,43 @@
       ]
     },
     {
+      "permissionName" : "encumbrance.collection.get",
+      "displayName" : "encumbrance-collection get",
+      "description" : "Get a collection of encumbrances"
+    },
+    {
+      "permissionName" : "encumbrance.item.post",
+      "displayName" : "encumbrance-item post",
+      "description" : "Create a new encumbrance"
+    },
+    {
+      "permissionName" : "encumbrance.item.get",
+      "displayName" : "encumbrance-item get",
+      "description" : "Fetch an encumbrance"
+    },
+    {
+      "permissionName" : "encumbrance.item.put",
+      "displayName" : "encumbrance-item put",
+      "description" : "Update an encumbrance"
+    },
+    {
+      "permissionName" : "encumbrance.item.delete",
+      "displayName" : "encumbrance-item delete",
+      "description" : "Delete an encumbrance"
+    },
+    {
+      "permissionName" : "encumbrance.all",
+      "displayName" : "All encumbrance perms",
+      "description" : "All permissions for the encumbrance",
+      "subPermissions" : [
+        "encumbrance.collection.get",
+        "encumbrance.item.post",
+        "encumbrance.item.get",
+        "encumbrance.item.put",
+        "encumbrance.item.delete"
+      ]
+    },
+    {
       "permissionName" : "fiscal_year.collection.get",
       "displayName" : "fiscal-year-collection get",
       "description" : "Get collection of fiscal year"
@@ -429,6 +497,7 @@
       "description" : "All permissions for the finance module",
       "subPermissions" : [
         "budget.all",
+        "encumbrance.all",
         "fiscal_year.all",
         "fund_distribution.all",
         "funds.all",

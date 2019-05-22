@@ -182,6 +182,28 @@
           "removeAccents": true
         }
       ]
+    },
+    {
+      "tableName": "encumbrance",
+      "generateId": true,
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "populateJsonWithId": true,
+      "foreignKeys": [
+        {
+          "fieldName": "fund_id",
+          "targetTable": "fund",
+          "tOps": "ADD"
+        }
+      ],
+      "ginIndex": [
+        {
+          "fieldName": "amount_encumbered",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": false
+        }
+      ]
     }
   ]
 }
