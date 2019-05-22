@@ -34,6 +34,12 @@
           "tOps": "ADD"
         }
       ],
+      "uniqueIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
+        }
+      ],
       "ginIndex": [
         {
           "fieldName": "name",

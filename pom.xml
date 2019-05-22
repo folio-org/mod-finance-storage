@@ -444,6 +444,13 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.22.1</version>
         <configuration>
+          <excludes>
+            <exclude>org/folio/rest/impl/*Test.java</exclude>
+          </excludes>
+          <includes>
+            <include>org/folio/rest/impl/StorageTestSuite.java</include>
+            <include>org/folio/rest/**</include>
+          </includes>
           <!-- TODO: update to version 3.0.0 and remove useSystemClassLoader
                https://issues.folio.org/browse/FOLIO-1609
                https://issues.apache.org/jira/browse/SUREFIRE-1588
