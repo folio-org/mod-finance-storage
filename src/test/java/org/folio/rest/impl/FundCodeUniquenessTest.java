@@ -23,7 +23,7 @@ public class FundCodeUniquenessTest extends TestBase {
     String sampleId = null;
     try {
        // prepare referenced object
-       String ledgerSample = getFile(LEDGER.getPathToSamples() + "One-time.json");
+       String ledgerSample = getFile(LEDGER.getPathToSamples() + LEDGER.getSampleFileName());
        postData(LEDGER.getEndpoint(), ledgerSample);
 
       String fundSample = getFile(FUND.getPathToSamples() + "AFRICAHIST.json");

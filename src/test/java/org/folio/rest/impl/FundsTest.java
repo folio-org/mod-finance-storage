@@ -67,11 +67,11 @@ public class FundsTest extends TestBase {
     verifyInitialDBState();
 
     logger.info("--- mod-finance-test: Creating fiscal year ... ");
-    String fySample = getFile("fiscal_year.sample");
+    String fySample = getFile(FISCAL_YEAR.getPathToSamples() + FISCAL_YEAR.getSampleFileName());
     Response response = postData(FISCAL_YEAR.getEndpoint(), fySample);
     response.then()
       .statusCode(201)
-      .body("name", equalTo("Fiscal Year 2017"));
+      .body("name", equalTo("FY19"));
     String fy_id = response.then().extract().path("id");
 
     logger.info("--- mod-finance-test: Verifying only 1 fiscal year was created ... ");
@@ -99,11 +99,11 @@ public class FundsTest extends TestBase {
 
 
     logger.info("--- mod-finance-test: Creating ledger ... ");
-    String ledgerSample = getFile("ledger.sample");
+    String ledgerSample = getFile(LEDGER.getPathToSamples() + LEDGER.getSampleFileName());
     response = postData(LEDGER.getEndpoint(), ledgerSample);
     response.then()
       .statusCode(201)
-      .body("code", equalTo("MAIN-LIB"));
+      .body("code", equalTo("ONETIME"));
     String ledger_id = response.then().extract().path("id");
 
     logger.info("--- mod-finance-test: Verifying only 1 ledger was created ... ");
@@ -131,11 +131,11 @@ public class FundsTest extends TestBase {
 
 
     logger.info("--- mod-finance-test: Creating fund ... ");
-    String fundSample = getFile("fund.sample");
+    String fundSample = getFile(FUND.getPathToSamples() + FUND.getSampleFileName());
     response = postData(FUND.getEndpoint(), fundSample);
     response.then()
       .statusCode(201)
-      .body("code", equalTo("HIST"));
+      .body("code", equalTo("AFRICAHIST"));
     String fund_id = response.then().extract().path("id");
 
     logger.info("--- mod-finance-test: Verifying only 1 fund was created ... ");
@@ -164,14 +164,14 @@ public class FundsTest extends TestBase {
 
 
     logger.info("--- mod-finance-test: Creating budget ... ");
-    String budgetSample = getFile("budget.sample");
+    String budgetSample = getFile(BUDGET.getPathToSamples() + BUDGET.getSampleFileName());
     JSONObject budgetJSON = new JSONObject(budgetSample);
     budgetJSON.put("fund_id", fund_id);
     budgetJSON.put("fiscal_year_id", fy_id);
     response = postData(BUDGET.getEndpoint(), budgetJSON.toString());
     response.then()
       .statusCode(201)
-      .body("code", equalTo("HIST-2017"));
+      .body("code", equalTo("AFRICAHIST-FY19"));
     String budget_id = response.then().extract().path("id");
     budgetJSON.put("id", budget_id);
 
