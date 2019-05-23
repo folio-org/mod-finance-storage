@@ -57,7 +57,7 @@ public class FundsTest extends TestBase {
 
     getData(ENCUMBRANCE.getEndpoint()).then()
       .statusCode(200)
-      .body("total_records", equalTo(0))
+      .body("totalRecords", equalTo(0))
       .body("encumbrances", empty());
   }
 
@@ -266,18 +266,18 @@ public class FundsTest extends TestBase {
     logger.info("--- mod-finance-test: Creating encumbrance ... ");
     String encumbranceSample = getFile(ENCUMBRANCE.getPathToSamples() + ENCUMBRANCE.getSampleFileName());
     JSONObject encumbranceJSON = new JSONObject(encumbranceSample);
-    encumbranceJSON.put("fund_id", fund_id);
+    encumbranceJSON.put("budgetId", budget_id);
     response = postData(ENCUMBRANCE.getEndpoint(), encumbranceJSON.toString());
     response.then()
       .statusCode(201)
-      .body("encumbrance_status", equalTo("unknown"));
+      .body("status", equalTo("Unreleased"));
     String encumbrance_id = response.then().extract().path("id");
     encumbranceJSON.put("id", encumbrance_id);
 
     logger.info("--- mod-finance-test: Verifying only 1 encumbrance was created ... ");
     getData(ENCUMBRANCE.getEndpoint()).then()
       .statusCode(200)
-      .body("total_records", equalTo(1));
+      .body("totalRecords", equalTo(1));
 
     logger.info("--- mod-finance-test: Fetching encumbrance with ID:" + encumbrance_id);
     getDataById(ENCUMBRANCE.getEndpoint(), encumbrance_id).then()
@@ -285,14 +285,14 @@ public class FundsTest extends TestBase {
       .body("id", equalTo(encumbrance_id));
 
     logger.info("--- mod-finance-test: Editing encumbrance with ID:" + encumbrance_id);
-    encumbranceJSON.put("encumbrance_status", "Released");
+    encumbranceJSON.put("status", "Released");
     response = putData(ENCUMBRANCE.getEndpoint(), encumbrance_id, encumbranceJSON.toString());
     response.then()
       .statusCode(204);
     logger.info("--- mod-finance-test: Fetching encumbrance with ID:" + encumbrance_id);
     getDataById(ENCUMBRANCE.getEndpoint(), encumbrance_id).then()
       .statusCode(200)
-      .body("encumbrance_status", equalTo("Released"));
+      .body("status", equalTo("Released"));
 
     logger.info("--- mod-finance-test: Deleting encumbrance ... ");
     deleteDataSuccess(ENCUMBRANCE.getEndpoint(), encumbrance_id);

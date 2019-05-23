@@ -12,7 +12,7 @@ public enum TestEntities {
   LEDGER("/finance-storage/ledger", Ledger.class, "data/ledgers/","One-time.json", "code", "One-time", 2),
   FUND("/finance-storage/fund", Fund.class, "data/funds/","AFRICAHIST.json", "name", "African History", 21),
   BUDGET("/finance-storage/budget", Budget.class, "data/budgets/","AFRICAHIST-FY19.json", "name", "AFRICAHIST-FY19", 21),
-  ENCUMBRANCE("/finance-storage/encumbrance", Encumbrance.class, "data/encumbrances/","encumbrance-47ac60b4.json", "encumbrance_status", "unknown", 1);
+  ENCUMBRANCE("/finance-storage/encumbrance", Encumbrance.class, "data/encumbrances/","encumbrance-8114807d.json", "status", "Released", 2);
 
 
   TestEntities(String endpoint, Class<?> clazz, String pathToSamples, String sampleFileName, String updatedFieldName, String updatedFieldValue, int initialQuantity) {

@@ -201,7 +201,13 @@
           "fieldName": "amount_encumbered",
           "tOps": "ADD",
           "caseSensitive": false,
-          "removeAccents": false
+          "removeAccents": true
+        },
+        {
+          "fieldName": "note",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
         }
       ]
     }

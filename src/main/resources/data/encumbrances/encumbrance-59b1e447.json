@@ -1,0 +1,9 @@
+{
+  "id": "59b1e447-bfbc-4292-90d8-aae23fa0398b",
+  "amountEncumbered": 42.30,
+  "amountAwaitingPayment": 42.30,
+  "amountExpended": 847.44,
+  "budgetId": "012e7da4-003c-48ff-9feb-f3745044da35",
+  "poLineId": "70fb4e66-cdf1-11e8-a8d5-f2801f1b9fd1",
+  "status": "Released"
+}
