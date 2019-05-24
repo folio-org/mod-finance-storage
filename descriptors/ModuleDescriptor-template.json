@@ -39,27 +39,27 @@
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/encumbrances",
+          "pathPattern": "/finance-storage/encumbrances",
           "permissionsRequired": ["finance-storage.encumbrances.collection.get"]
         },
         {
           "methods": ["POST"],
-          "pathPattern": "/encumbrances",
+          "pathPattern": "/finance-storage/encumbrances",
           "permissionsRequired": ["finance-storage.encumbrances.item.post"]
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/encumbrances/{id}",
+          "pathPattern": "/finance-storage/encumbrances/{id}",
           "permissionsRequired": ["finance-storage.encumbrances.item.get"]
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/encumbrances/{id}",
+          "pathPattern": "/finance-storage/encumbrances/{id}",
           "permissionsRequired": ["finance-storage.encumbrances.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/encumbrances/{id}",
+          "pathPattern": "/finance-storage/encumbrances/{id}",
           "permissionsRequired": ["finance-storage.encumbrances.item.delete"]
         }
       ]

@@ -17,8 +17,8 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 
 public class FundsTest extends TestBase {
-  private static final String FUND_DISTRIBUTION_ENDPOINT = "/finance-storage/fund_distribution";
-  private static final String TRANSACTION_ENDPOINT = "/finance-storage/transaction";
+  private static final String FUND_DISTRIBUTION_ENDPOINT = "/fund_distribution";
+  private static final String TRANSACTION_ENDPOINT = "/transaction";
   private final Logger logger = LoggerFactory.getLogger("okapi");
 
   // Validates that there are zero vendor records in the DB

@@ -20,7 +20,6 @@ public class TenantReferenceAPI extends TenantAPI {
   private static final Logger log = LoggerFactory.getLogger(TenantReferenceAPI.class);
 
   private static final String PARAMETER_LOAD_SAMPLE = "loadSample";
-  private static final String SERVICE_PREFIX = "finance-storage/";
 
   @Override
   public void postTenant(TenantAttributes tenantAttributes, Map<String, String> headers,
@@ -37,11 +36,11 @@ public class TenantReferenceAPI extends TenantAPI {
         TenantLoading tl = new TenantLoading();
         tl.withKey(PARAMETER_LOAD_SAMPLE)
           .withLead("data")
-          .add("fiscal-years", SERVICE_PREFIX + "fiscal_year")
-          .add("ledgers", SERVICE_PREFIX + "ledger")
-          .add("funds", SERVICE_PREFIX + "fund")
-          .add("budgets", SERVICE_PREFIX + "budget")
-          .add("encumbrances", SERVICE_PREFIX + "encumbrances")
+          .add("fiscal-years", "fiscal_year")
+          .add("ledgers", "ledger")
+          .add("funds", "fund")
+          .add("budgets", "budget")
+          .add("encumbrances", "finance-storage/encumbrances")
           .perform(tenantAttributes, headers, vertx, res1 -> {
             if (res1.failed()) {
               handler.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse

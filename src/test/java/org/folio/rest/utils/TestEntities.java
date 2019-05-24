@@ -8,10 +8,10 @@ import org.folio.rest.jaxrs.model.Ledger;
 
 
 public enum TestEntities {
-  FISCAL_YEAR("/finance-storage/fiscal_year", FiscalYear.class, "data/fiscal-years/", "fy1.json", "name", "FY19", 1),
-  LEDGER("/finance-storage/ledger", Ledger.class, "data/ledgers/","One-time.json", "code", "One-time", 2),
-  FUND("/finance-storage/fund", Fund.class, "data/funds/","AFRICAHIST.json", "name", "African History", 21),
-  BUDGET("/finance-storage/budget", Budget.class, "data/budgets/","AFRICAHIST-FY19.json", "name", "AFRICAHIST-FY19", 21),
+  FISCAL_YEAR("/fiscal_year", FiscalYear.class, "data/fiscal-years/", "fy1.json", "name", "FY19", 1),
+  LEDGER("/ledger", Ledger.class, "data/ledgers/","One-time.json", "code", "One-time", 2),
+  FUND("/fund", Fund.class, "data/funds/","AFRICAHIST.json", "name", "African History", 21),
+  BUDGET("/budget", Budget.class, "data/budgets/","AFRICAHIST-FY19.json", "name", "AFRICAHIST-FY19", 21),
   ENCUMBRANCE("/finance-storage/encumbrances", Encumbrance.class, "data/encumbrances/","encumbrance-8114807d.json", "status", "Released", 2);
 
 
