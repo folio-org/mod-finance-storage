@@ -4,6 +4,7 @@
   "amountAwaitingPayment": 12.50,
   "amountExpended": 1567.92,
   "budgetId": "67cd0046-e4f1-4e4f-9024-adf0b0039d09",
+  "fundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
   "poLineId": "90fb53f2-cdf1-11e8-a8d5-f2801f1b9fd1",
   "status": "Unreleased"
 }

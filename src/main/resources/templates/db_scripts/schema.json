@@ -191,6 +191,11 @@
       "populateJsonWithId": true,
       "foreignKeys": [
         {
+          "fieldName": "budget_id",
+          "targetTable": "budget",
+          "tOps": "ADD"
+        },
+        {
           "fieldName": "fund_id",
           "targetTable": "fund",
           "tOps": "ADD"
