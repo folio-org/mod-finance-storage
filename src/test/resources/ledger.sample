@@ -1,9 +1,0 @@
-{
-  "id": null,
-  "name": "Main Library",
-  "code": "MAIN-LIB",
-  "description": "This is the ledger for the Main Library",
-  "fiscal_years": [
-    "AC2164c7-Ba3d-AbC2-C12C-e35CeCcbfaF2"
-  ]
-}

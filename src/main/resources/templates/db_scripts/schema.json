@@ -23,13 +23,12 @@
     },
     {
       "tableName": "fund",
-      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
       "populateJsonWithId": true,
       "foreignKeys": [
         {
-          "fieldName": "ledger_id",
+          "fieldName": "ledgerId",
           "targetTable": "ledger",
           "tOps": "ADD"
         }
@@ -54,16 +53,14 @@
           "removeAccents": true
         },
         {
-          "fieldName": "fund_status",
+          "fieldName": "fundStatus",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
         },
         {
           "fieldName": "currency",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
+          "tOps": "DELETE"
         }
       ]
     },

@@ -2,13 +2,11 @@
   "id": "fb7b70f1-b898-4924-a991-0e4b6312bb5f",
   "name": "History",
   "code": "HIST",
-  "created_date": "2018-01-01T13:06:34.186Z",
-  "fund_status": "Active",
-  "currency": "USD",
+  "externalAccountNo": "276507594438808",
+  "fundStatus": "Active",
   "description": "subdivided by geographic regions, to match individual selectors",
-  "ledger_id": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
-  "allocation_from": null,
-  "allocation_to": [
+  "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
+  "allocationTo": [
     "65032151-39a5-4cef-8810-5350eb316300",
     "67cd0046-e4f1-4e4f-9024-adf0b0039d09",
     "e9285a1c-1dfc-4380-868c-e74073003f43",

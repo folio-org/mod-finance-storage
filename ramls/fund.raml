@@ -1,34 +1,39 @@
 #%RAML 1.0
-title: "mod-funds"
-baseUri: https://github.com/folio-org/mod-funds
+title: "Funds storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
 version: v1
 
 documentation:
-  - title: mod-funds
+  - title: Funds storage
     content: <b>CRUD APIs used to manage funds.</b>
 
 types:
+  errors: !include raml-util/schemas/errors.schema
   fund: !include acq-models/mod-finance/schemas/fund.json
   fund_collection: !include acq-models/mod-finance/schemas/fund_collection.json
+  UUID:
+    type: string
+    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
 
 traits:
-  orderable: !include raml-util/traits/orderable.raml
   pageable:  !include raml-util/traits/pageable.raml
   searchable: !include raml-util/traits/searchable.raml
   language: !include raml-util/traits/language.raml
+  validate: !include raml-util/traits/validation.raml
 
 resourceTypes:
   collection: !include raml-util/rtypes/collection.raml
   collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/fund:
+/finance-storage/funds:
   type:
     collection:
       exampleCollection: !include acq-models/mod-finance/examples/fund_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/fund.sample
       schemaCollection: fund_collection
       schemaItem: fund
+  is: [validate]
   get:
     description: Get list of funds
     is: [
@@ -36,7 +41,12 @@ resourceTypes:
       pageable
     ]
   /{id}:
+    uriParameters:
+      id:
+        description: The UUID of a fund
+        type: UUID
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/fund.sample
         schema: fund
+    is: [validate]

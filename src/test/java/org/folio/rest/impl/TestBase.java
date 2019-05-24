@@ -4,13 +4,20 @@ import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+
 import org.apache.commons.io.IOUtils;
+import org.folio.rest.utils.TestEntities;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -18,6 +25,7 @@ import static io.restassured.RestAssured.given;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 
 /**
  * When not run from StorageTestSuite then this class invokes StorageTestSuite.before() and
@@ -25,8 +33,10 @@ import static org.hamcrest.Matchers.equalTo;
  * IDE during development.
  */
 public abstract class TestBase {
+  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private static final String TENANT_NAME = "diku";
+  static final String NON_EXISTED_ID = "bad500aa-aaaa-500a-aaaa-aaaaaaaaaaaa";
   static final Header TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TENANT_NAME);
 
   private static boolean invokeStorageTestSuiteAfter = false;
@@ -56,9 +66,13 @@ public abstract class TestBase {
   void verifyCollectionQuantity(String endpoint, int quantity, Header tenantHeader) throws MalformedURLException {
     getData(endpoint, tenantHeader)
       .then()
-      .log().all()
-      .statusCode(200)
-      .body("total_records", equalTo(quantity));
+        .log().all()
+        .statusCode(200)
+        .body(endpoint.equals(TestEntities.FUND.getEndpoint()) ? "totalRecords" : "total_records", equalTo(quantity));
+  }
+
+  void verifyCollectionQuantity(String endpoint, int quantity) throws MalformedURLException {
+    verifyCollectionQuantity(endpoint, quantity, TENANT_HEADER);
   }
 
   Response getData(String endpoint, Header tenantHeader) throws MalformedURLException {
@@ -89,8 +103,7 @@ public abstract class TestBase {
       .accept(ContentType.JSON)
       .contentType(ContentType.JSON)
       .body(input)
-      .log()
-      .all()
+      .log().all()
       .post(storageUrl(endpoint));
   }
 
@@ -99,9 +112,8 @@ public abstract class TestBase {
       .pathParam("id", id)
       .header(TENANT_HEADER)
       .contentType(ContentType.JSON)
-      .get(storageUrl(endpoint + "/{id}"));
+      .get(storageUrlWithId(endpoint));
   }
-
 
   Response putData(String endpoint, String id, String input) throws MalformedURLException {
     return given()
@@ -109,11 +121,18 @@ public abstract class TestBase {
       .header(TENANT_HEADER)
       .contentType(ContentType.JSON)
       .body(input)
-      .put(storageUrl(endpoint + "/{id}"));
+      .put(storageUrlWithId(endpoint));
   }
 
   void deleteDataSuccess(String endpoint, String id) throws MalformedURLException {
     deleteData(endpoint, id)
+      .then().log().ifValidationFails()
+      .statusCode(204);
+  }
+
+  void deleteDataSuccess(TestEntities testEntity, String id) throws MalformedURLException {
+    logger.info(String.format("--- %s test: Deleting record with ID: %s", testEntity.name(), id));
+    deleteData(testEntity.getEndpoint(), id)
       .then().log().ifValidationFails()
       .statusCode(204);
   }
@@ -127,7 +146,7 @@ public abstract class TestBase {
       .pathParam("id", id)
       .header(tenantHeader)
       .contentType(ContentType.JSON)
-      .delete(storageUrl(endpoint + "/{id}"));
+      .delete(storageUrlWithId(endpoint));
   }
 
   String createEntity(String endpoint, String entity) throws MalformedURLException {
@@ -136,5 +155,52 @@ public abstract class TestBase {
       .statusCode(201)
       .extract()
       .path("id");
+  }
+
+  JsonObject convertToMatchingModelJson(String sample, TestEntities testEntity) {
+    return JsonObject.mapFrom(new JsonObject(sample).mapTo(testEntity.getClazz()));
+  }
+
+  void testAllFieldsExists(JsonObject extracted, JsonObject sampleObject) {
+    Set<String> fieldsNames = sampleObject.fieldNames();
+    for (String fieldName : fieldsNames) {
+      Object sampleField = sampleObject.getValue(fieldName);
+      if (sampleField instanceof JsonObject) {
+        testAllFieldsExists((JsonObject) sampleField, (JsonObject) extracted.getValue(fieldName));
+      } else {
+        assertEquals(sampleObject.getValue(fieldName).toString(), extracted.getValue(fieldName).toString());
+      }
+
+    }
+  }
+
+  void testInvalidCQLQuery(String endpoint) throws MalformedURLException {
+    getData(endpoint).then().log().ifValidationFails()
+      .statusCode(400);
+  }
+  void testEntityEdit(String endpoint, String entitySample, String id) throws MalformedURLException {
+    putData(endpoint, id, entitySample)
+      .then().log().ifValidationFails()
+      .statusCode(204);
+  }
+
+  void testFetchingUpdatedEntity(String id, TestEntities subObject) throws MalformedURLException {
+    getDataById(subObject.getEndpoint(), id).then()
+      .log().ifValidationFails()
+      .statusCode(200)
+      .body(subObject.getUpdatedFieldName(), equalTo(subObject.getUpdatedFieldValue()));
+  }
+
+  Response testEntitySuccessfullyFetched(String endpoint, String id) throws MalformedURLException {
+    Response response = getDataById(endpoint, id);
+    response.then()
+      .log().ifValidationFails()
+      .statusCode(200)
+      .body("id", equalTo(id));
+    return response;
+  }
+
+  private URL storageUrlWithId(String endpoint) throws MalformedURLException {
+    return storageUrl(endpoint + "/{id}");
   }
 }

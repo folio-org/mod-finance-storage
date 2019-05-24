@@ -23,10 +23,10 @@ public class FundCodeUniquenessTest extends TestBase {
     String sampleId = null;
     try {
        // prepare referenced object
-       String ledgerSample = getFile(LEDGER.getPathToSamples() + "One-time.json");
-       postData(LEDGER.getEndpoint(), ledgerSample);
+      String ledgerSample = getFile(LEDGER.getPathToSampleFile());
+      postData(LEDGER.getEndpoint(), ledgerSample);
 
-      String fundSample = getFile(FUND.getPathToSamples() + "AFRICAHIST.json");
+      String fundSample = getFile(FUND.getPathToSampleFile());
       sampleId = createEntity(FUND.getEndpoint(), fundSample);
 
       logger.info("--- mod-finance-storage PO test: Creating fund with the same code ... ");
