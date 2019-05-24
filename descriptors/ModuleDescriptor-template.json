@@ -34,33 +34,33 @@
       ]
     },
     {
-      "id": "encumbrance",
+      "id": "finance-storage.encumbrances",
       "version": "1.0",
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/encumbrance",
-          "permissionsRequired": ["encumbrance.collection.get"]
+          "pathPattern": "/encumbrances",
+          "permissionsRequired": ["finance-storage.encumbrances.collection.get"]
         },
         {
           "methods": ["POST"],
-          "pathPattern": "/encumbrance",
-          "permissionsRequired": ["encumbrance.item.post"]
+          "pathPattern": "/encumbrances",
+          "permissionsRequired": ["finance-storage.encumbrances.item.post"]
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/encumbrance/{id}",
-          "permissionsRequired": ["encumbrance.item.get"]
+          "pathPattern": "/encumbrances/{id}",
+          "permissionsRequired": ["finance-storage.encumbrances.item.get"]
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/encumbrance/{id}",
-          "permissionsRequired": ["encumbrance.item.put"]
+          "pathPattern": "/encumbrances/{id}",
+          "permissionsRequired": ["finance-storage.encumbrances.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/encumbrance/{id}",
-          "permissionsRequired": ["encumbrance.item.delete"]
+          "pathPattern": "/encumbrances/{id}",
+          "permissionsRequired": ["finance-storage.encumbrances.item.delete"]
         }
       ]
     },
@@ -270,40 +270,40 @@
       ]
     },
     {
-      "permissionName" : "encumbrance.collection.get",
-      "displayName" : "encumbrance-collection get",
+      "permissionName" : "finance-storage.encumbrances.collection.get",
+      "displayName" : "finance-storage.encumbrance-collection get",
       "description" : "Get a collection of encumbrances"
     },
     {
-      "permissionName" : "encumbrance.item.post",
+      "permissionName" : "finance-storage.encumbrances.item.post",
       "displayName" : "encumbrance-item post",
       "description" : "Create a new encumbrance"
     },
     {
-      "permissionName" : "encumbrance.item.get",
+      "permissionName" : "finance-storage.encumbrances.item.get",
       "displayName" : "encumbrance-item get",
       "description" : "Fetch an encumbrance"
     },
     {
-      "permissionName" : "encumbrance.item.put",
+      "permissionName" : "finance-storage.encumbrances.item.put",
       "displayName" : "encumbrance-item put",
       "description" : "Update an encumbrance"
     },
     {
-      "permissionName" : "encumbrance.item.delete",
+      "permissionName" : "finance-storage.encumbrances.item.delete",
       "displayName" : "encumbrance-item delete",
       "description" : "Delete an encumbrance"
     },
     {
-      "permissionName" : "encumbrance.all",
+      "permissionName" : "finance-storage.encumbrances.all",
       "displayName" : "All encumbrance perms",
       "description" : "All permissions for the encumbrance",
       "subPermissions" : [
-        "encumbrance.collection.get",
-        "encumbrance.item.post",
-        "encumbrance.item.get",
-        "encumbrance.item.put",
-        "encumbrance.item.delete"
+        "finance-storage.encumbrances.collection.get",
+        "finance-storage.encumbrances.item.post",
+        "finance-storage.encumbrances.item.get",
+        "finance-storage.encumbrances.item.put",
+        "finance-storage.encumbrances.item.delete"
       ]
     },
     {
@@ -497,7 +497,7 @@
       "description" : "All permissions for the finance module",
       "subPermissions" : [
         "budget.all",
-        "encumbrance.all",
+        "finance-storage.encumbrances.all",
         "fiscal_year.all",
         "fund_distribution.all",
         "funds.all",

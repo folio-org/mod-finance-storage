@@ -41,7 +41,7 @@ public class TenantReferenceAPI extends TenantAPI {
           .add("ledgers", SERVICE_PREFIX + "ledger")
           .add("funds", SERVICE_PREFIX + "fund")
           .add("budgets", SERVICE_PREFIX + "budget")
-          .add("encumbrances", SERVICE_PREFIX + "encumbrance")
+          .add("encumbrances", SERVICE_PREFIX + "encumbrances")
           .perform(tenantAttributes, headers, vertx, res1 -> {
             if (res1.failed()) {
               handler.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse
