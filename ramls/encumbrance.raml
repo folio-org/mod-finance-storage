@@ -1,10 +1,10 @@
 #%RAML 1.0
-title: "mod-funds"
-baseUri: https://github.com/folio-org/mod-funds
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
 version: v1
 
 documentation:
-  - title: mod-funds (Budgets)
+  - title: mod-finance-storage (Encumbrance)
     content: <b>CRUD APIs used to manage encumbrances.</b>
 
 types:
@@ -22,7 +22,7 @@ resourceTypes:
   collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/encumbrance:
+/finance-storage/encumbrances:
   type:
     collection:
       exampleCollection: !include acq-models/mod-finance/examples/encumbrance_collection.sample
@@ -32,7 +32,7 @@ resourceTypes:
   get:
     description: Get list of encumbrances
     is: [
-      searchable: {description: "with valid searchable fields: e.g.", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      searchable: {description: "with valid searchable fields: e.g.", example: "[\"status\", \"Unreleased\", \"=\"]"},
       pageable
     ]
   /{id}:
