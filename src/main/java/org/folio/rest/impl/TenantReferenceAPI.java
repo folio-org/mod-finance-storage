@@ -9,11 +9,11 @@ import io.vertx.core.logging.LoggerFactory;
 
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
-import org.folio.rest.jaxrs.resource.Budget;
-import org.folio.rest.jaxrs.resource.Encumbrance;
+import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
+import org.folio.rest.jaxrs.resource.FinanceStorageEncumbrances;
+import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
-import org.folio.rest.jaxrs.resource.FiscalYear;
-import org.folio.rest.jaxrs.resource.Ledger;
+import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.tools.utils.TenantLoading;
 
 import javax.ws.rs.Path;
@@ -43,11 +43,11 @@ public class TenantReferenceAPI extends TenantAPI {
         TenantLoading tl = new TenantLoading();
         tl.withKey(PARAMETER_LOAD_SAMPLE)
           .withLead("data")
-          .add("fiscal-years", getUriPath(FiscalYear.class))
-          .add("ledgers", getUriPath(Ledger.class))
+          .add("fiscal-years", getUriPath(FinanceStorageFiscalYears.class))
+          .add("ledgers", getUriPath(FinanceStorageLedgers.class))
           .add("funds", getUriPath(FinanceStorageFunds.class))
-          .add("budgets", getUriPath(Budget.class))
-          .add("encumbrances", getUriPath(Encumbrance.class))
+          .add("budgets", getUriPath(FinanceStorageBudgets.class))
+          .add("encumbrances", getUriPath(FinanceStorageEncumbrances.class))
           .perform(tenantAttributes, headers, vertx, res1 -> {
             if (res1.failed()) {
               handler.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse

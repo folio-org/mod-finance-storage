@@ -1,9 +1,8 @@
 {
-  "id": null,
   "amount": 25,
   "currency": "USD",
   "percent": 100,
-  "source_type": "PO_Line",
-  "source_id": "906eb7a4-8BbC-1CCf-6cAF-de909eABeedd",
-  "budget_id": "67cd0046-e4f1-4e4f-9024-adf0b0039d09"
+  "sourceType": "PO_Line",
+  "sourceId": "906eb7a4-8BbC-1CCf-8cAF-de909eABeedd",
+  "budgetId": "67cd0046-e4f1-4e4f-9024-adf0b0039d09"
 }

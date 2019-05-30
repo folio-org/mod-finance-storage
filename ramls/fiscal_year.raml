@@ -8,27 +8,32 @@ documentation:
     content: <b>CRUD APIs used to manage fiscal years.</b>
 
 types:
-  fiscal_year: !include acq-models/mod-finance/schemas/fiscal_year.json
-  fiscal_year_collection: !include acq-models/mod-finance/schemas/fiscal_year_collection.json
+  errors: !include raml-util/schemas/errors.schema
+  fiscal-year: !include acq-models/mod-finance/schemas/fiscal_year.json
+  fiscal-year-collection: !include acq-models/mod-finance/schemas/fiscal_year_collection.json
+  UUID:
+    type: string
+    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
 
 traits:
-  orderable: !include raml-util/traits/orderable.raml
   pageable:  !include raml-util/traits/pageable.raml
   searchable: !include raml-util/traits/searchable.raml
   language: !include raml-util/traits/language.raml
+  validate: !include raml-util/traits/validation.raml
 
 resourceTypes:
   collection: !include raml-util/rtypes/collection.raml
   collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/fiscal_year:
+/finance-storage/fiscal-years:
   type:
     collection:
       exampleCollection: !include acq-models/mod-finance/examples/fiscal_year_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/fiscal_year.sample
-      schemaCollection: fiscal_year_collection
-      schemaItem: fiscal_year
+      schemaCollection: fiscal-year-collection
+      schemaItem: fiscal-year
+  is: [validate]
   get:
     description: Get list of fiscal years
     is: [
@@ -36,7 +41,12 @@ resourceTypes:
       pageable
     ]
   /{id}:
+    uriParameters:
+      id:
+        description: The UUID of a fiscal year
+        type: UUID
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/fiscal_year.sample
-        schema: fiscal_year
+        schema: fiscal-year
+    is: [validate]

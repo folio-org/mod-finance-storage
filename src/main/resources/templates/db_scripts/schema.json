@@ -23,6 +23,7 @@
     },
     {
       "tableName": "fund",
+      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
       "populateJsonWithId": true,
@@ -51,6 +52,10 @@
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
+        },
+        {
+          "fieldName": "fund_status",
+          "tOps": "DELETE"
         },
         {
           "fieldName": "fundStatus",
@@ -93,12 +98,12 @@
       "populateJsonWithId": true,
       "foreignKeys": [
         {
-          "fieldName": "fund_id",
+          "fieldName": "fundId",
           "targetTable": "fund",
           "tOps": "ADD"
         },
         {
-          "fieldName": "fiscal_year_id",
+          "fieldName": "fiscalYearId",
           "targetTable": "fiscal_year",
           "tOps": "ADD"
         }
@@ -118,6 +123,10 @@
         },
         {
           "fieldName": "budget_status",
+          "tOps": "DELETE"
+        },
+        {
+          "fieldName": "budgetStatus",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
@@ -132,7 +141,7 @@
       "populateJsonWithId": true,
       "foreignKeys": [
         {
-          "fieldName": "budget_id",
+          "fieldName": "budgetId",
           "targetTable": "budget",
           "tOps": "ADD"
         }
@@ -146,6 +155,10 @@
         },
         {
           "fieldName": "source_type",
+          "tOps": "DELETE"
+        },
+        {
+          "fieldName": "sourceType",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
@@ -160,7 +173,7 @@
       "populateJsonWithId": true,
       "foreignKeys": [
         {
-          "fieldName": "budget_id",
+          "fieldName": "budgetId",
           "targetTable": "budget",
           "tOps": "ADD"
         }
@@ -188,19 +201,19 @@
       "populateJsonWithId": true,
       "foreignKeys": [
         {
-          "fieldName": "budget_id",
+          "fieldName": "budgetId",
           "targetTable": "budget",
           "tOps": "ADD"
         },
         {
-          "fieldName": "fund_id",
+          "fieldName": "fundId",
           "targetTable": "fund",
           "tOps": "ADD"
         }
       ],
       "ginIndex": [
         {
-          "fieldName": "amount_encumbered",
+          "fieldName": "amountEncumbered",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true

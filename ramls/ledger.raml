@@ -8,27 +8,32 @@ documentation:
     content: <b>CRUD APIs used to manage ledgers.</b>
 
 types:
+  errors: !include raml-util/schemas/errors.schema
   ledger: !include acq-models/mod-finance/schemas/ledger.json
-  ledger_collection: !include acq-models/mod-finance/schemas/ledger_collection.json
+  ledger-collection: !include acq-models/mod-finance/schemas/ledger_collection.json
+  UUID:
+    type: string
+    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
 
 traits:
-  orderable: !include raml-util/traits/orderable.raml
   pageable:  !include raml-util/traits/pageable.raml
   searchable: !include raml-util/traits/searchable.raml
   language: !include raml-util/traits/language.raml
+  validate: !include raml-util/traits/validation.raml
 
 resourceTypes:
   collection: !include raml-util/rtypes/collection.raml
   collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/ledger:
+/finance-storage/ledgers:
   type:
     collection:
       exampleCollection: !include acq-models/mod-finance/examples/ledger_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/ledger.sample
-      schemaCollection: ledger_collection
+      schemaCollection: ledger-collection
       schemaItem: ledger
+  is: [validate]
   get:
     description: Get list of ledgers
     is: [
@@ -36,7 +41,12 @@ resourceTypes:
       pageable
     ]
   /{id}:
+    uriParameters:
+      id:
+        description: The UUID of a ledger
+        type: UUID
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/ledger.sample
         schema: ledger
+    is: [validate]
