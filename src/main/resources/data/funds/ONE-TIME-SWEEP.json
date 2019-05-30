@@ -2,12 +2,11 @@
   "id": "cf23adf0-61ba-4887-bf82-956c4aae2260",
   "name": "FY Sweep Fund",
   "code": "ONE-TIME-SWEEP",
-  "created_date": "2018-01-01T13:06:34.186Z",
-  "fund_status": "Active",
-  "currency": "USD",
+  "externalAccountNo": "227752149017018",
+  "fundStatus": "Active",
   "description": "gathers all unused state funds at the end of the year, for final spend-out",
-  "ledger_id": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
-  "allocation_from": [
+  "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
+  "allocationFrom": [
     "fb7b70f1-b898-4924-a991-0e4b6312bb5f",
     "65032151-39a5-4cef-8810-5350eb316300",
     "67cd0046-e4f1-4e4f-9024-adf0b0039d09",
@@ -21,7 +20,7 @@
     "68872d8a-bf16-420b-829f-206da38f6c10",
     "e6d7e91a-4dbc-4a70-9b38-e000d2fbdc79"
   ],
-  "allocation_to": [
+  "allocationTo": [
     "cf23adf0-61ba-4887-bf82-956c4aae2260"
   ]
 }

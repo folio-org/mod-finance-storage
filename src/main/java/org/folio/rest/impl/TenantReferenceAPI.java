@@ -6,10 +6,17 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
+import org.folio.rest.jaxrs.resource.FinanceStorageEncumbrances;
+import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
+import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
+import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.tools.utils.TenantLoading;
 
+import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +43,11 @@ public class TenantReferenceAPI extends TenantAPI {
         TenantLoading tl = new TenantLoading();
         tl.withKey(PARAMETER_LOAD_SAMPLE)
           .withLead("data")
-          .add("fiscal-years", "fiscal_year")
-          .add("ledgers", "ledger")
-          .add("funds", "fund")
-          .add("budgets", "budget")
-          .add("encumbrances", "finance-storage/encumbrances")
+          .add("fiscal-years", getUriPath(FinanceStorageFiscalYears.class))
+          .add("ledgers", getUriPath(FinanceStorageLedgers.class))
+          .add("funds", getUriPath(FinanceStorageFunds.class))
+          .add("budgets", getUriPath(FinanceStorageBudgets.class))
+          .add("encumbrances", getUriPath(FinanceStorageEncumbrances.class))
           .perform(tenantAttributes, headers, vertx, res1 -> {
             if (res1.failed()) {
               handler.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse
@@ -83,5 +90,9 @@ public class TenantReferenceAPI extends TenantAPI {
   public void deleteTenant(Map<String, String> headers, Handler<AsyncResult<Response>> hndlr, Context cntxt) {
     log.info("deleteTenant");
     super.deleteTenant(headers, hndlr, cntxt);
+  }
+
+  private static String getUriPath(Class<?> clazz) {
+    return clazz.getAnnotation(Path.class).value().replaceFirst("/", "");
   }
 }

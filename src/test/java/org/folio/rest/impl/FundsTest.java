@@ -1,9 +1,9 @@
 package org.folio.rest.impl;
 
 import io.restassured.response.Response;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import org.json.JSONObject;
+import io.vertx.core.json.JsonObject;
+
+import org.folio.rest.utils.TestEntities;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -12,307 +12,62 @@ import static org.folio.rest.utils.TestEntities.BUDGET;
 import static org.folio.rest.utils.TestEntities.ENCUMBRANCE;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
+import static org.folio.rest.utils.TestEntities.FUND_DISTRIBUTION;
 import static org.folio.rest.utils.TestEntities.LEDGER;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
+import static org.folio.rest.utils.TestEntities.TRANSACTION;
 
 public class FundsTest extends TestBase {
-  private static final String FUND_DISTRIBUTION_ENDPOINT = "/fund_distribution";
-  private static final String TRANSACTION_ENDPOINT = "/transaction";
-  private final Logger logger = LoggerFactory.getLogger("okapi");
-
-  // Validates that there are zero vendor records in the DB
-  private void verifyInitialDBState() throws MalformedURLException {
-
-    // Validate 200 response and that there are zero records
-    getData(BUDGET.getEndpoint()).then()
-      .statusCode(200)
-      .body("total_records", equalTo(0))
-      .body("budgets", empty());
-
-    getData(FISCAL_YEAR.getEndpoint()).then()
-      .statusCode(200)
-      .body("total_records", equalTo(0))
-      .body("fiscal_years", empty());
-
-    getData(FUND_DISTRIBUTION_ENDPOINT).then()
-      .statusCode(200)
-      .body("total_records", equalTo(0))
-      .body("distributions", empty());
-
-    getData(FUND.getEndpoint()).then()
-      .statusCode(200)
-      .body("total_records", equalTo(0))
-      .body("funds", empty());
-
-    getData(LEDGER.getEndpoint()).then()
-      .statusCode(200)
-      .body("total_records", equalTo(0))
-      .body("ledgers", empty());
-
-    getData(TRANSACTION_ENDPOINT).then()
-      .statusCode(200)
-      .body("total_records", equalTo(0))
-      .body("transactions", empty());
-
-    getData(ENCUMBRANCE.getEndpoint()).then()
-      .statusCode(200)
-      .body("totalRecords", equalTo(0))
-      .body("encumbrances", empty());
-  }
 
   @Test
-  public void testOrders() throws MalformedURLException {
-    logger.info("--- mod-finance-test: Verifying empty database ... ");
-    verifyInitialDBState();
+  public void testStorageEndpoints() throws MalformedURLException {
+    // Order is important
+    String fiscalYearId = testPositiveCases(FISCAL_YEAR);
+    String ledgerId = testPositiveCases(LEDGER);
+    String fundId = testPositiveCases(FUND);
+    String budgetId = testPositiveCases(BUDGET);
+    String transactionId = testPositiveCases(TRANSACTION);
+    String fundDistributionId = testPositiveCases(FUND_DISTRIBUTION);
+    String encumbranceId = testPositiveCases(ENCUMBRANCE);
 
-    logger.info("--- mod-finance-test: Creating fiscal year ... ");
-    String fySample = getFile(FISCAL_YEAR.getPathToSamples() + FISCAL_YEAR.getSampleFileName());
-    Response response = postData(FISCAL_YEAR.getEndpoint(), fySample);
-    response.then()
-      .statusCode(201)
-      .body("name", equalTo("FY19"));
-    String fy_id = response.then().extract().path("id");
+    deleteDataSuccess(ENCUMBRANCE, encumbranceId);
+    deleteDataSuccess(FUND_DISTRIBUTION, fundDistributionId);
+    deleteDataSuccess(TRANSACTION, transactionId);
+    deleteDataSuccess(BUDGET, budgetId);
+    deleteDataSuccess(FUND, fundId);
+    deleteDataSuccess(LEDGER, ledgerId);
+    deleteDataSuccess(FISCAL_YEAR, fiscalYearId);
+  }
 
-    logger.info("--- mod-finance-test: Verifying only 1 fiscal year was created ... ");
-    getData(FISCAL_YEAR.getEndpoint()).then()
-      .statusCode(200)
-      .body("total_records", equalTo(1));
+  private String testPositiveCases(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- %s test: Verifying database's initial state ... ", testEntity.name()));
+    verifyCollectionQuantity(testEntity.getEndpoint(), 0);
 
-    logger.info("--- mod-finance-test: Fetching fiscal year with ID:" + fy_id);
-    getDataById(FISCAL_YEAR.getEndpoint(), fy_id).then()
-      .statusCode(200)
-      .body("id", equalTo(fy_id));
+    logger.info(String.format("--- %s test: Creating record ... ", testEntity.name()));
+    String sample = getFile(testEntity.getPathToSampleFile());
+    JsonObject sampleJson = convertToMatchingModelJson(sample, testEntity);
+    Response response = postData(testEntity.getEndpoint(), sample);
+    String sampleId = response.then().extract().path("id");
 
-    logger.info("--- mod-finance-test: Editing fiscal year with ID:" + fy_id);
-    JSONObject fyJSON = new JSONObject(fySample);
-    fyJSON.put("id", fy_id);
-    fyJSON.put("name", "Fiscal Year 2017 B");
-    response = putData(FISCAL_YEAR.getEndpoint(), fy_id, fyJSON.toString());
-    response.then()
-      .statusCode(204);
+    logger.info(String.format("--- %s test: Valid fields exists ... ", testEntity.name()));
+    JsonObject responseJson = convertToMatchingModelJson(response.asString(), testEntity);
+    testAllFieldsExists(responseJson, sampleJson);
 
-    logger.info("--- mod-finance-test: Fetching fiscal year with ID:" + fy_id);
-    getDataById(FISCAL_YEAR.getEndpoint(), fy_id).then()
-      .statusCode(200)
-      .body("name", equalTo("Fiscal Year 2017 B"));
+    logger.info(String.format("--- %s test: Verifying only 1 record was created ... ", testEntity.name()));
+    verifyCollectionQuantity(testEntity.getEndpoint(),1);
 
+    logger.info(String.format("--- %s test: Fetching record with ID: %s", testEntity.name(), sampleId));
+    response = testEntitySuccessfullyFetched(testEntity.getEndpoint(), sampleId);
+    responseJson = convertToMatchingModelJson(response.asString(), testEntity);
+    testAllFieldsExists(responseJson, sampleJson);
 
-    logger.info("--- mod-finance-test: Creating ledger ... ");
-    String ledgerSample = getFile(LEDGER.getPathToSamples() + LEDGER.getSampleFileName());
-    response = postData(LEDGER.getEndpoint(), ledgerSample);
-    response.then()
-      .statusCode(201)
-      .body("code", equalTo("ONETIME"));
-    String ledger_id = response.then().extract().path("id");
+    logger.info(String.format("--- %s test: Editing record with ID: %s", testEntity.name(), sampleId));
+    JsonObject catJSON = new JsonObject(sample);
+    catJSON.put(testEntity.getUpdatedFieldName(), testEntity.getUpdatedFieldValue());
+    testEntityEdit(testEntity.getEndpoint(), catJSON.toString(), sampleId);
 
-    logger.info("--- mod-finance-test: Verifying only 1 ledger was created ... ");
-    getData(LEDGER.getEndpoint()).then()
-      .statusCode(200)
-      .body("total_records", equalTo(1));
+    logger.info(String.format("--- %s test: Fetching updated record with ID: %s", testEntity.name(), sampleId));
+    testFetchingUpdatedEntity(sampleId, testEntity);
 
-    logger.info("--- mod-finance-test: Fetching ledger with ID:" + ledger_id);
-    getDataById(LEDGER.getEndpoint(), ledger_id).then()
-      .statusCode(200)
-      .body("id", equalTo(ledger_id));
-
-    logger.info("--- mod-finance-test: Editing ledger with ID:" + ledger_id);
-    JSONObject ledgerJSON = new JSONObject(ledgerSample);
-    ledgerJSON.put("id", ledger_id);
-    ledgerJSON.put("code", "MAIN-LIB-B");
-    response = putData(LEDGER.getEndpoint(), ledger_id, ledgerJSON.toString());
-    response.then()
-      .statusCode(204);
-
-    logger.info("--- mod-finance-test: Fetching ledger with ID:" + ledger_id);
-    getDataById(LEDGER.getEndpoint(), ledger_id).then()
-      .statusCode(200)
-      .body("code", equalTo("MAIN-LIB-B"));
-
-
-    logger.info("--- mod-finance-test: Creating fund ... ");
-    String fundSample = getFile(FUND.getPathToSamples() + FUND.getSampleFileName());
-    response = postData(FUND.getEndpoint(), fundSample);
-    response.then()
-      .statusCode(201)
-      .body("code", equalTo("AFRICAHIST"));
-    String fund_id = response.then().extract().path("id");
-
-    logger.info("--- mod-finance-test: Verifying only 1 fund was created ... ");
-    getData(FUND.getEndpoint()).then()
-      .statusCode(200)
-      .body("total_records", equalTo(1));
-
-    logger.info("--- mod-finance-test: Fetching fund with ID:" + fund_id);
-    getDataById(FUND.getEndpoint(), fund_id).then()
-      .statusCode(200)
-      .body("id", equalTo(fund_id));
-
-    logger.info("--- mod-finance-test: Editing fund with ID:" + fund_id);
-    JSONObject fundJSON = new JSONObject(fundSample);
-    fundJSON.put("id", fund_id);
-    fundJSON.put("code", "MAIN-LIB-FUND");
-    fundJSON.put("ledger_id", ledger_id);
-    response = putData(FUND.getEndpoint(), fund_id, fundJSON.toString());
-    response.then()
-      .statusCode(204);
-
-    logger.info("--- mod-finance-test: Fetching fund with ID:" + fund_id);
-    getDataById(FUND.getEndpoint(), fund_id).then()
-      .statusCode(200)
-      .body("code", equalTo("MAIN-LIB-FUND"));
-
-
-    logger.info("--- mod-finance-test: Creating budget ... ");
-    String budgetSample = getFile(BUDGET.getPathToSamples() + BUDGET.getSampleFileName());
-    JSONObject budgetJSON = new JSONObject(budgetSample);
-    budgetJSON.put("fund_id", fund_id);
-    budgetJSON.put("fiscal_year_id", fy_id);
-    response = postData(BUDGET.getEndpoint(), budgetJSON.toString());
-    response.then()
-      .statusCode(201)
-      .body("code", equalTo("AFRICAHIST-FY19"));
-    String budget_id = response.then().extract().path("id");
-    budgetJSON.put("id", budget_id);
-
-    logger.info("--- mod-finance-test: Verifying only 1 budget was created ... ");
-    getData(BUDGET.getEndpoint()).then()
-      .statusCode(200)
-      .body("total_records", equalTo(1));
-
-    logger.info("--- mod-finance-test: Fetching budget with ID:" + budget_id);
-    getDataById(BUDGET.getEndpoint(), budget_id).then()
-      .statusCode(200)
-      .body("id", equalTo(budget_id));
-
-    logger.info("--- mod-finance-test: Editing fund with ID:" + budget_id);
-    budgetJSON.put("code", "MAIN-LIB-HIST-2017");
-    response = putData(BUDGET.getEndpoint(), budget_id, budgetJSON.toString());
-    response.then()
-      .statusCode(204);
-
-    logger.info("--- mod-finance-test: Fetching budget with ID:" + budget_id);
-    getDataById(BUDGET.getEndpoint(), budget_id).then()
-      .statusCode(200)
-      .body("code", equalTo("MAIN-LIB-HIST-2017"));
-
-
-    logger.info("--- mod-finance-test: Creating transaction ... ");
-    String transactionSample = getFile("transaction.sample");
-    JSONObject transactionJSON = new JSONObject(transactionSample);
-    transactionJSON.put("budget_id", budget_id);
-    response = postData(TRANSACTION_ENDPOINT, transactionJSON.toString());
-    response.then()
-      .statusCode(201)
-      .body("note", equalTo("PO_Line: History of Incas"));
-    String transaction_id = response.then().extract().path("id");
-    transactionJSON.put("id", transaction_id);
-
-    logger.info("--- mod-finance-test: Verifying only 1 transaction was created ... ");
-    getData(TRANSACTION_ENDPOINT).then()
-      .statusCode(200)
-      .body("total_records", equalTo(1));
-
-    logger.info("--- mod-finance-test: Fetching transaction with ID:" + transaction_id);
-    getDataById(TRANSACTION_ENDPOINT, transaction_id).then()
-      .statusCode(200)
-      .body("id", equalTo(transaction_id));
-
-    logger.info("--- mod-finance-test: Editing transaction with ID:" + transaction_id);
-    transactionJSON.put("note", "PO_Line: The History of Incas");
-    response = putData(TRANSACTION_ENDPOINT, transaction_id, transactionJSON.toString());
-    response.then()
-      .statusCode(204);
-
-    logger.info("--- mod-finance-test: Fetching transaction with ID:" + transaction_id);
-    getDataById(TRANSACTION_ENDPOINT, transaction_id).then()
-      .statusCode(200)
-      .body("note", equalTo("PO_Line: The History of Incas"));
-
-
-    logger.info("--- mod-finance-test: Creating fund-distribution ... ");
-    String distributionSample = getFile("fund_distribution.sample");
-    JSONObject distributionJSON = new JSONObject(distributionSample);
-    distributionJSON.put("budget_id", budget_id);
-    response = postData(FUND_DISTRIBUTION_ENDPOINT, distributionJSON.toString());
-    response.then()
-      .statusCode(201)
-      .body("currency", equalTo("USD"));
-    String distribution_id = response.then().extract().path("id");
-    distributionJSON.put("id", distribution_id);
-
-    logger.info("--- mod-finance-test: Verifying only 1 fund-distribution was created ... ");
-    getData(FUND_DISTRIBUTION_ENDPOINT).then()
-      .statusCode(200)
-      .body("total_records", equalTo(1));
-
-    logger.info("--- mod-finance-test: Fetching fund-distribution with ID:" + distribution_id);
-    getDataById(FUND_DISTRIBUTION_ENDPOINT, distribution_id).then()
-      .statusCode(200)
-      .body("id", equalTo(distribution_id));
-
-    logger.info("--- mod-finance-test: Editing fund-distribution with ID:" + distribution_id);
-    distributionJSON.put("currency", "CAD");
-    response = putData(FUND_DISTRIBUTION_ENDPOINT, distribution_id, distributionJSON.toString());
-    response.then()
-      .statusCode(204);
-
-    logger.info("--- mod-finance-test: Fetching fund-distribution with ID:" + distribution_id);
-    getDataById(FUND_DISTRIBUTION_ENDPOINT, distribution_id).then()
-      .statusCode(200)
-      .body("currency", equalTo("CAD"));
-
-
-    logger.info("--- mod-finance-test: Creating encumbrance ... ");
-    String encumbranceSample = getFile(ENCUMBRANCE.getPathToSamples() + ENCUMBRANCE.getSampleFileName());
-    JSONObject encumbranceJSON = new JSONObject(encumbranceSample);
-    encumbranceJSON.put("budgetId", budget_id);
-    response = postData(ENCUMBRANCE.getEndpoint(), encumbranceJSON.toString());
-    response.then()
-      .statusCode(201)
-      .body("status", equalTo("Unreleased"));
-    String encumbrance_id = response.then().extract().path("id");
-    encumbranceJSON.put("id", encumbrance_id);
-
-    logger.info("--- mod-finance-test: Verifying only 1 encumbrance was created ... ");
-    getData(ENCUMBRANCE.getEndpoint()).then()
-      .statusCode(200)
-      .body("totalRecords", equalTo(1));
-
-    logger.info("--- mod-finance-test: Fetching encumbrance with ID:" + encumbrance_id);
-    getDataById(ENCUMBRANCE.getEndpoint(), encumbrance_id).then()
-      .statusCode(200)
-      .body("id", equalTo(encumbrance_id));
-
-    logger.info("--- mod-finance-test: Editing encumbrance with ID:" + encumbrance_id);
-    encumbranceJSON.put("status", "Released");
-    response = putData(ENCUMBRANCE.getEndpoint(), encumbrance_id, encumbranceJSON.toString());
-    response.then()
-      .statusCode(204);
-    logger.info("--- mod-finance-test: Fetching encumbrance with ID:" + encumbrance_id);
-    getDataById(ENCUMBRANCE.getEndpoint(), encumbrance_id).then()
-      .statusCode(200)
-      .body("status", equalTo("Released"));
-
-    logger.info("--- mod-finance-test: Deleting encumbrance ... ");
-    deleteDataSuccess(ENCUMBRANCE.getEndpoint(), encumbrance_id);
-
-    logger.info("--- mod-finance-test: Deleting fund-distribution ... ");
-    deleteDataSuccess(FUND_DISTRIBUTION_ENDPOINT, distribution_id);
-
-    logger.info("--- mod-finance-test: Deleting transaction ... ");
-    deleteDataSuccess(TRANSACTION_ENDPOINT, transaction_id);
-
-    logger.info("--- mod-finance-test: Deleting budget ... ");
-    deleteDataSuccess(BUDGET.getEndpoint(), budget_id);
-
-    logger.info("--- mod-finance-test: Deleting fund ... ");
-    deleteDataSuccess(FUND.getEndpoint(), fund_id);
-
-    logger.info("--- mod-finance-test: Deleting ledger ... ");
-    deleteDataSuccess(LEDGER.getEndpoint(), ledger_id);
-
-    logger.info("--- mod-finance-test: Deleting fiscal_year ... ");
-    deleteDataSuccess(FISCAL_YEAR.getEndpoint(), fy_id);
+    return sampleId;
   }
 }

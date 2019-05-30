@@ -32,6 +32,7 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 @RunWith(Suite.class)
 
 @Suite.SuiteClasses({
+  EntitiesCrudTest.class,
   TenantSampleDataTest.class,
   FundsTest.class,
   FundCodeUniquenessTest.class

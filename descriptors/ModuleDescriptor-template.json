@@ -3,33 +3,33 @@
   "name": "Finance CRUD module",
   "provides": [
     {
-      "id": "budget",
+      "id": "finance-storage.budgets",
       "version": "1.0",
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/budget",
-          "permissionsRequired": ["budget.collection.get"]
+          "pathPattern": "/finance-storage/budgets",
+          "permissionsRequired": ["finance-storage.budgets.collection.get"]
         },
         {
           "methods": ["POST"],
-          "pathPattern": "/budget",
-          "permissionsRequired": ["budget.item.post"]
+          "pathPattern": "/finance-storage/budgets",
+          "permissionsRequired": ["finance-storage.budgets.item.post"]
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/budget/{id}",
-          "permissionsRequired": ["budget.item.get"]
+          "pathPattern": "/finance-storage/budgets/{id}",
+          "permissionsRequired": ["finance-storage.budgets.item.get"]
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/budget/{id}",
-          "permissionsRequired": ["budget.item.put"]
+          "pathPattern": "/finance-storage/budgets/{id}",
+          "permissionsRequired": ["finance-storage.budgets.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/budget/{id}",
-          "permissionsRequired": ["budget.item.delete"]
+          "pathPattern": "/finance-storage/budgets/{id}",
+          "permissionsRequired": ["finance-storage.budgets.item.delete"]
         }
       ]
     },
@@ -65,157 +65,157 @@
       ]
     },
     {
-      "id": "fiscal_year",
+      "id": "finance-storage.fiscal-years",
       "version": "1.0",
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/fiscal_year",
-          "permissionsRequired": ["fiscal_year.collection.get"]
+          "pathPattern": "/finance-storage/fiscal-years",
+          "permissionsRequired": ["finance-storage.fiscal-years.collection.get"]
         },
         {
           "methods": ["POST"],
-          "pathPattern": "/fiscal_year",
-          "permissionsRequired": ["fiscal_year.item.post"]
+          "pathPattern": "/finance-storage/fiscal-years",
+          "permissionsRequired": ["finance-storage.fiscal-years.item.post"]
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/fiscal_year/{id}",
-          "permissionsRequired": ["fiscal_year.item.get"]
+          "pathPattern": "/finance-storage/fiscal-years/{id}",
+          "permissionsRequired": ["finance-storage.fiscal-years.item.get"]
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/fiscal_year/{id}",
-          "permissionsRequired": ["fiscal_year.item.put"]
+          "pathPattern": "/finance-storage/fiscal-years/{id}",
+          "permissionsRequired": ["finance-storage.fiscal-years.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/fiscal_year/{id}",
-          "permissionsRequired": ["fiscal_year.item.delete"]
+          "pathPattern": "/finance-storage/fiscal-years/{id}",
+          "permissionsRequired": ["finance-storage.fiscal-years.item.delete"]
         }
       ]
     },
     {
-      "id": "fund_distribution",
+      "id": "finance-storage.fund-distributions",
       "version": "1.0",
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/fund_distribution",
-          "permissionsRequired": ["fund_distribution.collection.get"]
+          "pathPattern": "/finance-storage/fund-distributions",
+          "permissionsRequired": ["finance-storage.fund-distributions.collection.get"]
         },
         {
           "methods": ["POST"],
-          "pathPattern": "/fund_distribution",
-          "permissionsRequired": ["fund_distribution.item.post"]
+          "pathPattern": "/finance-storage/fund-distributions",
+          "permissionsRequired": ["finance-storage.fund-distributions.item.post"]
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/fund_distribution/{id}",
-          "permissionsRequired": ["fund_distribution.item.get"]
+          "pathPattern": "/finance-storage/fund-distributions/{id}",
+          "permissionsRequired": ["finance-storage.fund-distributions.item.get"]
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/fund_distribution/{id}",
-          "permissionsRequired": ["fund_distribution.item.put"]
+          "pathPattern": "/finance-storage/fund-distributions/{id}",
+          "permissionsRequired": ["finance-storage.fund-distributions.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/fund_distribution/{id}",
-          "permissionsRequired": ["fund_distribution.item.delete"]
+          "pathPattern": "/finance-storage/fund-distributions/{id}",
+          "permissionsRequired": ["finance-storage.fund-distributions.item.delete"]
         }
       ]
     },
     {
-      "id": "fund",
+      "id": "finance-storage.funds",
       "version": "1.0",
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/fund",
-          "permissionsRequired": ["fund.collection.get"]
+          "pathPattern": "/finance-storage/funds",
+          "permissionsRequired": ["finance-storage.funds.collection.get"]
         },
         {
           "methods": ["POST"],
-          "pathPattern": "/fund",
-          "permissionsRequired": ["fund.item.post"]
+          "pathPattern": "/finance-storage/funds",
+          "permissionsRequired": ["finance-storage.funds.item.post"]
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/fund/{id}",
-          "permissionsRequired": ["fund.item.get"]
+          "pathPattern": "/finance-storage/funds/{id}",
+          "permissionsRequired": ["finance-storage.funds.item.get"]
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/fund/{id}",
-          "permissionsRequired": ["fund.item.put"]
+          "pathPattern": "/finance-storage/funds/{id}",
+          "permissionsRequired": ["finance-storage.funds.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/fund/{id}",
-          "permissionsRequired": ["fund.item.delete"]
+          "pathPattern": "/finance-storage/funds/{id}",
+          "permissionsRequired": ["finance-storage.funds.item.delete"]
         }
       ]
     },
     {
-      "id": "ledger",
+      "id": "finance-storage.ledgers",
       "version": "1.0",
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/ledger",
-          "permissionsRequired": ["ledger.collection.get"]
+          "pathPattern": "/finance-storage/ledgers",
+          "permissionsRequired": ["finance-storage.ledgers.collection.get"]
         },
         {
           "methods": ["POST"],
-          "pathPattern": "/ledger",
-          "permissionsRequired": ["ledger.item.post"]
+          "pathPattern": "/finance-storage/ledgers",
+          "permissionsRequired": ["finance-storage.ledgers.item.post"]
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/ledger/{id}",
-          "permissionsRequired": ["ledger.item.get"]
+          "pathPattern": "/finance-storage/ledgers/{id}",
+          "permissionsRequired": ["finance-storage.ledgers.item.get"]
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/ledger/{id}",
-          "permissionsRequired": ["ledger.item.put"]
+          "pathPattern": "/finance-storage/ledgers/{id}",
+          "permissionsRequired": ["finance-storage.ledgers.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/ledger/{id}",
-          "permissionsRequired": ["ledger.item.delete"]
+          "pathPattern": "/finance-storage/ledgers/{id}",
+          "permissionsRequired": ["finance-storage.ledgers.item.delete"]
         }
       ]
     },
     {
-      "id": "transaction",
+      "id": "finance-storage.transactions",
       "version": "1.0",
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/transaction",
-          "permissionsRequired": ["transaction.collection.get"]
+          "pathPattern": "/finance-storage/transactions",
+          "permissionsRequired": ["finance-storage.transactions.collection.get"]
         },
         {
           "methods": ["POST"],
-          "pathPattern": "/transaction",
-          "permissionsRequired": ["transaction.item.post"]
+          "pathPattern": "/finance-storage/transactions",
+          "permissionsRequired": ["finance-storage.transactions.item.post"]
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/transaction/{id}",
-          "permissionsRequired": ["transaction.item.get"]
+          "pathPattern": "/finance-storage/transactions/{id}",
+          "permissionsRequired": ["finance-storage.transactions.item.get"]
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/transaction/{id}",
-          "permissionsRequired": ["transaction.item.put"]
+          "pathPattern": "/finance-storage/transactions/{id}",
+          "permissionsRequired": ["finance-storage.transactions.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/transaction/{id}",
-          "permissionsRequired": ["transaction.item.delete"]
+          "pathPattern": "/finance-storage/transactions/{id}",
+          "permissionsRequired": ["finance-storage.transactions.item.delete"]
         }
       ]
     },
@@ -233,40 +233,40 @@
   ],
   "permissionSets" : [
     {
-      "permissionName" : "budget.collection.get",
+      "permissionName" : "finance-storage.budgets.collection.get",
       "displayName" : "budget-collection get",
       "description" : "Get a collection of budgets"
     },
     {
-      "permissionName" : "budget.item.post",
+      "permissionName" : "finance-storage.budgets.item.post",
       "displayName" : "budget-item post",
       "description" : "Create a new budget"
     },
     {
-      "permissionName" : "budget.item.get",
+      "permissionName" : "finance-storage.budgets.item.get",
       "displayName" : "budget-item get",
       "description" : "Fetch a budget"
     },
     {
-      "permissionName" : "budget.item.put",
+      "permissionName" : "finance-storage.budgets.item.put",
       "displayName" : "budget-item put",
       "description" : "Update a budget"
     },
     {
-      "permissionName" : "budget.item.delete",
+      "permissionName" : "finance-storage.budgets.item.delete",
       "displayName" : "budget-item delete",
       "description" : "Delete a budget"
     },
     {
-      "permissionName" : "budget.all",
+      "permissionName" : "finance-storage.budgets.all",
       "displayName" : "All budget perms",
       "description" : "All permissions for the budget",
       "subPermissions" : [
-        "budget.collection.get",
-        "budget.item.post",
-        "budget.item.get",
-        "budget.item.put",
-        "budget.item.delete"
+        "finance-storage.budgets.collection.get",
+        "finance-storage.budgets.item.post",
+        "finance-storage.budgets.item.get",
+        "finance-storage.budgets.item.put",
+        "finance-storage.budgets.item.delete"
       ]
     },
     {
@@ -307,188 +307,188 @@
       ]
     },
     {
-      "permissionName" : "fiscal_year.collection.get",
+      "permissionName" : "finance-storage.fiscal-years.collection.get",
       "displayName" : "fiscal-year-collection get",
       "description" : "Get collection of fiscal year"
     },
     {
-      "permissionName" : "fiscal_year.item.post",
+      "permissionName" : "finance-storage.fiscal-years.item.post",
       "displayName" : "fiscal-year-item post",
       "description" : "Create a new fiscal year"
     },
     {
-      "permissionName" : "fiscal_year.item.get",
+      "permissionName" : "finance-storage.fiscal-years.item.get",
       "displayName" : "fiscal-year-item get",
       "description" : "Fetch a fiscal year"
     },
     {
-      "permissionName" : "fiscal_year.item.put",
+      "permissionName" : "finance-storage.fiscal-years.item.put",
       "displayName" : "fiscal-year-item put",
       "description" : "Update a fiscal year"
     },
     {
-      "permissionName" : "fiscal_year.item.delete",
+      "permissionName" : "finance-storage.fiscal-years.item.delete",
       "displayName" : "fiscal-year-item delete",
       "description" : "Delete a fiscal year"
     },
     {
-      "permissionName" : "fiscal_year.all",
+      "permissionName" : "finance-storage.fiscal-years.all",
       "displayName" : "All fiscal_year perms",
       "description" : "All permissions for the fiscal year",
       "subPermissions" : [
-        "fiscal_year.collection.get",
-        "fiscal_year.item.post",
-        "fiscal_year.item.get",
-        "fiscal_year.item.put",
-        "fiscal_year.item.delete"
+        "finance-storage.fiscal-years.collection.get",
+        "finance-storage.fiscal-years.item.post",
+        "finance-storage.fiscal-years.item.get",
+        "finance-storage.fiscal-years.item.put",
+        "finance-storage.fiscal-years.item.delete"
       ]
     },
     {
-      "permissionName" : "fund_distribution.collection.get",
+      "permissionName" : "finance-storage.fund-distributions.collection.get",
       "displayName" : "fund-distribution-collection get",
       "description" : "Get collection of fund distributions"
     },
     {
-      "permissionName" : "fund_distribution.item.post",
+      "permissionName" : "finance-storage.fund-distributions.item.post",
       "displayName" : "fund-distribution-item post",
       "description" : "Create a new fund distribution"
     },
     {
-      "permissionName" : "fund_distribution.item.get",
+      "permissionName" : "finance-storage.fund-distributions.item.get",
       "displayName" : "fund-distribution-item get",
       "description" : "Fetch a fund distribution"
     },
     {
-      "permissionName" : "fund_distribution.item.put",
+      "permissionName" : "finance-storage.fund-distributions.item.put",
       "displayName" : "fund-distribution-item put",
       "description" : "Update a fund distribution"
     },
     {
-      "permissionName" : "fund_distribution.item.delete",
+      "permissionName" : "finance-storage.fund-distributions.item.delete",
       "displayName" : "fund-distribution-item delete",
       "description" : "Delete a fund distribution"
     },
     {
-      "permissionName" : "fund_distribution.all",
+      "permissionName" : "finance-storage.fund-distributions.all",
       "displayName" : "All fund_distribution perms",
       "description" : "All permissions for the fund distribution",
       "subPermissions" : [
-        "fund_distribution.collection.get",
-        "fund_distribution.item.post",
-        "fund_distribution.item.get",
-        "fund_distribution.item.put",
-        "fund_distribution.item.delete"
+        "finance-storage.fund-distributions.collection.get",
+        "finance-storage.fund-distributions.item.post",
+        "finance-storage.fund-distributions.item.get",
+        "finance-storage.fund-distributions.item.put",
+        "finance-storage.fund-distributions.item.delete"
       ]
     },
     {
-      "permissionName" : "fund.collection.get",
+      "permissionName" : "finance-storage.funds.collection.get",
       "displayName" : "fund-collection get",
       "description" : "Get collection of funds"
     },
     {
-      "permissionName" : "fund.item.post",
+      "permissionName" : "finance-storage.funds.item.post",
       "displayName" : "fund-item post",
       "description" : "Create a new fund"
     },
     {
-      "permissionName" : "fund.item.get",
+      "permissionName" : "finance-storage.funds.item.get",
       "displayName" : "fund-item get",
       "description" : "Fetch a fund"
     },
     {
-      "permissionName" : "fund.item.put",
+      "permissionName" : "finance-storage.funds.item.put",
       "displayName" : "fund-item put",
       "description" : "Update a fund"
     },
     {
-      "permissionName" : "fund.item.delete",
+      "permissionName" : "finance-storage.funds.item.delete",
       "displayName" : "fund-item delete",
       "description" : "Delete a fund"
     },
     {
-      "permissionName" : "fund.all",
+      "permissionName" : "finance-storage.funds.all",
       "displayName" : "All fund perms",
       "description" : "All permissions for the fund",
       "subPermissions" : [
-        "fund.collection.get",
-        "fund.item.post",
-        "fund.item.get",
-        "fund.item.put",
-        "fund.item.delete"
+        "finance-storage.funds.collection.get",
+        "finance-storage.funds.item.post",
+        "finance-storage.funds.item.get",
+        "finance-storage.funds.item.put",
+        "finance-storage.funds.item.delete"
       ]
     },
     {
-      "permissionName" : "ledger.collection.get",
+      "permissionName" : "finance-storage.ledgers.collection.get",
       "displayName" : "ledger-collection get",
       "description" : "Get collection of ledgers"
     },
     {
-      "permissionName" : "ledger.item.post",
+      "permissionName" : "finance-storage.ledgers.item.post",
       "displayName" : "ledger-item post",
       "description" : "Create a new ledger"
     },
     {
-      "permissionName" : "ledger.item.get",
+      "permissionName" : "finance-storage.ledgers.item.get",
       "displayName" : "ledger-item get",
       "description" : "Fetch a ledger"
     },
     {
-      "permissionName" : "ledger.item.put",
+      "permissionName" : "finance-storage.ledgers.item.put",
       "displayName" : "ledger-item put",
       "description" : "Update a ledger"
     },
     {
-      "permissionName" : "ledger.item.delete",
+      "permissionName" : "finance-storage.ledgers.item.delete",
       "displayName" : "ledger-item delete",
       "description" : "Delete a ledger"
     },
     {
-      "permissionName" : "ledger.all",
+      "permissionName" : "finance-storage.ledgers.all",
       "displayName" : "All fund perms",
       "description" : "All permissions for the ledger",
       "subPermissions" : [
-        "ledger.collection.get",
-        "ledger.item.post",
-        "ledger.item.get",
-        "ledger.item.put",
-        "ledger.item.delete"
+        "finance-storage.ledgers.collection.get",
+        "finance-storage.ledgers.item.post",
+        "finance-storage.ledgers.item.get",
+        "finance-storage.ledgers.item.put",
+        "finance-storage.ledgers.item.delete"
       ]
     },
     {
-      "permissionName" : "transaction.collection.get",
-      "displayName" : "transaction-collection get",
+      "permissionName" : "finance-storage.transactions.collection.get",
+      "displayName" : "finance-storage.transactions.-collection get",
       "description" : "Get collection of transactions"
     },
     {
-      "permissionName" : "transaction.item.post",
-      "displayName" : "transaction-item post",
+      "permissionName" : "finance-storage.transactions.item.post",
+      "displayName" : "finance-storage.transactions.-item post",
       "description" : "Create a new transaction"
     },
     {
-      "permissionName" : "transaction.item.get",
-      "displayName" : "transaction-item get",
+      "permissionName" : "finance-storage.transactions.item.get",
+      "displayName" : "finance-storage.transactions.-item get",
       "description" : "Fetch a transaction"
     },
     {
-      "permissionName" : "transaction.item.put",
-      "displayName" : "transaction-item put",
+      "permissionName" : "finance-storage.transactions.item.put",
+      "displayName" : "finance-storage.transactions.-item put",
       "description" : "Update a transaction"
     },
     {
-      "permissionName" : "transaction.item.delete",
-      "displayName" : "transaction-item delete",
+      "permissionName" : "finance-storage.transactions.item.delete",
+      "displayName" : "finance-storage.transactions.-item delete",
       "description" : "Delete a transaction"
     },
     {
-      "permissionName" : "transaction.all",
+      "permissionName" : "finance-storage.transactions.all",
       "displayName" : "All transaction perms",
       "description" : "All permissions for the transaction",
       "subPermissions" : [
-        "transaction.collection.get",
-        "transaction.item.post",
-        "transaction.item.get",
-        "transaction.item.put",
-        "transaction.item.delete"
+        "finance-storage.transactions.collection.get",
+        "finance-storage.transactions.item.post",
+        "finance-storage.transactions.item.get",
+        "finance-storage.transactions.item.put",
+        "finance-storage.transactions.item.delete"
       ]
     },
     {
@@ -496,13 +496,13 @@
       "displayName" : "All finance-module perms",
       "description" : "All permissions for the finance module",
       "subPermissions" : [
-        "budget.all",
+        "finance-storage.budgets.all",
         "finance-storage.encumbrances.all",
-        "fiscal_year.all",
-        "fund_distribution.all",
-        "funds.all",
-        "ledger.all",
-        "transaction.all"
+        "finance-storage.fiscal-years.all",
+        "finance-storage.fund-distributions.all",
+        "finance-storage.funds.all",
+        "finance-storage.ledgers.all",
+        "finance-storage.transactions.all"
       ]
     }
   ],

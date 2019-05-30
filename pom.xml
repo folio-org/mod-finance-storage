@@ -208,6 +208,8 @@
           <aspectDirectory>src/main/java/org/folio/rest/annotations</aspectDirectory>
           <XaddSerialVersionUID>true</XaddSerialVersionUID>
           <showWeaveInfo>true</showWeaveInfo>
+          <!-- Forces re-compilation, regardless of whether the compiler arguments or the sources have changed. Useful for local re-builds. -->
+          <forceAjcCompile>true</forceAjcCompile>
           <aspectLibraries>
             <aspectLibrary>
               <groupId>org.folio</groupId>
