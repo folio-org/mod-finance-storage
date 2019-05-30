@@ -6,9 +6,11 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.resource.Budget;
+import org.folio.rest.jaxrs.resource.Encumbrance;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
 import org.folio.rest.jaxrs.resource.FiscalYear;
 import org.folio.rest.jaxrs.resource.Ledger;
@@ -45,6 +47,7 @@ public class TenantReferenceAPI extends TenantAPI {
           .add("ledgers", getUriPath(Ledger.class))
           .add("funds", getUriPath(FinanceStorageFunds.class))
           .add("budgets", getUriPath(Budget.class))
+          .add("encumbrances", getUriPath(Encumbrance.class))
           .perform(tenantAttributes, headers, vertx, res1 -> {
             if (res1.failed()) {
               handler.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse
@@ -56,7 +59,6 @@ public class TenantReferenceAPI extends TenantAPI {
           });
       } else {
         handler.handle(res);
-        return;
       }
     }, cntxt);
 

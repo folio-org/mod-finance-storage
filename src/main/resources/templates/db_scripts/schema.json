@@ -179,6 +179,39 @@
           "removeAccents": true
         }
       ]
+    },
+    {
+      "tableName": "encumbrance",
+      "generateId": true,
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "populateJsonWithId": true,
+      "foreignKeys": [
+        {
+          "fieldName": "budget_id",
+          "targetTable": "budget",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fund_id",
+          "targetTable": "fund",
+          "tOps": "ADD"
+        }
+      ],
+      "ginIndex": [
+        {
+          "fieldName": "amount_encumbered",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "note",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ]
     }
   ]
 }

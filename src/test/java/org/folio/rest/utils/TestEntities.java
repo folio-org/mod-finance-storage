@@ -3,6 +3,7 @@ package org.folio.rest.utils;
 import javax.ws.rs.Path;
 
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundDistribution;
@@ -15,6 +16,7 @@ public enum TestEntities {
   LEDGER(getEndpoint(org.folio.rest.jaxrs.resource.Ledger.class), Ledger.class, "data/ledgers/", "One-time.json", "code", "One-time", 2),
   FUND(getEndpoint(FinanceStorageFunds.class), Fund.class, "data/funds/", "AFRICAHIST.json", "name", "African History", 21),
   BUDGET(getEndpoint(org.folio.rest.jaxrs.resource.Budget.class), Budget.class, "data/budgets/", "AFRICAHIST-FY19.json", "name", "AFRICAHIST-FY19", 21),
+  ENCUMBRANCE("/finance-storage/encumbrances", Encumbrance.class, "data/encumbrances/","encumbrance-8114807d.json", "status", "Released", 2),
   TRANSACTION(getEndpoint(org.folio.rest.jaxrs.resource.Transaction.class), Transaction.class, "", "transaction.sample", "note", "PO_Line: The History of Incas", 0),
   FUND_DISTRIBUTION(getEndpoint(org.folio.rest.jaxrs.resource.FundDistribution.class), FundDistribution.class, "", "fund_distribution.sample", "currency", "CAD", 0);
 
