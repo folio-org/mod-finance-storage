@@ -64,14 +64,11 @@ public abstract class TestBase {
   }
 
   void verifyCollectionQuantity(String endpoint, int quantity, Header tenantHeader) throws MalformedURLException {
-    // TODO: remove this workaround after all schema collections aligned to camelCase
-    String totalRecordsString = endpoint.equals("/fund") ? "total_records" : "totalRecords";
-
     getData(endpoint, tenantHeader)
       .then()
         .log().all()
         .statusCode(200)
-        .body(totalRecordsString, equalTo(quantity));
+        .body("totalRecords", equalTo(quantity));
   }
 
   void verifyCollectionQuantity(String endpoint, int quantity) throws MalformedURLException {
