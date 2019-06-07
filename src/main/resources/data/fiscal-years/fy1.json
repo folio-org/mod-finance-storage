@@ -2,5 +2,7 @@
   "id":"684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "name": "FY19",
   "code": "19",
-  "description": "Fiscal Year 2018-2019"
+  "description": "Fiscal Year 2018-2019",
+  "startDate": "2018-01-01T00:00:00Z",
+  "endDate": "2018-12-31T23:59:59Z"
 }
