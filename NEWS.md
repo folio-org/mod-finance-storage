@@ -14,7 +14,7 @@ unique index on fund `code` column.
 *	[MODFISTO-12](https://issues.folio.org/browse/MODFISTO-12) Implemented fund API
 
 ### Bug Fixes
-*	[MODFUND-50](https://issues.folio.org/browse/MODFUND-50) Updated fiscal year schema
+*	[MODFISTO-15](https://issues.folio.org/browse/MODFISTO-15) Updated fiscal year schema
 	
 
 ## 1.1.0 - Released
