@@ -12,6 +12,8 @@ unique index on fund `code` column.
 *	[MODFISTO-10](https://issues.folio.org/browse/MODFISTO-10) Encumbrance schema updated
 *	[MODFISTO-11](https://issues.folio.org/browse/MODFISTO-11) Implemented encumbrance API
 *	[MODFISTO-12](https://issues.folio.org/browse/MODFISTO-12) Implemented fund API
+
+### Bug Fixes
 *	[MODFUND-50](https://issues.folio.org/browse/MODFUND-50) Updated fiscal year schema
 	
 
