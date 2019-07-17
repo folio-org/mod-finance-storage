@@ -9,8 +9,6 @@ This release contains only changes about removing acquisitionsUnit from fund sch
 * [MODFISTO-14](https://issues.folio.org/browse/MODFISTO-14) Remove fund.acquisitionsUnit
 
 
-## 2.1.0 - Unreleased
-
 ## 2.0.0 - Released
 This release contains implementation of `encumbrance` and `fund` endpoints, finance schemas updates, created 
 unique index on fund `code` column.
