@@ -1,4 +1,13 @@
-## 2.1.0 - Unreleased
+## 3.1.0 - Unreleased
+
+## 3.0.0 - Released
+This release contains only changes about removing acquisitionsUnit from fund schema
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v2.0.0...v3.0.0)
+
+### Stories
+* [MODFISTO-14](https://issues.folio.org/browse/MODFISTO-14) Remove fund.acquisitionsUnit
+
 
 ## 2.0.0 - Released
 This release contains implementation of `encumbrance` and `fund` endpoints, finance schemas updates, created 
