@@ -108,6 +108,12 @@
           "tOps": "ADD"
         }
       ],
+      "uniqueIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD"
+        }
+      ],
       "ginIndex": [
         {
           "fieldName": "name",
