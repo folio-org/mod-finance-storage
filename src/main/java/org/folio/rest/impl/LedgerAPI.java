@@ -3,13 +3,11 @@ package org.folio.rest.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.persist.EntitiesMetadataHolder;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.QueryHolder;
 
 import javax.ws.rs.core.Response;
@@ -19,12 +17,6 @@ import static org.folio.rest.persist.HelperUtils.getEntitiesCollection;
 
 public class LedgerAPI implements FinanceStorageLedgers {
   private static final String LEDGER_TABLE = "ledger";
-
-  private String idFieldName = "id";
-
-  public LedgerAPI(Vertx vertx, String tenantId) {
-    PostgresClient.getInstance(vertx, tenantId).setIdField(idFieldName);
-  }
 
   @Override
   @Validate
