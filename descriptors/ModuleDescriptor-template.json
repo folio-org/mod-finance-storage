@@ -413,27 +413,27 @@
     },
     {
       "permissionName" : "finance-storage.fund-types.collection.get",
-      "displayName" : "fund-type-collection get",
+      "displayName" : "Fund-type - get the collection of Fund-types",
       "description" : "Get collection of fund types"
     },
     {
       "permissionName" : "finance-storage.fund-types.item.post",
-      "displayName" : "fund-type-item post",
+      "displayName" : "Fund-type - create a new Fund-type",
       "description" : "Create a new fund type"
     },
     {
       "permissionName" : "finance-storage.fund-types.item.get",
-      "displayName" : "fund-type-item get",
+      "displayName" : "Fund-type - get an existing Fund-type",
       "description" : "Fetch a fund type"
     },
     {
       "permissionName" : "finance-storage.fund-types.item.put",
-      "displayName" : "fund-type-item put",
+      "displayName" : "Fund-type - modify an existing Fund-type",
       "description" : "Update a fund type"
     },
     {
       "permissionName" : "finance-storage.fund-types.item.delete",
-      "displayName" : "fund-type-item delete",
+      "displayName" : "Fund-type - delete an existing Fund-type",
       "description" : "Delete a fund type"
     },
     {
