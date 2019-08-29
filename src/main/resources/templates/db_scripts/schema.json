@@ -2,10 +2,8 @@
   "tables": [
     {
       "tableName": "ledger",
-      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "populateJsonWithId": true,
       "ginIndex": [
         {
           "fieldName": "name",
@@ -23,10 +21,8 @@
     },
     {
       "tableName": "fund",
-      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "populateJsonWithId": true,
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
@@ -71,10 +67,8 @@
     },
     {
       "tableName": "fiscal_year",
-      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "populateJsonWithId": true,
       "ginIndex": [
         {
           "fieldName": "name",
@@ -92,10 +86,8 @@
     },
     {
       "tableName": "budget",
-      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "populateJsonWithId": true,
       "foreignKeys": [
         {
           "fieldName": "fundId",
@@ -135,10 +127,8 @@
     },
     {
       "tableName": "fund_distribution",
-      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "populateJsonWithId": true,
       "foreignKeys": [
         {
           "fieldName": "budgetId",
@@ -167,10 +157,8 @@
     },
     {
       "tableName": "transaction",
-      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "populateJsonWithId": true,
       "foreignKeys": [
         {
           "fieldName": "budgetId",
@@ -195,10 +183,8 @@
     },
     {
       "tableName": "encumbrance",
-      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "populateJsonWithId": true,
       "foreignKeys": [
         {
           "fieldName": "budgetId",
