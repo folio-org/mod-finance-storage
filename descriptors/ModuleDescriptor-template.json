@@ -158,6 +158,37 @@
       ]
     },
     {
+      "id": "finance-storage.groups",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/groups",
+          "permissionsRequired": ["finance-storage.groups.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/groups",
+          "permissionsRequired": ["finance-storage.groups.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/groups/{id}",
+          "permissionsRequired": ["finance-storage.groups.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/groups/{id}",
+          "permissionsRequired": ["finance-storage.groups.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/groups/{id}",
+          "permissionsRequired": ["finance-storage.groups.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.ledgers",
       "version": "1.0",
       "handlers": [
@@ -418,6 +449,43 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.groups.collection.get",
+      "displayName" : "Get a collection of group records",
+      "description" : "Get a collection of group records"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.post",
+      "displayName" : "Create a new group record",
+      "description" : "Create a new group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.get",
+      "displayName" : "Get a specific group record",
+      "description" : "Get a group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.put",
+      "displayName" : "Update a specific group record",
+      "description" : "Update a specific group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.delete",
+      "displayName" : "Delete a specific group record",
+      "description" : "Delete a specific group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.all",
+      "displayName" : "All group related permissions",
+      "description" : "All group related permissions",
+      "subPermissions" : [
+        "finance-storage.groups.collection.get",
+        "finance-storage.groups.item.post",
+        "finance-storage.groups.item.get",
+        "finance-storage.groups.item.put",
+        "finance-storage.groups.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance-storage.ledgers.collection.get",
       "displayName" : "ledger-collection get",
       "description" : "Get collection of ledgers"
@@ -501,6 +569,7 @@
         "finance-storage.fiscal-years.all",
         "finance-storage.fund-distributions.all",
         "finance-storage.funds.all",
+        "finance-storage.groups.all",
         "finance-storage.ledgers.all",
         "finance-storage.transactions.all"
       ]
