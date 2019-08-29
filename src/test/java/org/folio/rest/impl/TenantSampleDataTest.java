@@ -48,7 +48,6 @@ public class TenantSampleDataTest extends TestBase {
       upgradeTenantWithSampleDataLoad();
       logger.info("-- upgrade the tenant again with no sample data, so the previously inserted data stays in tact --");
       upgradeTenantWithNoSampleDataLoad();
-      upgradeNonExistentTenant();
     } finally {
       deleteTenant(ANOTHER_TENANT_HEADER);
     }
@@ -143,16 +142,4 @@ public class TenantSampleDataTest extends TestBase {
       .assertThat()
       .statusCode(200);
   }
-
-
-  private void upgradeNonExistentTenant() throws MalformedURLException {
-
-    logger.info("upgrading Module for non existed tenant");
-
-    JsonObject jsonBody = TenantApiTestUtil.prepareTenantBody(false, true);
-    postToTenant(NONEXISTENT_TENANT_HEADER, jsonBody)
-      .assertThat()
-      .statusCode(400);
-  }
-
 }

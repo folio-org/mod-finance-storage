@@ -1,51 +1,39 @@
 package org.folio.rest.impl;
 
+import java.util.Map;
+
+import javax.ws.rs.core.Response;
+
+import org.folio.rest.annotations.Validate;
+import org.folio.rest.jaxrs.model.Ledger;
+import org.folio.rest.jaxrs.model.LedgerCollection;
+import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
+import org.folio.rest.persist.PgUtil;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.LedgerCollection;
-import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
-import org.folio.rest.persist.EntitiesMetadataHolder;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.QueryHolder;
-
-import javax.ws.rs.core.Response;
-import java.util.Map;
-
-import static org.folio.rest.persist.HelperUtils.getEntitiesCollection;
 
 public class LedgerAPI implements FinanceStorageLedgers {
   private static final String LEDGER_TABLE = "ledger";
 
-  private String idFieldName = "id";
-
-  public LedgerAPI(Vertx vertx, String tenantId) {
-    PostgresClient.getInstance(vertx, tenantId).setIdField(idFieldName);
-  }
-
   @Override
   @Validate
   public void getFinanceStorageLedgers(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    vertxContext.runOnContext((Void v) -> {
-      EntitiesMetadataHolder<org.folio.rest.jaxrs.model.Ledger, LedgerCollection> entitiesMetadataHolder = new EntitiesMetadataHolder<>(org.folio.rest.jaxrs.model.Ledger.class, LedgerCollection.class, GetFinanceStorageLedgersResponse.class);
-      QueryHolder cql = new QueryHolder(LEDGER_TABLE, query, offset, limit, lang);
-      getEntitiesCollection(entitiesMetadataHolder, cql, asyncResultHandler, vertxContext, okapiHeaders);
-    });
+    PgUtil.get(LEDGER_TABLE, Ledger.class, LedgerCollection.class, query, offset, limit, okapiHeaders, vertxContext,
+        GetFinanceStorageLedgersResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void postFinanceStorageLedgers(String lang, org.folio.rest.jaxrs.model.Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void postFinanceStorageLedgers(String lang, Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.post(LEDGER_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageLedgersResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
   public void getFinanceStorageLedgersById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.getById(LEDGER_TABLE, org.folio.rest.jaxrs.model.Ledger.class, id, okapiHeaders, vertxContext, GetFinanceStorageLedgersByIdResponse.class, asyncResultHandler);
+    PgUtil.getById(LEDGER_TABLE, Ledger.class, id, okapiHeaders, vertxContext, GetFinanceStorageLedgersByIdResponse.class, asyncResultHandler);
   }
 
   @Override
@@ -56,7 +44,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
 
   @Override
   @Validate
-  public void putFinanceStorageLedgersById(String id, String lang, org.folio.rest.jaxrs.model.Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void putFinanceStorageLedgersById(String id, String lang, Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(LEDGER_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageLedgersByIdResponse.class, asyncResultHandler);
   }
 }
