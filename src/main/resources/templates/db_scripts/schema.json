@@ -100,18 +100,20 @@
           "tOps": "ADD"
         }
       ],
+      "uniqueIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD"
+        }
+      ],
       "ginIndex": [
         {
           "fieldName": "name",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
+          "tOps": "DELETE"
         },
         {
           "fieldName": "code",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
+          "tOps": "DELETE"
         },
         {
           "fieldName": "budget_status",
