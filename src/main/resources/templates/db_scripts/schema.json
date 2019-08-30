@@ -215,7 +215,7 @@
       ]
     },
     {
-      "tableName": "groups",
+      "tableName": "group",
       "fromModuleVersion": 3.0,
       "withMetadata": true,
       "ginIndex": [
