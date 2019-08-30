@@ -14,6 +14,7 @@ import org.folio.rest.jaxrs.resource.FinanceStorageEncumbrances;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
+import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.tools.utils.TenantLoading;
 
 import javax.ws.rs.Path;
@@ -47,7 +48,7 @@ public class TenantReferenceAPI extends TenantAPI {
           .add("ledgers", getUriPath(FinanceStorageLedgers.class))
           .add("funds", getUriPath(FinanceStorageFunds.class))
           .add("budgets", getUriPath(FinanceStorageBudgets.class))
-          .add("encumbrances", getUriPath(FinanceStorageEncumbrances.class))
+          .add("transactions", getUriPath(FinanceStorageTransactions.class))
           .perform(tenantAttributes, headers, vertx, res1 -> {
             if (res1.failed()) {
               handler.handle(io.vertx.core.Future.succeededFuture(PostTenantResponse

@@ -9,8 +9,8 @@ documentation:
 
 types:
   errors: !include raml-util/schemas/errors.schema
-  encumbrance: !include acq-models/mod-finance/schemas/encumbrance.json
-  encumbrance_collection: !include acq-models/mod-finance/schemas/encumbrance_collection.json
+  encumbranceTransaction: !include acq-models/mod-finance/schemas/transaction.json
+  encumbranceTransaction_collection: !include acq-models/mod-finance/schemas/transaction_collection.json
   UUID:
     type: string
     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
@@ -30,10 +30,10 @@ resourceTypes:
 /finance-storage/encumbrances:
   type:
     collection:
-      exampleCollection: !include acq-models/mod-finance/examples/encumbrance_collection.sample
-      exampleItem: !include acq-models/mod-finance/examples/encumbrance.sample
-      schemaCollection: encumbrance_collection
-      schemaItem: encumbrance
+      exampleCollection: !include acq-models/mod-finance/examples/transaction_collection.sample
+      exampleItem: !include acq-models/mod-finance/examples/transaction.sample
+      schemaCollection: encumbranceTransaction_collection
+      schemaItem: encumbranceTransaction
   is: [validate]
   get:
     description: Get list of encumbrances
@@ -48,6 +48,6 @@ resourceTypes:
         type: UUID
     type:
       collection-item:
-        exampleItem: !include acq-models/mod-finance/examples/encumbrance.sample
-        schema: encumbrance
+        exampleItem: !include acq-models/mod-finance/examples/transaction.sample
+        schema: encumbranceTransaction
     is: [validate]

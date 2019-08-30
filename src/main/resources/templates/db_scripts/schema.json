@@ -161,53 +161,9 @@
       "tableName": "transaction",
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "foreignKeys": [
-        {
-          "fieldName": "budgetId",
-          "targetTable": "budget",
-          "tOps": "ADD"
-        }
-      ],
       "ginIndex": [
         {
           "fieldName": "amount",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        },
-        {
-          "fieldName": "note",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        }
-      ]
-    },
-    {
-      "tableName": "encumbrance",
-      "fromModuleVersion": 1.0,
-      "withMetadata": true,
-      "foreignKeys": [
-        {
-          "fieldName": "budgetId",
-          "targetTable": "budget",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fundId",
-          "targetTable": "fund",
-          "tOps": "ADD"
-        }
-      ],
-      "ginIndex": [
-        {
-          "fieldName": "amountEncumbered",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        },
-        {
-          "fieldName": "note",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
