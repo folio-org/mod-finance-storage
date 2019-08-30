@@ -1,0 +1,8 @@
+{
+  "id": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
+  "name": "Fiscal Year 2019",
+  "code": "FY19",
+  "description": "Fiscal year for 2019",
+  "periodStart": "2019-01-01T00:00:00Z",
+  "periodEnd": "2019-12-31T23:59:59Z"
+}
