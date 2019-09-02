@@ -7,6 +7,7 @@ import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundDistribution;
+import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
@@ -14,6 +15,7 @@ import org.folio.rest.jaxrs.resource.FinanceStorageEncumbrances;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFundDistributions;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
+import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 
@@ -24,7 +26,8 @@ public enum TestEntities {
   BUDGET(getEndpoint(FinanceStorageBudgets.class), Budget.class, "data/budgets/", "AFRICAHIST-FY19.json", "name", "AFRICAHIST-FY19", 21),
   ENCUMBRANCE(getEndpoint(FinanceStorageEncumbrances.class), Encumbrance.class, "data/encumbrances/","encumbrance-8114807d.json", "status", "Released", 2),
   TRANSACTION(getEndpoint(FinanceStorageTransactions.class), Transaction.class, "", "transaction.sample", "note", "PO_Line: The History of Incas", 0),
-  FUND_DISTRIBUTION(getEndpoint(FinanceStorageFundDistributions.class), FundDistribution.class, "", "fund_distribution.sample", "currency", "CAD", 0);
+  FUND_DISTRIBUTION(getEndpoint(FinanceStorageFundDistributions.class), FundDistribution.class, "", "fund_distribution.sample", "currency", "CAD", 0),
+  GROUP(getEndpoint(FinanceStorageGroups.class), Group.class, "data/groups/", "HIST.json", "name", "New name", 1);
 
 
   TestEntities(String endpoint, Class<?> clazz, String pathToSamples, String sampleFileName, String updatedFieldName,
