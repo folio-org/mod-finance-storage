@@ -10,7 +10,6 @@ import io.vertx.core.logging.LoggerFactory;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
-import org.folio.rest.jaxrs.resource.FinanceStorageEncumbrances;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
