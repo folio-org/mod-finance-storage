@@ -13,6 +13,7 @@ import static org.folio.rest.utils.TestEntities.ENCUMBRANCE;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.FUND_DISTRIBUTION;
+import static org.folio.rest.utils.TestEntities.GROUP;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 
@@ -28,6 +29,7 @@ public class FundsTest extends TestBase {
     String transactionId = testPositiveCases(TRANSACTION);
     String fundDistributionId = testPositiveCases(FUND_DISTRIBUTION);
     String encumbranceId = testPositiveCases(ENCUMBRANCE);
+    String groupId = testPositiveCases(GROUP);
 
     deleteDataSuccess(ENCUMBRANCE, encumbranceId);
     deleteDataSuccess(FUND_DISTRIBUTION, fundDistributionId);
@@ -36,6 +38,7 @@ public class FundsTest extends TestBase {
     deleteDataSuccess(FUND, fundId);
     deleteDataSuccess(LEDGER, ledgerId);
     deleteDataSuccess(FISCAL_YEAR, fiscalYearId);
+    deleteDataSuccess(GROUP, groupId);
   }
 
   private String testPositiveCases(TestEntities testEntity) throws MalformedURLException {

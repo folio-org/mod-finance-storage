@@ -213,6 +213,35 @@
           "removeAccents": true
         }
       ]
+    },
+    {
+      "tableName": "group",
+      "fromModuleVersion": 3.0,
+      "withMetadata": true,
+      "ginIndex": [
+        {
+          "fieldName": "status",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "acqUnitIds",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "name",
+          "tOps": "ADD"
+        }
+      ]
     }
   ]
 }
