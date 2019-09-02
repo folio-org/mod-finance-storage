@@ -9,7 +9,6 @@ import org.junit.Test;
 import java.net.MalformedURLException;
 
 import static org.folio.rest.utils.TestEntities.BUDGET;
-import static org.folio.rest.utils.TestEntities.ENCUMBRANCE;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.FUND_DISTRIBUTION;
@@ -28,10 +27,8 @@ public class FundsTest extends TestBase {
     String budgetId = testPositiveCases(BUDGET);
     String transactionId = testPositiveCases(TRANSACTION);
     String fundDistributionId = testPositiveCases(FUND_DISTRIBUTION);
-    String encumbranceId = testPositiveCases(ENCUMBRANCE);
     String groupId = testPositiveCases(GROUP);
 
-    deleteDataSuccess(ENCUMBRANCE, encumbranceId);
     deleteDataSuccess(FUND_DISTRIBUTION, fundDistributionId);
     deleteDataSuccess(TRANSACTION, transactionId);
     deleteDataSuccess(BUDGET, budgetId);
