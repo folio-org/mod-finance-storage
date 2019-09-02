@@ -77,10 +77,20 @@
           "removeAccents": true
         },
         {
-          "fieldName": "code",
+          "fieldName": "acqUnitIds",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "DELETE"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
         }
       ]
     },
@@ -189,6 +199,35 @@
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
+        }
+      ]
+    },
+    {
+      "tableName": "group",
+      "fromModuleVersion": 3.0,
+      "withMetadata": true,
+      "ginIndex": [
+        {
+          "fieldName": "status",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "acqUnitIds",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "name",
+          "tOps": "ADD"
         }
       ]
     }
