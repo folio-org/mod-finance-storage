@@ -77,10 +77,20 @@
           "removeAccents": true
         },
         {
-          "fieldName": "code",
+          "fieldName": "acqUnitIds",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "DELETE"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
         }
       ]
     },
