@@ -16,7 +16,7 @@ import io.vertx.core.Handler;
 
 public class GroupAPI implements FinanceStorageGroups {
 
-  private static final String GROUPS_TABLE = "group";
+  private static final String GROUPS_TABLE = "groups";
 
   @Override
   @Validate
