@@ -17,6 +17,7 @@ public class FundTypeAPI implements FinanceStorageFundTypes {
   private static final String FUND_TYPE_TABLE = "fund_type";
 
   @Override
+  @Validate
   public void getFinanceStorageFundTypes(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(FUND_TYPE_TABLE, FundType.class, FundTypeCollection.class, query, offset, limit,
       okapiHeaders, vertxContext, GetFinanceStorageFundTypesResponse.class, asyncResultHandler);
