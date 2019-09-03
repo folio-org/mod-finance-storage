@@ -20,6 +20,16 @@
       ]
     },
     {
+      "tableName": "fund_type",
+      "fromModuleVersion": 3.1,
+      "uniqueIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
       "tableName": "fund",
       "fromModuleVersion": 1.0,
       "withMetadata": true,

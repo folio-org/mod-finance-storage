@@ -96,6 +96,37 @@
       ]
     },
     {
+      "id": "finance-storage.fund-types",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/fund-types",
+          "permissionsRequired": ["finance-storage.fund-types.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/fund-types",
+          "permissionsRequired": ["finance-storage.fund-types.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/fund-types/{id}",
+          "permissionsRequired": ["finance-storage.fund-types.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/fund-types/{id}",
+          "permissionsRequired": ["finance-storage.fund-types.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/fund-types/{id}",
+          "permissionsRequired": ["finance-storage.fund-types.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.funds",
       "version": "2.0",
       "handlers": [
@@ -344,6 +375,43 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.fund-types.collection.get",
+      "displayName" : "Fund-type - get the collection of Fund-types",
+      "description" : "Get collection of fund types"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.item.post",
+      "displayName" : "Fund-type - create a new Fund-type",
+      "description" : "Create a new fund type"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.item.get",
+      "displayName" : "Fund-type - get an existing Fund-type",
+      "description" : "Fetch a fund type"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.item.put",
+      "displayName" : "Fund-type - modify an existing Fund-type",
+      "description" : "Update a fund type"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.item.delete",
+      "displayName" : "Fund-type - delete an existing Fund-type",
+      "description" : "Delete a fund type"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.all",
+      "displayName" : "All fund-type perms",
+      "description" : "All permissions for the fund type",
+      "subPermissions" : [
+        "finance-storage.fund-types.collection.get",
+        "finance-storage.fund-types.item.post",
+        "finance-storage.fund-types.item.get",
+        "finance-storage.fund-types.item.put",
+        "finance-storage.fund-types.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance-storage.funds.collection.get",
       "displayName" : "fund-collection get",
       "description" : "Get collection of funds"
@@ -501,7 +569,8 @@
         "finance-storage.funds.all",
         "finance-storage.groups.all",
         "finance-storage.ledgers.all",
-        "finance-storage.transactions.all"
+        "finance-storage.transactions.all",
+        "finance-storage.fund-types.all"
       ]
     }
   ],
