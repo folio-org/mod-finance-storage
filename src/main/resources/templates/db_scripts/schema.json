@@ -38,6 +38,11 @@
           "fieldName": "ledgerId",
           "targetTable": "ledger",
           "tOps": "ADD"
+        },
+        {
+          "fieldName": "fundTypeId",
+          "targetTable": "fund_type",
+          "tOps": "ADD"
         }
       ],
       "uniqueIndex": [
@@ -54,20 +59,24 @@
           "removeAccents": true
         },
         {
-          "fieldName": "code",
+          "fieldName": "acqUnitIds",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
-        },
-        {
-          "fieldName": "fund_status",
-          "tOps": "DELETE"
         },
         {
           "fieldName": "fundStatus",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "DELETE"
+        },
+        {
+          "fieldName": "fund_status",
+          "tOps": "DELETE"
         },
         {
           "fieldName": "currency",
