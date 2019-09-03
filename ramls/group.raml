@@ -1,0 +1,51 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: Group CRUD APIs
+    content: <b>CRUD APIs used to manage groups</b>
+
+types:
+  group: !include acq-models/mod-finance/schemas/group.json
+  groupCollection: !include acq-models/mod-finance/schemas/group_collection.json
+  errors: !include raml-util/schemas/errors.schema
+  uuid:
+    type: "string"
+    pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+
+traits:
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
+  validate: !include raml-util/traits/validation.raml
+
+resourceTypes:
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
+
+/finance-storage/groups:
+  type:
+    collection:
+      exampleCollection: !include acq-models/mod-finance/examples/group_collection.sample
+      exampleItem: !include acq-models/mod-finance/examples/group.sample
+      schemaCollection: groupCollection
+      schemaItem: group
+  is: [validate]
+  get:
+    description: Get list of groups
+    is: [
+      searchable: {description: "with valid searchable fields: e.g.", example: "status==Active sortBy name"},
+      pageable
+    ]
+  /{id}:
+    uriParameters:
+      id:
+        description: The UUID of a group
+        type: uuid
+    type:
+      collection-item:
+        exampleItem: !include acq-models/mod-finance/examples/group.sample
+        schema: group
+    is: [validate]

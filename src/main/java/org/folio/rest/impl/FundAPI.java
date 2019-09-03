@@ -1,19 +1,18 @@
 package org.folio.rest.impl;
 
+import java.util.Map;
+
+import javax.ws.rs.core.Response;
+
+import org.folio.rest.annotations.Validate;
+import org.folio.rest.jaxrs.model.Fund;
+import org.folio.rest.jaxrs.model.FundCollection;
+import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
+import org.folio.rest.persist.PgUtil;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.FundCollection;
-import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
-import org.folio.rest.persist.EntitiesMetadataHolder;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.QueryHolder;
-
-import javax.ws.rs.core.Response;
-import java.util.Map;
-
-import static org.folio.rest.persist.HelperUtils.getEntitiesCollection;
 
 public class FundAPI implements FinanceStorageFunds {
   private static final String FUND_TABLE = "fund";
@@ -21,23 +20,20 @@ public class FundAPI implements FinanceStorageFunds {
   @Override
   @Validate
   public void getFinanceStorageFunds(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    vertxContext.runOnContext((Void v) -> {
-      EntitiesMetadataHolder<org.folio.rest.jaxrs.model.Fund, FundCollection> entitiesMetadataHolder = new EntitiesMetadataHolder<>(org.folio.rest.jaxrs.model.Fund.class, FundCollection.class, GetFinanceStorageFundsResponse.class);
-      QueryHolder cql = new QueryHolder(FUND_TABLE, query, offset, limit, lang);
-      getEntitiesCollection(entitiesMetadataHolder, cql, asyncResultHandler, vertxContext, okapiHeaders);
-    });
+    PgUtil.get(FUND_TABLE, Fund.class, FundCollection.class, query, offset, limit, okapiHeaders, vertxContext,
+      GetFinanceStorageFundsResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void postFinanceStorageFunds(String lang, org.folio.rest.jaxrs.model.Fund entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void postFinanceStorageFunds(String lang, Fund entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.post(FUND_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageFundsResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
   public void getFinanceStorageFundsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.getById(FUND_TABLE, org.folio.rest.jaxrs.model.Fund.class, id, okapiHeaders, vertxContext, GetFinanceStorageFundsByIdResponse.class, asyncResultHandler);
+    PgUtil.getById(FUND_TABLE, Fund.class, id, okapiHeaders, vertxContext, GetFinanceStorageFundsByIdResponse.class, asyncResultHandler);
   }
 
   @Override
@@ -48,7 +44,7 @@ public class FundAPI implements FinanceStorageFunds {
 
   @Override
   @Validate
-  public void putFinanceStorageFundsById(String id, String lang, org.folio.rest.jaxrs.model.Fund entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void putFinanceStorageFundsById(String id, String lang, Fund entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(FUND_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageFundsByIdResponse.class, asyncResultHandler);
   }
 }

@@ -34,37 +34,6 @@
       ]
     },
     {
-      "id": "finance-storage.encumbrances",
-      "version": "1.0",
-      "handlers": [
-        {
-          "methods": ["GET"],
-          "pathPattern": "/finance-storage/encumbrances",
-          "permissionsRequired": ["finance-storage.encumbrances.collection.get"]
-        },
-        {
-          "methods": ["POST"],
-          "pathPattern": "/finance-storage/encumbrances",
-          "permissionsRequired": ["finance-storage.encumbrances.item.post"]
-        },
-        {
-          "methods": ["GET"],
-          "pathPattern": "/finance-storage/encumbrances/{id}",
-          "permissionsRequired": ["finance-storage.encumbrances.item.get"]
-        },
-        {
-          "methods": ["PUT"],
-          "pathPattern": "/finance-storage/encumbrances/{id}",
-          "permissionsRequired": ["finance-storage.encumbrances.item.put"]
-        },
-        {
-          "methods": ["DELETE"],
-          "pathPattern": "/finance-storage/encumbrances/{id}",
-          "permissionsRequired": ["finance-storage.encumbrances.item.delete"]
-        }
-      ]
-    },
-    {
       "id": "finance-storage.fiscal-years",
       "version": "1.0",
       "handlers": [
@@ -189,6 +158,37 @@
       ]
     },
     {
+      "id": "finance-storage.groups",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/groups",
+          "permissionsRequired": ["finance-storage.groups.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/groups",
+          "permissionsRequired": ["finance-storage.groups.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/groups/{id}",
+          "permissionsRequired": ["finance-storage.groups.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/groups/{id}",
+          "permissionsRequired": ["finance-storage.groups.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/groups/{id}",
+          "permissionsRequired": ["finance-storage.groups.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.ledgers",
       "version": "1.0",
       "handlers": [
@@ -298,43 +298,6 @@
         "finance-storage.budgets.item.get",
         "finance-storage.budgets.item.put",
         "finance-storage.budgets.item.delete"
-      ]
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.collection.get",
-      "displayName" : "finance-storage.encumbrance-collection get",
-      "description" : "Get a collection of encumbrances"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.item.post",
-      "displayName" : "encumbrance-item post",
-      "description" : "Create a new encumbrance"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.item.get",
-      "displayName" : "encumbrance-item get",
-      "description" : "Fetch an encumbrance"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.item.put",
-      "displayName" : "encumbrance-item put",
-      "description" : "Update an encumbrance"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.item.delete",
-      "displayName" : "encumbrance-item delete",
-      "description" : "Delete an encumbrance"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.all",
-      "displayName" : "All encumbrance perms",
-      "description" : "All permissions for the encumbrance",
-      "subPermissions" : [
-        "finance-storage.encumbrances.collection.get",
-        "finance-storage.encumbrances.item.post",
-        "finance-storage.encumbrances.item.get",
-        "finance-storage.encumbrances.item.put",
-        "finance-storage.encumbrances.item.delete"
       ]
     },
     {
@@ -486,6 +449,43 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.groups.collection.get",
+      "displayName" : "Get a collection of group records",
+      "description" : "Get a collection of group records"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.post",
+      "displayName" : "Create a new group record",
+      "description" : "Create a new group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.get",
+      "displayName" : "Get a specific group record",
+      "description" : "Get a group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.put",
+      "displayName" : "Update a specific group record",
+      "description" : "Update a specific group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.delete",
+      "displayName" : "Delete a specific group record",
+      "description" : "Delete a specific group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.all",
+      "displayName" : "All group related permissions",
+      "description" : "All group related permissions",
+      "subPermissions" : [
+        "finance-storage.groups.collection.get",
+        "finance-storage.groups.item.post",
+        "finance-storage.groups.item.get",
+        "finance-storage.groups.item.put",
+        "finance-storage.groups.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance-storage.ledgers.collection.get",
       "displayName" : "ledger-collection get",
       "description" : "Get collection of ledgers"
@@ -555,8 +555,7 @@
         "finance-storage.transactions.collection.get",
         "finance-storage.transactions.item.post",
         "finance-storage.transactions.item.get",
-        "finance-storage.transactions.item.put",
-        "finance-storage.transactions.item.delete"
+        "finance-storage.transactions.item.put"
       ]
     },
     {
@@ -565,10 +564,10 @@
       "description" : "All permissions for the finance module",
       "subPermissions" : [
         "finance-storage.budgets.all",
-        "finance-storage.encumbrances.all",
         "finance-storage.fiscal-years.all",
         "finance-storage.fund-distributions.all",
         "finance-storage.funds.all",
+        "finance-storage.groups.all",
         "finance-storage.ledgers.all",
         "finance-storage.transactions.all",
         "finance-storage.fund-types.all"

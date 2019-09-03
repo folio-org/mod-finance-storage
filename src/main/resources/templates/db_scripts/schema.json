@@ -81,10 +81,20 @@
           "removeAccents": true
         },
         {
-          "fieldName": "code",
+          "fieldName": "acqUnitIds",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "DELETE"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
         }
       ]
     },
@@ -104,18 +114,20 @@
           "tOps": "ADD"
         }
       ],
+      "uniqueIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD"
+        }
+      ],
       "ginIndex": [
         {
           "fieldName": "name",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
+          "tOps": "DELETE"
         },
         {
           "fieldName": "code",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
+          "tOps": "DELETE"
         },
         {
           "fieldName": "budget_status",
@@ -165,8 +177,23 @@
       "withMetadata": true,
       "foreignKeys": [
         {
-          "fieldName": "budgetId",
-          "targetTable": "budget",
+          "fieldName": "fiscalYearId",
+          "targetTable": "fiscal_year",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fromFundId",
+          "targetTable": "fund",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "sourceFiscalYearId",
+          "targetTable": "fiscal_year",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "toFundId",
+          "targetTable": "fund",
           "tOps": "ADD"
         }
       ],
@@ -176,43 +203,35 @@
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
-        },
-        {
-          "fieldName": "note",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
         }
       ]
     },
     {
-      "tableName": "encumbrance",
-      "fromModuleVersion": 1.0,
+      "tableName": "groups",
+      "fromModuleVersion": 3.0,
       "withMetadata": true,
-      "foreignKeys": [
-        {
-          "fieldName": "budgetId",
-          "targetTable": "budget",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fundId",
-          "targetTable": "fund",
-          "tOps": "ADD"
-        }
-      ],
       "ginIndex": [
         {
-          "fieldName": "amountEncumbered",
+          "fieldName": "status",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
         },
         {
-          "fieldName": "note",
+          "fieldName": "acqUnitIds",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "name",
+          "tOps": "ADD"
         }
       ]
     }

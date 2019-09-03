@@ -372,6 +372,7 @@
           </execution>
         </executions>
         <configuration>
+          <excludes>**/generated-*/**/*</excludes>
           <failsOnError>false</failsOnError>
           <failOnViolation>false</failOnViolation>
           <logViolationsToConsole>true</logViolationsToConsole>
