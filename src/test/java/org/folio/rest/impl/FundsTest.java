@@ -53,7 +53,8 @@ public class FundsTest extends TestBase {
     testAllFieldsExists(responseJson, sampleJson);
 
     logger.info(String.format("--- %s test: Verifying only 1 record was created ... ", testEntity.name()));
-    verifyCollectionQuantity(testEntity.getEndpoint(),1);
+    String endpoint = testEntity.getEndpoint() + "?query=cql.allRecords=1 sortBy " + testEntity.getUpdatedFieldName();
+    verifyCollectionQuantity(endpoint,1);
 
     logger.info(String.format("--- %s test: Fetching record with ID: %s", testEntity.name(), sampleId));
     response = testEntitySuccessfullyFetched(testEntity.getEndpoint(), sampleId);
