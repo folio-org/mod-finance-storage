@@ -15,13 +15,11 @@
   <properties>
     <aspectj.version>1.8.9</aspectj.version>
     <module_name>mod-finance-storage</module_name>
-    <http.port>8081</http.port>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
     <ramlfiles_acq_models_path>${ramlfiles_path}/acq-models</ramlfiles_acq_models_path>
-    <raml-module-builder.version>23.11.0</raml-module-builder.version>
+    <raml-module-builder.version>27.0.0</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <postgres.driver.version>9.4.1212</postgres.driver.version>
   </properties>
 
   <repositories>
@@ -50,12 +48,6 @@
       <version>3.5.4</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-mysql-postgresql-client</artifactId>
-      <version>3.5.4</version>
-    </dependency>
-
     <!-- test dependencies -->
     <dependency>
       <groupId>io.rest-assured</groupId>
@@ -331,14 +323,11 @@
           <execution>
             <phase>prepare-package</phase>
             <configuration>
-              <tasks>
-                <replace token="baseUri: http://github.com/org/folio/lsp-apis" value="baseUri: http://localhost:${http.port}/apis" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
-                </replace>
-                <replace token="protocols: [ HTTPS ]" value="protocols: [ HTTP ]" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
-                </replace>
-              </tasks>
+              <target>
+                <replaceregexp match="baseUri:.+$" replace="baseUri: http://localhost:{http.port}" byline="true">
+                  <fileset dir="${basedir}/target/classes/apidocs/raml" includes="**/*.raml" />
+                </replaceregexp>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -383,6 +372,7 @@
           </execution>
         </executions>
         <configuration>
+          <excludes>**/generated-*/**/*</excludes>
           <failsOnError>false</failsOnError>
           <failOnViolation>false</failOnViolation>
           <logViolationsToConsole>true</logViolationsToConsole>
