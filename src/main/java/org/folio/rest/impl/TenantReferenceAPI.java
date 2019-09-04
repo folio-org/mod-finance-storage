@@ -1,5 +1,7 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -13,15 +15,13 @@ import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
 import org.folio.rest.jaxrs.resource.FinanceStorageEncumbrances;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
-import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
+import org.folio.rest.jaxrs.resource.FinanceStorage;
 import org.folio.rest.tools.utils.TenantLoading;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
-
-import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 
 public class TenantReferenceAPI extends TenantAPI {
   private static final Logger log = LoggerFactory.getLogger(TenantReferenceAPI.class);
@@ -44,7 +44,7 @@ public class TenantReferenceAPI extends TenantAPI {
         tl.withKey(PARAMETER_LOAD_SAMPLE)
           .withLead("data")
           .add("fiscal-years", getUriPath(FinanceStorageFiscalYears.class))
-          .add("ledgers", getUriPath(FinanceStorageLedgers.class))
+          .add("ledgers", getUriPath(FinanceStorage.class))
           .add("funds", getUriPath(FinanceStorageFunds.class))
           .add("budgets", getUriPath(FinanceStorageBudgets.class))
           .add("encumbrances", getUriPath(FinanceStorageEncumbrances.class))

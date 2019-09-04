@@ -213,6 +213,21 @@
           "removeAccents": true
         }
       ]
+    },
+    {
+      "tableName": "ledgerFY",
+      "fromModuleVersion": 4.0,
+      "withMetadata": true,
+      "foreignKeys": [
+        {
+          "fieldName": "ledgerId",
+          "targetTable": "ledger"
+        },
+        {
+          "fieldName": "fiscalYearId",
+          "targetTable": "fiscal_year"
+        }
+      ]
     }
   ]
 }
