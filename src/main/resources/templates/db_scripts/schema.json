@@ -21,7 +21,7 @@
     },
     {
       "tableName": "fund_type",
-      "fromModuleVersion": 3.1,
+      "fromModuleVersion": 3.0,
       "uniqueIndex": [
         {
           "fieldName": "name",
