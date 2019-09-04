@@ -34,37 +34,6 @@
       ]
     },
     {
-      "id": "finance-storage.encumbrances",
-      "version": "1.0",
-      "handlers": [
-        {
-          "methods": ["GET"],
-          "pathPattern": "/finance-storage/encumbrances",
-          "permissionsRequired": ["finance-storage.encumbrances.collection.get"]
-        },
-        {
-          "methods": ["POST"],
-          "pathPattern": "/finance-storage/encumbrances",
-          "permissionsRequired": ["finance-storage.encumbrances.item.post"]
-        },
-        {
-          "methods": ["GET"],
-          "pathPattern": "/finance-storage/encumbrances/{id}",
-          "permissionsRequired": ["finance-storage.encumbrances.item.get"]
-        },
-        {
-          "methods": ["PUT"],
-          "pathPattern": "/finance-storage/encumbrances/{id}",
-          "permissionsRequired": ["finance-storage.encumbrances.item.put"]
-        },
-        {
-          "methods": ["DELETE"],
-          "pathPattern": "/finance-storage/encumbrances/{id}",
-          "permissionsRequired": ["finance-storage.encumbrances.item.delete"]
-        }
-      ]
-    },
-    {
       "id": "finance-storage.fiscal-years",
       "version": "1.0",
       "handlers": [
@@ -127,6 +96,37 @@
       ]
     },
     {
+      "id": "finance-storage.fund-types",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/fund-types",
+          "permissionsRequired": ["finance-storage.fund-types.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/fund-types",
+          "permissionsRequired": ["finance-storage.fund-types.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/fund-types/{id}",
+          "permissionsRequired": ["finance-storage.fund-types.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/fund-types/{id}",
+          "permissionsRequired": ["finance-storage.fund-types.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/fund-types/{id}",
+          "permissionsRequired": ["finance-storage.fund-types.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.funds",
       "version": "2.0",
       "handlers": [
@@ -154,6 +154,37 @@
           "methods": ["DELETE"],
           "pathPattern": "/finance-storage/funds/{id}",
           "permissionsRequired": ["finance-storage.funds.item.delete"]
+        }
+      ]
+    },
+    {
+      "id": "finance-storage.groups",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/groups",
+          "permissionsRequired": ["finance-storage.groups.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/groups",
+          "permissionsRequired": ["finance-storage.groups.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/groups/{id}",
+          "permissionsRequired": ["finance-storage.groups.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/groups/{id}",
+          "permissionsRequired": ["finance-storage.groups.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/groups/{id}",
+          "permissionsRequired": ["finance-storage.groups.item.delete"]
         }
       ]
     },
@@ -270,43 +301,6 @@
       ]
     },
     {
-      "permissionName" : "finance-storage.encumbrances.collection.get",
-      "displayName" : "finance-storage.encumbrance-collection get",
-      "description" : "Get a collection of encumbrances"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.item.post",
-      "displayName" : "encumbrance-item post",
-      "description" : "Create a new encumbrance"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.item.get",
-      "displayName" : "encumbrance-item get",
-      "description" : "Fetch an encumbrance"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.item.put",
-      "displayName" : "encumbrance-item put",
-      "description" : "Update an encumbrance"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.item.delete",
-      "displayName" : "encumbrance-item delete",
-      "description" : "Delete an encumbrance"
-    },
-    {
-      "permissionName" : "finance-storage.encumbrances.all",
-      "displayName" : "All encumbrance perms",
-      "description" : "All permissions for the encumbrance",
-      "subPermissions" : [
-        "finance-storage.encumbrances.collection.get",
-        "finance-storage.encumbrances.item.post",
-        "finance-storage.encumbrances.item.get",
-        "finance-storage.encumbrances.item.put",
-        "finance-storage.encumbrances.item.delete"
-      ]
-    },
-    {
       "permissionName" : "finance-storage.fiscal-years.collection.get",
       "displayName" : "fiscal-year-collection get",
       "description" : "Get collection of fiscal year"
@@ -381,6 +375,43 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.fund-types.collection.get",
+      "displayName" : "Fund-type - get the collection of Fund-types",
+      "description" : "Get collection of fund types"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.item.post",
+      "displayName" : "Fund-type - create a new Fund-type",
+      "description" : "Create a new fund type"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.item.get",
+      "displayName" : "Fund-type - get an existing Fund-type",
+      "description" : "Fetch a fund type"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.item.put",
+      "displayName" : "Fund-type - modify an existing Fund-type",
+      "description" : "Update a fund type"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.item.delete",
+      "displayName" : "Fund-type - delete an existing Fund-type",
+      "description" : "Delete a fund type"
+    },
+    {
+      "permissionName" : "finance-storage.fund-types.all",
+      "displayName" : "All fund-type perms",
+      "description" : "All permissions for the fund type",
+      "subPermissions" : [
+        "finance-storage.fund-types.collection.get",
+        "finance-storage.fund-types.item.post",
+        "finance-storage.fund-types.item.get",
+        "finance-storage.fund-types.item.put",
+        "finance-storage.fund-types.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance-storage.funds.collection.get",
       "displayName" : "fund-collection get",
       "description" : "Get collection of funds"
@@ -415,6 +446,43 @@
         "finance-storage.funds.item.get",
         "finance-storage.funds.item.put",
         "finance-storage.funds.item.delete"
+      ]
+    },
+    {
+      "permissionName" : "finance-storage.groups.collection.get",
+      "displayName" : "Get a collection of group records",
+      "description" : "Get a collection of group records"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.post",
+      "displayName" : "Create a new group record",
+      "description" : "Create a new group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.get",
+      "displayName" : "Get a specific group record",
+      "description" : "Get a group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.put",
+      "displayName" : "Update a specific group record",
+      "description" : "Update a specific group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.item.delete",
+      "displayName" : "Delete a specific group record",
+      "description" : "Delete a specific group record"
+    },
+    {
+      "permissionName" : "finance-storage.groups.all",
+      "displayName" : "All group related permissions",
+      "description" : "All group related permissions",
+      "subPermissions" : [
+        "finance-storage.groups.collection.get",
+        "finance-storage.groups.item.post",
+        "finance-storage.groups.item.get",
+        "finance-storage.groups.item.put",
+        "finance-storage.groups.item.delete"
       ]
     },
     {
@@ -487,8 +555,7 @@
         "finance-storage.transactions.collection.get",
         "finance-storage.transactions.item.post",
         "finance-storage.transactions.item.get",
-        "finance-storage.transactions.item.put",
-        "finance-storage.transactions.item.delete"
+        "finance-storage.transactions.item.put"
       ]
     },
     {
@@ -497,12 +564,13 @@
       "description" : "All permissions for the finance module",
       "subPermissions" : [
         "finance-storage.budgets.all",
-        "finance-storage.encumbrances.all",
         "finance-storage.fiscal-years.all",
         "finance-storage.fund-distributions.all",
         "finance-storage.funds.all",
+        "finance-storage.groups.all",
         "finance-storage.ledgers.all",
-        "finance-storage.transactions.all"
+        "finance-storage.transactions.all",
+        "finance-storage.fund-types.all"
       ]
     }
   ],

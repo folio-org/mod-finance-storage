@@ -9,10 +9,10 @@ import org.junit.Test;
 import java.net.MalformedURLException;
 
 import static org.folio.rest.utils.TestEntities.BUDGET;
-import static org.folio.rest.utils.TestEntities.ENCUMBRANCE;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.FUND_DISTRIBUTION;
+import static org.folio.rest.utils.TestEntities.GROUP;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 
@@ -27,15 +27,15 @@ public class FundsTest extends TestBase {
     String budgetId = testPositiveCases(BUDGET);
     String transactionId = testPositiveCases(TRANSACTION);
     String fundDistributionId = testPositiveCases(FUND_DISTRIBUTION);
-    String encumbranceId = testPositiveCases(ENCUMBRANCE);
+    String groupId = testPositiveCases(GROUP);
 
-    deleteDataSuccess(ENCUMBRANCE, encumbranceId);
     deleteDataSuccess(FUND_DISTRIBUTION, fundDistributionId);
     deleteDataSuccess(TRANSACTION, transactionId);
     deleteDataSuccess(BUDGET, budgetId);
     deleteDataSuccess(FUND, fundId);
     deleteDataSuccess(LEDGER, ledgerId);
     deleteDataSuccess(FISCAL_YEAR, fiscalYearId);
+    deleteDataSuccess(GROUP, groupId);
   }
 
   private String testPositiveCases(TestEntities testEntity) throws MalformedURLException {
@@ -53,7 +53,8 @@ public class FundsTest extends TestBase {
     testAllFieldsExists(responseJson, sampleJson);
 
     logger.info(String.format("--- %s test: Verifying only 1 record was created ... ", testEntity.name()));
-    verifyCollectionQuantity(testEntity.getEndpoint(),1);
+    String endpoint = testEntity.getEndpoint() + "?query=cql.allRecords=1 sortBy " + testEntity.getUpdatedFieldName();
+    verifyCollectionQuantity(endpoint,1);
 
     logger.info(String.format("--- %s test: Fetching record with ID: %s", testEntity.name(), sampleId));
     response = testEntitySuccessfullyFetched(testEntity.getEndpoint(), sampleId);
