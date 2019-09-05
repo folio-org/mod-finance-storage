@@ -3,7 +3,7 @@
   "name": "Ongoing",
   "code": "ONGOING",
   "description": "Funds used for all recurring purchases",
- "ledgerStatus": "Frozen",
+  "ledgerStatus": "Frozen",
   "allocated": 2400,
   "available": 100,
   "unavailable": 2300,

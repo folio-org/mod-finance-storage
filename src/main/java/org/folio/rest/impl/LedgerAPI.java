@@ -8,10 +8,10 @@ import javax.ws.rs.core.Response;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
-import org.folio.rest.jaxrs.resource.FinanceStorage;
+import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.persist.PgUtil;
 
-public class LedgerAPI implements FinanceStorage {
+public class LedgerAPI implements FinanceStorageLedgers {
   private static final String LEDGER_TABLE = "ledger";
 
   @Override
@@ -45,10 +45,4 @@ public class LedgerAPI implements FinanceStorage {
     PgUtil.put(LEDGER_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageLedgersByIdResponse.class, asyncResultHandler);
   }
 
-  @Override
-  public void getFinanceStorageLedgerFiscalYears(int offset, int limit, String query, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    // TODO Auto-generated method stub
-
-  }
 }

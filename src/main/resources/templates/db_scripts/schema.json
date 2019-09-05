@@ -248,11 +248,15 @@
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
-          "targetTable": "ledger"
+          "targetTable": "ledger",
+          "tableAlias": "ledgerFY",
+          "targetTableAlias": "ledger" 
         },
         {
           "fieldName": "fiscalYearId",
-          "targetTable": "fiscal_year"
+          "targetTable": "fiscal_year",
+          "tableAlias": "ledgerFY",
+          "targetTableAlias": "fiscalYear"
         }
       ]
     }
