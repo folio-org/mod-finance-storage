@@ -6,10 +6,10 @@
   "fundStatus": "Active",
   "description": "state funds used for monographic series and ongoing sets",
   "ledgerId": "65cb2bf0-d4c2-4886-8ad0-b76f1ba75d61",
-  "allocationFrom": [
+  "allocatedFromIds": [
     "e54b1f4d-7d05-4b1a-9368-3c36b75d8ac6"
   ],
-  "allocationTo": [
+  "allocatedToIds": [
     "e54b1f4d-7d05-4b1a-9368-3c36b75d8ac6"
   ]
 }

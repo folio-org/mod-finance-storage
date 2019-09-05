@@ -6,7 +6,7 @@
   "fundStatus": "Active",
   "description": "special funds allocated to fund subscriptions sent to exchange partner libraries",
   "ledgerId": "65cb2bf0-d4c2-4886-8ad0-b76f1ba75d61",
-  "allocationFrom": [
+  "allocatedFromIds": [
     "e54b1f4d-7d05-4b1a-9368-3c36b75d8ac6",
     "4428a37c-8bae-4f0d-865d-970d83d5ad55"
   ]

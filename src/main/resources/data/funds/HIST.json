@@ -6,7 +6,7 @@
   "fundStatus": "Active",
   "description": "subdivided by geographic regions, to match individual selectors",
   "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
-  "allocationTo": [
+  "allocatedToIds": [
     "65032151-39a5-4cef-8810-5350eb316300",
     "67cd0046-e4f1-4e4f-9024-adf0b0039d09",
     "e9285a1c-1dfc-4380-868c-e74073003f43",
