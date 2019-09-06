@@ -4,6 +4,7 @@
   "code": "ANZHIST",
   "externalAccountNo": "115878270630030",
   "fundStatus": "Active",
+  "fundTypeId": "a6cffa87-7a64-4419-83d6-fa7af9d120e2",
   "description": "use for all Oceanic countries",
   "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
   "allocatedFromIds": [

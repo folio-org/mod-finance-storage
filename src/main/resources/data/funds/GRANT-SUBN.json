@@ -4,6 +4,7 @@
   "code": "GRANT-SUBN",
   "externalAccountNo": "30155824699502",
   "fundStatus": "Inactive",
+  "fundTypeId": "509775e4-3682-4c72-92ac-ab2d2fb3575f",
   "description": "grant money used for subscriptions, data sets, or backfiles; do not activate this fund unless University Accounting alerts the library to specific grants received this year",
   "ledgerId": "65cb2bf0-d4c2-4886-8ad0-b76f1ba75d61"
 }

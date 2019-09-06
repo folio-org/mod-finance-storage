@@ -76,7 +76,7 @@ public class StorageTestSuite {
 
     startVerticle(options);
 
-    prepareTenant(TENANT_HEADER, false);
+    prepareTenant(TENANT_HEADER, false, false);
   }
 
   @AfterClass

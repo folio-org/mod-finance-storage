@@ -253,7 +253,6 @@
     {
       "tableName": "ledgerFY",
       "fromModuleVersion": 4.0,
-      "withMetadata": true,
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
