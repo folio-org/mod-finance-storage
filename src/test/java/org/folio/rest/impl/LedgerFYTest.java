@@ -29,18 +29,10 @@ public class LedgerFYTest extends TestBase {
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 1);
 
     // search with fields from "ledger"
-    getData(LEDGER_FY_ENDPOINT + "?query=ledger.name==NonExistent").then()
-      .log()
-      .all()
-      .statusCode(200)
-      .body("totalRecords", equalTo(0));
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=ledger.name==NonExistent", 0);
 
  // search with fields from "FY"
-    getData(LEDGER_FY_ENDPOINT + "?query=fiscalYear.code==FY19").then()
-      .log()
-      .all()
-      .statusCode(200)
-      .body("totalRecords", equalTo(1));
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=fiscalYear.code==FY19", 1);
 
     // search with invalid cql query
     testInvalidCQLQuery(LEDGER_FY_ENDPOINT + "?query=invalid-query");
