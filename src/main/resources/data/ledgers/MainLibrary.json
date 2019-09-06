@@ -1,0 +1,14 @@
+{
+  "id": "7cef8378-7cbd-1fae-bcdd-8b9d7c0af9de",
+  "name": "Main Library",
+  "code": "MAIN-LIB",
+  "description": "This is the ledger for the Main Library",
+  "ledgerStatus": "Active",
+  "allocated": 2000,
+  "available": 1000,
+  "unavailable": 1000,
+  "currency": "USD",
+  "acqUnitIds": [
+    "0ebb1f7d-983f-3026-8a4c-5318e0ebc041"
+  ]
+}

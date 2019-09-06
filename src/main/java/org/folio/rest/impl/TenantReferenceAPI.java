@@ -1,5 +1,7 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -13,8 +15,8 @@ import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFundTypes;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
-import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
+import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantLoading;
@@ -24,8 +26,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
-
-import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 
 public class TenantReferenceAPI extends TenantAPI {
   private static final Logger log = LoggerFactory.getLogger(TenantReferenceAPI.class);

@@ -3,7 +3,9 @@
   "name": "One-time",
   "code": "ONETIME",
   "description": "Funds used for any non-recurring purchases",
-  "fiscalYears": [
-    "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
-  ]
+  "ledgerStatus": "Active",
+  "allocated": 2000,
+  "available": 1000,
+  "unavailable": 1000,
+  "currency": "USD"
 }
