@@ -22,13 +22,15 @@ public class FundCodeUniquenessTest extends TestBase {
   public void testFundCodeUniqueness() throws MalformedURLException {
 
     String sampleId = null;
+    String ledgerId = null;
+    String fundTypeId = null;
     try {
        // prepare referenced object
       String ledgerSample = getFile(LEDGER.getPathToSampleFile());
-      postData(LEDGER.getEndpoint(), ledgerSample);
+      ledgerId = createEntity(LEDGER.getEndpoint(), ledgerSample);
 
       String fundTypeSample = getFile(FUND_TYPE.getPathToSampleFile());
-      postData(FUND_TYPE.getEndpoint(), fundTypeSample);
+      fundTypeId = createEntity(FUND_TYPE.getEndpoint(), fundTypeSample);
 
       String fundSample = getFile(FUND.getPathToSampleFile());
       sampleId = createEntity(FUND.getEndpoint(), fundSample);
@@ -44,6 +46,8 @@ public class FundCodeUniquenessTest extends TestBase {
     } finally {
       logger.info(String.format("--- mod-finance-storages %s test: Deleting %s with ID: %s", FUND.name(), FUND.name(), sampleId));
       deleteDataSuccess(FUND.getEndpoint(), sampleId);
+      deleteDataSuccess(LEDGER.getEndpoint(), ledgerId);
+      deleteDataSuccess(FUND_TYPE.getEndpoint(), fundTypeId);
     }
   }
 
