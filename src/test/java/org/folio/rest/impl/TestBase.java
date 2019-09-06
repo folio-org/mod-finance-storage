@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 public abstract class TestBase {
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  private static final String TENANT_NAME = "diku";
+  static final String TENANT_NAME = "diku";
   static final String NON_EXISTED_ID = "bad500aa-aaaa-500a-aaaa-aaaaaaaaaaaa";
   static final Header TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TENANT_NAME);
 

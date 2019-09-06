@@ -37,6 +37,8 @@
         {
           "fieldName": "ledgerId",
           "targetTable": "ledger",
+          "tableAlias": "fund",
+          "targetTableAlias": "ledger",
           "tOps": "ADD"
         },
         {
@@ -121,11 +123,21 @@
         {
           "fieldName": "fundId",
           "targetTable": "fund",
+          "tableAlias": "budget",
+          "targetTableAlias": "fund",
           "tOps": "ADD"
+        },
+        {
+          "targetPath": ["fundId", "ledgerId"],
+          "targetTable":      "ledger",
+          "targetTableAlias": "ledger",
+          "tableAlias": "budget"
         },
         {
           "fieldName": "fiscalYearId",
           "targetTable": "fiscal_year",
+          "tableAlias": "budget",
+          "targetTableAlias": "fiscalYear",
           "tOps": "ADD"
         }
       ],
