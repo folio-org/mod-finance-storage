@@ -22,7 +22,7 @@ public class TenantApiTestUtil {
 
   }
 
-  public static JsonObject prepareTenantBody(boolean isLoadSampleData, boolean isLoadReferenceData, boolean isUpgrade) {
+  public static JsonObject prepareTenantBody(boolean isLoadSampleData, boolean isLoadReferenceData) {
     String moduleId = String.format("%s-%s", PomReader.INSTANCE.getModuleName(), PomReader.INSTANCE.getVersion());
 
     JsonArray parameterArray = new JsonArray();
@@ -31,13 +31,15 @@ public class TenantApiTestUtil {
     JsonObject jsonBody = new JsonObject();
     jsonBody.put("module_to", moduleId);
     jsonBody.put("parameters", parameterArray);
-    if (isUpgrade)
-      jsonBody.put("module_from", moduleId);
     return jsonBody;
   }
 
+  public static JsonObject prepareTenantBody() {
+    return prepareTenantBody(true, true);
+  }
+
   public static void prepareTenant(Header tenantHeader, boolean isLoadSampleData, boolean isLoadReferenceData) throws MalformedURLException {
-    JsonObject jsonBody = prepareTenantBody(isLoadSampleData, isLoadReferenceData, false);
+    JsonObject jsonBody = prepareTenantBody(isLoadSampleData, isLoadReferenceData);
     postToTenant(tenantHeader, jsonBody).statusCode(201);
   }
 
