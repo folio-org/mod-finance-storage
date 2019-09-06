@@ -4,6 +4,7 @@
   "code": "AFRICAHIST",
   "externalAccountNo": "140451294503633",
   "fundStatus": "Active",
+  "fundTypeId": "c93373df-e7ec-4d31-b200-719736610d89",
   "description": "use only for sub-Saharan Africa & the black diaspora; use MIDEASTHIS for North Africa",
   "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
   "allocatedFromIds": [
