@@ -4,6 +4,7 @@
   "code": "UNIV-SUBN",
   "externalAccountNo": "74941332229038",
   "fundStatus": "Active",
+  "fundTypeId": "6d73d226-f56f-4338-9584-e91a83d5ecec",
   "description": "university money used for ongoing subscriptions",
   "ledgerId": "65cb2bf0-d4c2-4886-8ad0-b76f1ba75d61"
 }

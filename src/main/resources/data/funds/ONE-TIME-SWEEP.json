@@ -4,6 +4,7 @@
   "code": "ONE-TIME-SWEEP",
   "externalAccountNo": "227752149017018",
   "fundStatus": "Active",
+  "fundTypeId": "aea28ac6-f085-4833-bd54-d8f605d28d48",
   "description": "gathers all unused state funds at the end of the year, for final spend-out",
   "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
   "allocatedFromIds": [

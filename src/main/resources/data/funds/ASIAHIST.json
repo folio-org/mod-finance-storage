@@ -4,6 +4,7 @@
   "code": "ASIAHIST",
   "externalAccountNo": "94508839006119",
   "fundStatus": "Active",
+  "fundTypeId": "0f5f819e-0690-4c20-ad8d-cc23a6ecc585",
   "description": "use for East, Central, and South Asia",
   "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
   "allocatedToIds": [

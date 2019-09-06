@@ -10,6 +10,7 @@ import org.junit.Test;
 import java.net.MalformedURLException;
 
 import static org.folio.rest.utils.TestEntities.FUND;
+import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.junit.Assert.fail;
 
@@ -25,6 +26,9 @@ public class FundCodeUniquenessTest extends TestBase {
        // prepare referenced object
       String ledgerSample = getFile(LEDGER.getPathToSampleFile());
       postData(LEDGER.getEndpoint(), ledgerSample);
+
+      String fundTypeSample = getFile(FUND_TYPE.getPathToSampleFile());
+      postData(FUND_TYPE.getEndpoint(), fundTypeSample);
 
       String fundSample = getFile(FUND.getPathToSampleFile());
       sampleId = createEntity(FUND.getEndpoint(), fundSample);
