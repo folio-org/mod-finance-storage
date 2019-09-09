@@ -37,6 +37,7 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
   FundsTest.class,
   FundCodeUniquenessTest.class,
   BudgetTest.class
+  LedgerFYTest.class
 })
 
 public class StorageTestSuite {
@@ -76,7 +77,7 @@ public class StorageTestSuite {
 
     startVerticle(options);
 
-    prepareTenant(TENANT_HEADER, false);
+    prepareTenant(TENANT_HEADER, false, false);
   }
 
   @AfterClass

@@ -261,6 +261,24 @@
           "tOps": "ADD"
         }
       ]
+    },
+    {
+      "tableName": "ledgerFY",
+      "fromModuleVersion": 4.0,
+      "foreignKeys": [
+        {
+          "fieldName": "ledgerId",
+          "targetTable": "ledger",
+          "tableAlias": "ledgerFY",
+          "targetTableAlias": "ledger" 
+        },
+        {
+          "fieldName": "fiscalYearId",
+          "targetTable": "fiscal_year",
+          "tableAlias": "ledgerFY",
+          "targetTableAlias": "fiscalYear"
+        }
+      ]
     }
   ]
 }
