@@ -36,7 +36,7 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
   TenantSampleDataTest.class,
   FundsTest.class,
   FundCodeUniquenessTest.class,
-  BudgetTest.class
+  BudgetTest.class,
   LedgerFYTest.class
 })
 

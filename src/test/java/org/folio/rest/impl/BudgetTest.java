@@ -19,7 +19,7 @@ public class BudgetTest extends TestBase {
 
   @Test
   public void testGetQuery() throws MalformedURLException {
-    prepareTenant(BUDGET_TENANT_HEADER, true);
+    prepareTenant(BUDGET_TENANT_HEADER, true, true);
 
     // search for GET
     verifyCollectionQuantity(BUDGET_ENDPOINT, 21, BUDGET_TENANT_HEADER);
