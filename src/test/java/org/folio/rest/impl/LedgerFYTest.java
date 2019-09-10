@@ -9,6 +9,7 @@ import io.restassured.response.Response;
 import io.vertx.core.json.JsonObject;
 import java.net.MalformedURLException;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +19,7 @@ public class LedgerFYTest extends TestBase {
   private static final String LEDGER_FY_ENDPOINT = "/finance-storage/ledger-fiscal-years";
 
   @Test
-  public void testGetQuery() throws MalformedURLException, InterruptedException {
+  public void testGetQuery() throws Exception {
 
     String fiscalYearId = testPositiveCases(FISCAL_YEAR);
     String ledgerId = testPositiveCases(LEDGER);
@@ -37,6 +38,17 @@ public class LedgerFYTest extends TestBase {
     // search with invalid cql query
     testInvalidCQLQuery(LEDGER_FY_ENDPOINT + "?query=invalid-query");
 
+    deleteLedgerFYData();
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
+    deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+
+  }
+
+  private void deleteLedgerFYData() throws Exception {
+    PostgresClient.getInstance(StorageTestSuite.getVertx(), TENANT_NAME)
+    .delete(LEDGER_FY_TABLE, new CQLWrapper(), response -> {
+      assertThat(response.failed(), equalTo(false));
+    });
   }
 
   // temporary method used to load data to table until MODFISTO-37 is worked on

@@ -119,10 +119,6 @@ public class StorageTestSuite {
   }
 
   @Nested
-  class FundCodeUniquenessTestNested extends FundCodeUniquenessTest {
-  }
-
-  @Nested
   class LedgerFYTestNested extends LedgerFYTest {
   }
 

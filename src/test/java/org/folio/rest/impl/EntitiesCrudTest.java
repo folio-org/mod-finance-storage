@@ -37,7 +37,7 @@ public class EntitiesCrudTest extends TestBase {
   }
 
   /**
-   * The order of creation which must fail because of foreign key dependencies
+   * Test order of creation of records to fail because of foreign key dependencies
    * @return
    */
   static Stream<TestEntities> createFailOrder() {
@@ -48,7 +48,7 @@ public class EntitiesCrudTest extends TestBase {
    * The creation of records must fail because of unique constraint
    * @return
    */
-  static Stream<TestEntities> testUniqueConstraints() {
+  static Stream<TestEntities> createDuplicateRecords() {
     return Stream.of(BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
   }
 
@@ -81,7 +81,7 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(3)
-  @MethodSource("testUniqueConstraints")
+  @MethodSource("createDuplicateRecords")
   void testPostFailsOnUniqueConstraint(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... fails with unique constraint", testEntity.name(), testEntity.name()));
     sample = getSample(testEntity.getSampleFileName());
