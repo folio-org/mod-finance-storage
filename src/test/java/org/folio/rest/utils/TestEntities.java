@@ -20,10 +20,11 @@ import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 
 public enum TestEntities {
+  //The Order is important because of the foreign key relationships
   FISCAL_YEAR(getEndpoint(FinanceStorageFiscalYears.class), FiscalYear.class, "data/fiscal-years/", "fy19.json", "name", "FY19", 2),
   LEDGER(getEndpoint(FinanceStorageLedgers.class), Ledger.class, "data/ledgers/", "One-time.json", "code", "One-time", 3),
-  FUND(getEndpoint(FinanceStorageFunds.class), Fund.class, "data/funds/", "AFRICAHIST.json", "name", "African History", 21),
   FUND_TYPE(getEndpoint(FinanceStorageFundTypes.class), FundType.class, "data/fund-types/", "approvals.json", "name", "New type name", 26),
+  FUND(getEndpoint(FinanceStorageFunds.class), Fund.class, "data/funds/", "AFRICAHIST.json", "name", "African History", 21),
   BUDGET(getEndpoint(FinanceStorageBudgets.class), Budget.class, "data/budgets/", "AFRICAHIST-FY19.json", "name", "AFRICAHIST-FY19", 21),
   TRANSACTION(getEndpoint(FinanceStorageTransactions.class), Transaction.class, "data/transactions/", "payment.json", "source", "Voucher", 5),
   FUND_DISTRIBUTION(getEndpoint(FinanceStorageFundDistributions.class), FundDistribution.class, "", "fund_distribution.sample", "currency", "CAD", 0),
@@ -44,6 +45,7 @@ public enum TestEntities {
   private int initialQuantity;
   private String endpoint;
   private String sampleFileName;
+  private String sampleId;
   private String pathToSamples;
   private String updatedFieldName;
   private String updatedFieldValue;
@@ -69,12 +71,25 @@ public enum TestEntities {
     return initialQuantity;
   }
 
+  public String getSampleFileName() {
+    return pathToSamples + sampleFileName;
+  }
+
   public Class<?> getClazz() {
     return clazz;
   }
 
   public String getPathToSampleFile() {
     return pathToSamples + sampleFileName;
+  }
+
+  public String getId() {
+    return sampleId;
+  }
+
+
+  public void setId(String id) {
+    this.sampleId = id;
   }
 
   private static String getEndpoint(Class<?> clazz) {

@@ -17,6 +17,16 @@
           "caseSensitive": false,
           "removeAccents": true
         }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
+        }
       ]
     },
     {

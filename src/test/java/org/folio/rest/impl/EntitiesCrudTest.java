@@ -1,50 +1,225 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.utils.TestEntities.*;
+
+import io.restassured.response.Response;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import java.net.MalformedURLException;
-
+import java.util.stream.Stream;
 import org.folio.rest.utils.TestEntities;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class EntitiesCrudTest extends TestBase {
 
-  @Parameterized.Parameter public TestEntities testEntity;
 
-  @Parameterized.Parameters(name = "{index}:{0}")
-  public static TestEntities[] data() {
-    return TestEntities.values();
+  private final Logger logger = LoggerFactory.getLogger(EntitiesCrudTest.class);
+  private String sample = null;
+
+  /**
+   * The Order in which the records must be deleted in order to satisfy the foreign key constraints
+   *
+   */
+  static Stream<TestEntities> deleteOrder() {
+    return Stream.of(FUND_DISTRIBUTION, TRANSACTION, BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
   }
 
-  @Test
-  public void testFetchEntityWithNonExistedId() throws MalformedURLException {
-    logger.info(String.format("--- %s get by id test: Invalid %s: %s", testEntity.name(), testEntity.name(), NON_EXISTED_ID));
-    getDataById(testEntity.getEndpoint(), NON_EXISTED_ID).then().log().ifValidationFails()
+  static Stream<TestEntities> deleteFailOrder() {
+    return Stream.of(FUND, FUND_TYPE);
+  }
+
+  /**
+   * The order of creation which must fail because of foreign key dependencies
+   * @return
+   */
+  static Stream<TestEntities> createFailOrder() {
+    return Stream.of(FUND, BUDGET);
+  }
+
+  /**
+   * The creation of records must fail because of unique constraint
+   * @return
+   */
+  static Stream<TestEntities> testUniqueConstraints() {
+    return Stream.of(BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
+  }
+
+  @ParameterizedTest
+  @Order(1)
+  @EnumSource(TestEntities.class)
+  void testVerifyCollection(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s test: Verifying database's initial state ... ", testEntity.name()));
+    verifyCollectionQuantity(testEntity.getEndpoint(), 0);
+  }
+
+  @ParameterizedTest
+  @Order(2)
+  @EnumSource(TestEntities.class)
+  void testPostData(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... ", testEntity.name(), testEntity.name()));
+    sample = getSample(testEntity.getSampleFileName());
+    Response response = postData(testEntity.getEndpoint(), sample);
+    testEntity.setId(response.then()
+      .extract()
+      .path("id"));
+    logger.info(String.format("--- mod-finance-storage %s test: Valid fields exists ... ", testEntity.name()));
+    JsonObject sampleJson = convertToMatchingModelJson(sample, testEntity);
+    JsonObject responseJson = JsonObject.mapFrom(response.then()
+      .extract()
+      .response()
+      .as(testEntity.getClazz()));
+    testAllFieldsExists(responseJson, sampleJson);
+  }
+
+  @ParameterizedTest
+  @Order(3)
+  @MethodSource("testUniqueConstraints")
+  void testPostFailsOnUniqueConstraint(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... fails with unique constraint", testEntity.name(), testEntity.name()));
+    sample = getSample(testEntity.getSampleFileName());
+    Response response = postData(testEntity.getEndpoint(), sample);
+    response.then()
+      .log()
+      .all()
+      .statusCode(400).assertThat().body(Matchers.containsString("duplicate key value violates unique constraint"));
+
+  }
+
+  @ParameterizedTest
+  @Order(4)
+  @EnumSource(TestEntities.class)
+  void testVerifyCollectionQuantity(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s test: Verifying only 1 adjustment was created ... ", testEntity.name()));
+    verifyCollectionQuantity(testEntity.getEndpoint(), 1);
+
+  }
+
+  @ParameterizedTest
+  @Order(5)
+  @EnumSource(TestEntities.class)
+  void testGetById(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s test: Fetching %s with ID: %s", testEntity.name(), testEntity.name(),
+        testEntity.getId()));
+    testEntitySuccessfullyFetched(testEntity.getEndpointWithId(), testEntity.getId());
+  }
+
+  @ParameterizedTest
+  @Order(6)
+  @EnumSource(TestEntities.class)
+  void testPutById(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s test: Editing %s with ID: %s", testEntity.name(), testEntity.name(),
+        testEntity.getId()));
+    JsonObject catJSON = new JsonObject(getSample(testEntity.getSampleFileName()));
+    catJSON.put("id", testEntity.getId());
+    catJSON.put(testEntity.getUpdatedFieldName(), testEntity.getUpdatedFieldValue());
+    testEntityEdit(testEntity.getEndpointWithId(), catJSON.toString(), testEntity.getId());
+
+  }
+
+  @ParameterizedTest
+  @Order(7)
+  @EnumSource(TestEntities.class)
+  void testVerifyPut(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s test: Fetching updated %s with ID: %s", testEntity.name(),
+        testEntity.name(), testEntity.getId()));
+    testFetchingUpdatedEntity(testEntity.getId(), testEntity);
+  }
+
+  @ParameterizedTest
+  @Order(8)
+  @MethodSource("deleteFailOrder")
+  void testDeleteEndpointForeignKeyFailure(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storages %s test: Deleting %s with ID: %s", testEntity.name(), testEntity.name(),
+        testEntity.getId()));
+    deleteData(testEntity.getEndpointWithId(), testEntity.getId()).then()
+      .log()
+      .ifValidationFails()
+      .statusCode(400);
+  }
+
+  @ParameterizedTest
+  @Order(9)
+  @MethodSource("deleteOrder")
+  void testDeleteEndpoint(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storages %s test: Deleting %s with ID: %s", testEntity.name(), testEntity.name(),
+        testEntity.getId()));
+    deleteData(testEntity.getEndpointWithId(), testEntity.getId()).then()
+      .log()
+      .ifValidationFails()
+      .statusCode(204);
+  }
+
+  @ParameterizedTest
+  @Order(10)
+  @EnumSource(TestEntities.class)
+  void testVerifyDelete(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storages %s test: Verify %s is deleted with ID: %s", testEntity.name(),
+        testEntity.name(), testEntity.getId()));
+    testVerifyEntityDeletion(testEntity.getEndpointWithId(), testEntity.getId());
+  }
+
+  @ParameterizedTest
+  @MethodSource("createFailOrder")
+  void testPostFailsOnForeignKeyDependencies(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... fails", testEntity.name(), testEntity.name()));
+    sample = getSample(testEntity.getSampleFileName());
+    Response response = postData(testEntity.getEndpoint(), sample);
+    response.then()
+      .statusCode(400);
+
+  }
+
+  @ParameterizedTest
+  @EnumSource(TestEntities.class)
+  void testFetchEntityWithNonExistedId(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s get by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),
+        NON_EXISTED_ID));
+    getDataById(testEntity.getEndpointWithId(), NON_EXISTED_ID).then()
+      .log()
+      .ifValidationFails()
       .statusCode(404);
   }
 
-  @Test
-  public void testEditEntityWithNonExistedId() throws MalformedURLException {
-    logger.info(String.format("--- %s put by id test: Invalid %s: %s", testEntity.name(), testEntity.name(), NON_EXISTED_ID));
-    String sampleData = getFile(testEntity.getPathToSampleFile());
-    putData(testEntity.getEndpoint(), NON_EXISTED_ID, sampleData)
-      .then().log().ifValidationFails()
-        .statusCode(404);
+  @ParameterizedTest
+  @EnumSource(TestEntities.class)
+  void testEditEntityWithNonExistedId(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s put by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),
+        NON_EXISTED_ID));
+    String sampleData = getFile(testEntity.getSampleFileName());
+    putData(testEntity.getEndpointWithId(), NON_EXISTED_ID, sampleData).then()
+      .log()
+      .ifValidationFails()
+      .statusCode(404);
   }
 
-  @Test
-  public void testDeleteEntityWithNonExistedId() throws MalformedURLException {
-    logger.info(String.format("--- %s delete by id test: Invalid %s: %s", testEntity.name(), testEntity.name(), NON_EXISTED_ID));
-    deleteData(testEntity.getEndpoint(), NON_EXISTED_ID)
-      .then().log().ifValidationFails()
-        .statusCode(404);
+  @ParameterizedTest
+  @EnumSource(TestEntities.class)
+  void testDeleteEntityWithNonExistedId(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s delete by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),
+        NON_EXISTED_ID));
+    deleteData(testEntity.getEndpointWithId(), NON_EXISTED_ID).then()
+      .log()
+      .ifValidationFails()
+      .statusCode(404);
   }
 
-  @Test
-  public void testGetEntitiesWithInvalidCQLQuery() throws MalformedURLException {
-    logger.info(String.format("--- %s test: Invalid CQL query", testEntity.name()));
+  @ParameterizedTest
+  @EnumSource(TestEntities.class)
+  void testGetEntitiesWithInvalidCQLQuery(TestEntities testEntity) throws MalformedURLException {
+    logger.info(String.format("--- mod-finance-storage %s test: Invalid CQL query", testEntity.name()));
     testInvalidCQLQuery(testEntity.getEndpoint() + "?query=invalid-query");
+  }
+
+  private String getSample(String fileName) {
+    return getFile(fileName);
   }
 
 }

@@ -10,10 +10,11 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.runner.JUnitPlatform;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -24,21 +25,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+
 import static org.folio.rest.impl.TestBase.TENANT_HEADER;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 
 
-@RunWith(Suite.class)
-
-@Suite.SuiteClasses({
-  EntitiesCrudTest.class,
-  TenantSampleDataTest.class,
-  FundsTest.class,
-  FundCodeUniquenessTest.class,
-  LedgerFYTest.class
-})
-
+@RunWith(JUnitPlatform.class)
 public class StorageTestSuite {
   private static final Logger logger = LoggerFactory.getLogger(StorageTestSuite.class);
 
@@ -57,7 +50,7 @@ public class StorageTestSuite {
     return vertx;
   }
 
-  @BeforeClass
+  @BeforeAll
   public static void before() throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
     // tests expect English error messages only, no Danish/German/...
@@ -79,7 +72,7 @@ public class StorageTestSuite {
     prepareTenant(TENANT_HEADER, false, false);
   }
 
-  @AfterClass
+  @AfterAll
   public static void after() throws InterruptedException, ExecutionException, TimeoutException, MalformedURLException {
     logger.info("Delete tenant");
     deleteTenant(TENANT_HEADER);
@@ -116,5 +109,22 @@ public class StorageTestSuite {
 
     deploymentComplete.get(60, TimeUnit.SECONDS);
   }
+
+  @Nested
+  class EntitiesCrudTestNested extends EntitiesCrudTest {
+  }
+
+  @Nested
+  class TenantSampleDataTestNested extends TenantSampleDataTest {
+  }
+
+  @Nested
+  class FundCodeUniquenessTestNested extends FundCodeUniquenessTest {
+  }
+
+  @Nested
+  class LedgerFYTestNested extends LedgerFYTest {
+  }
+
 
 }

@@ -30,8 +30,19 @@
     </repository>
   </repositories>
 
-  <dependencies>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>5.5.2</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
+  <dependencies>
     <dependency>
       <groupId>org.folio</groupId>
       <artifactId>domain-models-api-interfaces</artifactId>
@@ -56,9 +67,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -71,7 +81,11 @@
       <artifactId>JUnitParams</artifactId>
       <version>1.0.4</version>
     </dependency>
-
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-runner</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -435,6 +449,16 @@
                https://issues.apache.org/jira/browse/SUREFIRE-1588
           -->
           <useSystemClassLoader>false</useSystemClassLoader>
+           <dependencies>
+          <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-surefire-provider</artifactId>
+          </dependency>
+          <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+          </dependency>
+        </dependencies>
         </configuration>
       </plugin>
     </plugins>
