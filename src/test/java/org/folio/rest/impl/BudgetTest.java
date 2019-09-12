@@ -7,18 +7,18 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import java.net.MalformedURLException;
 
 import org.folio.rest.utils.TestEntities;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
 
-public class BudgetTest extends TestBase {
+class BudgetTest extends TestBase {
 
   private static final String BUDGET_ENDPOINT = TestEntities.BUDGET.getEndpoint();
   private static final String BUDGET_TEST_TENANT = "budget_test_tenant";
   private static final Header BUDGET_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, BUDGET_TEST_TENANT);
 
   @Test
-  public void testGetQuery() throws MalformedURLException {
+  void testGetQuery() throws MalformedURLException {
     prepareTenant(BUDGET_TENANT_HEADER, true, true);
 
     // search for GET
