@@ -9,7 +9,7 @@ import io.vertx.core.logging.LoggerFactory;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.utils.TestEntities;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
 
