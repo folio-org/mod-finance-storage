@@ -1,13 +1,17 @@
 package org.folio.rest.impl;
 
-import static org.folio.rest.utils.TestEntities.*;
+import static org.folio.rest.utils.TestEntities.BUDGET;
+import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
+import static org.folio.rest.utils.TestEntities.FUND;
+import static org.folio.rest.utils.TestEntities.FUND_DISTRIBUTION;
+import static org.folio.rest.utils.TestEntities.FUND_TYPE;
+import static org.folio.rest.utils.TestEntities.GROUP;
+import static org.folio.rest.utils.TestEntities.LEDGER;
+import static org.folio.rest.utils.TestEntities.TRANSACTION;
 
-import io.restassured.response.Response;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import java.net.MalformedURLException;
 import java.util.stream.Stream;
+
 import org.folio.rest.utils.TestEntities;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.MethodOrderer;
@@ -16,6 +20,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import io.restassured.response.Response;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class EntitiesCrudTest extends TestBase {
@@ -41,7 +50,7 @@ public class EntitiesCrudTest extends TestBase {
    * @return
    */
   static Stream<TestEntities> createFailOrder() {
-    return Stream.of(FUND, BUDGET);
+    return Stream.of(BUDGET, FUND);
   }
 
   /**
@@ -171,10 +180,7 @@ public class EntitiesCrudTest extends TestBase {
   void testPostFailsOnForeignKeyDependencies(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... fails", testEntity.name(), testEntity.name()));
     sample = getSample(testEntity.getSampleFileName());
-    Response response = postData(testEntity.getEndpoint(), sample);
-    response.then()
-      .statusCode(400);
-
+    postData(testEntity.getEndpoint(), sample).then().statusCode(400);
   }
 
   @ParameterizedTest

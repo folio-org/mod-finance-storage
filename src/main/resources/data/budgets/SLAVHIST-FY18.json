@@ -1,6 +1,6 @@
 {
   "id": "a7c63802-4c1a-4646-9392-024e08df9c02",
-  "name": "SLAVHIST-FY19",
+  "name": "SLAVHIST-FY18",
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
@@ -11,5 +11,5 @@
   "expenditures": 1337.13,
   "overEncumbrance": 0,
   "fundId": "f31a36de-fcf8-44f9-87ef-a55d06ad21ae",
-  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
+  "fiscalYearId": "8da275b8-e099-49a1-9a31-b8241ff26ffc"
 }
