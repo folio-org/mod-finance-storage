@@ -10,13 +10,11 @@ import io.vertx.core.logging.LoggerFactory;
 
 import org.apache.commons.io.IOUtils;
 import org.folio.rest.utils.TestEntities;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -41,7 +39,7 @@ public abstract class TestBase {
 
   private static boolean invokeStorageTestSuiteAfter = false;
 
-  @BeforeClass
+  @BeforeAll
   public static void testBaseBeforeClass() throws InterruptedException, ExecutionException, TimeoutException, IOException {
     Vertx vertx = StorageTestSuite.getVertx();
     if (vertx == null) {
@@ -51,7 +49,7 @@ public abstract class TestBase {
 
   }
 
-  @AfterClass
+  @AfterAll
   public static void testBaseAfterClass()
     throws InterruptedException,
     ExecutionException,
@@ -112,7 +110,7 @@ public abstract class TestBase {
       .pathParam("id", id)
       .header(TENANT_HEADER)
       .contentType(ContentType.JSON)
-      .get(storageUrlWithId(endpoint));
+      .get(storageUrl(endpoint));
   }
 
   Response putData(String endpoint, String id, String input) throws MalformedURLException {
@@ -121,7 +119,7 @@ public abstract class TestBase {
       .header(TENANT_HEADER)
       .contentType(ContentType.JSON)
       .body(input)
-      .put(storageUrlWithId(endpoint));
+      .put(storageUrl(endpoint));
   }
 
   void deleteDataSuccess(String endpoint, String id) throws MalformedURLException {
@@ -146,7 +144,7 @@ public abstract class TestBase {
       .pathParam("id", id)
       .header(tenantHeader)
       .contentType(ContentType.JSON)
-      .delete(storageUrlWithId(endpoint));
+      .delete(storageUrl(endpoint));
   }
 
   String createEntity(String endpoint, String entity) throws MalformedURLException {
@@ -185,7 +183,7 @@ public abstract class TestBase {
   }
 
   void testFetchingUpdatedEntity(String id, TestEntities subObject) throws MalformedURLException {
-    getDataById(subObject.getEndpoint(), id).then()
+    getDataById(subObject.getEndpointWithId(), id).then()
       .log().ifValidationFails()
       .statusCode(200)
       .body(subObject.getUpdatedFieldName(), equalTo(subObject.getUpdatedFieldValue()));
@@ -200,7 +198,11 @@ public abstract class TestBase {
     return response;
   }
 
-  private URL storageUrlWithId(String endpoint) throws MalformedURLException {
-    return storageUrl(endpoint + "/{id}");
+
+  void testVerifyEntityDeletion(String endpoint, String id) throws MalformedURLException {
+    getDataById(endpoint, id)
+      .then()
+        .statusCode(404);
   }
+
 }
