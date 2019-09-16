@@ -280,13 +280,43 @@
           "fieldName": "ledgerId",
           "targetTable": "ledger",
           "tableAlias": "ledgerFY",
-          "targetTableAlias": "ledger" 
+          "targetTableAlias": "ledger"
         },
         {
           "fieldName": "fiscalYearId",
           "targetTable": "fiscal_year",
           "tableAlias": "ledgerFY",
           "targetTableAlias": "fiscalYear"
+        }
+      ]
+    },
+    {
+      "tableName": "groupFundFY",
+      "fromModuleVersion": 4.0,
+      "foreignKeys": [
+        {
+          "fieldName": "groupId",
+          "targetTable": "groups",
+          "tableAlias": "groupFundFY",
+          "targetTableAlias": "group"
+        },
+        {
+          "fieldName": "fundId",
+          "targetTable": "fund",
+          "tableAlias": "groupFundFY",
+          "targetTableAlias": "fund"
+        },
+        {
+          "fieldName": "fiscalYearId",
+          "targetTable": "fiscal_year",
+          "tableAlias": "groupFundFY",
+          "targetTableAlias": "fiscalYear"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "groupId, fundId, fiscalYearId",
+          "tOps": "ADD"
         }
       ]
     }

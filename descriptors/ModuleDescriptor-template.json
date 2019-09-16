@@ -185,6 +185,31 @@
           "methods": ["DELETE"],
           "pathPattern": "/finance-storage/groups/{id}",
           "permissionsRequired": ["finance-storage.groups.item.delete"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/group-fund-fiscal-years",
+          "permissionsRequired": ["finance-storage.group-fund-fiscal-years.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/group-fund-fiscal-years",
+          "permissionsRequired": ["finance-storage.group-fund-fiscal-years.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/group-fund-fiscal-years/{id}",
+          "permissionsRequired": ["finance-storage.group-fund-fiscal-years.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/group-fund-fiscal-years/{id}",
+          "permissionsRequired": ["finance-storage.group-fund-fiscal-years.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/group-fund-fiscal-years/{id}",
+          "permissionsRequired": ["finance-storage.group-fund-fiscal-years.item.delete"]
         }
       ]
     },
@@ -479,6 +504,31 @@
       "description" : "Delete a specific group record"
     },
     {
+      "permissionName" : "finance-storage.group-fund-fiscal-years.collection.get",
+      "displayName" : "Get a collection of group/fund/fiscal year records relations",
+      "description" : "Get a collection of group/fund/fiscal year records relations"
+    },
+    {
+      "permissionName" : "finance-storage.group-fund-fiscal-years.item.post",
+      "displayName" : "Create a new group/fund/fiscal year records relation",
+      "description" : "Create a new group/fund/fiscal year records relation"
+    },
+    {
+      "permissionName" : "finance-storage.group-fund-fiscal-years.item.get",
+      "displayName" : "Get a specific group/fund/fiscal year records relation",
+      "description" : "Get a group/fund/fiscal year records relation"
+    },
+    {
+      "permissionName" : "finance-storage.group-fund-fiscal-years.item.put",
+      "displayName" : "Update a specific group/fund/fiscal year records relation",
+      "description" : "Update a specific group/fund/fiscal year records relation"
+    },
+    {
+      "permissionName" : "finance-storage.group-fund-fiscal-years.item.delete",
+      "displayName" : "Delete a specific group/fund/fiscal year records relation",
+      "description" : "Delete a specific group/fund/fiscal year records relation"
+    },
+    {
       "permissionName" : "finance-storage.groups.all",
       "displayName" : "All group related permissions",
       "description" : "All group related permissions",
@@ -487,7 +537,12 @@
         "finance-storage.groups.item.post",
         "finance-storage.groups.item.get",
         "finance-storage.groups.item.put",
-        "finance-storage.groups.item.delete"
+        "finance-storage.groups.item.delete",
+        "finance-storage.group-fund-fiscal-years.collection.get",
+        "finance-storage.group-fund-fiscal-years.item.post",
+        "finance-storage.group-fund-fiscal-years.item.get",
+        "finance-storage.group-fund-fiscal-years.item.put",
+        "finance-storage.group-fund-fiscal-years.item.delete"
       ]
     },
     {
