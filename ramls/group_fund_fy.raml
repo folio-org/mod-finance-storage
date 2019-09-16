@@ -36,7 +36,7 @@ resourceTypes:
   get:
     description: Get list of group/fund/fiscal year records relations
     is: [
-      searchable: {description: "with valid searchable fields: e.g.", example: "status==Active sortBy name"},
+      searchable: {description: "with valid searchable fields: e.g.", example: "group.name == History and fundType.name==Monographs and fiscalYear.periodEnd < 2020-01-01"},
       pageable
     ]
   /{id}:

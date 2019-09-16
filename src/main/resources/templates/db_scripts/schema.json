@@ -311,6 +311,18 @@
           "targetTable": "fiscal_year",
           "tableAlias": "groupFundFY",
           "targetTableAlias": "fiscalYear"
+        },
+        {
+          "targetPath": ["fundId", "ledgerId"],
+          "targetTable": "ledger",
+          "targetTableAlias": "ledger",
+          "tableAlias": "groupFundFY"
+        },
+        {
+          "targetPath": ["fundId", "fundTypeId"],
+          "targetTable": "fund_type",
+          "targetTableAlias": "fundType",
+          "tableAlias": "groupFundFY"
         }
       ],
       "uniqueIndex": [
