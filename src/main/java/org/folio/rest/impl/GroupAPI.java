@@ -61,6 +61,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   }
 
   @Override
+  @Validate
   public void getFinanceStorageGroupFundFiscalYears(String query, int offset, int limit, String lang,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(GROUP_FUND_FY_TABLE, GroupFundFiscalYear.class, GroupFundFiscalYearCollection.class, query, offset, limit,
@@ -68,6 +69,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   }
 
   @Override
+  @Validate
   public void postFinanceStorageGroupFundFiscalYears(String lang, GroupFundFiscalYear entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.post(GROUP_FUND_FY_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageGroupFundFiscalYearsResponse.class,
@@ -75,6 +77,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   }
 
   @Override
+  @Validate
   public void getFinanceStorageGroupFundFiscalYearsById(String id, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(GROUP_FUND_FY_TABLE, GroupFundFiscalYear.class, id, okapiHeaders, vertxContext,
@@ -82,6 +85,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   }
 
   @Override
+  @Validate
   public void deleteFinanceStorageGroupFundFiscalYearsById(String id, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(GROUP_FUND_FY_TABLE, id, okapiHeaders, vertxContext,
@@ -89,6 +93,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   }
 
   @Override
+  @Validate
   public void putFinanceStorageGroupFundFiscalYearsById(String id, String lang, GroupFundFiscalYear entity,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(GROUP_FUND_FY_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageGroupFundFiscalYearsByIdResponse.class,
