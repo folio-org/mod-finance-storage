@@ -20,7 +20,7 @@ import io.vertx.core.Handler;
 public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFiscalYears {
 
   private static final String GROUPS_TABLE = "groups";
-  private static final String GROUP_FUND_FY_TABLE = "groupFundFY";
+  private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
 
   @Override
   @Validate
