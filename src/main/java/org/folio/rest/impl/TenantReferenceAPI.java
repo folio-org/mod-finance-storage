@@ -15,6 +15,7 @@ import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFundTypes;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
+import org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
@@ -80,6 +81,7 @@ public class TenantReferenceAPI extends TenantAPI {
         .add("fiscal-years", getUriPath(FinanceStorageFiscalYears.class))
         .add("ledgers", getUriPath(FinanceStorageLedgers.class))
         .add("funds", getUriPath(FinanceStorageFunds.class))
+        .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
         .add("budgets", getUriPath(FinanceStorageBudgets.class))
         .add("transactions", getUriPath(FinanceStorageTransactions.class));
       loadData = true;

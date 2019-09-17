@@ -123,6 +123,10 @@ public class StorageTestSuite {
   }
 
   @Nested
+  class GroupFundFYTestNested extends GroupFundFYTest {
+  }
+
+  @Nested
   class BudgetTestNested extends BudgetTest {
   }
 }
