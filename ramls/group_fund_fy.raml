@@ -1,0 +1,51 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: Group/fund/fiscal year records relations CRUD APIs
+    content: <b>CRUD APIs used to manage group/fund/fiscal year records relations</b>
+
+types:
+  groupFundFiscalYear: !include acq-models/mod-finance/schemas/group_fund_fiscal_year.json
+  groupFundFiscalYearCollection: !include acq-models/mod-finance/schemas/group_fund_fiscal_year_collection.json
+  errors: !include raml-util/schemas/errors.schema
+  uuid:
+    type: "string"
+    pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+
+traits:
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
+  validate: !include raml-util/traits/validation.raml
+
+resourceTypes:
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
+
+/finance-storage/group-fund-fiscal-years:
+  type:
+    collection:
+      exampleCollection: !include acq-models/mod-finance/examples/group_fund_fiscal_year_collection.sample
+      exampleItem: !include acq-models/mod-finance/examples/group_fund_fiscal_year.sample
+      schemaCollection: groupFundFiscalYearCollection
+      schemaItem: groupFundFiscalYear
+  is: [validate]
+  get:
+    description: Get list of group/fund/fiscal year records relations
+    is: [
+      searchable: {description: "with valid searchable fields: e.g.", example: "group.name == History and and fund.fundStatus == Active and fiscalYear.periodEnd < 2020-01-01 and fundType.name == Monographs and ledger.name == One-time"},
+      pageable
+    ]
+  /{id}:
+    uriParameters:
+      id:
+        description: The UUID of a group/fund/fiscal year records relation
+        type: uuid
+    type:
+      collection-item:
+        exampleItem: !include acq-models/mod-finance/examples/group_fund_fiscal_year.sample
+        schema: groupFundFiscalYear
+    is: [validate]
