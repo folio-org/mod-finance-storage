@@ -212,6 +212,7 @@
       "tableName": "transaction",
       "fromModuleVersion": 1.0,
       "withMetadata": true,
+      "customSnippetPath": "transactions.sql",
       "foreignKeys": [
         {
           "fieldName": "fiscalYearId",
@@ -280,7 +281,7 @@
           "fieldName": "ledgerId",
           "targetTable": "ledger",
           "tableAlias": "ledgerFY",
-          "targetTableAlias": "ledger" 
+          "targetTableAlias": "ledger"
         },
         {
           "fieldName": "fiscalYearId",
