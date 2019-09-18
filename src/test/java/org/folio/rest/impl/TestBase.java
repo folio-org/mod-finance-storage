@@ -24,6 +24,9 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import javax.ws.rs.Path;
 
 /**
  * When not run from StorageTestSuite then this class invokes StorageTestSuite.before() and
@@ -148,7 +151,7 @@ public abstract class TestBase {
 
   void deleteDataSuccess(TestEntities testEntity, String id) throws MalformedURLException {
     logger.info(String.format("--- %s test: Deleting record with ID: %s", testEntity.name(), id));
-    deleteData(testEntity.getEndpoint(), id)
+    deleteData(testEntity.getEndpointWithId(), id)
       .then().log().ifValidationFails()
       .statusCode(204);
   }
@@ -201,10 +204,14 @@ public abstract class TestBase {
   }
 
   void testFetchingUpdatedEntity(String id, TestEntities subObject) throws MalformedURLException {
-    getDataById(subObject.getEndpointWithId(), id).then()
+    Object prop = getDataById(subObject.getEndpointWithId(), id).then()
       .log().ifValidationFails()
       .statusCode(200)
-      .body(subObject.getUpdatedFieldName(), equalTo(subObject.getUpdatedFieldValue()));
+      .extract()
+      .path(subObject.getUpdatedFieldName());
+
+    // Get string value of updated field and compare
+    assertThat(String.valueOf(prop), equalTo(subObject.getUpdatedFieldValue()));
   }
 
   Response testEntitySuccessfullyFetched(String endpoint, String id) throws MalformedURLException {
@@ -223,4 +230,8 @@ public abstract class TestBase {
         .statusCode(404);
   }
 
+
+  static String getUriPath(Class<?> clazz) {
+    return clazz.getAnnotation(Path.class).value();
+  }
 }

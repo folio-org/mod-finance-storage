@@ -6,6 +6,7 @@ import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.FUND_DISTRIBUTION;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 import static org.folio.rest.utils.TestEntities.GROUP;
+import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 
@@ -38,7 +39,7 @@ public class EntitiesCrudTest extends TestBase {
    *
    */
   static Stream<TestEntities> deleteOrder() {
-    return Stream.of(FUND_DISTRIBUTION, TRANSACTION, BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
+    return Stream.of(FUND_DISTRIBUTION, TRANSACTION, BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
   }
 
   static Stream<TestEntities> deleteFailOrder() {
@@ -58,7 +59,7 @@ public class EntitiesCrudTest extends TestBase {
    * @return
    */
   static Stream<TestEntities> createDuplicateRecords() {
-    return Stream.of(BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
+    return Stream.of(BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
   }
 
   @ParameterizedTest
@@ -93,8 +94,10 @@ public class EntitiesCrudTest extends TestBase {
   @MethodSource("createDuplicateRecords")
   void testPostFailsOnUniqueConstraint(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... fails with unique constraint", testEntity.name(), testEntity.name()));
-    sample = getSample(testEntity.getSampleFileName());
-    Response response = postData(testEntity.getEndpoint(), sample);
+    JsonObject record = new JsonObject(getSample(testEntity.getSampleFileName()));
+    // Make sure that expecting constraint is not PK
+    record.remove("id");
+    Response response = postData(testEntity.getEndpoint(), record.encodePrettily());
     response.then()
       .log()
       .all()

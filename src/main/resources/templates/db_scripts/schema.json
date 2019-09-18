@@ -290,6 +290,53 @@
           "targetTableAlias": "fiscalYear"
         }
       ]
+    },
+    {
+      "tableName": "group_fund_fiscal_year",
+      "fromModuleVersion": 4.0,
+      "foreignKeys": [
+        {
+          "fieldName": "groupId",
+          "targetTable": "groups",
+          "tableAlias": "groupFundFY",
+          "targetTableAlias": "group",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fundId",
+          "targetTable": "fund",
+          "tableAlias": "groupFundFY",
+          "targetTableAlias": "fund",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fiscalYearId",
+          "targetTable": "fiscal_year",
+          "tableAlias": "groupFundFY",
+          "targetTableAlias": "fiscalYear",
+          "tOps": "ADD"
+        },
+        {
+          "targetPath": ["fundId", "ledgerId"],
+          "targetTable": "ledger",
+          "targetTableAlias": "ledger",
+          "tableAlias": "groupFundFY",
+          "tOps": "ADD"
+        },
+        {
+          "targetPath": ["fundId", "fundTypeId"],
+          "targetTable": "fund_type",
+          "targetTableAlias": "fundType",
+          "tableAlias": "groupFundFY",
+          "tOps": "ADD"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "groupId, fundId, fiscalYearId",
+          "tOps": "ADD"
+        }
+      ]
     }
   ]
 }
