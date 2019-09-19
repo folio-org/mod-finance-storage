@@ -38,12 +38,12 @@ public class GroupFundFYTest extends TestBase {
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fundType.name==Approvals", 1, GROUP_FUND_FY_TENANT_HEADER);
 
     // search with fields from "ledgers"
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=ledger.name==One-time", GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=ledger.name==One-time", 11, GROUP_FUND_FY_TENANT_HEADER);
 
     // search by fields from different tables
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==History and fiscalYear.code==FY19", GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fiscalYear.periodEnd < 2020-01-01 and fund.fundStatus==Inactive and ledger.name==One-time", 1, GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fundType.name==Monographs and ledger.name==One-time", 1, GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fundType.name==Approvals and ledger.name==One-time", 1, GROUP_FUND_FY_TENANT_HEADER);
 
     // search with invalid cql query
     testInvalidCQLQuery(GROUP_FUND_FY.getEndpoint() + "?query=invalid-query");
