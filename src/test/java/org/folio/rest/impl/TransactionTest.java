@@ -25,88 +25,105 @@ class TransactionTest extends TestBase {
   private static final String TRANSACTION_TEST_TENANT = "transaction_test_tenant";
   private static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
+  private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";
+  private static final String LEDGER_QUERY = "?query=budget.fiscalYearId==%s AND budget.fundId==%s";
+  private static String BUDGETS_QUERY = TestEntities.BUDGET.getEndpoint() + FY_FUND_QUERY;
+  private static String LEDGERS_QUERY = TestEntities.LEDGER.getEndpoint() + LEDGER_QUERY;
   private static final String BUDGETS = "budgets";
   private static final String LEDGERS = "ledgers";
 
   @Test
   void testCreateAllocation() throws MalformedURLException {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
-
-    // search with invalid cql query
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
-  }
-
-  @Test
-  void testCreateAllocation2() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, 5, TRANSACTION_TENANT_HEADER);
 
-    JsonObject jsonTransaction = new JsonObject(getFile("data/transactions/allocation.json"));
-    jsonTransaction.remove("id");
-    String transactionSample = jsonTransaction.toString();
+    JsonObject jsonTx = new JsonObject(getFile("data/transactions/allocation.json"));
+    jsonTx.remove("id");
+    String transactionSample = jsonTx.toString();
 
-    String budgetQuery = "?query=fiscalYearId==684b5dc5-92f6-4db7-b996-b549d88f5e4e and fundId==67cd0046-e4f1-4e4f-9024-adf0b0039d09";
-    String budgetEndpointWithQuery = TestEntities.BUDGET.getEndpoint() + budgetQuery;
+    String fY = jsonTx.getString("fiscalYearId");
+    String fromFundId = jsonTx.getString("fromFundId");
+    String toFundId = jsonTx.getString("toFundId");
 
-    Budget budgetBefore = getData(budgetEndpointWithQuery, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(200)
-      .body(BUDGETS, hasSize(1))
-      .extract()
-      .as(BudgetCollection.class).getBudgets().get(0);
+    // prepare budget/ledger queries
+    String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fY, fromFundId);
+    String toBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, toFundId);
+    String toLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fY, toFundId);
 
+    Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    Budget toBudgetBefore = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
 
-    String ledgerQuery = "?query=budget.fiscalYearId==684b5dc5-92f6-4db7-b996-b549d88f5e4e and budget.fundId==67cd0046-e4f1-4e4f-9024-adf0b0039d09";
-    String ledgerEndpointWithQuery = TestEntities.LEDGER.getEndpoint() + ledgerQuery;
-    Ledger ledgerBefore = getData(ledgerEndpointWithQuery, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(200)
-      .body(LEDGERS, hasSize(1))
-      .extract()
-      .as(LedgerCollection.class).getLedgers().get(0);
+    Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    Ledger toLedgerBefore = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
 
+    // create Allocation
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class);
 
-    Budget budgetAfter = getData(budgetEndpointWithQuery, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(200)
-      .body(BUDGETS, hasSize(1))
-      .extract()
-      .as(BudgetCollection.class).getBudgets().get(0);
+    Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    Budget toBudgetAfter = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
+    Ledger fromLedgerAfter = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    Ledger toLedgerAfter = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
 
-    Ledger ledgerAfter = getData(ledgerEndpointWithQuery, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(200)
-      .body(LEDGERS, hasSize(1))
-      .extract()
-      .as(LedgerCollection.class).getLedgers().get(0);
+    // check source budget and ledger totals
+    final Double amount = jsonTx.getDouble("amount");
+    double expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
+    double expectedBudgetsAllocated = subtractValues(fromBudgetBefore.getAllocated(), amount);
+    double expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
 
-    final Double amount = jsonTransaction.getDouble("amount");
-    double expectedBudgetsAvailable = subtractValues(budgetBefore.getAvailable(), amount);
-    double expectedBudgetsAllocated = subtractValues(budgetBefore.getAllocated(), amount);
-    double expectedBudgetsUnavailable = sumValues(budgetBefore.getUnavailable(), amount);
+    double expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
+    double expectedLedgersAllocated = subtractValues(fromLedgerBefore.getAllocated(), amount);
+    double expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
 
-    double expectedLedgersAvailable = subtractValues(ledgerBefore.getAvailable(), amount);
-    double expectedLedgersAllocated = subtractValues(ledgerBefore.getAllocated(), amount);
-    double expectedLedgersUnavailable = sumValues(ledgerBefore.getUnavailable(), amount);
+    assertEquals(expectedBudgetsAvailable, fromBudgetAfter.getAvailable());
+    assertEquals(expectedBudgetsAllocated, fromBudgetAfter.getAllocated());
+    assertEquals(expectedBudgetsUnavailable , fromBudgetAfter.getUnavailable());
 
-    assertEquals(expectedBudgetsAvailable, budgetAfter.getAvailable());
-    assertEquals(expectedBudgetsAllocated, budgetAfter.getAllocated());
-    assertEquals(expectedBudgetsUnavailable , budgetAfter.getUnavailable());
+    assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
+    assertEquals(expectedLedgersAllocated, fromLedgerAfter.getAllocated());
+    assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
 
-    assertEquals(expectedLedgersAvailable, ledgerAfter.getAvailable());
-    assertEquals(expectedLedgersAllocated, ledgerAfter.getAllocated());
-    assertEquals(expectedLedgersUnavailable , ledgerAfter.getUnavailable());
+    // check destination budget and ledger totals
+    expectedBudgetsAvailable = sumValues(toBudgetBefore.getAvailable(), amount);
+    expectedBudgetsAllocated = sumValues(toBudgetBefore.getAllocated(), amount);
+
+    expectedLedgersAvailable = sumValues(toLedgerBefore.getAvailable(), amount);
+    expectedLedgersAllocated = sumValues(toLedgerBefore.getAllocated(), amount);
+
+    assertEquals(expectedBudgetsAvailable, toBudgetAfter.getAvailable());
+    assertEquals(expectedBudgetsAllocated, toBudgetAfter.getAllocated());
+
+    assertEquals(expectedLedgersAvailable, toLedgerAfter.getAvailable());
+    assertEquals(expectedLedgersAllocated, toLedgerAfter.getAllocated());
 
     // cleanup
     deleteTenant(TRANSACTION_TENANT_HEADER);
   }
 
-  private double subtractValues(double d1, double d2){
+  private Ledger getLedgerAndValidate(String endpoint) throws MalformedURLException {
+    return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(200)
+      .body(LEDGERS, hasSize(1))
+      .extract()
+      .as(LedgerCollection.class).getLedgers().get(0);
+  }
+
+  private Budget getBudgetAndValidate(String endpoint) throws MalformedURLException {
+    return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(200)
+      .body(BUDGETS, hasSize(1))
+      .extract()
+      .as(BudgetCollection.class).getBudgets().get(0);
+  }
+
+  private double subtractValues(double d1, double d2) {
     return BigDecimal.valueOf(d1).subtract(BigDecimal.valueOf(d2)).doubleValue();
   }
 
-  private double sumValues(double d1, double d2){
+  private double sumValues(double d1, double d2) {
     return BigDecimal.valueOf(d1).add(BigDecimal.valueOf(d2)).doubleValue();
   }
 }
