@@ -55,7 +55,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
           SELECT INTO fromLedgerRecord * FROM  ${myuniversity}_${mymodule}.ledger  WHERE (jsonb->>'id' = fromFundRecord.jsonb::jsonb->>'ledgerId');
           fromLedger = fromLedgerRecord.jsonb::jsonb;
 
-          fromLedgerAllocated = (SELECT COALESCE(fromLedger->>'allocated', '0'))::decimal - amount;
+          fromLedgerAllocated = (SELECT COALESCE(fromLedger->>'allocated', '0'))::decimal + amount;
           fromLedgerAvailable = (SELECT COALESCE(fromLedger->>'available', '0'))::decimal - amount;
           fromLedgerUnavailable = (SELECT COALESCE(fromLedger->>'unavailable', '0'))::decimal + amount;
           newLedgerValues = '{allocated,' || fromLedgerAllocated || ', available, ' || fromLedgerAvailable || ', unavailable, ' || fromLedgerUnavailable ||'}';

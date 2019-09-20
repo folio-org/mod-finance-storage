@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.Ledger;
@@ -70,28 +71,39 @@ class TransactionTest extends TestBase {
 
     // check source budget and ledger totals
     final Double amount = jsonTx.getDouble("amount");
-    double expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
-    double expectedBudgetsAllocated = subtractValues(fromBudgetBefore.getAllocated(), amount);
-    double expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
+    double expectedBudgetsAvailable;
+    double expectedBudgetsAllocated;
+    double expectedBudgetsUnavailable;
+    double expectedLedgersAvailable;
+    double expectedLedgersAllocated;
+    double expectedLedgersUnavailable;
 
-    double expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
-    double expectedLedgersAllocated = subtractValues(fromLedgerBefore.getAllocated(), amount);
-    double expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
+    if (StringUtils.isNotEmpty(jsonTx.getString("fromFundId"))){
+      expectedBudgetsAllocated = subtractValues(fromBudgetBefore.getAllocated(), amount);
+      expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
+      expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
 
-    assertEquals(expectedBudgetsAvailable, fromBudgetAfter.getAvailable());
-    assertEquals(expectedBudgetsAllocated, fromBudgetAfter.getAllocated());
-    assertEquals(expectedBudgetsUnavailable , fromBudgetAfter.getUnavailable());
+      expectedLedgersAllocated = sumValues(fromLedgerBefore.getAllocated(), amount);
+      expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
+      expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
 
-    assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
-    assertEquals(expectedLedgersAllocated, fromLedgerAfter.getAllocated());
-    assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
+      assertEquals(expectedBudgetsAllocated, fromBudgetAfter.getAllocated());
+      assertEquals(expectedBudgetsAvailable, fromBudgetAfter.getAvailable());
+      assertEquals(expectedBudgetsUnavailable , fromBudgetAfter.getUnavailable());
+
+      assertEquals(expectedLedgersAllocated, fromLedgerAfter.getAllocated());
+      assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
+      assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
+    }
+
+
 
     // check destination budget and ledger totals
-    expectedBudgetsAvailable = sumValues(toBudgetBefore.getAvailable(), amount);
     expectedBudgetsAllocated = sumValues(toBudgetBefore.getAllocated(), amount);
+    expectedBudgetsAvailable = sumValues(toBudgetBefore.getAvailable(), amount);
 
-    expectedLedgersAvailable = sumValues(toLedgerBefore.getAvailable(), amount);
     expectedLedgersAllocated = sumValues(toLedgerBefore.getAllocated(), amount);
+    expectedLedgersAvailable = sumValues(toLedgerBefore.getAvailable(), amount);
 
     assertEquals(expectedBudgetsAvailable, toBudgetAfter.getAvailable());
     assertEquals(expectedBudgetsAllocated, toBudgetAfter.getAllocated());
