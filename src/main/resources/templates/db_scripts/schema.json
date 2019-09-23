@@ -155,6 +155,10 @@
         {
           "fieldName": "name",
           "tOps": "ADD"
+        },
+        {
+          "fieldName": "fundId, fiscalYearId",
+          "tOps": "ADD"
         }
       ],
       "ginIndex": [

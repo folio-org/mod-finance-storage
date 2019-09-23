@@ -1,32 +1,26 @@
 -- https://www.postgresql.org/docs/10/functions-json.html
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETURNS TRIGGER AS $recalculate_totals$
   DECLARE
-    fromBudgetRecord        record;
     fromBudget              jsonb;
     fromBudgetAllocated     decimal;
     fromBudgetAvailable     decimal;
     fromBudgetUnavailable   decimal;
 
-    fromLedgerRecord        record;
     fromLedger              jsonb;
     fromLedgerAllocated     decimal;
     fromLedgerAvailable     decimal;
     fromLedgerUnavailable   decimal;
 
-    toBudgetRecord          record;
     toBudget                jsonb;
     toBudgetAllocated       decimal;
     toBudgetAvailable       decimal;
     toBudgetUnavailable     decimal;
 
-    toLedgerRecord          record;
     toLedger                jsonb;
     toLedgerAllocated       decimal;
     toLedgerAvailable       decimal;
     toLedgerUnavailable     decimal;
 
-    fromFundRecord          record;
-    toFundRecord            record;
     newBudgetValues         text[];
     newLedgerValues         text[];
     amount                  decimal;
@@ -39,8 +33,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
         --check if fromFundId exists
         IF (NEW.jsonb->'fromFundId' IS NOT NULL) THEN
           -- Update Budget identified by the transactions fiscal year (fiscalYearId) and source fund (fromFundId)
-          SELECT INTO fromBudgetRecord * FROM  ${myuniversity}_${mymodule}.budget WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'fromFundId');
-          fromBudget = fromBudgetRecord.jsonb::jsonb;
+          SELECT INTO fromBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'fromFundId');
 
           fromBudgetAllocated = (SELECT COALESCE(fromBudget->>'allocated', '0'))::decimal - amount;
           fromBudgetAvailable = (SELECT COALESCE(fromBudget->>'available', '0'))::decimal - amount;
@@ -51,9 +44,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
 
 
           -- Update Ledger identified by the transaction's fiscal year (fiscalYearId) and the source fund (fromFundId)
-          SELECT INTO fromFundRecord * FROM ${myuniversity}_${mymodule}.fund WHERE (jsonb->>'id' = fromBudget->>'fundId');
-          SELECT INTO fromLedgerRecord * FROM  ${myuniversity}_${mymodule}.ledger  WHERE (jsonb->>'id' = fromFundRecord.jsonb::jsonb->>'ledgerId');
-          fromLedger = fromLedgerRecord.jsonb::jsonb;
+          SELECT INTO fromLedger (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledger  WHERE (jsonb->>'id' = (SELECT jsonb->>'ledgerId' FROM ${myuniversity}_${mymodule}.fund WHERE (jsonb->>'id' = fromBudget->>'fundId')));
 
           fromLedgerAllocated = (SELECT COALESCE(fromLedger->>'allocated', '0'))::decimal + amount;
           fromLedgerAvailable = (SELECT COALESCE(fromLedger->>'available', '0'))::decimal - amount;
@@ -64,8 +55,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
 
         END IF;
         -- Update Budget identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
-          SELECT INTO toBudgetRecord * FROM  ${myuniversity}_${mymodule}.budget WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'toFundId');
-          toBudget = toBudgetRecord.jsonb::jsonb;
+          SELECT INTO toBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'toFundId');
 
           toBudgetAllocated = (SELECT COALESCE(toBudget->>'allocated', '0'))::decimal + amount;
           toBudgetAvailable = (SELECT COALESCE(toBudget->>'available', '0'))::decimal + amount;
@@ -74,9 +64,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
           UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'toFundId');
 
         -- Update Ledger identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
-          SELECT INTO toFundRecord * FROM ${myuniversity}_${mymodule}.fund WHERE (jsonb->>'id' = toBudget->>'fundId');
-          SELECT INTO toLedgerRecord * FROM  ${myuniversity}_${mymodule}.ledger  WHERE (jsonb->>'id' = toFundRecord.jsonb::jsonb->>'ledgerId');
-          toLedger = toLedgerRecord.jsonb::jsonb;
+          SELECT INTO toLedger (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledger  WHERE (jsonb->>'id' = (SELECT jsonb->>'ledgerId' FROM ${myuniversity}_${mymodule}.fund WHERE (jsonb->>'id' = toBudget->>'fundId')));
 
           toLedgerAllocated = (SELECT COALESCE(toLedger->>'allocated', '0'))::decimal + amount;
           toLedgerAvailable = (SELECT COALESCE(toLedger->>'available', '0'))::decimal + amount;
