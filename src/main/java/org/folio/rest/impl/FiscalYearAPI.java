@@ -120,7 +120,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
     log.debug("Creating new fiscal year record with id={}", fiscalYear.getId());
 
     pgClient.save(tx.getConnection(), FISCAL_YEAR_TABLE, fiscalYear.getId(), fiscalYear, reply -> {
-      if(reply.failed()) {
+      if (reply.failed()) {
         HelperUtils.handleFailure(future, reply);
       } else {
         log.info("New fiscal year record with id={} has been successfully created", fiscalYear.getId());
@@ -164,13 +164,13 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
 
   private Future<List<Ledger>> getLedgers(Tx<FiscalYear> tx) {
     Future<List<Ledger>> future = Future.future();
-    tx.getPgClient().get(tx.getConnection(), LedgerAPI.LEDGER_TABLE, Ledger.class, new Criterion(), true, true, reply -> {
-      if(reply.failed()) {
+    pgClient.get(tx.getConnection(), LedgerAPI.LEDGER_TABLE, Ledger.class, new Criterion(), true, true, reply -> {
+      if (reply.failed()) {
         log.error("Failed to find ledgers");
         HelperUtils.handleFailure(future, reply);
       } else {
         List<Ledger> results = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
-        log.info("{} ledgers found have been found", results.size());
+        log.info("{} ledgers have been found", results.size());
         future.complete(results);
       }
     });
