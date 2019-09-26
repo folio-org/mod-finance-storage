@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -64,16 +65,16 @@ public abstract class TestBase {
     }
   }
 
-  void verifyCollectionQuantity(String endpoint, int quantity, Header tenantHeader) throws MalformedURLException {
-    getData(endpoint, tenantHeader)
+  ValidatableResponse verifyCollectionQuantity(String endpoint, int quantity, Header tenantHeader) throws MalformedURLException {
+    return getData(endpoint, tenantHeader)
       .then()
         .log().all()
         .statusCode(200)
         .body("totalRecords", equalTo(quantity));
   }
 
-  void verifyCollectionQuantity(String endpoint, int quantity) throws MalformedURLException {
-    verifyCollectionQuantity(endpoint, quantity, TENANT_HEADER);
+  ValidatableResponse verifyCollectionQuantity(String endpoint, int quantity) throws MalformedURLException {
+    return verifyCollectionQuantity(endpoint, quantity, TENANT_HEADER);
   }
 
   Response getData(String endpoint, Header tenantHeader) throws MalformedURLException {
@@ -168,8 +169,8 @@ public abstract class TestBase {
       .delete(storageUrl(endpoint));
   }
 
-  String createEntity(String endpoint, String entity) throws MalformedURLException {
-    return postData(endpoint, entity)
+  String createEntity(String endpoint, Object entity) throws MalformedURLException {
+    return postData(endpoint, JsonObject.mapFrom(entity).encode())
       .then().log().all()
       .statusCode(201)
       .extract()

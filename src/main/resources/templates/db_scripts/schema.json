@@ -100,6 +100,12 @@
       "tableName": "fiscal_year",
       "fromModuleVersion": 1.0,
       "withMetadata": true,
+      "index": [
+        {
+          "fieldName" : "periodEnd",
+          "tOps": "ADD"
+        }
+      ],
       "ginIndex": [
         {
           "fieldName": "name",
@@ -292,6 +298,12 @@
           "targetTable": "fiscal_year",
           "tableAlias": "ledgerFY",
           "targetTableAlias": "fiscalYear"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "ledgerId, fiscalYearId",
+          "tOps": "ADD"
         }
       ]
     },

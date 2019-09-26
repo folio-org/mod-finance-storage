@@ -4,83 +4,177 @@ import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 
 import java.net.MalformedURLException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.cql.CQLWrapper;
+import org.folio.rest.jaxrs.model.FiscalYear;
+import org.folio.rest.jaxrs.model.Ledger;
+import org.folio.rest.jaxrs.model.LedgerFYCollection;
+import org.folio.rest.jaxrs.resource.FinanceStorageLedgerFiscalYears;
+import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.utils.TestEntities;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-import io.restassured.response.Response;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.sql.UpdateResult;
-import io.vertx.junit5.Checkpoint;
-import io.vertx.junit5.VertxExtension;
-import io.vertx.junit5.VertxTestContext;
 
-@ExtendWith(VertxExtension.class)
 public class LedgerFYTest extends TestBase {
 
-  private static final String LEDGER_FY_TABLE = "ledgerFY";
-  private static final String LEDGER_FY_ENDPOINT = "/finance-storage/ledger-fiscal-years";
+  private static final String LEDGER_FY_ENDPOINT = HelperUtils.getEndpoint(FinanceStorageLedgerFiscalYears.class);
 
   @Test
-  public void testGetQuery(VertxTestContext testContext) throws Exception {
+  public void testGetQueryForOneRecord() throws Exception {
+    logger.info("--- Test GET by query when one ledger and one fiscal year are created --- ");
 
-    String fiscalYearId = testPositiveCases(FISCAL_YEAR);
-    String ledgerId = testPositiveCases(LEDGER);
-    Checkpoint checkpoint = testContext.checkpoint(2);
+    String fiscalYearId = createFirstRecord(FISCAL_YEAR);
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
 
-    Handler<AsyncResult<String>> postHandler = testContext.succeeding(ok -> checkpoint.flag());
-    postLedgerFYData(fiscalYearId, ledgerId, postHandler);
-
-    // search for GET
+    String ledgerId = createFirstRecord(LEDGER);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 1);
 
-    // search with fields from "ledger"
-    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=ledger.name==NonExistent", 0);
-
- // search with fields from "FY"
+    // search with fields from "FY"
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=fiscalYear.code==FY19", 1);
+    // search with fields from "ledgers"
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=ledger.ledgerStatus==Active", 1);
 
     // search with invalid cql query
     testInvalidCQLQuery(LEDGER_FY_ENDPOINT + "?query=invalid-query");
 
-    deleteLedgerFYData(testContext.succeeding(ok -> checkpoint.flag()));
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+    deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+  }
+
+  @Test
+  public void testGetQueryForSeveralRecords() throws Exception {
+    logger.info("--- Test GET by query when several ledger and fiscal year records are created --- ");
+    Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withId(null);
+    List<String> ledgerIds = new ArrayList<>();
+
+    // Create first ledger (code and name must be unique)
+    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode())));
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+    // Create second ledger (code and name must be unique)
+    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("second").withName(ledger.getCode())));
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+
+    FiscalYear fiscalYear = prepareFiscalYear();
+
+    List<String> fiscalYearIds = new ArrayList<>();
+    // Create first fiscal year (code must be unique)
+    fiscalYearIds.add(createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear.withCurrency("USD").withCode(fiscalYear.getCurrency())));
+    // Check that 2 ledger-FY records are created
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 2);
+
+    // Create second fiscal year (code must be unique)
+    fiscalYearIds.add(createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear.withCurrency("BYN").withCode(fiscalYear.getCurrency())));
+    // Check that 2 more ledger-FY records are created
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 4);
+
+    // search from "FY" by currency
+    String currency = "BYN";
+    LedgerFYCollection ledgerFYs = verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=fiscalYear.currency==" + currency, 2)
+      .extract()
+      .as(LedgerFYCollection.class);
+    // Check that currency is the same as in fiscal year
+    ledgerFYs.getLedgerFY().forEach(ledgerFy -> MatcherAssert.assertThat(ledgerFy.getCurrency(), IsEqual.equalTo(currency)));
+
+    // search from "FY" by period end
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=fiscalYear.periodEnd > " + dateInDaysFromNow(2).toInstant(), 4);
+
+    // search with fields from "ledgers"
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=ledger.name==first", 2);
+
+    fiscalYearIds.forEach(fiscalYearId -> {
+      try {
+        deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
+      } catch (MalformedURLException e) {
+        Assertions.fail("Cannot delete fiscal year");
+      }
+    });
+
+    // Make sure that no ledger-FY records left
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+
+    ledgerIds.forEach(ledgerId -> {
+      try {
+        deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+      } catch (MalformedURLException e) {
+        Assertions.fail("Cannot delete ledger");
+      }
+    });
+  }
+
+  @Test
+  public void testGetNoRecordsForFiscalYearWithoutCurrency() throws Exception {
+    logger.info("--- Test that GET ledger/fiscal year finds nothing when fiscal year is in past ---");
+    String ledgerId = createFirstRecord(LEDGER);
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+
+    FiscalYear fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class)
+      .withPeriodStart(dateInDaysFromNow(-365))
+      .withPeriodEnd(dateInDaysFromNow(-30));
+    String fiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear);
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+
     deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
   }
 
-  private void deleteLedgerFYData(Handler<AsyncResult<UpdateResult>> handler) {
-    PostgresClient.getInstance(StorageTestSuite.getVertx(), TENANT_NAME)
-    .delete(LEDGER_FY_TABLE, new CQLWrapper(), handler);
+  @Test
+  public void testGetNoRecordsForFiscalYearInPast() throws Exception {
+    logger.info("--- Test that GET ledger/fiscal year finds nothing when fiscal year has no currency ---");
+
+    String ledgerId = createFirstRecord(LEDGER);
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+
+    String fiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), prepareFiscalYear().withCurrency(null));
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
+    deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
   }
 
-  // temporary method used to load data to table until MODFISTO-37 is worked on
-  private void postLedgerFYData(String fiscalYearId, String ledgerId, Handler<AsyncResult<String>> handler) {
-    String sample = getFile("ledgerFY.sample");
-    JsonObject sampleJson = JsonObject.mapFrom(new JsonObject(sample));
-    sampleJson.put("ledgerId", ledgerId);
-    sampleJson.put("fiscalYearId", fiscalYearId);
-
-    PostgresClient.getInstance(StorageTestSuite.getVertx(), TENANT_NAME)
-      .save(LEDGER_FY_TABLE, sampleJson, handler);
-
+  @Test
+  public void testGetQueryNothingFound() throws Exception {
+    logger.info("--- Test that GET ledger/fiscal year finds nothing when searching for non existent records ---");
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=ledger.name==NonExistent", 0);
   }
 
-  private String testPositiveCases(TestEntities testEntity) throws MalformedURLException {
-    logger.info(String.format("--- %s test: Verifying database's initial state ... ", testEntity.name()));
+  @Test
+  public void testGetByInvalidQuery() throws Exception {
+    logger.info("--- Test that GET ledger/fiscal year returns error if query is invalid cql ---");
+    testInvalidCQLQuery(LEDGER_FY_ENDPOINT + "?query=invalid-query");
+  }
+
+  private String createFirstRecord(TestEntities testEntity) throws MalformedURLException {
+    logger.info("--- Verifying database's initial state: no {} records expected ... ", testEntity.name());
     verifyCollectionQuantity(testEntity.getEndpoint(), 0);
 
-    logger.info(String.format("--- %s test: Creating record ... ", testEntity.name()));
-    String sample = getFile(testEntity.getPathToSampleFile());
-    Response response = postData(testEntity.getEndpoint(), sample);
-    String sampleId = response.then()
+    logger.info("--- Creating record {} ... ", testEntity.name());
+
+    if (testEntity == FISCAL_YEAR) {
+      return createEntity(testEntity.getEndpoint(), prepareFiscalYear());
+    }
+
+    return postData(testEntity.getEndpoint(), getFile(testEntity.getPathToSampleFile())).then()
       .extract()
       .path("id");
+  }
 
-    return sampleId;
+  private FiscalYear prepareFiscalYear() {
+    return new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class).withId(null)
+      .withCurrency("USD")
+      .withPeriodStart(new Date())
+      .withPeriodEnd(dateInDaysFromNow(10));
+  }
+
+  private Date dateInDaysFromNow(int i) {
+    return Date.from(Instant.now().plus(i, ChronoUnit.DAYS));
   }
 }
