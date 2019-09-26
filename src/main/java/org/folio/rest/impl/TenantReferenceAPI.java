@@ -19,11 +19,11 @@ import org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
+import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantLoading;
 import org.folio.rest.tools.utils.TenantTool;
 
-import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
@@ -139,6 +139,6 @@ public class TenantReferenceAPI extends TenantAPI {
   }
 
   private static String getUriPath(Class<?> clazz) {
-    return clazz.getAnnotation(Path.class).value().replaceFirst("/", "");
+    return HelperUtils.getEndpoint(clazz).replaceFirst("/", "");
   }
 }
