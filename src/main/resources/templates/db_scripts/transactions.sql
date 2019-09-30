@@ -56,6 +56,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
         END IF;
         -- Update Budget identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
           SELECT INTO toBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'toFundId');
+          IF (toBudget IS NULL) THEN
+            RAISE EXCEPTION 'destination budget not found';
+          END IF;
 
           toBudgetAllocated = (SELECT COALESCE(toBudget->>'allocated', '0'))::decimal + amount;
           toBudgetAvailable = (SELECT COALESCE(toBudget->>'available', '0'))::decimal + amount;
