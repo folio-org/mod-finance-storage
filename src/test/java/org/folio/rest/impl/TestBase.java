@@ -109,10 +109,28 @@ public abstract class TestBase {
       .post(storageUrl(endpoint));
   }
 
+  Response postData(String endpoint, String input, Header header) throws MalformedURLException {
+    return given()
+      .header(header)
+      .accept(ContentType.JSON)
+      .contentType(ContentType.JSON)
+      .body(input)
+      .log().all()
+      .post(storageUrl(endpoint));
+  }
+
   Response getDataById(String endpoint, String id) throws MalformedURLException {
     return given()
       .pathParam("id", id)
       .header(TENANT_HEADER)
+      .contentType(ContentType.JSON)
+      .get(storageUrl(endpoint));
+  }
+
+  Response getDataById(String endpoint, String id, Header header) throws MalformedURLException {
+    return given()
+      .pathParam("id", id)
+      .header(header)
       .contentType(ContentType.JSON)
       .get(storageUrl(endpoint));
   }
