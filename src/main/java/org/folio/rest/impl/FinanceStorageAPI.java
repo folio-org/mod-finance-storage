@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.Promise;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.LedgerFYCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgerFiscalYears;
@@ -34,22 +35,22 @@ public class FinanceStorageAPI implements FinanceStorageLedgerFiscalYears {
     if (ledgerFYs.isEmpty()) {
       return succeededFuture();
     }
-    Future<Void> future = Future.future();
-    tx.getPgClient().saveBatch(tx.getConnection(), LEDGERFY_TABLE, ledgerFYs, reply -> handleAsyncResult(future, reply));
-    return future;
+    Promise<Void> promise = Promise.promise();
+    tx.getPgClient().saveBatch(tx.getConnection(), LEDGERFY_TABLE, ledgerFYs, reply -> handleAsyncResult(promise, reply));
+    return promise.future();
   }
 
   <T> Future<Void> deleteLedgerFiscalYearRecords(Tx<T> tx, Criterion criterion) {
-    Future<Void> future = Future.future();
-    tx.getPgClient().delete(tx.getConnection(), LEDGERFY_TABLE, criterion, reply -> handleAsyncResult(future, reply));
-    return future;
+    Promise<Void> promise = Promise.promise();
+    tx.getPgClient().delete(tx.getConnection(), LEDGERFY_TABLE, criterion, reply -> handleAsyncResult(promise, reply));
+    return promise.future();
   }
 
-  private <T> void handleAsyncResult(Future<Void> future, AsyncResult<T> reply) {
+  private <T> void handleAsyncResult(Promise<Void> promise, AsyncResult<T> reply) {
     if(reply.failed()) {
-      HelperUtils.handleFailure(future, reply);
+      HelperUtils.handleFailure(promise, reply);
     } else {
-      future.complete();
+      promise.complete();
     }
   }
 }

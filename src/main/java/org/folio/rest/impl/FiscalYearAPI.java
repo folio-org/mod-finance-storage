@@ -27,6 +27,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -110,7 +111,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
   }
 
   private Future<Tx<FiscalYear>> saveFiscalYear(Tx<FiscalYear> tx) {
-    Future<Tx<FiscalYear>> future = Future.future();
+    Promise<Tx<FiscalYear>> future = Promise.promise();
 
     FiscalYear fiscalYear = tx.getEntity();
     if (fiscalYear.getId() == null) {
@@ -127,7 +128,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
         future.complete(tx);
       }
     });
-    return future;
+    return future.future();
   }
 
   private Future<Tx<FiscalYear>> createLedgerFiscalYearRecords(Tx<FiscalYear> tx) {
@@ -138,18 +139,18 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
       return Future.succeededFuture(tx);
     }
 
-    Future<Tx<FiscalYear>> future = Future.future();
+    Promise<Tx<FiscalYear>> promise = Promise.promise();
     getLedgers(tx)
       .map(ledgers -> buildLedgerFiscalYearRecords(fiscalYear, ledgers))
       .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(tx, ledgerFYs))
       .setHandler(result -> {
         if (result.failed()) {
-          HelperUtils.handleFailure(future, result);
+          HelperUtils.handleFailure(promise, result);
         } else {
-          future.complete(tx);
+          promise.complete(tx);
         }
       });
-    return future;
+    return promise.future();
   }
 
   private List<LedgerFY> buildLedgerFiscalYearRecords(FiscalYear fiscalYear, List<Ledger> ledgers) {
@@ -163,17 +164,17 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
   }
 
   private Future<List<Ledger>> getLedgers(Tx<FiscalYear> tx) {
-    Future<List<Ledger>> future = Future.future();
+    Promise<List<Ledger>> promise = Promise.promise();
     pgClient.get(tx.getConnection(), LedgerAPI.LEDGER_TABLE, Ledger.class, new Criterion(), true, true, reply -> {
       if (reply.failed()) {
         log.error("Failed to find ledgers");
-        HelperUtils.handleFailure(future, reply);
+        HelperUtils.handleFailure(promise, reply);
       } else {
         List<Ledger> results = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
         log.info("{} ledgers have been found", results.size());
-        future.complete(results);
+        promise.complete(results);
       }
     });
-    return future;
+    return promise.future();
   }
 }

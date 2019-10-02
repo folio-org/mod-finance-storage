@@ -101,7 +101,7 @@ public class EntitiesCrudTest extends TestBase {
     response.then()
       .log()
       .all()
-      .statusCode(400).assertThat().body(Matchers.containsString("duplicate key value violates unique constraint"));
+      .statusCode(400).assertThat().body(Matchers.containsString("already exists"));
 
   }
 
