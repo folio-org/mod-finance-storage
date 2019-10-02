@@ -161,6 +161,10 @@
         {
           "fieldName": "name",
           "tOps": "ADD"
+        },
+        {
+          "fieldName": "fundId, fiscalYearId",
+          "tOps": "ADD"
         }
       ],
       "ginIndex": [
@@ -218,6 +222,7 @@
       "tableName": "transaction",
       "fromModuleVersion": 1.0,
       "withMetadata": true,
+      "customSnippetPath": "transactions.sql",
       "foreignKeys": [
         {
           "fieldName": "fiscalYearId",
