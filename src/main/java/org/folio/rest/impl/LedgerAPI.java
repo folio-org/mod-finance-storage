@@ -15,13 +15,10 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.json.JsonArray;
-import io.vertx.ext.sql.SQLConnection;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.FiscalYear;
-import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.model.LedgerFY;
@@ -33,12 +30,12 @@ import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
@@ -127,7 +124,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
           HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
         } else if (result.result() == null) {
           asyncResultHandler.handle(succeededFuture(PutFinanceStorageLedgersByIdResponse.respond404WithTextPlain("Not found")));
-        } else if (result.result()) {
+        } else if (Boolean.TRUE.equals(result.result())) {
           handleLedgerStatusUpdate(ledger, asyncResultHandler);
         } else {
           PgUtil.put(LEDGER_TABLE, ledger, id, okapiHeaders, vertxContext, PutFinanceStorageLedgersByIdResponse.class, asyncResultHandler);

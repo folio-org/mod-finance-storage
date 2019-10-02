@@ -1,7 +1,6 @@
 package org.folio.rest.impl;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static org.folio.rest.jaxrs.model.Fund.FundStatus.ACTIVE;
 import static org.folio.rest.jaxrs.model.Fund.FundStatus.FROZEN;
 import static org.folio.rest.jaxrs.model.Fund.FundStatus.INACTIVE;
 import static org.folio.rest.utils.TestEntities.BUDGET;

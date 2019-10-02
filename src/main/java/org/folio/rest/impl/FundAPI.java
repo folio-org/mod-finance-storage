@@ -33,7 +33,7 @@ import io.vertx.ext.web.handler.impl.HttpStatusException;
 public class FundAPI implements FinanceStorageFunds {
   static final String FUND_TABLE = "fund";
 
-  private static final Logger log = LoggerFactory.getLogger(LedgerAPI.class);
+  private static final Logger log = LoggerFactory.getLogger(FundAPI.class);
   private PostgresClient pgClient;
   private String tenantId;
 
@@ -83,7 +83,7 @@ public class FundAPI implements FinanceStorageFunds {
           HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
         } else if (result.result() == null) {
           asyncResultHandler.handle(succeededFuture(FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.respond404WithTextPlain("Not found")));
-        } else if (result.result()) {
+        } else if (Boolean.TRUE.equals(result.result())) {
           handleFundStatusUpdate(fund, asyncResultHandler);
         } else {
           PgUtil.put(FUND_TABLE, fund, id, okapiHeaders, vertxContext, FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.class, asyncResultHandler);
