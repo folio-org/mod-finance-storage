@@ -165,6 +165,75 @@ class TransactionTest extends TestBase {
     deleteTenant(TRANSACTION_TENANT_HEADER);
   }
 
+  @Test
+  void testCreateTransfer() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, 5, TRANSACTION_TENANT_HEADER);
+
+    JsonObject jsonTx = new JsonObject(getFile("data/transactions/transfer.json"));
+    jsonTx.remove("id");
+    String transactionSample = jsonTx.toString();
+
+    String fY = jsonTx.getString("fiscalYearId");
+    String fromFundId = jsonTx.getString("fromFundId");
+    String toFundId = jsonTx.getString("toFundId");
+
+    // prepare budget/ledger queries
+    String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fY, fromFundId);
+    String toBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, toFundId);
+    String toLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fY, toFundId);
+
+    Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    Budget toBudgetBefore = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
+
+    Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    Ledger toLedgerBefore = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+
+    // create Allocation
+    postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class);
+
+    Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    Budget toBudgetAfter = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
+    Ledger fromLedgerAfter = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    Ledger toLedgerAfter = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+
+    // check source budget and ledger totals
+    final Double amount = jsonTx.getDouble("amount");
+    double expectedBudgetsAvailable;
+    double expectedBudgetsUnavailable;
+    double expectedLedgersAvailable;
+    double expectedLedgersUnavailable;
+
+    if (StringUtils.isNotEmpty(jsonTx.getString("fromFundId"))){
+      expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
+      expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
+
+      expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
+      expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
+
+      assertEquals(expectedBudgetsAvailable, fromBudgetAfter.getAvailable());
+      assertEquals(expectedBudgetsUnavailable , fromBudgetAfter.getUnavailable());
+
+      assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
+      assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
+    }
+
+    // check destination budget and ledger totals
+    expectedBudgetsAvailable = sumValues(toBudgetBefore.getAvailable(), amount);
+    expectedLedgersAvailable = sumValues(toLedgerBefore.getAvailable(), amount);
+
+    assertEquals(expectedBudgetsAvailable, toBudgetAfter.getAvailable());
+    assertEquals(expectedLedgersAvailable, toLedgerAfter.getAvailable());
+
+    // cleanup
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
+
   private Ledger getLedgerAndValidate(String endpoint) throws MalformedURLException {
     return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
