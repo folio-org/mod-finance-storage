@@ -5,6 +5,9 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
+import static org.folio.rest.utils.TestEntities.BUDGET;
+import static org.folio.rest.utils.TestEntities.LEDGER;
+import static org.folio.rest.utils.TestEntities.TRANSACTION;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -25,21 +28,21 @@ import io.restassured.http.Header;
 import io.vertx.core.json.JsonObject;
 
 class TransactionTest extends TestBase {
-  private static final String TRANSACTION_ENDPOINT = TestEntities.TRANSACTION.getEndpoint();
+  private static final String TRANSACTION_ENDPOINT = TRANSACTION.getEndpoint();
   private static final String TRANSACTION_TEST_TENANT = "transaction_test_tenant";
   private static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
   private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";
-  private static final String LEDGER_QUERY = "?query=budget.fiscalYearId==%s AND budget.fundId==%s";
-  private static String BUDGETS_QUERY = TestEntities.BUDGET.getEndpoint() + FY_FUND_QUERY;
-  private static String LEDGERS_QUERY = TestEntities.LEDGER.getEndpoint() + LEDGER_QUERY;
+  private static final String LEDGER_QUERY = "?query=fund.id==%s";
+  private static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
+  private static String LEDGERS_QUERY = LEDGER.getEndpoint() + LEDGER_QUERY;
   private static final String BUDGETS = "budgets";
   private static final String LEDGERS = "ledgers";
 
   @Test
   void testCreateAllocation() throws MalformedURLException {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
-    verifyCollectionQuantity(TRANSACTION_ENDPOINT, 5, TRANSACTION_TENANT_HEADER);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
 
     JsonObject jsonTx = new JsonObject(getFile("data/transactions/allocation.json"));
     jsonTx.remove("id");
@@ -51,9 +54,9 @@ class TransactionTest extends TestBase {
 
     // prepare budget/ledger queries
     String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
-    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fY, fromFundId);
+    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fromFundId);
     String toBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, toFundId);
-    String toLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fY, toFundId);
+    String toLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, toFundId);
 
     Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
     Budget toBudgetBefore = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
@@ -86,7 +89,7 @@ class TransactionTest extends TestBase {
       expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
       expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
 
-      expectedLedgersAllocated = sumValues(fromLedgerBefore.getAllocated(), amount);
+      expectedLedgersAllocated = subtractValues(fromLedgerBefore.getAllocated(), amount);
       expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
       expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
 
@@ -119,7 +122,7 @@ class TransactionTest extends TestBase {
   @Test
   void testCreateAllocationWithDestinationFundEmpty() throws MalformedURLException {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
-    verifyCollectionQuantity(TRANSACTION_ENDPOINT, 5, TRANSACTION_TENANT_HEADER);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
 
     JsonObject jsonTx = new JsonObject(getFile("data/transactions/allocation.json"));
     jsonTx.remove("id");
@@ -131,7 +134,7 @@ class TransactionTest extends TestBase {
 
     // prepare budget/ledger queries
     String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
-    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fY, fromFundId);
+    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fromFundId);
 
     Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
     Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
@@ -166,9 +169,68 @@ class TransactionTest extends TestBase {
   }
 
   @Test
+  void testCreateAllocationWithSourceBudgetNotExist() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
+
+    JsonObject jsonTx = new JsonObject(getFile("data/transactions/allocation.json"));
+    jsonTx.remove("id");
+    String transactionSample = jsonTx.toString();
+
+    String fY = jsonTx.getString("fiscalYearId");
+    String fromFundId = jsonTx.getString("fromFundId");
+    String toFundId = jsonTx.getString("toFundId");
+
+    // prepare budget/ledger queries
+    String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fromFundId);
+    String toBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, toFundId);
+    String toLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, toFundId);
+
+    Budget fromBudget = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    deleteData(BUDGET.getEndpointWithId(), fromBudget.getId(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
+    Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    Budget toBudgetBefore = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
+    Ledger toLedgerBefore = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+
+    // try to create Allocation
+    given()
+      .header(TRANSACTION_TENANT_HEADER)
+      .accept(ContentType.TEXT)
+      .contentType(ContentType.JSON)
+      .body(transactionSample)
+      .log().all()
+      .post(storageUrl(TRANSACTION_ENDPOINT))
+      .then()
+      .statusCode(500);
+
+    Budget toBudgetAfter = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
+    Ledger fromLedgerAfter = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    Ledger toLedgerAfter = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+
+    // verify budget and ledger values not changed
+    if (StringUtils.isNotEmpty(jsonTx.getString("fromFundId"))){
+      assertEquals(toBudgetBefore.getAllocated(), toBudgetAfter.getAllocated());
+      assertEquals(toBudgetBefore.getAvailable(), toBudgetAfter.getAvailable());
+      assertEquals(toBudgetBefore.getUnavailable() , toBudgetAfter.getUnavailable());
+
+      assertEquals(fromLedgerBefore.getAllocated(), fromLedgerAfter.getAllocated());
+      assertEquals(fromLedgerBefore.getAvailable(), fromLedgerAfter.getAvailable());
+      assertEquals(fromLedgerBefore.getUnavailable() , fromLedgerAfter.getUnavailable());
+
+      assertEquals(toLedgerBefore.getAllocated(), toLedgerAfter.getAllocated());
+      assertEquals(toLedgerBefore.getAvailable(), toLedgerAfter.getAvailable());
+      assertEquals(toLedgerBefore.getUnavailable() , toLedgerAfter.getUnavailable());
+    }
+
+    // cleanup
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
+  @Test
   void testCreateTransfer() throws MalformedURLException {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
-    verifyCollectionQuantity(TRANSACTION_ENDPOINT, 5, TRANSACTION_TENANT_HEADER);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
 
     JsonObject jsonTx = new JsonObject(getFile("data/transactions/transfer.json"));
     jsonTx.remove("id");
@@ -180,9 +242,9 @@ class TransactionTest extends TestBase {
 
     // prepare budget/ledger queries
     String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
-    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fY, fromFundId);
+    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fromFundId);
     String toBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, toFundId);
-    String toLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fY, toFundId);
+    String toLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, toFundId);
 
     Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
     Budget toBudgetBefore = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
