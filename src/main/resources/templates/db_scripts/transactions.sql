@@ -36,7 +36,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
         IF (NEW.jsonb->'fromFundId' IS NOT NULL) THEN
           -- Update Budget identified by the transactions fiscal year (fiscalYearId) and source fund (fromFundId)
           SELECT INTO fromBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'fromFundId');
-
+          IF (fromBudget IS NULL) THEN
+            RAISE EXCEPTION 'source budget not found';
+          END IF;
           fromBudgetAvailable = (SELECT COALESCE(fromBudget->>'available', '0'))::decimal - amount;
           fromBudgetUnavailable = (SELECT COALESCE(fromBudget->>'unavailable', '0'))::decimal + amount;
 
@@ -57,7 +59,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
           fromLedgerUnavailable = (SELECT COALESCE(fromLedger->>'unavailable', '0'))::decimal + amount;
 
           IF (transactionType = 'Allocation') THEN
-            fromLedgerAllocated = (SELECT COALESCE(fromLedger->>'allocated', '0'))::decimal + amount;
+            fromLedgerAllocated = (SELECT COALESCE(fromLedger->>'allocated', '0'))::decimal - amount;
             newLedgerValues = '{allocated,' || fromLedgerAllocated || ', available, ' || fromLedgerAvailable || ', unavailable, ' || fromLedgerUnavailable ||'}';
           ELSIF (transactionType = 'Transfer') THEN
             newLedgerValues = '{available, ' || fromLedgerAvailable || ', unavailable, ' || fromLedgerUnavailable ||'}';
