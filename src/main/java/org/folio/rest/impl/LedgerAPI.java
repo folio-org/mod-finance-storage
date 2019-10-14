@@ -63,24 +63,26 @@ public class LedgerAPI implements FinanceStorageLedgers {
   @Validate
   public void postFinanceStorageLedgers(String lang, Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Tx<Ledger> tx = new Tx<>(entity, pgClient);
-    HelperUtils.startTx(tx)
-      .compose(this::saveLedger)
-      .compose(this::createLedgerFiscalYearRecords)
-      .compose(HelperUtils::endTx)
-      .setHandler(result -> {
-        if (result.failed()) {
-          HttpStatusException cause = (HttpStatusException) result.cause();
-          log.error("New ledger record creation has failed: {}", cause, tx.getEntity());
+    vertxContext.runOnContext(event ->
+      HelperUtils.startTx(tx)
+        .compose(this::saveLedger)
+        .compose(this::createLedgerFiscalYearRecords)
+        .compose(HelperUtils::endTx)
+        .setHandler(result -> {
+          if (result.failed()) {
+            HttpStatusException cause = (HttpStatusException) result.cause();
+            log.error("New ledger record creation has failed: {}", cause, tx.getEntity());
 
-          // The result of rollback operation is not so important, main failure cause is used to build the response
-          HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
-        } else {
-          log.info("New ledger record {} and associated data were successfully created", tx.getEntity());
-          asyncResultHandler.handle(succeededFuture(PostFinanceStorageLedgersResponse
-            .respond201WithApplicationJson(result.result().getEntity(), PostFinanceStorageLedgersResponse.headersFor201()
-              .withLocation(HelperUtils.getEndpoint(FinanceStorageLedgers.class) + result.result().getEntity().getId()))));
-        }
-      });
+            // The result of rollback operation is not so important, main failure cause is used to build the response
+            HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
+          } else {
+            log.info("New ledger record {} and associated data were successfully created", tx.getEntity());
+            asyncResultHandler.handle(succeededFuture(PostFinanceStorageLedgersResponse
+              .respond201WithApplicationJson(result.result().getEntity(), PostFinanceStorageLedgersResponse.headersFor201()
+                .withLocation(HelperUtils.getEndpoint(FinanceStorageLedgers.class) + result.result().getEntity().getId()))));
+          }
+        })
+    );
   }
 
   @Override
@@ -93,7 +95,8 @@ public class LedgerAPI implements FinanceStorageLedgers {
   @Validate
   public void deleteFinanceStorageLedgersById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Tx<String> tx = new Tx<>(id, pgClient);
-    HelperUtils.startTx(tx)
+    vertxContext.runOnContext(event ->
+      HelperUtils.startTx(tx)
       .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(tx,
         HelperUtils.getCriterionByFieldNameAndValue("ledgerId", "=", id)))
       .compose(ok -> HelperUtils.deleteRecordById(tx, LEDGER_TABLE))
@@ -109,27 +112,30 @@ public class LedgerAPI implements FinanceStorageLedgers {
           log.info("Ledger record {} and associated data were successfully deleted", tx.getEntity());
           asyncResultHandler.handle(succeededFuture(DeleteFinanceStorageLedgersByIdResponse.respond204()));
         }
-      });
+      })
+    );
   }
 
   @Override
   @Validate
   public void putFinanceStorageLedgersById(String id, String lang, Ledger ledger, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     ledger.setId(id);
-    isLedgerStatusChanged(ledger)
-      .setHandler(result -> {
-        if (result.failed()) {
-          HttpStatusException cause = (HttpStatusException) result.cause();
-          log.error("Update of the ledger record {} has failed", cause, ledger.getId());
-          HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
-        } else if (result.result() == null) {
-          asyncResultHandler.handle(succeededFuture(PutFinanceStorageLedgersByIdResponse.respond404WithTextPlain("Not found")));
-        } else if (Boolean.TRUE.equals(result.result())) {
-          handleLedgerStatusUpdate(ledger, asyncResultHandler);
-        } else {
-          PgUtil.put(LEDGER_TABLE, ledger, id, okapiHeaders, vertxContext, PutFinanceStorageLedgersByIdResponse.class, asyncResultHandler);
-        }
-      });
+    vertxContext.runOnContext(event ->
+      isLedgerStatusChanged(ledger)
+        .setHandler(result -> {
+          if (result.failed()) {
+            HttpStatusException cause = (HttpStatusException) result.cause();
+            log.error("Update of the ledger record {} has failed", cause, ledger.getId());
+            HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
+          } else if (result.result() == null) {
+            asyncResultHandler.handle(succeededFuture(PutFinanceStorageLedgersByIdResponse.respond404WithTextPlain("Not found")));
+          } else if (Boolean.TRUE.equals(result.result())) {
+            handleLedgerStatusUpdate(ledger, asyncResultHandler);
+          } else {
+            PgUtil.put(LEDGER_TABLE, ledger, id, okapiHeaders, vertxContext, PutFinanceStorageLedgersByIdResponse.class, asyncResultHandler);
+          }
+        })
+    );
   }
 
   private void handleLedgerStatusUpdate(Ledger ledger, Handler<AsyncResult<Response>> asyncResultHandler) {

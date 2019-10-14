@@ -55,24 +55,26 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
   @Validate
   public void postFinanceStorageFiscalYears(String lang, FiscalYear entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Tx<FiscalYear> tx = new Tx<>(entity, pgClient);
-    HelperUtils.startTx(tx)
-      .compose(this::saveFiscalYear)
-      .compose(this::createLedgerFiscalYearRecords)
-      .compose(HelperUtils::endTx)
-      .setHandler(result -> {
-        if (result.failed()) {
-          HttpStatusException cause = (HttpStatusException) result.cause();
-          log.error("New fiscal year record creation has failed: {}", cause, tx.getEntity());
+    vertxContext.runOnContext(event ->
+      HelperUtils.startTx(tx)
+        .compose(this::saveFiscalYear)
+        .compose(this::createLedgerFiscalYearRecords)
+        .compose(HelperUtils::endTx)
+        .setHandler(result -> {
+          if (result.failed()) {
+            HttpStatusException cause = (HttpStatusException) result.cause();
+            log.error("New fiscal year record creation has failed: {}", cause, tx.getEntity());
 
-          // The result of rollback operation is not so important, main failure cause is used to build the response
-          HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
-        } else {
-          log.info("New fiscal year record {} and associated data were successfully created", tx.getEntity());
-          asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageFiscalYearsResponse
-            .respond201WithApplicationJson(result.result().getEntity(), PostFinanceStorageFiscalYearsResponse.headersFor201()
-              .withLocation(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class) + result.result().getEntity().getId()))));
-        }
-      });
+            // The result of rollback operation is not so important, main failure cause is used to build the response
+            HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
+          } else {
+            log.info("New fiscal year record {} and associated data were successfully created", tx.getEntity());
+            asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageFiscalYearsResponse
+              .respond201WithApplicationJson(result.result().getEntity(), PostFinanceStorageFiscalYearsResponse.headersFor201()
+                .withLocation(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class) + result.result().getEntity().getId()))));
+          }
+        })
+    );
   }
 
   @Override
@@ -85,23 +87,25 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
   @Validate
   public void deleteFinanceStorageFiscalYearsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Tx<String> tx = new Tx<>(id, pgClient);
-    HelperUtils.startTx(tx)
-      .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(tx,
-          HelperUtils.getCriterionByFieldNameAndValue("fiscalYearId", "=", id)))
-      .compose(ok -> HelperUtils.deleteRecordById(tx, FISCAL_YEAR_TABLE))
-      .compose(HelperUtils::endTx)
-      .setHandler(result -> {
-        if (result.failed()) {
-          HttpStatusException cause = (HttpStatusException) result.cause();
-          log.error("Deletion of the fiscal year record {} has failed", cause, tx.getEntity());
+    vertxContext.runOnContext(event ->
+      HelperUtils.startTx(tx)
+        .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(tx,
+            HelperUtils.getCriterionByFieldNameAndValue("fiscalYearId", "=", id)))
+        .compose(ok -> HelperUtils.deleteRecordById(tx, FISCAL_YEAR_TABLE))
+        .compose(HelperUtils::endTx)
+        .setHandler(result -> {
+          if (result.failed()) {
+            HttpStatusException cause = (HttpStatusException) result.cause();
+            log.error("Deletion of the fiscal year record {} has failed", cause, tx.getEntity());
 
-          // The result of rollback operation is not so important, main failure cause is used to build the response
-          HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
-        } else {
-          log.info("Fiscal year record {} and associated data were successfully deleted", tx.getEntity());
-          asyncResultHandler.handle(Future.succeededFuture(DeleteFinanceStorageFiscalYearsByIdResponse.respond204()));
-        }
-      });
+            // The result of rollback operation is not so important, main failure cause is used to build the response
+            HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
+          } else {
+            log.info("Fiscal year record {} and associated data were successfully deleted", tx.getEntity());
+            asyncResultHandler.handle(Future.succeededFuture(DeleteFinanceStorageFiscalYearsByIdResponse.respond204()));
+          }
+        })
+    );
   }
 
   @Override

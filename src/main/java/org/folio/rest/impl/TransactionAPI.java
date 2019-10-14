@@ -48,6 +48,5 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Validate
   public void putFinanceStorageTransactionsById(String id, String lang, Transaction entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(TRANSACTION_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageTransactionsByIdResponse.class, asyncResultHandler);
-
   }
 }

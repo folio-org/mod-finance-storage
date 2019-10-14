@@ -75,20 +75,22 @@ public class FundAPI implements FinanceStorageFunds {
   @Validate
   public void putFinanceStorageFundsById(String id, String lang, Fund fund, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     fund.setId(id);
-    isFundStatusChanged(fund)
-      .setHandler(result -> {
-        if (result.failed()) {
-          HttpStatusException cause = (HttpStatusException) result.cause();
-          log.error("Update of the fund record {} has failed", cause, fund.getId());
-          HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
-        } else if (result.result() == null) {
-          asyncResultHandler.handle(succeededFuture(FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.respond404WithTextPlain("Not found")));
-        } else if (Boolean.TRUE.equals(result.result())) {
-          handleFundStatusUpdate(fund, asyncResultHandler);
-        } else {
-          PgUtil.put(FUND_TABLE, fund, id, okapiHeaders, vertxContext, FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.class, asyncResultHandler);
-        }
-      });
+    vertxContext.runOnContext(event ->
+      isFundStatusChanged(fund)
+        .setHandler(result -> {
+          if (result.failed()) {
+            HttpStatusException cause = (HttpStatusException) result.cause();
+            log.error("Update of the fund record {} has failed", cause, fund.getId());
+            HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
+          } else if (result.result() == null) {
+            asyncResultHandler.handle(succeededFuture(FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.respond404WithTextPlain("Not found")));
+          } else if (Boolean.TRUE.equals(result.result())) {
+            handleFundStatusUpdate(fund, asyncResultHandler);
+          } else {
+            PgUtil.put(FUND_TABLE, fund, id, okapiHeaders, vertxContext, FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.class, asyncResultHandler);
+          }
+        })
+    );
   }
 
   private void handleFundStatusUpdate(Fund fund, Handler<AsyncResult<Response>> asyncResultHandler) {
