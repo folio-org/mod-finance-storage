@@ -29,4 +29,9 @@ public class Tx<T> {
   public void setConnection(AsyncResult<SQLConnection> sqlConnection) {
     this.sqlConnection = sqlConnection;
   }
+
+  public Tx<T> withConnection(AsyncResult<SQLConnection> sqlConnection) {
+    this.sqlConnection = sqlConnection;
+    return this;
+  }
 }

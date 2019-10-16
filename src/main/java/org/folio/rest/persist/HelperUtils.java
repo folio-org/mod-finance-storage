@@ -9,12 +9,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.Future;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public final class HelperUtils {
@@ -25,54 +26,54 @@ public final class HelperUtils {
   }
 
   public static <T> Future<Tx<T>> startTx(Tx<T> tx) {
-    Future<Tx<T>> future = Future.future();
+    Promise<Tx<T>> promise = Promise.promise();
 
     tx.getPgClient().startTx(sqlConnection -> {
       tx.setConnection(sqlConnection);
-      future.complete(tx);
+      promise.complete(tx);
     });
-    return future;
+    return promise.future();
   }
 
   public static <T> Future<Tx<T>> endTx(Tx<T> tx) {
-    Future<Tx<T>> future = Future.future();
-    tx.getPgClient().endTx(tx.getConnection(), v -> future.complete(tx));
-    return future;
+    Promise<Tx<T>> promise = Promise.promise();
+    tx.getPgClient().endTx(tx.getConnection(), v -> promise.complete(tx));
+    return promise.future();
   }
 
   public static Future<Tx<String>> deleteRecordById(Tx<String> tx, String table) {
-    Future<Tx<String>> future = Future.future();
+    Promise<Tx<String>> promise = Promise.promise();
 
     tx.getPgClient().delete(tx.getConnection(), table, tx.getEntity(), reply -> {
       if(reply.failed()) {
-        HelperUtils.handleFailure(future, reply);
+        HelperUtils.handleFailure(promise, reply);
       } else if (reply.result().getUpdated() == 0) {
-        future.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
+        promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
       } else {
-        future.complete(tx);
+        promise.complete(tx);
       }
     });
-    return future;
+    return promise.future();
   }
 
-  public static void handleFailure(Future future, AsyncResult reply) {
+  public static void handleFailure(Promise promise, AsyncResult reply) {
     Throwable cause = reply.cause();
     String badRequestMessage = PgExceptionUtil.badRequestMessage(cause);
     if (badRequestMessage != null) {
-      future.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), badRequestMessage));
+      promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), badRequestMessage));
     } else {
-      future.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), cause.getMessage()));
+      promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), cause.getMessage()));
     }
   }
 
   public static Future<Void> rollbackTransaction(Tx<?> tx) {
-    Future<Void> future = Future.future();
+    Promise<Void> promise = Promise.promise();
     if (tx.getConnection().failed()) {
-      future.fail(tx.getConnection().cause());
+      promise.fail(tx.getConnection().cause());
     } else {
-      tx.getPgClient().rollbackTx(tx.getConnection(), future);
+      tx.getPgClient().rollbackTx(tx.getConnection(), promise);
     }
-    return future;
+    return promise.future();
   }
 
   public static void replyWithErrorResponse(Handler<AsyncResult<Response>> asyncResultHandler, HttpStatusException cause) {
@@ -83,10 +84,14 @@ public final class HelperUtils {
   }
 
   public static Criterion getCriterionByFieldNameAndValue(String filedName, String operation, String fieldValue) {
+    return new Criterion(getCriteriaByFieldNameAndValue(filedName, operation, fieldValue));
+  }
+
+  public static Criteria getCriteriaByFieldNameAndValue(String filedName, String operation, String fieldValue) {
     Criteria a = new Criteria();
     a.addField("'" + filedName + "'");
     a.setOperation(operation);
     a.setVal(fieldValue);
-    return new Criterion(a);
+    return a;
   }
 }

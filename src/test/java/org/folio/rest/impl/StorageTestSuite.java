@@ -133,4 +133,8 @@ public class StorageTestSuite {
   @Nested
   class TransactionTestNested extends TransactionTest {
   }
+
+  @Nested
+  class LedgerFundBudgetStatusTestNested extends LedgerFundBudgetStatusTest {
+  }
 }
