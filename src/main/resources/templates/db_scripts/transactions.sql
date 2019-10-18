@@ -176,7 +176,7 @@ SET jsonb =
   AND jsonb::json ->> 'transactionType' <> 'Payment' AND jsonb::json ->> 'transactionType' <> 'Transfer');
 
 -- Update tags
-UPDATE ${myuniversity}_${mymodule}.budget
+UPDATE ${myuniversity}_${mymodule}.transaction
 SET jsonb =
    jsonb || jsonb_build_object('tags', jsonb_build_object('tagList', jsonb::json -> 'tags'))
    WHERE (jsonb::json #> '{tags, tagList}') iS NULL;
