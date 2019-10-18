@@ -82,8 +82,8 @@ public class TenantReferenceAPI extends TenantAPI {
         .add("fiscal-years", getUriPath(FinanceStorageFiscalYears.class))
         .add("ledgers", getUriPath(FinanceStorageLedgers.class))
         .add("funds", getUriPath(FinanceStorageFunds.class))
-        .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
         .add("budgets", getUriPath(FinanceStorageBudgets.class))
+        .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
         .add("transactions", getUriPath(FinanceStorageTransactions.class));
       loadData = true;
     }
