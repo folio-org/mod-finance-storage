@@ -2,7 +2,8 @@
   "tables": [
     {
       "tableName": "ledger",
-      "fromModuleVersion": 1.0,
+      "customSnippetPath": "migration/ledgers.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "ginIndex": [
         {
@@ -41,7 +42,8 @@
     },
     {
       "tableName": "fund",
-      "fromModuleVersion": 1.0,
+      "customSnippetPath": "migration/funds.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [
         {
@@ -98,7 +100,8 @@
     },
     {
       "tableName": "fiscal_year",
-      "fromModuleVersion": 1.0,
+      "customSnippetPath": "migration/fiscal_years.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "index": [
         {
@@ -133,7 +136,8 @@
     },
     {
       "tableName": "budget",
-      "fromModuleVersion": 1.0,
+      "customSnippetPath": "migration/budgets.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [
         {
@@ -220,7 +224,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": 1.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
       "foreignKeys": [
