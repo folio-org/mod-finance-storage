@@ -296,6 +296,63 @@ class TransactionTest extends TestBase {
   }
 
 
+  @Test
+  void testCreateEncumbrance() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
+
+    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    jsonTx.remove("id");
+    String transactionSample = jsonTx.toString();
+
+    String fY = jsonTx.getString("fiscalYearId");
+    String fromFundId = jsonTx.getString("fromFundId");
+
+    // prepare budget/ledger queries
+    String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+    String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fromFundId);
+
+
+    Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+
+    // create Encumbrance
+    postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class);
+
+    Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    Ledger fromLedgerAfter = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+
+    // check source budget and ledger totals
+    final Double amount = jsonTx.getDouble("amount");
+    double expectedBudgetsAvailable;
+    double expectedBudgetsUnavailable;
+    double expectedBudgetsEncumbered;
+
+    double expectedLedgersAvailable;
+    double expectedLedgersUnavailable;
+
+    if (StringUtils.isNotEmpty(jsonTx.getString("fromFundId"))){
+      expectedBudgetsEncumbered = sumValues(fromBudgetBefore.getEncumbered(), amount);
+      expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
+      expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
+
+      expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
+      expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
+
+      assertEquals(expectedBudgetsEncumbered, fromBudgetAfter.getEncumbered());
+      assertEquals(expectedBudgetsAvailable , fromBudgetAfter.getAvailable());
+      assertEquals(expectedBudgetsUnavailable, fromBudgetAfter.getUnavailable());
+
+      assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
+      assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
+    }
+    // cleanup
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
   private Ledger getLedgerAndValidate(String endpoint) throws MalformedURLException {
     return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
