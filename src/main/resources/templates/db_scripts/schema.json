@@ -68,10 +68,6 @@
         {
           "fieldName": "code",
           "tOps": "ADD"
-        },
-        {
-          "fieldName": "name, ledgerId",
-          "tOps": "ADD"
         }
       ],
       "ginIndex": [
