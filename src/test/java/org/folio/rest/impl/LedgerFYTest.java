@@ -38,7 +38,7 @@ public class LedgerFYTest extends TestBase {
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 1);
 
     // search with fields from "FY"
-    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=fiscalYear.code==FY19", 1);
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=fiscalYear.code==FY2019", 1);
     // search with fields from "ledgers"
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=ledger.ledgerStatus==Active", 1);
 
@@ -57,22 +57,22 @@ public class LedgerFYTest extends TestBase {
     List<String> ledgerIds = new ArrayList<>();
 
     // Create first ledger (code and name must be unique)
-    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode())));
+    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(FISCAL_YEAR_ONE_ID)));
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
     // Create second ledger (code and name must be unique)
-    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("second").withName(ledger.getCode())));
+    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("second").withName(ledger.getCode()).withFiscalYearOneId(FISCAL_YEAR_ONE_ID)));
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
 
     FiscalYear fiscalYear = prepareFiscalYear();
 
     List<String> fiscalYearIds = new ArrayList<>();
     // Create first fiscal year (code must be unique)
-    fiscalYearIds.add(createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear.withCurrency("USD").withCode(fiscalYear.getCurrency())));
+    fiscalYearIds.add(createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear.withCurrency("USD").withCode("FY2019")));
     // Check that 2 ledger-FY records are created
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 2);
 
     // Create second fiscal year (code must be unique)
-    fiscalYearIds.add(createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear.withCurrency("BYN").withCode(fiscalYear.getCurrency())));
+    fiscalYearIds.add(createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear.withCurrency("BYN").withCode("FY2020")));
     // Check that 2 more ledger-FY records are created
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 4);
 

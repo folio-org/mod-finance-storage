@@ -1,9 +1,10 @@
 {
   "id": "8da275b8-e099-49a1-9a31-b8241ff26ffc",
   "name": "FY18",
-  "code": "18",
+  "code": "FY2018",
   "currency": "USD",
   "description": "Fiscal year 2018-2019",
   "periodStart": "2018-01-01T00:00:00Z",
-  "periodEnd": "2018-12-31T23:59:59Z"
+  "periodEnd": "2018-12-31T23:59:59Z",
+  "series": "FY"
 }
