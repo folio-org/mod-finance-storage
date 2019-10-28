@@ -34,7 +34,11 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
 
       -- Recalculate Allocation / Transfer / Encumbrance
       IF (transactionType = 'Allocation' OR transactionType = 'Transfer' OR transactionType = 'Encumbrance') THEN
-        --check if fromFundId exists
+        -- abort calculations if fromFundId not specified
+        IF ((NEW.jsonb->'fromFundId' IS NULL) AND (transactionType = 'Encumbrance')) THEN
+          RAISE EXCEPTION 'fromFundId is not specified for Encumbrance';
+        END IF;
+        -- check if fromFundId exists
         IF (NEW.jsonb->'fromFundId' IS NOT NULL) THEN
           -- Update Budget identified by the transactions fiscal year (fiscalYearId) and source fund (fromFundId)
           SELECT INTO fromBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'fromFundId');
