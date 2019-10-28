@@ -16,5 +16,5 @@ UPDATE ${myuniversity}_${mymodule}.fund
 SET
   jsonb = jsonb || jsonb_build_object('tags', jsonb_build_object('tagList', jsonb::json -> 'tags'))
 WHERE
-  jsonb::json #> '{tags, tagList}' iS NULL;
+  jsonb::json #> '{tags, tagList}' iS NULL AND jsonb ? 'tags';
 
