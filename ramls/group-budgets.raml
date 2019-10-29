@@ -1,0 +1,31 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: http://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: Budgets
+    content: <b>Get list of Budgets API.</b>
+
+types:
+  budget_collection: !include acq-models/mod-finance/schemas/budget_collection.json
+
+traits:
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
+
+resourceTypes:
+  collection-get: !include raml-util/rtypes/collection-get.raml
+
+/finance-storage/group-budgets:
+  type:
+    collection-get:
+      exampleCollection: !include acq-models/mod-finance/examples/budget_collection.sample
+      schemaCollection: budget_collection
+  get:
+    description: Get list of budgets
+    is: [
+      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
+      pageable
+    ]

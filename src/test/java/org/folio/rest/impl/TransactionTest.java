@@ -6,6 +6,7 @@ import static org.folio.rest.impl.StorageTestSuite.storageUrl;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.BUDGET;
+import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 import static org.hamcrest.Matchers.hasSize;
@@ -20,7 +21,6 @@ import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
@@ -182,6 +182,7 @@ class TransactionTest extends TestBase {
     String toLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, toFundId);
 
     Budget fromBudget = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    deleteData(GROUP_FUND_FY.getEndpointWithId(), "77cd0046-e4f1-4e4f-9024-adf0b0039d09", TRANSACTION_TENANT_HEADER).then().statusCode(204);
     deleteData(BUDGET.getEndpointWithId(), fromBudget.getId(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
     Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
     Budget toBudgetBefore = getBudgetAndValidate(toBudgetEndpointWithQueryParams);

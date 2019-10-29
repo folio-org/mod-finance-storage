@@ -44,7 +44,6 @@ public class GroupFundFYTest extends TestBase {
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==History and fiscalYear.code==FY2019", GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fiscalYear.periodEnd < 2020-01-01 and fund.fundStatus==Inactive and ledger.name==One-time", 1, GROUP_FUND_FY_TENANT_HEADER);
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fundType.name==Approvals and ledger.name==One-time", 1, GROUP_FUND_FY_TENANT_HEADER);
-
     // search with invalid cql query
     testInvalidCQLQuery(GROUP_FUND_FY.getEndpoint() + "?query=invalid-query");
 

@@ -1,8 +1,15 @@
 {
+  "scripts": [
+    {
+      "run": "after",
+      "snippetPath": "group_budget_view.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
+    }
+  ],
   "tables": [
     {
       "tableName": "ledger",
-      "fromModuleVersion": 1.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "ginIndex": [
         {
@@ -31,7 +38,7 @@
     },
     {
       "tableName": "fund_type",
-      "fromModuleVersion": 3.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "uniqueIndex": [
         {
           "fieldName": "name",
@@ -41,7 +48,7 @@
     },
     {
       "tableName": "fund",
-      "fromModuleVersion": 1.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [
         {
@@ -98,7 +105,7 @@
     },
     {
       "tableName": "fiscal_year",
-      "fromModuleVersion": 1.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "index": [
         {
@@ -133,7 +140,7 @@
     },
     {
       "tableName": "budget",
-      "fromModuleVersion": 1.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [
         {
@@ -220,7 +227,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": 1.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
       "foreignKeys": [
@@ -256,7 +263,7 @@
     },
     {
       "tableName": "groups",
-      "fromModuleVersion": 3.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "ginIndex": [
         {
@@ -285,7 +292,7 @@
     },
     {
       "tableName": "ledgerFY",
-      "fromModuleVersion": 4.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
@@ -309,8 +316,15 @@
     },
     {
       "tableName": "group_fund_fiscal_year",
-      "fromModuleVersion": 4.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "foreignKeys": [
+        {
+          "fieldName": "budgetId",
+          "targetTable": "budget",
+          "tableAlias": "groupFundFY",
+          "targetTableAlias": "budget",
+          "tOps": "ADD"
+        },
         {
           "fieldName": "groupId",
           "targetTable": "groups",
