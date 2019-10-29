@@ -51,7 +51,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
 
           IF (transactionType = 'Allocation') THEN
             fromBudgetAllocated = (SELECT COALESCE(fromBudget->>'allocated', '0'))::decimal - amount;
-            newBudgetValues = '{allocated,' || fromBudgetAllocated || ', available, ' || fromBudgetAvailable || ', unavailable, ' || fromBudgetUnavailable ||'}';
+            newBudgetValues = '{allocated,' || fromBudgetAllocated || ', available, ' || fromBudgetAvailable ||'}';
           ELSIF (transactionType = 'Transfer') THEN
             newBudgetValues = '{available, ' || fromBudgetAvailable || ', unavailable, ' || fromBudgetUnavailable ||'}';
           ELSIF (transactionType = 'Encumbrance') THEN
@@ -71,7 +71,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
 
           IF (transactionType = 'Allocation') THEN
             fromLedgerAllocated = (SELECT COALESCE(fromLedger->>'allocated', '0'))::decimal - amount;
-            newLedgerValues = '{allocated,' || fromLedgerAllocated || ', available, ' || fromLedgerAvailable || ', unavailable, ' || fromLedgerUnavailable ||'}';
+            newLedgerValues = '{allocated,' || fromLedgerAllocated || ', available, ' || fromLedgerAvailable || '}';
           ELSIF (transactionType = 'Transfer' OR transactionType = 'Encumbrance') THEN
             newLedgerValues = '{available, ' || fromLedgerAvailable || ', unavailable, ' || fromLedgerUnavailable ||'}';
           END IF;
