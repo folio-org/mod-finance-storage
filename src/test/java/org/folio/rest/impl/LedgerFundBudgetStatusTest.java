@@ -31,13 +31,13 @@ public class LedgerFundBudgetStatusTest extends TestBase {
   public void updateFundStatusOnlyBudgetsWithCurrentFYUpdatedTest() throws MalformedURLException {
     logger.info("--- Test UPDATE fund status, only budgets with current fiscal year are updated --- ");
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withId(null);
-    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()));
+    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(FISCAL_YEAR_ONE_ID));
 
     Fund fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class).withLedgerId(ledgerId).withId(null).withFundTypeId(null);
     String fundId = createEntity(FUND.getEndpoint(), fund.withCode("first").withName(fund.getCode()).withFundStatus(Fund.FundStatus.ACTIVE));
 
     FiscalYear fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class).withId(null);
-    fiscalYear.withCode("current").withName(fiscalYear.getCode())
+    fiscalYear.withCode("FY2019").withName(fiscalYear.getCode())
       .withPeriodEnd(new Date(Instant.now().plus(30, DAYS).toEpochMilli()))
       .withPeriodStart(new Date(Instant.now().minus(30, DAYS).toEpochMilli()));
     String currentFiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear);
@@ -46,13 +46,13 @@ public class LedgerFundBudgetStatusTest extends TestBase {
     String budget1Id = createEntity(BUDGET.getEndpoint(), budget.withBudgetStatus(Budget.BudgetStatus.ACTIVE).withName("current")
       .withFundId(fundId).withFiscalYearId(currentFiscalYearId));
 
-    fiscalYear.withCode("previous").withPeriodStart(new Date(Instant.now().minus(60, DAYS).toEpochMilli()))
+    fiscalYear.withCode("FY2018").withPeriodStart(new Date(Instant.now().minus(60, DAYS).toEpochMilli()))
       .withPeriodEnd(new Date(Instant.now().minus(30, DAYS).toEpochMilli()));
     String previousFiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear);
     String budget2Id = createEntity(BUDGET.getEndpoint(), budget.withBudgetStatus(Budget.BudgetStatus.ACTIVE).withName("previous")
       .withFundId(fundId).withFiscalYearId(previousFiscalYearId));
 
-    fiscalYear.withCode("next").withPeriodStart(new Date(Instant.now().plus(30, DAYS).toEpochMilli()))
+    fiscalYear.withCode("FY2020").withPeriodStart(new Date(Instant.now().plus(30, DAYS).toEpochMilli()))
       .withPeriodEnd(new Date(Instant.now().plus(60, DAYS).toEpochMilli()));
     String nextFiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear);
     String budget3Id = createEntity(BUDGET.getEndpoint(), budget.withBudgetStatus(Budget.BudgetStatus.ACTIVE).withName("next")
@@ -112,7 +112,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
     String fund2Id = createEntity(FUND.getEndpoint(), fund);
 
     FiscalYear fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class).withId(null);
-    fiscalYear.withCode("current").withName(fiscalYear.getCode())
+    fiscalYear.withCode("FY2019").withName(fiscalYear.getCode())
       .withPeriodEnd(new Date(Instant.now().plus(30, DAYS).toEpochMilli()))
       .withPeriodStart(new Date(Instant.now().minus(30, DAYS).toEpochMilli()));
     String currentFiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear);
@@ -159,7 +159,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
   public void updateLedgerStatusWhenThereIsNoRelatedFundsTest() throws MalformedURLException {
     logger.info("--- Test UPDATE ledger status, related funds not exist  --- ");
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withLedgerStatus(Ledger.LedgerStatus.ACTIVE).withId(null);
-    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()));
+    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(FISCAL_YEAR_ONE_ID));
 
     putData(LEDGER.getEndpointWithId(), ledgerId, JsonObject.mapFrom(ledger.withLedgerStatus(Ledger.LedgerStatus.INACTIVE)).encodePrettily()).then().statusCode(204);
     Ledger ledgerFromDB = getDataById(LEDGER.getEndpointWithId(), ledgerId).as(Ledger.class);

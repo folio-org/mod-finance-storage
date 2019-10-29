@@ -3,6 +3,7 @@
   "name": "Main Library",
   "code": "MAIN-LIB",
   "description": "This is the ledger for the Main Library",
+  "fiscalYearOneId": "d875618b-7cf5-442f-a823-9814e7bce92a",
   "ledgerStatus": "Active",
   "allocated": 2000,
   "available": 1000,

@@ -39,6 +39,7 @@ public abstract class TestBase {
 
   static final String TENANT_NAME = "diku";
   static final String NON_EXISTED_ID = "bad500aa-aaaa-500a-aaaa-aaaaaaaaaaaa";
+  static final String FISCAL_YEAR_ONE_ID = "d875618b-7cf5-442f-a823-9814e7bce92a";
   static final Header TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TENANT_NAME);
 
   private static boolean invokeStorageTestSuiteAfter = false;
