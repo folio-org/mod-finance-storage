@@ -30,6 +30,11 @@
           "methods": ["DELETE"],
           "pathPattern": "/finance-storage/budgets/{id}",
           "permissionsRequired": ["finance-storage.budgets.item.delete"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/group-budgets",
+          "permissionsRequired": ["finance-storage.group-budgets.collection.get"]
         }
       ]
     },
@@ -319,6 +324,11 @@
       "description" : "Delete a budget"
     },
     {
+      "permissionName": "finance-storage.group-budgets.collection.get",
+      "displayName" : "Get budget-collection from group-budget view",
+      "description" : "Get a collection of budgets"
+    },
+    {
       "permissionName" : "finance-storage.budgets.all",
       "displayName" : "All budget perms",
       "description" : "All permissions for the budget",
@@ -327,7 +337,8 @@
         "finance-storage.budgets.item.post",
         "finance-storage.budgets.item.get",
         "finance-storage.budgets.item.put",
-        "finance-storage.budgets.item.delete"
+        "finance-storage.budgets.item.delete",
+        "finance-storage.group-budgets.collection.get"
       ]
     },
     {

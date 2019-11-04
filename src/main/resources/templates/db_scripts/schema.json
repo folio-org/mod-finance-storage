@@ -1,4 +1,11 @@
 {
+  "scripts": [
+    {
+      "run": "after",
+      "snippetPath": "group_budget_view.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
+    }
+  ],
   "tables": [
     {
       "tableName": "ledger",
@@ -32,7 +39,7 @@
     },
     {
       "tableName": "fund_type",
-      "fromModuleVersion": 3.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "uniqueIndex": [
         {
           "fieldName": "name",
@@ -260,7 +267,7 @@
     },
     {
       "tableName": "groups",
-      "fromModuleVersion": 3.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "ginIndex": [
         {
@@ -289,7 +296,7 @@
     },
     {
       "tableName": "ledgerFY",
-      "fromModuleVersion": 4.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
@@ -313,8 +320,15 @@
     },
     {
       "tableName": "group_fund_fiscal_year",
-      "fromModuleVersion": 4.0,
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "foreignKeys": [
+        {
+          "fieldName": "budgetId",
+          "targetTable": "budget",
+          "tableAlias": "groupFundFY",
+          "targetTableAlias": "budget",
+          "tOps": "ADD"
+        },
         {
           "fieldName": "groupId",
           "targetTable": "groups",
