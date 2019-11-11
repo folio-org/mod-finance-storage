@@ -9,8 +9,7 @@ documentation:
 
 types:
   errors: !include raml-util/schemas/errors.schema
-  transaction: !include acq-models/mod-finance/schemas/transaction.json
-  transaction-collection: !include acq-models/mod-finance/schemas/transaction_collection.json
+  order-transaction-summary: !include acq-models/mod-finance/schemas/order_transaction_summary.json
   UUID:
     type: string
     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
@@ -22,31 +21,51 @@ traits:
   validate: !include raml-util/traits/validation.raml
 
 resourceTypes:
-  collection: !include raml-util/rtypes/collection.raml
-  collection-item: !include raml-util/rtypes/item-collection.raml
+  get-delete: !include raml-util/rtypes/get-delete.raml
 
-
-/finance-storage/order-transaction-summary:
-  type:
-    collection:
-      exampleCollection: !include acq-models/mod-finance/examples/transaction_collection.sample
-      exampleItem: !include acq-models/mod-finance/examples/transaction.sample
-      schemaCollection: transaction-collection
-      schemaItem: transaction
+/finance-storage/order-transaction-summaries:
+  post:
+    description: Create a new order transaction summary item.
+    body:
+      application/json:
+        type: order-transaction-summary
+        example:
+          strict: false
+          value: !include acq-models/mod-finance/examples/order_transaction_summary.sample
+    responses:
+      201:
+        description: "Returns a newly created item, with server-controlled fields like 'id' populated"
+        headers:
+          Location:
+            description: URI to the created order transaction summary item
+        body:
+          application/json:
+            example: !include acq-models/mod-finance/examples/order_transaction_summary.sample
+      400:
+        description: "Bad request, e.g. malformed request body or query parameter. Details of the error (e.g. name of the parameter or line/character number with malformed data) provided in the response."
+        body:
+          text/plain:
+            example: |
+              "unable to add order transaction summary -- malformed JSON at 13:3"
+      401:
+        description: "Not authorized to perform requested action"
+        body:
+          text/plain:
+            example: "unable to create order transaction summary record -- unauthorized"
+      500:
+        description: "Internal server error, e.g. due to misconfiguration"
+        body:
+          text/plain:
+            example: "Internal server error, contact administrator"
   is: [validate]
-  get:
-    description: Get list of transactions
-    is: [
-      searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
-      pageable
-    ]
+
   /{id}:
     uriParameters:
       id:
-        description: The UUID of a transaction
+        description: The UUID of an order transaction summary
         type: UUID
     type:
-      collection-item:
-        exampleItem: !include acq-models/mod-finance/examples/transaction.sample
-        schema: transaction
+      get-delete:
+        exampleItem: !include acq-models/mod-finance/examples/order_transaction_summary.sample
+        schema: order-transaction-summary
     is: [validate]
