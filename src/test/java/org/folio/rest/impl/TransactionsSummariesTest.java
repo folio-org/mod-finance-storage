@@ -14,7 +14,7 @@ class TransactionsSummariesTest extends TestBase {
 
   @Test
   void testOrderTransactionSummaries() throws MalformedURLException {
-    OrderTransactionSummary sample = new JsonObject(getFile("transaction_summary.sample")).mapTo(OrderTransactionSummary.class);
+    OrderTransactionSummary sample = new JsonObject(getFile("order_transaction_summary.sample")).mapTo(OrderTransactionSummary.class);
     OrderTransactionSummary createdSummary = postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
       .encodePrettily(), TENANT_HEADER).as(OrderTransactionSummary.class);
 
