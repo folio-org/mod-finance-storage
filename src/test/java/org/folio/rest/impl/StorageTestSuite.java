@@ -146,4 +146,7 @@ public class StorageTestSuite {
   class HelperUtilsTestNested extends HelperUtilsTest {
   }
 
+  @Nested
+  class TransactionsSummariesTestNested extends TransactionsSummariesTest {
+  }
 }

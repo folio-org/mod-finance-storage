@@ -392,6 +392,21 @@
           "tOps": "ADD"
         }
       ]
+    },
+    {
+      "tableName": "order_transaction_summaries",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
+    },
+    {
+      "tableName": "temporary_order_transactions",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "foreignKeys": [
+        {
+          "fieldName": "encumbrance.sourcePurchaseOrderId",
+          "targetTable": "order_transaction_summaries",
+          "tOps": "ADD"
+        }
+      ]
     }
   ]
 

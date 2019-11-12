@@ -286,6 +286,27 @@
       ]
     },
     {
+      "id": "finance-storage.order-transaction-summaries",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/order-transaction-summaries",
+          "permissionsRequired": ["finance-storage.order-transaction-summaries.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/order-transaction-summaries/{id}",
+          "permissionsRequired": ["finance-storage.order-transaction-summaries.item.get"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/order-transaction-summaries/{id}",
+          "permissionsRequired": ["finance-storage.order-transaction-summaries.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "_tenant",
       "version": "1.2",
       "interfaceType": "system",
@@ -636,6 +657,30 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.order-transaction-summaries.item.get",
+      "displayName" : "Retrieve a new order transaction summary record",
+      "description" : "Retrieve a new order transaction summary record"
+    },
+    {
+      "permissionName" : "finance-storage.order-transaction-summaries.item.post",
+      "displayName" : "Create a new order transaction summary record",
+      "description" : "Create a new order transaction summary record"
+    },    {
+      "permissionName" : "finance-storage.order-transaction-summaries.item.delete",
+      "displayName" : "Delete a new order transaction summary record",
+      "description" : "Delete a new order transaction summary record"
+    },
+    {
+      "permissionName" : "finance-storage.order-transaction-summaries.all",
+      "displayName" : "All order transaction summary perms",
+      "description" : "All permissions for the order transaction summary",
+      "subPermissions" : [
+        "finance-storage.order-transaction-summaries.item.get",
+        "finance-storage.order-transaction-summaries.item.post",
+        "finance-storage.order-transaction-summaries.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance.module.all",
       "displayName" : "All finance-module perms",
       "description" : "All permissions for the finance module",
@@ -647,7 +692,8 @@
         "finance-storage.groups.all",
         "finance-storage.ledgers.all",
         "finance-storage.transactions.all",
-        "finance-storage.fund-types.all"
+        "finance-storage.fund-types.all",
+        "finance-storage.order-transaction-summaries.all"
       ]
     }
   ],
