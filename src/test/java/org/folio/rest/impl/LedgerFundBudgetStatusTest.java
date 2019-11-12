@@ -27,11 +27,15 @@ import io.vertx.core.json.JsonObject;
 
 public class LedgerFundBudgetStatusTest extends TestBase {
 
+
   @Test
   public void updateFundStatusOnlyBudgetsWithCurrentFYUpdatedTest() throws MalformedURLException {
     logger.info("--- Test UPDATE fund status, only budgets with current fiscal year are updated --- ");
+    FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withId(null);
-    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(FISCAL_YEAR_ONE_ID));
+    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(fiscalYearOneId));
 
     Fund fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class).withLedgerId(ledgerId).withId(null).withFundTypeId(null);
     String fundId = createEntity(FUND.getEndpoint(), fund.withCode("first").withName(fund.getCode()).withFundStatus(Fund.FundStatus.ACTIVE));
@@ -74,13 +78,18 @@ public class LedgerFundBudgetStatusTest extends TestBase {
 
     deleteDataSuccess(FUND.getEndpointWithId(), fundId);
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
   }
 
   @Test
   public void updateFundStatusRelatedBudgetsNotExistTest() throws MalformedURLException {
     logger.info("--- Test UPDATE fund status, related budgets with current fiscal year are updated --- ");
+    FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withId(null);
-    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()));
+    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(fiscalYearOneId));
 
     Fund fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class).withLedgerId(ledgerId).withId(null).withFundTypeId(null);
     String fundId = createEntity(FUND.getEndpoint(), fund.withCode("first").withName(fund.getCode()).withFundStatus(Fund.FundStatus.ACTIVE));
@@ -91,13 +100,18 @@ public class LedgerFundBudgetStatusTest extends TestBase {
     assertThat(fundFromStorage.getFundStatus(), is(FROZEN));
     deleteDataSuccess(FUND.getEndpointWithId(), fundId);
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
+
   }
 
   @Test
   public void updateLedgerStatusTest() throws MalformedURLException {
     logger.info("--- Test UPDATE ledger status, related funds and budgets with current fiscal year are updated --- ");
+    FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withLedgerStatus(Ledger.LedgerStatus.ACTIVE).withId(null);
-    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()));
+    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(fiscalYearOneId));
 
     Fund fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class)
       .withLedgerId(ledgerId).withId(null)
@@ -152,20 +166,25 @@ public class LedgerFundBudgetStatusTest extends TestBase {
     deleteDataSuccess(FUND.getEndpointWithId(), fund2Id);
 
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
   }
 
 
   @Test
   public void updateLedgerStatusWhenThereIsNoRelatedFundsTest() throws MalformedURLException {
     logger.info("--- Test UPDATE ledger status, related funds not exist  --- ");
+    FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withLedgerStatus(Ledger.LedgerStatus.ACTIVE).withId(null);
-    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(FISCAL_YEAR_ONE_ID));
+    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(fiscalYearOneId));
 
     putData(LEDGER.getEndpointWithId(), ledgerId, JsonObject.mapFrom(ledger.withLedgerStatus(Ledger.LedgerStatus.INACTIVE)).encodePrettily()).then().statusCode(204);
     Ledger ledgerFromDB = getDataById(LEDGER.getEndpointWithId(), ledgerId).as(Ledger.class);
     assertThat(ledgerFromDB.getLedgerStatus(), is(Ledger.LedgerStatus.INACTIVE));
 
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
   }
 
 }
