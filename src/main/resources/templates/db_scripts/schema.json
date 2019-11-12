@@ -375,12 +375,11 @@
     {
       "tableName": "temporary_order_transactions",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
-      "ginIndex": [
+      "foreignKeys": [
         {
-          "fieldName": "purchaseOrderId",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
+          "fieldName": "encumbrance.sourcePurchaseOrderId",
+          "targetTable": "order_transaction_summaries",
+          "tOps": "ADD"
         }
       ]
     }
