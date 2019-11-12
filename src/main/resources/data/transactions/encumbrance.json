@@ -7,7 +7,12 @@
     "amountExpended": 74,
     "amountAwaitingPayment": 90,
     "initialAmountEncumbered": 250,
-    "status": "Unreleased"
+    "status": "Unreleased",
+    "orderType":  "One-Time",
+    "subscription": false,
+    "reEncumber": false,
+    "sourcePurchaseOrderId": "e5ae4afd-3fa9-494e-a972-f541df9b877e",
+    "sourcePoLineId": "c5ced39d-672f-3cba-a13a-ceb06a5d4c6b"
   },
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "fromFundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
