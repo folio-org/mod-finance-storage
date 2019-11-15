@@ -1,5 +1,26 @@
 package org.folio.rest.impl;
 
+import static io.restassured.RestAssured.given;
+import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
+import static org.folio.rest.impl.StorageTestSuite.storageUrl;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+
+import javax.ws.rs.Path;
+
+import org.apache.commons.io.IOUtils;
+import org.folio.rest.utils.TestEntities;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
@@ -8,26 +29,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-
-import org.apache.commons.io.IOUtils;
-import org.folio.rest.utils.TestEntities;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import static io.restassured.RestAssured.given;
-import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
-import static org.folio.rest.impl.StorageTestSuite.storageUrl;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
-import javax.ws.rs.Path;
 
 /**
  * When not run from StorageTestSuite then this class invokes StorageTestSuite.before() and
@@ -120,11 +121,7 @@ public abstract class TestBase {
   }
 
   Response getDataById(String endpoint, String id) throws MalformedURLException {
-    return given()
-      .pathParam("id", id)
-      .header(TENANT_HEADER)
-      .contentType(ContentType.JSON)
-      .get(storageUrl(endpoint));
+    return getDataById(endpoint, id, TENANT_HEADER);
   }
 
   Response getDataById(String endpoint, String id, Header header) throws MalformedURLException {
@@ -135,13 +132,17 @@ public abstract class TestBase {
       .get(storageUrl(endpoint));
   }
 
-  Response putData(String endpoint, String id, String input) throws MalformedURLException {
+  Response putData(String endpoint, String id, String input, Header tenant) throws MalformedURLException {
     return given()
       .pathParam("id", id)
-      .header(TENANT_HEADER)
+      .header(tenant)
       .contentType(ContentType.JSON)
       .body(input)
       .put(storageUrl(endpoint));
+  }
+
+  Response putData(String endpoint, String id, String input) throws MalformedURLException {
+    return putData(endpoint, id, input, TENANT_HEADER);
   }
 
   void deleteDataSuccess(String endpoint, String id) throws MalformedURLException {

@@ -1,5 +1,7 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.transaction.AbstractTransactionHandler.TRANSACTION_TABLE;
+
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
@@ -9,13 +11,15 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
+import org.folio.rest.transaction.DefaultTransactionHandler;
+import org.folio.rest.transaction.EncumbranceHandler;
+import org.folio.rest.transaction.TransactionHandler;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 
 public class TransactionAPI implements FinanceStorageTransactions {
-  private static final String TRANSACTION_TABLE = "transaction";
 
   @Override
   @Validate
@@ -27,8 +31,8 @@ public class TransactionAPI implements FinanceStorageTransactions {
 
   @Override
   @Validate
-  public void postFinanceStorageTransactions(String lang, Transaction entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.post(TRANSACTION_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageTransactionsResponse.class, asyncResultHandler);
+  public void postFinanceStorageTransactions(String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    getTransactionHandler(transaction, okapiHeaders, vertxContext, asyncResultHandler).createTransaction(transaction);
   }
 
   @Override
@@ -46,7 +50,16 @@ public class TransactionAPI implements FinanceStorageTransactions {
 
   @Override
   @Validate
-  public void putFinanceStorageTransactionsById(String id, String lang, Transaction entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.put(TRANSACTION_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageTransactionsByIdResponse.class, asyncResultHandler);
+  public void putFinanceStorageTransactionsById(String id, String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    transaction.setId(id);
+    getTransactionHandler(transaction, okapiHeaders, vertxContext, asyncResultHandler).updateTransaction(transaction);
   }
+
+  private TransactionHandler getTransactionHandler(Transaction transaction, Map<String, String> okapiHeaders, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+    if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
+      return new EncumbranceHandler(okapiHeaders, vertxContext, asyncResultHandler);
+    }
+    return new DefaultTransactionHandler(okapiHeaders, vertxContext, asyncResultHandler);
+  }
+
 }

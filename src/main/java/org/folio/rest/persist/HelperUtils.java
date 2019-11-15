@@ -13,17 +13,17 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.Context;
-import io.vertx.core.Future;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.cql.CQLQueryValidationException;
+import org.folio.rest.persist.interfaces.Results;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
-import org.folio.rest.persist.cql.CQLQueryValidationException;
-import org.folio.rest.persist.interfaces.Results;
 
 public final class HelperUtils {
   private HelperUtils() { }
@@ -96,11 +96,24 @@ public final class HelperUtils {
     return new Criterion(getCriteriaByFieldNameAndValue(filedName, operation, fieldValue));
   }
 
+  public static Criterion getCriterionByFieldNameAndValueNotJsonb(String filedName, String operation, String fieldValue) {
+    return new Criterion(getCriteriaByFieldNameAndValueNotJsonb(filedName, operation, fieldValue));
+  }
+
   public static Criteria getCriteriaByFieldNameAndValue(String filedName, String operation, String fieldValue) {
     Criteria a = new Criteria();
     a.addField("'" + filedName + "'");
     a.setOperation(operation);
     a.setVal(fieldValue);
+    return a;
+  }
+
+  public static Criteria getCriteriaByFieldNameAndValueNotJsonb(String filedName, String operation, String fieldValue) {
+    Criteria a = new Criteria();
+    a.addField(filedName);
+    a.setOperation(operation);
+    a.setVal(fieldValue);
+    a.setJSONB(false);
     return a;
   }
 
@@ -110,7 +123,7 @@ public final class HelperUtils {
     try {
       PostgresClient postgresClient = PgUtil.postgresClient(vertxContext, okapiHeaders);
       postgresClient.get(queryHolder.getTable(), entitiesMetadataHolder.getClazz(), QueryHolder.JSONB, queryHolder.buildCQLQuery().toString(), true, false, false, null, sortField,
-        reply -> processDbReply(entitiesMetadataHolder, asyncResultHandler, respond500, respond400, reply));
+        reply -> processDbQueryReply(entitiesMetadataHolder, asyncResultHandler, respond500, respond400, reply));
     } catch (CQLQueryValidationException e) {
 
       asyncResultHandler.handle(response(e.getMessage(), respond400, respond500));
@@ -119,6 +132,7 @@ public final class HelperUtils {
       asyncResultHandler.handle(response(e.getMessage(), respond500, respond500));
     }
   }
+
 
   private static Method getRespond500(EntitiesMetadataHolder entitiesMetadataHolder, Handler<AsyncResult<Response>> asyncResultHandler) {
     try {
@@ -140,7 +154,7 @@ public final class HelperUtils {
     }
   }
 
-  private static <T, E> void processDbReply(EntitiesMetadataHolder<T, E> entitiesMetadataHolder, Handler<AsyncResult<Response>> asyncResultHandler, Method respond500, Method respond400, AsyncResult<Results<T>> reply) {
+  private static <T, E> void processDbQueryReply(EntitiesMetadataHolder<T, E> entitiesMetadataHolder, Handler<AsyncResult<Response>> asyncResultHandler, Method respond500, Method respond400, AsyncResult<Results<T>> reply) {
     try {
       Method respond200 = entitiesMetadataHolder.getRespond200WithApplicationJson();
       if (reply.succeeded()) {
@@ -161,4 +175,7 @@ public final class HelperUtils {
     }
   }
 
+  public static String getFullTableName(String tenantId, String transactionTable) {
+    return PostgresClient.convertToPsqlStandard(tenantId) + "." + transactionTable;
+  }
 }

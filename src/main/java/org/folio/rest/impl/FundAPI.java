@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
+import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
 import java.util.Map;
 
@@ -37,12 +38,8 @@ public class FundAPI implements FinanceStorageFunds {
   private PostgresClient pgClient;
   private String tenantId;
 
-  public FundAPI(String tenantId) {
-    this.tenantId = tenantId;
-  }
-
   public FundAPI(Vertx vertx, String tenantId) {
-    this(tenantId);
+    this.tenantId = tenantId;
     pgClient = PostgresClient.getInstance(vertx, tenantId);
   }
 
@@ -149,8 +146,8 @@ public class FundAPI implements FinanceStorageFunds {
     Promise<Tx<Fund>> promise = Promise.promise();
 
     Fund fund = fundTx.getEntity();
-    String fullBudgetTableName = PostgresClient.convertToPsqlStandard(tenantId) + "." + BUDGET_TABLE;
-    String fullFYTableName = PostgresClient.convertToPsqlStandard(tenantId) + "." + FISCAL_YEAR_TABLE;
+    String fullBudgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
+    String fullFYTableName = getFullTableName(tenantId, FISCAL_YEAR_TABLE);
 
     JsonArray queryParams = new JsonArray();
     queryParams.add("\"" + fund.getFundStatus() + "\"");

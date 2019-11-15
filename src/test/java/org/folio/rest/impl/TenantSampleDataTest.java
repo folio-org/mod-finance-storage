@@ -1,18 +1,5 @@
 package org.folio.rest.impl;
 
-import io.restassured.http.ContentType;
-import io.restassured.http.Header;
-import io.restassured.response.Response;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import org.folio.rest.jaxrs.model.Budget;
-import org.folio.rest.jaxrs.model.BudgetCollection;
-import org.folio.rest.utils.TestEntities;
-import org.junit.jupiter.api.Test;
-
-import java.net.MalformedURLException;
-
 import static io.restassured.RestAssured.given;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
@@ -23,6 +10,20 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenantBody;
 import static org.folio.rest.utils.TestEntities.BUDGET;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
+
+import java.net.MalformedURLException;
+
+import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.BudgetCollection;
+import org.folio.rest.utils.TestEntities;
+import org.junit.jupiter.api.Test;
+
+import io.restassured.http.ContentType;
+import io.restassured.http.Header;
+import io.restassured.response.Response;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 
 public class TenantSampleDataTest extends TestBase {
@@ -99,7 +100,6 @@ public class TenantSampleDataTest extends TestBase {
           .response();
 
       BudgetCollection budgetCollection = new JsonObject(response.asString()).mapTo(BudgetCollection.class);
-      //BudgetCollection budgetCollection = response.as(BudgetCollection.class);
 
       for (Budget budget : budgetCollection.getBudgets()) {
         deleteData(BUDGET.getEndpointWithId(), budget.getId(), PARTIAL_TENANT_HEADER);
