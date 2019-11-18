@@ -34,6 +34,9 @@ public class LedgerFYTest extends TestBase {
     String fiscalYearId = createFirstRecord(FISCAL_YEAR);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
 
+    FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+
     String ledgerId = createFirstRecord(LEDGER);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 1);
 
@@ -48,19 +51,24 @@ public class LedgerFYTest extends TestBase {
     deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
   }
 
   @Test
   public void testGetQueryForSeveralRecords() throws Exception {
     logger.info("--- Test GET by query when several ledger and fiscal year records are created --- ");
+    FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withId(null);
     List<String> ledgerIds = new ArrayList<>();
 
     // Create first ledger (code and name must be unique)
-    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(FISCAL_YEAR_ONE_ID)));
+    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(fiscalYearOneId)));
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
     // Create second ledger (code and name must be unique)
-    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("second").withName(ledger.getCode()).withFiscalYearOneId(FISCAL_YEAR_ONE_ID)));
+    ledgerIds.add(createEntity(LEDGER.getEndpoint(), ledger.withCode("second").withName(ledger.getCode()).withFiscalYearOneId(fiscalYearOneId)));
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
 
     FiscalYear fiscalYear = prepareFiscalYear();
@@ -108,27 +116,38 @@ public class LedgerFYTest extends TestBase {
         Assertions.fail("Cannot delete ledger");
       }
     });
+
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
   }
 
   @Test
   public void testGetNoRecordsForFiscalYearWithoutCurrency() throws Exception {
     logger.info("--- Test that GET ledger/fiscal year finds nothing when fiscal year is in past ---");
+    FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+
     String ledgerId = createFirstRecord(LEDGER);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
 
     FiscalYear fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class)
       .withPeriodStart(dateInDaysFromNow(-365))
-      .withPeriodEnd(dateInDaysFromNow(-30));
+      .withPeriodEnd(dateInDaysFromNow(-30))
+      .withId(null);
     String fiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
 
     deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
   }
 
   @Test
   public void testGetNoRecordsForFiscalYearInPast() throws Exception {
     logger.info("--- Test that GET ledger/fiscal year finds nothing when fiscal year has no currency ---");
+
+    FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
 
     String ledgerId = createFirstRecord(LEDGER);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
@@ -138,6 +157,7 @@ public class LedgerFYTest extends TestBase {
 
     deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
   }
 
   @Test

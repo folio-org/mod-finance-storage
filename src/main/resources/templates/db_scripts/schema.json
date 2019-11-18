@@ -8,10 +8,52 @@
   ],
   "tables": [
     {
+      "tableName": "fiscal_year",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "withMetadata": true,
+      "index": [
+        {
+          "fieldName" : "periodEnd",
+          "tOps": "ADD"
+        }
+      ],
+      "ginIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "acqUnitIds",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "DELETE"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
       "tableName": "ledger",
       "customSnippetPath": "migration/ledgers.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
+      "foreignKeys": [
+        {
+          "fieldName": "fiscalYearOneId",
+          "targetTable": "fiscal_year",
+          "tOps": "ADD"
+        }
+      ],
       "ginIndex": [
         {
           "fieldName": "name",
@@ -371,6 +413,40 @@
           "tOps": "ADD"
         }
       ]
+    },
+    {
+      "tableName": "temporary_invoice_payments",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "ginIndex": [
+        {
+          "fieldName": "sourceInvoiceId",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
+      "tableName": "order_transaction_summaries",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
+    },
+    {
+      "tableName": "temporary_order_transactions",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "foreignKeys": [
+        {
+          "fieldName": "encumbrance.sourcePurchaseOrderId",
+          "targetTable": "order_transaction_summaries",
+          "tOps": "ADD"
+        }
+      ]
     }
   ]
+
 }
