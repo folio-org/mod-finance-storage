@@ -78,29 +78,24 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
+  /**
+   * Accumulate transactions in a temporary table until expected number of transactions are present, then apply them all at once,
+   * updating all the required tables together in a database transaction.
+   * 
+   * @param transaction         processed transaction
+   * @param processTransactions The function responsible for the logic of saving transactions from the temporary table to the
+   *                            permanent one.
+   * @return completed future
+   */
   Future<Void> processAllOrNothing(Transaction transaction,
-      Function<Tx<List<Transaction>>, Future<Tx<List<Transaction>>>> processTransaction) {
+      Function<Tx<List<Transaction>>, Future<Tx<List<Transaction>>>> processTransactions) {
     return createTempTransaction(transaction).compose(this::getSummary)
       .compose(this::getTempTransactions)
       .compose(transactions -> {
         Promise<Void> promise = Promise.promise();
         try {
           if (isLastRecord) {
-            Tx<List<Transaction>> tx = new Tx<>(transactions, getPostgresClient());
-            startTx(tx).compose(processTransaction)
-              .compose(this::deleteTempTransactions)
-              .compose(HelperUtils::endTx)
-              .setHandler(result -> {
-                if (result.failed()) {
-                  HttpStatusException cause = (HttpStatusException) result.cause();
-                  log.error("Transactions {} or associated data failed to be processed", cause, tx.getEntity());
-
-                  rollbackTransaction(tx).setHandler(res -> promise.fail(cause));
-                } else {
-                  log.info("Transactions {} and associated data were successfully processed", tx.getEntity());
-                  promise.complete();
-                }
-              });
+            promise = moveFromTempToPermanentTable(processTransactions, transactions);
           } else {
             promise.complete();
           }
@@ -109,6 +104,30 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         }
         return promise.future();
       });
+  }
+
+  private Promise<Void> moveFromTempToPermanentTable(
+      Function<Tx<List<Transaction>>, Future<Tx<List<Transaction>>>> processTransactions, List<Transaction> transactions) {
+
+    Promise<Void> promise = Promise.promise();
+    Tx<List<Transaction>> tx = new Tx<>(transactions, getPostgresClient());
+
+    startTx(tx).compose(processTransactions)
+      .compose(this::deleteTempTransactions)
+      .compose(HelperUtils::endTx)
+      .setHandler(result -> {
+        if (result.failed()) {
+          HttpStatusException cause = (HttpStatusException) result.cause();
+          log.error("Transactions {} or associated data failed to be processed", cause, tx.getEntity());
+
+          rollbackTransaction(tx).setHandler(res -> promise.fail(cause));
+        } else {
+          log.info("Transactions {} and associated data were successfully processed", tx.getEntity());
+          promise.complete();
+        }
+      });
+
+    return promise;
   }
 
   private Future<Transaction> createTempTransaction(Transaction transaction) {

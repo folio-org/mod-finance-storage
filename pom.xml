@@ -21,7 +21,7 @@
     <raml-module-builder.version>28.1.0</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jmockit.version>1.48</jmockit.version>
-<!--    <argLine />-->
+    <argLine />
   </properties>
 
   <repositories>

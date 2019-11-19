@@ -41,19 +41,25 @@ public class TransactionSummaryAPI implements FinanceStorageOrderTransactionSumm
     pgClient = PostgresClient.getInstance(vertx, tenantId);
   }
 
+  /**
+   * Create {@link OrderTransactionSummary} record if it doesn't already exist for the order, otherwise return existing record.
+   *
+   * @param summary            how many transactions (encumbrances) to expect for a particular
+   *                           order.{@link OrderTransactionSummary#numTransactions} must be greater that 0
+   * 
+   * @param okapiHeaders
+   * @param asyncResultHandler An AsyncResult<Response> Handler {@link Handler} which must be called as follows - Note the
+   *                           'GetPatronsResponse' should be replaced with '[nameOfYourFunction]Response': (example only)
+   *                           <code>asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetPatronsResponse.withJsonOK( new ObjectMapper().readValue(reply.result().body().toString(), Patron.class))));</code>
+   *                           in the final callback (most internal callback) of the function.
+   * @param vertxContext       The Vertx Context Object <code>io.vertx.core.Context</code>
+   */
   @Override
   @Validate
   public void postFinanceStorageOrderTransactionSummaries(OrderTransactionSummary summary, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     if (summary.getNumTransactions() < 1) {
-      Parameter parameter = new Parameter().withKey("numTransactions")
-        .withValue(summary.getNumTransactions()
-          .toString());
-      Error error = new Error().withCode("-1")
-        .withMessage("must be greater than or equal to 1")
-        .withParameters(Collections.singletonList(parameter));
-      asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageOrderTransactionSummariesResponse
-        .respond422WithApplicationJson(new Errors().withErrors(Collections.singletonList(error)))));
+      handleValidationError(summary, asyncResultHandler);
     } else {
       String sql = "INSERT INTO " + getFullTableName(tenantId, ORDER_TRANSACTION_SUMMARIES)
           + " (id, jsonb) VALUES (?, ?::JSON) ON CONFLICT (id) DO NOTHING";
@@ -85,6 +91,17 @@ public class TransactionSummaryAPI implements FinanceStorageOrderTransactionSumm
       }
     }
 
+  }
+
+  private void handleValidationError(OrderTransactionSummary summary, Handler<AsyncResult<Response>> asyncResultHandler) {
+    Parameter parameter = new Parameter().withKey("numTransactions")
+      .withValue(summary.getNumTransactions()
+        .toString());
+    Error error = new Error().withCode("-1")
+      .withMessage("must be greater than or equal to 1")
+      .withParameters(Collections.singletonList(parameter));
+    asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageOrderTransactionSummariesResponse
+      .respond422WithApplicationJson(new Errors().withErrors(Collections.singletonList(error)))));
   }
 
   @Override
