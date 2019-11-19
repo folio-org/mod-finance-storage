@@ -60,9 +60,9 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     });
   }
 
-  abstract String getId(Transaction transaction);
+  abstract String getSummaryId(Transaction transaction);
 
-  abstract Criterion getCriterion(String value);
+  abstract Criterion getTransactionBySummaryIdCriterion(String value);
 
   private Future<Tx<List<Transaction>>> createPermanentTransactions(Tx<List<Transaction>> tx) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
@@ -155,9 +155,9 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   private Future<JsonObject> getSummary(Transaction transaction) {
     Promise<JsonObject> promise = Promise.promise();
 
-    log.debug("Get summary={}", getId(transaction));
+    log.debug("Get summary={}", getSummaryId(transaction));
 
-    getPostgresClient().getById(summaryTable, getId(transaction), reply -> {
+    getPostgresClient().getById(summaryTable, getSummaryId(transaction), reply -> {
       if (reply.failed()) {
         log.error("Summary retrieval with id={} failed", reply.cause(), transaction.getId());
         handleFailure(promise, reply);
@@ -172,7 +172,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   private Future<List<Transaction>> getTempTransactions(JsonObject summary) {
     Promise<List<Transaction>> promise = Promise.promise();
 
-    Criterion criterion = getCriterion(summary.getString("id"));
+    Criterion criterion = getTransactionBySummaryIdCriterion(summary.getString("id"));
 
     getPostgresClient().get(temporaryTransactionTable, Transaction.class, criterion, true, false, reply -> {
       if (reply.failed()) {
@@ -193,7 +193,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Transaction transaction = tx.getEntity()
       .get(0);
 
-    Criterion criterion = getCriterion(getId(transaction));
+    Criterion criterion = getTransactionBySummaryIdCriterion(getSummaryId(transaction));
 
     tx.getPgClient()
       .delete(tx.getConnection(), temporaryTransactionTable, criterion, reply -> {

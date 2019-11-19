@@ -59,14 +59,14 @@ public class EncumbranceHandler extends AllOrNothingHandler {
   }
 
   @Override
-  String getId(Transaction transaction) {
+  String getSummaryId(Transaction transaction) {
     return transaction.getEncumbrance()
       .getSourcePurchaseOrderId();
   }
 
   @Override
-  Criterion getCriterion(String value) {
-    return getCriterionByFieldNameAndValueNotJsonb("encumbrance_sourcepurchaseorderid", "=", value);
+  Criterion getTransactionBySummaryIdCriterion(String value) {
+    return getCriterionByFieldNameAndValueNotJsonb("encumbrance_sourcePurchaseOrderId", "=", value);
   }
 
   private Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
@@ -78,7 +78,7 @@ public class EncumbranceHandler extends AllOrNothingHandler {
     String sql = "UPDATE " + getFullTransactionTableName() + " SET jsonb = (SELECT jsonb " + "FROM "
         + getTemporaryTransactionTable() + " WHERE " + getFullTransactionTableName() + ".id = "
         + getFullTemporaryTransactionTableName() + ".id) " + "WHERE id IN (SELECT id FROM " + getFullTemporaryTransactionTableName()
-        + " WHERE encumbrance_sourcepurchaseorderid = '" + sourcePurchaseOrderId + "');";
+        + " WHERE encumbrance_sourcePurchaseOrderId = '" + sourcePurchaseOrderId + "');";
     tx.getPgClient()
       .execute(tx.getConnection(), sql, reply -> {
         if (reply.failed()) {
