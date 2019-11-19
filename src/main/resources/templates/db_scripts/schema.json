@@ -44,6 +44,7 @@
     },
     {
       "tableName": "ledger",
+      "customSnippetPath": "migration/ledgers.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [
@@ -90,6 +91,7 @@
     },
     {
       "tableName": "fund",
+      "customSnippetPath": "migration/funds.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [
@@ -146,7 +148,44 @@
       ]
     },
     {
+      "tableName": "fiscal_year",
+      "customSnippetPath": "migration/fiscal_years.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "withMetadata": true,
+      "index": [
+        {
+          "fieldName" : "periodEnd",
+          "tOps": "ADD"
+        }
+      ],
+      "ginIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "acqUnitIds",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "code",
+          "tOps": "DELETE"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
       "tableName": "budget",
+      "customSnippetPath": "migration/budgets.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [
