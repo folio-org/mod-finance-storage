@@ -33,7 +33,8 @@ resourceTypes:
       exampleItem: !include acq-models/mod-finance/examples/transaction.sample
       schemaCollection: transaction-collection
       schemaItem: transaction
-  is: [validate]
+  post:
+    is: [validate]
   get:
     description: Get list of transactions
     is: [
@@ -49,4 +50,5 @@ resourceTypes:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/transaction.sample
         schema: transaction
-    is: [validate]
+    put:
+      is: [validate]

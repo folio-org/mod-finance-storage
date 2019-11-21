@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
+import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
@@ -297,7 +298,7 @@ class TransactionTest extends TestBase {
 
 
   @Test
-  void testCreateEncumbranceAllOrNothing() throws MalformedURLException {
+  void testCreateEncumbranceAllOrNothingIdempotent() throws MalformedURLException {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
     String orderId = UUID.randomUUID().toString();
@@ -306,13 +307,17 @@ class TransactionTest extends TestBase {
         .encodePrettily(), TRANSACTION_TENANT_HEADER).as(OrderTransactionSummary.class);
     JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
     jsonTx.remove("id");
-    Transaction encumbrance = jsonTx.mapTo(Transaction.class);
 
-    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
-    String fY = encumbrance.getFiscalYearId();
-    String fromFundId = encumbrance.getFromFundId();
+    Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
+    encumbrance1.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
-    String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
+    Transaction encumbrance2 = jsonTx.mapTo(Transaction.class);
+    encumbrance2.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance2.getEncumbrance().setSourcePoLineId(UUID.randomUUID().toString());
+    String fY = encumbrance1.getFiscalYearId();
+    String fromFundId = encumbrance1.getFromFundId();
+
+
     // prepare budget/ledger queries
     String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
     String fromLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, fromFundId);
@@ -322,7 +327,7 @@ class TransactionTest extends TestBase {
     Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
 
     // create 1st Encumbrance, expected number is 2
-    String encumbrance1Id = postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+    String encumbrance1Id = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -330,11 +335,8 @@ class TransactionTest extends TestBase {
     // encumbrance do not appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(404);
 
-    encumbrance.getEncumbrance().setSourcePoLineId(UUID.randomUUID().toString());
-    transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
-
     // create 2nd Encumbrance
-    String encumbrance2Id = postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+    String encumbrance2Id = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance2).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -347,7 +349,7 @@ class TransactionTest extends TestBase {
     Ledger fromLedgerAfter = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
 
     // check source budget and ledger totals
-    final Double amount = sumValues(encumbrance.getAmount(), encumbrance.getAmount()); //2 encumbrances with same amount were created
+    final Double amount = sumValues(encumbrance1.getAmount(), encumbrance2.getAmount());
     double expectedBudgetsAvailable;
     double expectedBudgetsUnavailable;
     double expectedBudgetsEncumbered;
@@ -355,21 +357,40 @@ class TransactionTest extends TestBase {
     double expectedLedgersAvailable;
     double expectedLedgersUnavailable;
 
-    if (StringUtils.isNotEmpty(jsonTx.getString("fromFundId"))){
-      expectedBudgetsEncumbered = sumValues(fromBudgetBefore.getEncumbered(), amount);
-      expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
-      expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
 
-      expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
-      expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
+    expectedBudgetsEncumbered = sumValues(fromBudgetBefore.getEncumbered(), amount);
+    expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
+    expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
 
-      assertEquals(expectedBudgetsEncumbered, fromBudgetAfter.getEncumbered());
-      assertEquals(expectedBudgetsAvailable , fromBudgetAfter.getAvailable());
-      assertEquals(expectedBudgetsUnavailable, fromBudgetAfter.getUnavailable());
+    expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
+    expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
 
-      assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
-      assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
-    }
+    assertEquals(expectedBudgetsEncumbered, fromBudgetAfter.getEncumbered());
+    assertEquals(expectedBudgetsAvailable , fromBudgetAfter.getAvailable());
+    assertEquals(expectedBudgetsUnavailable, fromBudgetAfter.getUnavailable());
+
+    assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
+    assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
+
+
+    //create same encumbrances again
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class).getId();
+
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance2).encodePrettily(), TRANSACTION_TENANT_HEADER)
+      .then()
+      .statusCode(201);
+
+    // check source budget and ledger totals not changed
+    assertEquals(expectedBudgetsEncumbered, fromBudgetAfter.getEncumbered());
+    assertEquals(expectedBudgetsAvailable , fromBudgetAfter.getAvailable());
+    assertEquals(expectedBudgetsUnavailable, fromBudgetAfter.getUnavailable());
+
+    assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
+    assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
+
     // cleanup
     deleteTenant(TRANSACTION_TENANT_HEADER);
   }
@@ -391,6 +412,27 @@ class TransactionTest extends TestBase {
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(400);
 
+    // cleanup
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
+  @Test
+  void testCreateEncumbranceWithMissedRequiredFields() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
+
+    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+
+    Transaction encumbrance = jsonTx.mapTo(Transaction.class);
+
+    encumbrance.setEncumbrance(null);
+    encumbrance.setFromFundId(null);
+
+    String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
+
+    Errors errors = postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(422).extract().as(Errors.class);
+    assertThat(errors.getErrors(), hasSize(2));
     // cleanup
     deleteTenant(TRANSACTION_TENANT_HEADER);
   }
@@ -419,7 +461,7 @@ class TransactionTest extends TestBase {
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(404);
 
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400);
+      .statusCode(201);
 
     // cleanup
     deleteTenant(TRANSACTION_TENANT_HEADER);
@@ -466,7 +508,7 @@ class TransactionTest extends TestBase {
       .extract()
       .as(Transaction.class).getId();
 
-    // 2 encumbrances appear in transaction table, temp transaction deleted
+    // 2 encumbrances appear in transaction table, temp transactions deleted
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance2Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
@@ -481,7 +523,7 @@ class TransactionTest extends TestBase {
     // create 2nd Encumbrance
     postData(TRANSACTION_ENDPOINT, transactionSample2, TRANSACTION_TENANT_HEADER)
       .then()
-      .statusCode(400);
+      .statusCode(201);
 
     // cleanup
     deleteTenant(TRANSACTION_TENANT_HEADER);
@@ -554,7 +596,7 @@ class TransactionTest extends TestBase {
 
 
   @Test
-  void testUpdateEncumbranceAllNotFound() throws MalformedURLException {
+  void testUpdateEncumbranceNotFound() throws MalformedURLException {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
 

@@ -1,14 +1,23 @@
 package org.folio.rest.transaction;
 
+import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.impl.TransactionSummaryAPI.ORDER_TRANSACTION_SUMMARIES;
 import static org.folio.rest.persist.HelperUtils.getCriterionByFieldNameAndValueNotJsonb;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.json.JsonObject;
+import org.folio.rest.jaxrs.model.Encumbrance;
+import org.folio.rest.jaxrs.model.Error;
+import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.Tx;
@@ -45,6 +54,11 @@ public class EncumbranceHandler extends AllOrNothingHandler {
             getAsyncResultHandler().handle(Future.succeededFuture(
                 FinanceStorageTransactions.PutFinanceStorageTransactionsByIdResponse.respond404WithTextPlain(cause.getPayload())));
             break;
+          case 422:
+            getAsyncResultHandler()
+              .handle(Future.succeededFuture(FinanceStorageTransactions.PutFinanceStorageTransactionsByIdResponse
+                .respond422WithApplicationJson(new JsonObject(cause.getPayload()).mapTo(Errors.class))));
+            break;
           default:
             getAsyncResultHandler()
               .handle(Future.succeededFuture(FinanceStorageTransactions.PutFinanceStorageTransactionsByIdResponse
@@ -60,8 +74,9 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   @Override
   String getSummaryId(Transaction transaction) {
-    return transaction.getEncumbrance()
-      .getSourcePurchaseOrderId();
+    return Optional.ofNullable(transaction.getEncumbrance())
+      .map(Encumbrance::getSourcePurchaseOrderId)
+      .orElse(null);
   }
 
   @Override
@@ -69,16 +84,61 @@ public class EncumbranceHandler extends AllOrNothingHandler {
     return getCriterionByFieldNameAndValueNotJsonb("encumbrance_sourcePurchaseOrderId", "=", value);
   }
 
+  @Override
+  void handleValidationError(Transaction transaction) {
+    List<Error> errors = new ArrayList<>();
+
+    errors.addAll(buildNullValidationError(getSummaryId(transaction), "encumbrance"));
+    errors.addAll(buildNullValidationError(transaction.getFromFundId(), "fromFundId"));
+
+    if (isNotEmpty(errors)) {
+      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
+        .withTotalRecords(errors.size()))
+        .encode());
+    }
+  }
+
+  private List<Error> buildNullValidationError(String value, String key) {
+    if (value == null) {
+      Parameter parameter = new Parameter().withKey(key)
+        .withValue("null");
+      Error error = new Error().withCode("-1")
+        .withMessage("may not be null")
+        .withParameters(Collections.singletonList(parameter));
+      return Collections.singletonList(error);
+    }
+    return Collections.emptyList();
+  }
+
+  @Override
+  String createTempTransactionQuery() {
+    return "INSERT INTO " + getFullTemporaryTransactionTableName() + " (id, jsonb) VALUES (?, ?::JSON) "
+        + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), " + "lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
+        + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text)), "
+        + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text)), "
+        + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text)), "
+        + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'status'::text))) " + "DO UPDATE SET id = excluded.id RETURNING id;";
+  }
+
+  @Override
+  String createPermanentTransactionsQuery() {
+    return String.format("INSERT INTO %s (id, jsonb) " + "SELECT id, jsonb FROM %s WHERE encumbrance_sourcePurchaseOrderId = ? "
+        + "ON CONFLICT DO NOTHING;", getFullTransactionTableName(), getTemporaryTransactionTable());
+  }
+
   private Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
+
     String sourcePurchaseOrderId = tx.getEntity()
       .get(0)
       .getEncumbrance()
       .getSourcePurchaseOrderId();
+
     String sql = "UPDATE " + getFullTransactionTableName() + " SET jsonb = (SELECT jsonb " + "FROM "
         + getTemporaryTransactionTable() + " WHERE " + getFullTransactionTableName() + ".id = "
         + getFullTemporaryTransactionTableName() + ".id) " + "WHERE id IN (SELECT id FROM " + getFullTemporaryTransactionTableName()
         + " WHERE encumbrance_sourcePurchaseOrderId = '" + sourcePurchaseOrderId + "');";
+
     tx.getPgClient()
       .execute(tx.getConnection(), sql, reply -> {
         if (reply.failed()) {

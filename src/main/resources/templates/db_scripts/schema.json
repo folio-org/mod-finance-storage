@@ -278,7 +278,7 @@
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
         {
-          "fieldName": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, toFundId, transactionType",
+          "fieldName": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
         }
@@ -455,7 +455,7 @@
       ],
       "uniqueIndex": [
         {
-          "fieldName": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, toFundId, transactionType",
+          "fieldName": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
           "tOps": "ADD"
         }
       ]
