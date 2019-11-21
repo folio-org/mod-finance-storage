@@ -92,25 +92,25 @@ public final class HelperUtils {
       .build()));
   }
 
-  public static Criterion getCriterionByFieldNameAndValue(String filedName, String operation, String fieldValue) {
-    return new Criterion(getCriteriaByFieldNameAndValue(filedName, operation, fieldValue));
+  public static Criterion getCriterionByFieldNameAndValue(String fieldName, String operation, String fieldValue) {
+    return new Criterion(getCriteriaByFieldNameAndValue(fieldName, operation, fieldValue));
   }
 
-  public static Criterion getCriterionByFieldNameAndValueNotJsonb(String filedName, String operation, String fieldValue) {
-    return new Criterion(getCriteriaByFieldNameAndValueNotJsonb(filedName, operation, fieldValue));
+  public static Criterion getCriterionByFieldNameAndValueNotJsonb(String fieldName, String operation, String fieldValue) {
+    return new Criterion(getCriteriaByFieldNameAndValueNotJsonb(fieldName, operation, fieldValue));
   }
 
-  public static Criteria getCriteriaByFieldNameAndValue(String filedName, String operation, String fieldValue) {
+  public static Criteria getCriteriaByFieldNameAndValue(String fieldName, String operation, String fieldValue) {
     Criteria a = new Criteria();
-    a.addField("'" + filedName + "'");
+    a.addField("'" + fieldName + "'");
     a.setOperation(operation);
     a.setVal(fieldValue);
     return a;
   }
 
-  public static Criteria getCriteriaByFieldNameAndValueNotJsonb(String filedName, String operation, String fieldValue) {
+  public static Criteria getCriteriaByFieldNameAndValueNotJsonb(String fieldName, String operation, String fieldValue) {
     Criteria a = new Criteria();
-    a.addField(filedName);
+    a.addField(fieldName);
     a.setOperation(operation);
     a.setVal(fieldValue);
     a.setJSONB(false);
