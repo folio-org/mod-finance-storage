@@ -18,7 +18,7 @@
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
     <ramlfiles_acq_models_path>${ramlfiles_path}/acq-models</ramlfiles_acq_models_path>
-    <raml-module-builder.version>27.1.1</raml-module-builder.version>
+    <raml-module-builder.version>28.1.0</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jmockit.version>1.48</jmockit.version>
     <argLine />
@@ -75,7 +75,7 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-junit5</artifactId>
-      <version>3.5.4</version>
+      <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>

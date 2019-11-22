@@ -16,6 +16,7 @@ import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
+import org.folio.rest.jaxrs.resource.FinanceStorageOrderTransactionSummaries;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PostgresClient;
@@ -84,6 +85,7 @@ public class TenantReferenceAPI extends TenantAPI {
         .add("funds", getUriPath(FinanceStorageFunds.class))
         .add("budgets", getUriPath(FinanceStorageBudgets.class))
         .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
+        .add("order-transaction-summaries", getUriPath(FinanceStorageOrderTransactionSummaries.class))
         .add("transactions", getUriPath(FinanceStorageTransactions.class));
       loadData = true;
     }

@@ -4,6 +4,7 @@ import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
+import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -165,8 +166,8 @@ public class LedgerAPI implements FinanceStorageLedgers {
     if (CollectionUtils.isEmpty(fundIds)) {
       promise.complete(tx);
     } else {
-      String fullBudgetTableName = PostgresClient.convertToPsqlStandard(tenantId) + "." + BUDGET_TABLE;
-      String fullFYTableName = PostgresClient.convertToPsqlStandard(tenantId) + "." + FISCAL_YEAR_TABLE;
+      String fullBudgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
+      String fullFYTableName = getFullTableName(tenantId, FISCAL_YEAR_TABLE);
       String queryPlaceHolders = fundIds.stream().map(s -> "?").collect(Collectors.joining(", ", "", ""));
       JsonArray params = new JsonArray();
       params.add("\"" + ledger.getLedgerStatus() + "\"");
@@ -222,7 +223,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
   private Future<Tx<List<String>>> updateRelatedFunds(Tx<Ledger> tx) {
     Promise<Tx<List<String>>> promise = Promise.promise();
     Ledger ledger = tx.getEntity();
-    String fullFundTableName = PostgresClient.convertToPsqlStandard(tenantId) + "." + FUND_TABLE;
+    String fullFundTableName = getFullTableName(tenantId, FUND_TABLE);
     String sql = "UPDATE " + fullFundTableName + "  SET jsonb = jsonb_set(jsonb,'{fundStatus}', ?::jsonb) " +
       "WHERE (ledgerId = ?) AND (jsonb->>'fundStatus' <> ?) RETURNING id";
     JsonArray params = new JsonArray();

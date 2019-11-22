@@ -276,6 +276,13 @@
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
+      "uniqueIndex": [
+        {
+          "fieldName": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
+          "tOps": "ADD",
+          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
+        }
+      ],
       "foreignKeys": [
         {
           "fieldName": "fiscalYearId",
@@ -443,6 +450,12 @@
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
           "targetTable": "order_transaction_summaries",
+          "tOps": "ADD"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
           "tOps": "ADD"
         }
       ]
