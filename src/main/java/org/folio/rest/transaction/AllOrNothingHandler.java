@@ -1,5 +1,7 @@
 package org.folio.rest.transaction;
 
+import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValue;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
 import static org.folio.rest.persist.HelperUtils.rollbackTransaction;
 import static org.folio.rest.persist.HelperUtils.startTx;
@@ -17,6 +19,7 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.Tx;
+import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
@@ -30,6 +33,7 @@ import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
+  public static final String BUDGET_NOT_FOUND_FOR_TRANSACTION = "Budget not found for transaction";
   private String temporaryTransactionTable;
   private String summaryTable;
   private boolean isLastRecord;
@@ -100,7 +104,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   /**
    * Accumulate transactions in a temporary table until expected number of transactions are present, then apply them all at once,
    * updating all the required tables together in a database transaction.
-   * 
+   *
    * @param transaction         processed transaction
    * @param processTransactions The function responsible for the logic of saving transactions from the temporary table to the
    *                            permanent one.
@@ -110,7 +114,9 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       Function<Tx<List<Transaction>>, Future<Tx<List<Transaction>>>> processTransactions) {
     try {
       handleValidationError(transaction);
-      return createTempTransaction(transaction).compose(this::getSummary)
+      return verifyBudgetExistence(transaction)
+        .compose(v -> createTempTransaction(transaction))
+        .compose(this::getSummary)
         .compose(this::getTempTransactions)
         .compose(transactions -> {
           Promise<Void> promise = Promise.promise();
@@ -129,6 +135,24 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       return Future.failedFuture(e);
     }
 
+  }
+
+  protected Future<Void> verifyBudgetExistence(Transaction transaction){Promise<Void> promise = Promise.promise();
+    Criteria criteria = getCriteriaByFieldNameAndValue("fundId", "=", transaction.getFromFundId());
+    Criteria criteria1 = getCriteriaByFieldNameAndValue("fiscalYearId", "=", transaction.getFiscalYearId());
+    Criterion criterion = new Criterion();
+    criterion.addCriterion(criteria, "AND", criteria1);
+    getPostgresClient().get(BUDGET_TABLE, Transaction.class, criterion,true, reply -> {
+      if (reply.failed()) {
+        handleFailure(promise, reply);
+      } else if (reply.result().getResults().isEmpty()) {
+        log.error(BUDGET_NOT_FOUND_FOR_TRANSACTION);
+        promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_NOT_FOUND_FOR_TRANSACTION));
+      } else {
+        promise.complete();
+      }
+    });
+    return promise.future();
   }
 
   private Promise<Void> moveFromTempToPermanentTable(
