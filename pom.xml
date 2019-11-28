@@ -176,6 +176,10 @@
                   <key>raml_files</key>
                   <value>${ramlfiles_path}</value>
                 </systemProperty>
+                <systemProperty>
+                  <key>jsonschema2pojo.config.includeHashcodeAndEquals</key>
+                  <value>true</value>
+                </systemProperty>
               </systemProperties>
             </configuration>
           </execution>

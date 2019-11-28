@@ -157,8 +157,9 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   private Future<Tx<List<Transaction>>> updateBudgets(Tx<List<Transaction>> tx, List<Budget> budgets) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
+    List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
     String sql = "UPDATE " + getFullTableName(getTenantId(), BUDGET_TABLE) + " AS budgets " +
-      "SET jsonb = b.jsonb FROM (VALUES  " + getValues(budgets.stream().map(JsonObject::mapFrom).collect(Collectors.toList())) + ") AS b (id, jsonb) " +
+      "SET jsonb = b.jsonb FROM (VALUES  " + getValues(jsonBudgets) + ") AS b (id, jsonb) " +
       "WHERE b.id::uuid = budgets.id;";
     tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
       if (reply.failed()) {
@@ -178,7 +179,8 @@ public class EncumbranceHandler extends AllOrNothingHandler {
     Promise<List<Budget>> promise = Promise.promise();
     String sql = "SELECT DISTINCT ON (budgets.id) budgets.jsonb " +
       "FROM " + getFullTableName(getTenantId(), BUDGET_TABLE) + " AS budgets " +
-      "INNER JOIN "+ getFullTransactionTableName() + " AS transactions ON transactions.fromFundId = budgets.fundId " +
+      "INNER JOIN "+ getFullTemporaryTransactionTableName() + " AS transactions " +
+      "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId " +
       "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
     JsonArray params = new JsonArray();
     params.add(getSummaryId(tx.getEntity().get(0)));

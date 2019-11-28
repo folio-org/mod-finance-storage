@@ -451,6 +451,16 @@
           "fieldName": "encumbrance.sourcePurchaseOrderId",
           "targetTable": "order_transaction_summaries",
           "tOps": "ADD"
+        },
+        {
+          "fieldName": "fiscalYearId",
+          "targetTable": "fiscal_year",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fromFundId",
+          "targetTable": "fund",
+          "tOps": "ADD"
         }
       ],
       "uniqueIndex": [
