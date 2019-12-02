@@ -35,7 +35,7 @@ public class LedgerFYTest extends TestBase {
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
 
     FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
-    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017").withCurrency(null));
 
     String ledgerId = createFirstRecord(LEDGER);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 1);
@@ -59,7 +59,7 @@ public class LedgerFYTest extends TestBase {
   public void testGetQueryForSeveralRecords() throws Exception {
     logger.info("--- Test GET by query when several ledger and fiscal year records are created --- ");
     FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
-    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017").withCurrency(null));
 
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withId(null);
     List<String> ledgerIds = new ArrayList<>();
@@ -124,7 +124,7 @@ public class LedgerFYTest extends TestBase {
   public void testGetNoRecordsForFiscalYearWithoutCurrency() throws Exception {
     logger.info("--- Test that GET ledger/fiscal year finds nothing when fiscal year is in past ---");
     FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
-    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017").withCurrency(null));
 
     String ledgerId = createFirstRecord(LEDGER);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
@@ -147,7 +147,7 @@ public class LedgerFYTest extends TestBase {
     logger.info("--- Test that GET ledger/fiscal year finds nothing when fiscal year has no currency ---");
 
     FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
-    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017").withCurrency(null));
 
     String ledgerId = createFirstRecord(LEDGER);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
