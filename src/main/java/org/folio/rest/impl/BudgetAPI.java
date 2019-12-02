@@ -15,7 +15,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 
 public class BudgetAPI implements FinanceStorageBudgets {
-  static final String BUDGET_TABLE = "budget";
+  public static final String BUDGET_TABLE = "budget";
 
   @Override
   @Validate

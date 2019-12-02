@@ -32,7 +32,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class FundAPI implements FinanceStorageFunds {
-  static final String FUND_TABLE = "fund";
+  public static final String FUND_TABLE = "fund";
 
   private static final Logger log = LoggerFactory.getLogger(FundAPI.class);
   private PostgresClient pgClient;

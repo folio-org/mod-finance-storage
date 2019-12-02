@@ -136,9 +136,9 @@ WHERE
 
 UPDATE ${myuniversity}_${mymodule}.transaction
 SET
-  jsonb = jsonb || jsonb_build_object('initialAmountEncumbered', 0)
+  jsonb = jsonb->'encumbrance' || jsonb_build_object('initialAmountEncumbered', 0)
 WHERE
-  NOT jsonb ? 'initialAmountEncumbered';
+  NOT jsonb->'encumbrance' ? 'initialAmountEncumbered';
 
 UPDATE ${myuniversity}_${mymodule}.transaction
 SET
