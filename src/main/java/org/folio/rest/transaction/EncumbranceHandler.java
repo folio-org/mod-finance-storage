@@ -151,7 +151,7 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   private Future<Tx<List<Transaction>>> updateBudgetsTotals(Tx<List<Transaction>> tx, List<Transaction> existingTransactions) {
     return getBudgets(tx)
-      .map(budgets -> getUpdateBudgetsTotals(existingTransactions, tx.getEntity(), budgets))
+      .map(budgets -> updateBudgetsTotals(existingTransactions, tx.getEntity(), budgets))
       .compose(budgets -> updateBudgets(tx, budgets));
   }
 
@@ -198,7 +198,7 @@ public class EncumbranceHandler extends AllOrNothingHandler {
     return promise.future();
   }
 
-  private List<Budget> getUpdateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> tempTransactions, List<Budget> budgets) {
+  private List<Budget> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> tempTransactions, List<Budget> budgets) {
     Map<String, Transaction> existingGrouped = existingTransactions.stream().collect(toMap(Transaction::getId, Function.identity()));
     Map<Budget, List<Transaction>> tempGrouped = groupTransactionsByBudget(tempTransactions, budgets);
     return tempGrouped.entrySet().stream()
