@@ -1,10 +1,12 @@
 ## 4.1.0 - Unreleased
 
 ## 4.0.0 - Released
+The primary focus of this release was to implement additional finance API and significantly update existent finance schemas.
+
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v3.0.0...v4.0.0)
 
 ### Stories
-* [MODFISTO-59](https://issues.folio.org/browse/MODFISTO-59)  Define and Implement FundType API	
+* [MODFISTO-59](https://issues.folio.org/browse/MODFISTO-59)  Transaction Calculations - Encumbrance upon update	
 * [MODFISTO-56](https://issues.folio.org/browse/MODFISTO-56)  Support all-or-nothing operations for encumbrances by order
 * [MODFISTO-55](https://issues.folio.org/browse/MODFISTO-55)  Create order_transaction_summaries API
 * [MODFISTO-54](https://issues.folio.org/browse/MODFISTO-54)  Encumbrance Schema Updates
@@ -36,8 +38,6 @@
 
 ### Bug Fixes
 * [MODFISTO-52](https://issues.folio.org/browse/MODFISTO-52)  Unavailable increasing when allocating from budget to budget
-* [MODFISTO-43](https://issues.folio.org/browse/MODFISTO-43)  Return error if specified Fund does not have a budget in the current fiscal year upon transaction processing
-
 
 ## 3.0.0 - Released
 This release contains only changes about removing acquisitionsUnit from fund schema
