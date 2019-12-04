@@ -19,7 +19,6 @@ The primary focus of this release was to implement additional finance API and si
 * [MODFISTO-38](https://issues.folio.org/browse/MODFISTO-38)  Create GroupFundFY API
 * [MODFISTO-37](https://issues.folio.org/browse/MODFISTO-37)  Update LedgerFY table
 * [MODFISTO-35](https://issues.folio.org/browse/MODFISTO-35)  Update GroupFundFY table
-* [MODFISTO-34](https://issues.folio.org/browse/MODFISTO-34)  Spike: Avoiding partially paid invoices POC
 * [MODFISTO-33](https://issues.folio.org/browse/MODFISTO-33)  Define and implement the GroupFundFY API
 * [MODFISTO-32](https://issues.folio.org/browse/MODFISTO-32)  Define and implement the LedgerFY API
 * [MODFISTO-31](https://issues.folio.org/browse/MODFISTO-31)  Add support for querying Budget API by fund/ledger/fiscalYear fields
