@@ -32,6 +32,7 @@
 * [MODFISTO-20](https://issues.folio.org/browse/MODFISTO-20)  Update Transaction schemas
 * [MODFISTO-19](https://issues.folio.org/browse/MODFISTO-19)  Update fund schema
 * [MODFISTO-18](https://issues.folio.org/browse/MODFISTO-18)  Define and Implement FundType API
+* [MODFISTO-2358](https://issues.folio.org/browse/FOLIO-2358)  Use JVM features (UseContainerSupport, MaxRAMPercentage) to manage container memory
 
 ### Bug Fixes
 * [MODFISTO-52](https://issues.folio.org/browse/MODFISTO-52)  Unavailable increasing when allocating from budget to budget
