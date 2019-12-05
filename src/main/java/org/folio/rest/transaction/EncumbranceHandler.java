@@ -31,7 +31,7 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
-import org.folio.rest.persist.HelperUtils;
+import org.folio.rest.persist.MoneyUtils;
 import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criterion;
 
@@ -218,12 +218,12 @@ public class EncumbranceHandler extends AllOrNothingHandler {
             if (isEncumbranceReleased(tmpTransaction)) {
               releaseEncumbrance(budget, currency, tmpTransaction);
             } else {
-              double newEncumbered = HelperUtils.subtractMoney(budget.getEncumbered(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              newEncumbered = HelperUtils.sumMoney(newEncumbered, tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              double newEncumbered = MoneyUtils.subtractMoney(budget.getEncumbered(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              newEncumbered = MoneyUtils.sumMoney(newEncumbered, tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
               budget.setEncumbered(newEncumbered);
             }
-            double newAwaitingPayment = HelperUtils.sumMoney(budget.getAwaitingPayment(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-            newAwaitingPayment = HelperUtils.subtractMoney(newAwaitingPayment, tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+            double newAwaitingPayment = MoneyUtils.sumMoney(budget.getAwaitingPayment(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+            newAwaitingPayment = MoneyUtils.subtractMoney(newAwaitingPayment, tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
             budget.setAwaitingPayment(newAwaitingPayment);
           }
         });
@@ -232,10 +232,10 @@ public class EncumbranceHandler extends AllOrNothingHandler {
   }
 
   private void releaseEncumbrance(Budget budget, CurrencyUnit currency, Transaction tmpTransaction) {
-    budget.setAvailable(HelperUtils.sumMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency));
-    double newUnavailable = HelperUtils.subtractMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
+    budget.setAvailable(MoneyUtils.sumMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency));
+    double newUnavailable = MoneyUtils.subtractMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
     budget.setUnavailable(newUnavailable < 0 ? 0 : newUnavailable);
-    budget.setEncumbered(HelperUtils.subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
+    budget.setEncumbered(MoneyUtils.subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
     tmpTransaction.setAmount(0d);
   }
 
