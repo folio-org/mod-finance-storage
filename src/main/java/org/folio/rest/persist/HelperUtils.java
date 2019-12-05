@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.money.CurrencyUnit;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -25,7 +24,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
-import org.javamoney.moneta.Money;
 
 public final class HelperUtils {
   private HelperUtils() { }
@@ -124,7 +122,7 @@ public final class HelperUtils {
     Method respond400 = getRespond400(entitiesMetadataHolder, asyncResultHandler);
     try {
       PostgresClient postgresClient = PgUtil.postgresClient(vertxContext, okapiHeaders);
-      postgresClient.get(queryHolder.getTable(), entitiesMetadataHolder.getClazz(), QueryHolder.JSONB, queryHolder.buildCQLQuery().toString(), true, false, false, null, sortField,
+      postgresClient.get(queryHolder.getTable(), entitiesMetadataHolder.getClazz(), QueryHolder.JSONB, queryHolder.buildCQLQuery(), true, false, false, null, sortField,
         reply -> processDbQueryReply(entitiesMetadataHolder, asyncResultHandler, respond500, respond400, reply));
     } catch (CQLQueryValidationException e) {
 
@@ -160,7 +158,7 @@ public final class HelperUtils {
     try {
       Method respond200 = entitiesMetadataHolder.getRespond200WithApplicationJson();
       if (reply.succeeded()) {
-        E collection = entitiesMetadataHolder.getCollectionClazz().newInstance();
+        E collection = entitiesMetadataHolder.getCollectionClazz().getConstructor().newInstance();
         List<T> results = reply.result().getResults();
         Method setResults =  entitiesMetadataHolder.getSetResultsMethod();
         Method setTotalRecordsMethod =  entitiesMetadataHolder.getSetTotalRecordsMethod();
@@ -181,11 +179,4 @@ public final class HelperUtils {
     return PostgresClient.convertToPsqlStandard(tenantId) + "." + tableName;
   }
 
-  public static Double subtractMoney(Double encumbered, Double subtrahend, CurrencyUnit currency) {
-    return Money.of(encumbered, currency).subtract(Money.of(subtrahend, currency)).getNumber().doubleValue();
-  }
-
-  public static Double sumMoney(Double encumbered, Double amount, CurrencyUnit currency) {
-    return Money.of(encumbered, currency).add(Money.of(amount, currency)).getNumber().doubleValue();
-  }
 }
