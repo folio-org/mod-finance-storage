@@ -9,6 +9,7 @@ import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValue;
 import static org.folio.rest.persist.HelperUtils.getCriterionByFieldNameAndValueNotJsonb;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
+import static org.folio.rest.persist.HelperUtils.subtractMoney;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -218,13 +219,16 @@ public class EncumbranceHandler extends AllOrNothingHandler {
             if (isEncumbranceReleased(tmpTransaction)) {
               releaseEncumbrance(budget, currency, tmpTransaction);
             } else {
-              double newEncumbered = HelperUtils.subtractMoney(budget.getEncumbered(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              newEncumbered = HelperUtils.sumMoney(newEncumbered, tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              double newEncumbered = subtractMoney(budget.getEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              newEncumbered = HelperUtils.sumMoney(newEncumbered, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
               budget.setEncumbered(newEncumbered);
+              double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              newAmount = subtractMoney(newAmount, tmpTransaction.getEncumbrance().getAmountExpended(), currency);
+              tmpTransaction.setAmount(newAmount);
+              double newAwaitingPayment = HelperUtils.sumMoney(budget.getAwaitingPayment(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              newAwaitingPayment = subtractMoney(newAwaitingPayment, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              budget.setAwaitingPayment(newAwaitingPayment);
             }
-            double newAwaitingPayment = HelperUtils.sumMoney(budget.getAwaitingPayment(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-            newAwaitingPayment = HelperUtils.subtractMoney(newAwaitingPayment, tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-            budget.setAwaitingPayment(newAwaitingPayment);
           }
         });
     }
@@ -233,9 +237,9 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   private void releaseEncumbrance(Budget budget, CurrencyUnit currency, Transaction tmpTransaction) {
     budget.setAvailable(HelperUtils.sumMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency));
-    double newUnavailable = HelperUtils.subtractMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
+    double newUnavailable = subtractMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
     budget.setUnavailable(newUnavailable < 0 ? 0 : newUnavailable);
-    budget.setEncumbered(HelperUtils.subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
+    budget.setEncumbered(subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
     tmpTransaction.setAmount(0d);
   }
 
