@@ -1,14 +1,10 @@
 {
   "id": "012e7da4-003c-48ff-9feb-f3745044da35",
-  "name": "ANZHIST-FY19",
+  "name": "ANZHIST-FY2019",
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 11000.00,
-  "awaitingPayment": 66.26,
-  "available": 6737.92,
-  "encumbered": 3215.26,
-  "expenditures": 980.56,
+  "allocated": 0,
   "overEncumbrance": 0,
   "fundId": "69640328-788e-43fc-9c3c-af39e243f3b7",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"

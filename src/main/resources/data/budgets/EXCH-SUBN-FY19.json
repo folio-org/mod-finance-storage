@@ -1,15 +1,10 @@
 {
   "id": "eb3c3a49-0c6d-423d-bf60-ac6ad2f96221",
-  "name": "EXCH-SUBN-FY19",
+  "name": "EXCH-SUBN-FY2019",
   "budgetStatus": "Active",
   "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
-  "allocated": 50000.00,
-  "awaitingPayment": 0.00,
-  "available": 50000.00,
-  "encumbered": 2000.00,
-  "expenditures": 0.00,
-  "overEncumbrance": 0,
+  "allocated": 0.00,
   "fundId": "d6f7c1ba-a237-465e-94ed-f37e91bc64bd",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
 }

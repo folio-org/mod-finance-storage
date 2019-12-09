@@ -8,20 +8,20 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
     fromBudgetEncumbered        decimal;
     fromBudgetOverEncumbered    decimal;
 
-    fromLedger                  jsonb;
-    fromLedgerAllocated         decimal;
-    fromLedgerAvailable         decimal;
-    fromLedgerUnavailable       decimal;
+    fromLedgerFY                  jsonb;
+    fromLedgerFYAllocated         decimal;
+    fromLedgerFYAvailable         decimal;
+    fromLedgerFYUnavailable       decimal;
 
     toBudget                    jsonb;
     toBudgetAllocated           decimal;
     toBudgetAvailable           decimal;
     toBudgetUnavailable         decimal;
 
-    toLedger                    jsonb;
-    toLedgerAllocated           decimal;
-    toLedgerAvailable           decimal;
-    toLedgerUnavailable         decimal;
+    toLedgerFY                    jsonb;
+    toLedgerFYAllocated           decimal;
+    toLedgerFYAvailable           decimal;
+    toLedgerFYUnavailable         decimal;
 
     newBudgetValues             text[];
     newLedgerValues             text[];
@@ -41,7 +41,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
         -- check if fromFundId exists
         IF (NEW.jsonb->'fromFundId' IS NOT NULL) THEN
           -- Update Budget identified by the transactions fiscal year (fiscalYearId) and source fund (fromFundId)
-          SELECT INTO fromBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'fromFundId');
+          SELECT INTO fromBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'fromFundId');
           IF (fromBudget IS NULL) THEN
             RAISE EXCEPTION 'source budget not found';
           END IF;
@@ -60,30 +60,37 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
             newBudgetValues = '{available, ' || fromBudgetAvailable || ', unavailable, ' || fromBudgetUnavailable || ', encumbered, ' || fromBudgetEncumbered ||'}';
           END IF;
 
-          UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'fromFundId');
+          UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'fromFundId');
 
 
-          -- Update Ledger identified by the transaction's fiscal year (fiscalYearId) and the source fund (fromFundId)
-          SELECT INTO fromLedger (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledger  WHERE (jsonb->>'id' = (SELECT jsonb->>'ledgerId' FROM ${myuniversity}_${mymodule}.fund WHERE (jsonb->>'id' = fromBudget->>'fundId')));
+          -- Update LedgerFY identified by the transaction's fiscal year (fiscalYearId) and the source fund (fromFundId)
+          SELECT INTO fromLedgerFY (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledgerFY AS ledgerFY
+          WHERE (ledgerFY.ledgerId = (SELECT fund.ledgerId FROM ${myuniversity}_${mymodule}.fund AS fund WHERE (fund.id::text = fromBudget->>'fundId')))
+          AND ledgerFY.fiscalYearId::text = fromBudget->>'fiscalYearId';
 
-          fromLedgerAvailable = (SELECT COALESCE(fromLedger->>'available', '0'))::decimal - amount;
-          fromLedgerUnavailable = (SELECT COALESCE(fromLedger->>'unavailable', '0'))::decimal + amount;
-
-          IF (transactionType = 'Allocation') THEN
-            fromLedgerAllocated = (SELECT COALESCE(fromLedger->>'allocated', '0'))::decimal - amount;
-            newLedgerValues = '{allocated,' || fromLedgerAllocated || ', available, ' || fromLedgerAvailable || '}';
-          ELSIF (transactionType = 'Transfer' OR transactionType = 'Encumbrance') THEN
-            newLedgerValues = '{available, ' || fromLedgerAvailable || ', unavailable, ' || fromLedgerUnavailable ||'}';
+          IF (fromLedgerFY IS NULL) THEN
+            RAISE EXCEPTION 'Ledger fiscal year for source ledger not found';
           END IF;
 
-          UPDATE ${myuniversity}_${mymodule}.ledger SET jsonb = jsonb || json_object(newLedgerValues)::jsonb WHERE (jsonb->>'id' = fromLedger->>'id');
+          fromLedgerFYAvailable = (SELECT COALESCE(fromLedgerFY->>'available', '0'))::decimal - amount;
+          fromLedgerFYUnavailable = (SELECT COALESCE(fromLedgerFY->>'unavailable', '0'))::decimal + amount;
+
+          IF (transactionType = 'Allocation') THEN
+            fromLedgerFYAllocated = (SELECT COALESCE(fromLedgerFY->>'allocated', '0'))::decimal - amount;
+            newLedgerValues = '{allocated,' || fromLedgerFYAllocated || ', available, ' || fromLedgerFYAvailable || '}';
+          ELSIF (transactionType = 'Transfer' OR transactionType = 'Encumbrance') THEN
+            newLedgerValues = '{available, ' || fromLedgerFYAvailable || ', unavailable, ' || fromLedgerFYUnavailable ||'}';
+          END IF;
+
+          UPDATE ${myuniversity}_${mymodule}.ledgerFY SET jsonb = jsonb || json_object(newLedgerValues)::jsonb
+          WHERE (ledgerId::text = fromLedgerFY->>'ledgerId') AND (fiscalYearId::text = fromLedgerFY->>'fiscalYearId');
 
         END IF;
 
-        -- update destination budget and ledger only for operations: Allocation / Transfer
+        -- update destination budget and ledgerFY only for operations: Allocation / Transfer
         IF (transactionType = 'Allocation' OR transactionType = 'Transfer') THEN
           -- Update Budget identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
-            SELECT INTO toBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'toFundId');
+            SELECT INTO toBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'toFundId');
             IF (toBudget IS NULL) THEN
               RAISE EXCEPTION 'destination budget not found';
             END IF;
@@ -96,20 +103,28 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
               newBudgetValues = '{available, ' || toBudgetAvailable ||'}';
             END IF;
 
-            UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb WHERE (jsonb->>'fiscalYearId' = NEW.jsonb->>'fiscalYearId' AND jsonb->>'fundId' = NEW.jsonb->>'toFundId');
+            UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb
+            WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'toFundId');
 
-          -- Update Ledger identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
-            SELECT INTO toLedger (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledger  WHERE (jsonb->>'id' = (SELECT jsonb->>'ledgerId' FROM ${myuniversity}_${mymodule}.fund WHERE (jsonb->>'id' = toBudget->>'fundId')));
+          -- Update LedgerFY identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
+            SELECT INTO toLedgerFY (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledgerFY AS ledgerFY
+             WHERE (ledgerFY.ledgerId = (SELECT ledgerId FROM ${myuniversity}_${mymodule}.fund WHERE (id::text = toBudget->>'fundId')))
+             AND ledgerFY.fiscalYearId::text = toBudget->>'fiscalYearId';
 
-            toLedgerAvailable = (SELECT COALESCE(toLedger->>'available', '0'))::decimal + amount;
-            IF (transactionType = 'Allocation') THEN
-              toLedgerAllocated = (SELECT COALESCE(toLedger->>'allocated', '0'))::decimal + amount;
-              newLedgerValues = '{allocated,' || toLedgerAllocated || ', available, ' || toLedgerAvailable ||'}';
-            ELSIF (transactionType = 'Transfer') THEN
-              newLedgerValues = '{available, ' || toLedgerAvailable ||'}';
+            IF (toLedgerFY IS NULL) THEN
+              RAISE EXCEPTION 'Ledger fiscal year for destination ledger not found';
             END IF;
 
-            UPDATE ${myuniversity}_${mymodule}.ledger SET jsonb = jsonb || json_object(newLedgerValues)::jsonb WHERE (jsonb->>'id' = toLedger->>'id');
+            toLedgerFYAvailable = (SELECT COALESCE(toLedgerFY->>'available', '0'))::decimal + amount;
+            IF (transactionType = 'Allocation') THEN
+              toLedgerFYAllocated = (SELECT COALESCE(toLedgerFY->>'allocated', '0'))::decimal + amount;
+              newLedgerValues = '{allocated,' || toLedgerFYAllocated || ', available, ' || toLedgerFYAvailable ||'}';
+            ELSIF (transactionType = 'Transfer') THEN
+              newLedgerValues = '{available, ' || toLedgerFYAvailable ||'}';
+            END IF;
+
+            UPDATE ${myuniversity}_${mymodule}.ledgerFY SET jsonb = jsonb || json_object(newLedgerValues)::jsonb
+            WHERE (ledgerId::text = toLedgerFY->>'ledgerId') AND (fiscalYearId::text = toLedgerFY->>'fiscalYearId');
 
         END IF;
       END IF;

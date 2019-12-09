@@ -1,14 +1,10 @@
 {
   "id": "34fe0c8b-2b99-4fe2-81a5-4ed6872a32e6",
-  "name": "EUROHIST-FY19",
+  "name": "EUROHIST-FY2019",
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 25000.00,
-  "awaitingPayment": 150.60,
-  "available": 15313.45,
-  "encumbered": 7307.40,
-  "expenditures": 2228.55,
+  "allocated": 0.00,
   "overEncumbrance": 0,
   "fundId": "e9285a1c-1dfc-4380-868c-e74073003f43",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"

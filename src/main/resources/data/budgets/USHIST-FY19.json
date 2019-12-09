@@ -1,14 +1,10 @@
 {
   "id": "5255e36f-4444-49d5-baa3-38f7f687f69d",
-  "name": "USHIST-FY19",
+  "name": "USHIST-FY2019",
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 30000.00,
-  "awaitingPayment": 180.72,
-  "available": 18376.14,
-  "encumbered": 8768.88,
-  "expenditures": 2674.26,
+  "allocated": 0.00,
   "overEncumbrance": 0,
   "fundId": "65032151-39a5-4cef-8810-5350eb316300",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
