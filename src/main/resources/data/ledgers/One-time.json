@@ -8,5 +8,7 @@
   "allocated": 2000,
   "available": 1000,
   "unavailable": 1000,
-  "currency": "USD"
+  "currency": "USD",
+  "restrictEncumbrance" : false,
+  "restrictExpenditures" : false
 }
