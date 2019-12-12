@@ -1,14 +1,10 @@
 {
-  "id": "67cd0046-e4f1-4e4f-9024-adf0b0039d09",
-  "name": "AFRICAHIST-FY19",
+  "id": "d71635df-c08c-49cc-9082-197a30fd0392",
+  "name": "AFRICAHIST-FY2019",
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 21000.00,
-  "awaitingPayment": 126.5,
-  "available": 12863.30,
-  "encumbered": 6138.22,
-  "expenditures": 1871.98,
+  "allocated": 0,
   "overEncumbrance": 0,
   "fundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"

@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
+import static org.folio.rest.persist.HelperUtils.getEndpoint;
 import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -14,7 +15,6 @@ import static org.folio.rest.utils.TestEntities.TRANSACTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
@@ -28,8 +28,11 @@ import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
+import org.folio.rest.jaxrs.model.LedgerFY;
+import org.folio.rest.jaxrs.model.LedgerFYCollection;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.resource.FinanceStorageLedgerFiscalYears;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
@@ -43,8 +46,12 @@ class TransactionTest extends TestBase {
 
   private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";
   private static final String LEDGER_QUERY = "?query=fund.id==%s";
+  private static final String LEDGER_FY_QUERY = "?query=ledgerId==%s AND fiscalYearId==%s";
+  public static final String ALLOCATION_SAMPLE = "data/transactions/allocation_AFRICAHIST-FY19_ANZHIST-FY19.json";
+  public static final String ENCUMBRANCE_SAMPLE = "data/transactions/encumbrance_AFRICAHIST_306857_1.json";
   private static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
   private static String LEDGERS_QUERY = LEDGER.getEndpoint() + LEDGER_QUERY;
+  private static String LEDGER_FYS_ENDPOINT = getEndpoint(FinanceStorageLedgerFiscalYears.class) + LEDGER_FY_QUERY;
   private static final String BUDGETS = "budgets";
   private static final String LEDGERS = "ledgers";
 
@@ -53,7 +60,7 @@ class TransactionTest extends TestBase {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/allocation.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     jsonTx.remove("id");
     String transactionSample = jsonTx.toString();
 
@@ -67,11 +74,19 @@ class TransactionTest extends TestBase {
     String toBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, toFundId);
     String toLedgerEndpointWithQueryParams = String.format(LEDGERS_QUERY, toFundId);
 
+
     Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
     Budget toBudgetBefore = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
 
-    Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
-    Ledger toLedgerBefore = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+    Ledger fromLedger = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    Ledger toLedger = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+
+    String fromLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, fromLedger.getId(), fY);
+    String toLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, toLedger.getId(), fY);
+
+    LedgerFY fromLedgerFYBefore = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
+    LedgerFY toLedgerFYBefore = getLedgerFYAndValidate(toLedgerFYEndpointWithQueryParams);
+
 
     // create Allocation
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
@@ -81,8 +96,8 @@ class TransactionTest extends TestBase {
 
     Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
     Budget toBudgetAfter = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
-    Ledger fromLedgerAfter = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
-    Ledger toLedgerAfter = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+    LedgerFY fromLedgerFYAfter = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
+    LedgerFY toLedgerFYAfter = getLedgerFYAndValidate(toLedgerFYEndpointWithQueryParams);
 
     // check source budget and ledger totals
     final Double amount = jsonTx.getDouble("amount");
@@ -95,28 +110,28 @@ class TransactionTest extends TestBase {
       expectedBudgetsAllocated = subtractValues(fromBudgetBefore.getAllocated(), amount);
       expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
 
-      expectedLedgersAllocated = subtractValues(fromLedgerBefore.getAllocated(), amount);
-      expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
+      expectedLedgersAllocated = subtractValues(fromLedgerFYBefore.getAllocated(), amount);
+      expectedLedgersAvailable = subtractValues(fromLedgerFYBefore.getAvailable(), amount);
 
       assertEquals(expectedBudgetsAllocated, fromBudgetAfter.getAllocated());
       assertEquals(expectedBudgetsAvailable, fromBudgetAfter.getAvailable());
 
-      assertEquals(expectedLedgersAllocated, fromLedgerAfter.getAllocated());
-      assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
+      assertEquals(expectedLedgersAllocated, fromLedgerFYAfter.getAllocated());
+      assertEquals(expectedLedgersAvailable, fromLedgerFYAfter.getAvailable());
     }
 
     // check destination budget and ledger totals
     expectedBudgetsAllocated = sumValues(toBudgetBefore.getAllocated(), amount);
     expectedBudgetsAvailable = sumValues(toBudgetBefore.getAvailable(), amount);
 
-    expectedLedgersAllocated = sumValues(toLedgerBefore.getAllocated(), amount);
-    expectedLedgersAvailable = sumValues(toLedgerBefore.getAvailable(), amount);
+    expectedLedgersAllocated = sumValues(toLedgerFYBefore.getAllocated(), amount);
+    expectedLedgersAvailable = sumValues(toLedgerFYBefore.getAvailable(), amount);
 
     assertEquals(expectedBudgetsAvailable, toBudgetAfter.getAvailable());
     assertEquals(expectedBudgetsAllocated, toBudgetAfter.getAllocated());
 
-    assertEquals(expectedLedgersAvailable, toLedgerAfter.getAvailable());
-    assertEquals(expectedLedgersAllocated, toLedgerAfter.getAllocated());
+    assertEquals(expectedLedgersAvailable, toLedgerFYAfter.getAvailable());
+    assertEquals(expectedLedgersAllocated, toLedgerFYAfter.getAllocated());
 
     // cleanup
     deleteTenant(TRANSACTION_TENANT_HEADER);
@@ -127,7 +142,7 @@ class TransactionTest extends TestBase {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/allocation.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     jsonTx.remove("id");
     jsonTx.remove("toFundId");
     String transactionSample = jsonTx.toString();
@@ -176,7 +191,7 @@ class TransactionTest extends TestBase {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/allocation.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     jsonTx.remove("id");
     String transactionSample = jsonTx.toString();
 
@@ -232,6 +247,38 @@ class TransactionTest extends TestBase {
   }
 
   @Test
+  void testCreateAllocationWithSourceLedgerFYNotExist() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
+
+    JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
+    jsonTx.remove("id");
+
+
+    String fY = "8da275b8-e099-49a1-9a31-b8241ff26ffc";
+    jsonTx.put("fiscalYearId", fY);
+    String fromFundId = "f31a36de-fcf8-44f9-87ef-a55d06ad21ae";
+    jsonTx.put("fromFundId", fromFundId);
+    String toFundId = "e54b1f4d-7d05-4b1a-9368-3c36b75d8ac6";
+    jsonTx.put("toFundId", toFundId);
+    String transactionSample = jsonTx.toString();
+
+    // try to create Allocation
+    given()
+      .header(TRANSACTION_TENANT_HEADER)
+      .accept(ContentType.TEXT)
+      .contentType(ContentType.JSON)
+      .body(transactionSample)
+      .log().all()
+      .post(storageUrl(TRANSACTION_ENDPOINT))
+      .then()
+      .statusCode(500);
+
+    // cleanup
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
+  @Test
   void testCreateTransfer() throws MalformedURLException {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
@@ -253,8 +300,14 @@ class TransactionTest extends TestBase {
     Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
     Budget toBudgetBefore = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
 
-    Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
-    Ledger toLedgerBefore = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+    Ledger fromLedger = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    Ledger toLedger = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+
+    String fromLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, fromLedger.getId(), fY);
+    String toLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, toLedger.getId(), fY);
+
+    LedgerFY fromLedgerFYBefore = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
+    LedgerFY toLedgerFYBefore = getLedgerFYAndValidate(toLedgerFYEndpointWithQueryParams);
 
     // create Allocation
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
@@ -264,8 +317,8 @@ class TransactionTest extends TestBase {
 
     Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
     Budget toBudgetAfter = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
-    Ledger fromLedgerAfter = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
-    Ledger toLedgerAfter = getLedgerAndValidate(toLedgerEndpointWithQueryParams);
+    LedgerFY fromLedgerFYAfter = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
+    LedgerFY toLedgerFYAfter = getLedgerFYAndValidate(toLedgerFYEndpointWithQueryParams);
 
     // check source budget and ledger totals
     final Double amount = jsonTx.getDouble("amount");
@@ -278,22 +331,22 @@ class TransactionTest extends TestBase {
       expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
       expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
 
-      expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
-      expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
+      expectedLedgersAvailable = subtractValues(fromLedgerFYBefore.getAvailable(), amount);
+      expectedLedgersUnavailable = sumValues(fromLedgerFYBefore.getUnavailable(), amount);
 
       assertEquals(expectedBudgetsAvailable, fromBudgetAfter.getAvailable());
       assertEquals(expectedBudgetsUnavailable , fromBudgetAfter.getUnavailable());
 
-      assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
-      assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
+      assertEquals(expectedLedgersAvailable, fromLedgerFYAfter.getAvailable());
+      assertEquals(expectedLedgersUnavailable , fromLedgerFYAfter.getUnavailable());
     }
 
     // check destination budget and ledger totals
     expectedBudgetsAvailable = sumValues(toBudgetBefore.getAvailable(), amount);
-    expectedLedgersAvailable = sumValues(toLedgerBefore.getAvailable(), amount);
+    expectedLedgersAvailable = sumValues(toLedgerFYBefore.getAvailable(), amount);
 
     assertEquals(expectedBudgetsAvailable, toBudgetAfter.getAvailable());
-    assertEquals(expectedLedgersAvailable, toLedgerAfter.getAvailable());
+    assertEquals(expectedLedgersAvailable, toLedgerFYAfter.getAvailable());
 
     // cleanup
     deleteTenant(TRANSACTION_TENANT_HEADER);
@@ -306,7 +359,7 @@ class TransactionTest extends TestBase {
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
     String orderId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 2);
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
 
     Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
@@ -325,7 +378,10 @@ class TransactionTest extends TestBase {
 
 
     Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
-    Ledger fromLedgerBefore = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    Ledger fromLedger = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+
+    String fromLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, fromLedger.getId(), fY);
+    LedgerFY fromLedgerFYBefore = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
 
     // create 1st Encumbrance, expected number is 2
     String encumbrance1Id = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
@@ -347,7 +403,7 @@ class TransactionTest extends TestBase {
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance2Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
     Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
-    Ledger fromLedgerAfter = getLedgerAndValidate(fromLedgerEndpointWithQueryParams);
+    LedgerFY fromLedgerFYAfter = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
 
     // check source budget and ledger totals
     final double amount = sumValues(encumbrance1.getAmount(), encumbrance2.getAmount());
@@ -363,15 +419,15 @@ class TransactionTest extends TestBase {
     expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
     expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
 
-    expectedLedgersAvailable = subtractValues(fromLedgerBefore.getAvailable(), amount);
-    expectedLedgersUnavailable = sumValues(fromLedgerBefore.getUnavailable(), amount);
+    expectedLedgersAvailable = subtractValues(fromLedgerFYBefore.getAvailable(), amount);
+    expectedLedgersUnavailable = sumValues(fromLedgerFYBefore.getUnavailable(), amount);
 
     assertEquals(expectedBudgetsEncumbered, fromBudgetAfter.getEncumbered());
     assertEquals(expectedBudgetsAvailable , fromBudgetAfter.getAvailable());
     assertEquals(expectedBudgetsUnavailable, fromBudgetAfter.getUnavailable());
 
-    assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
-    assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
+    assertEquals(expectedLedgersAvailable, fromLedgerFYAfter.getAvailable());
+    assertEquals(expectedLedgersUnavailable , fromLedgerFYAfter.getUnavailable());
 
 
     //create same encumbrances again
@@ -389,8 +445,8 @@ class TransactionTest extends TestBase {
     assertEquals(expectedBudgetsAvailable , fromBudgetAfter.getAvailable());
     assertEquals(expectedBudgetsUnavailable, fromBudgetAfter.getUnavailable());
 
-    assertEquals(expectedLedgersAvailable, fromLedgerAfter.getAvailable());
-    assertEquals(expectedLedgersUnavailable , fromLedgerAfter.getUnavailable());
+    assertEquals(expectedLedgersAvailable, fromLedgerFYAfter.getAvailable());
+    assertEquals(expectedLedgersUnavailable , fromLedgerFYAfter.getUnavailable());
 
     // cleanup
     deleteTenant(TRANSACTION_TENANT_HEADER);
@@ -402,7 +458,7 @@ class TransactionTest extends TestBase {
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
     String orderId = UUID.randomUUID().toString();
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
 
@@ -423,7 +479,7 @@ class TransactionTest extends TestBase {
 
     String orderId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 2);
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
 
@@ -449,7 +505,7 @@ class TransactionTest extends TestBase {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
 
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
 
@@ -472,7 +528,7 @@ class TransactionTest extends TestBase {
     String orderId = UUID.randomUUID().toString();
 
     createOrderSummary(orderId, 2);
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
 
@@ -501,7 +557,7 @@ class TransactionTest extends TestBase {
     String orderId = UUID.randomUUID().toString();
     createOrderSummary(orderId,  2);
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
 
     Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
@@ -560,7 +616,7 @@ class TransactionTest extends TestBase {
     String orderId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 2);
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
     encumbrance1.getEncumbrance().setSourcePurchaseOrderId(orderId);
@@ -650,7 +706,7 @@ class TransactionTest extends TestBase {
     String orderId = UUID.randomUUID().toString();
       createOrderSummary(orderId, 1);
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
     encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
@@ -703,7 +759,7 @@ class TransactionTest extends TestBase {
     String orderId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 2);
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
     encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
@@ -721,6 +777,14 @@ class TransactionTest extends TestBase {
       .body(LEDGERS, hasSize(1))
       .extract()
       .as(LedgerCollection.class).getLedgers().get(0);
+  }
+
+  private LedgerFY getLedgerFYAndValidate(String endpoint) throws MalformedURLException {
+    return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(200)
+      .body("ledgerFY", hasSize(1))
+      .extract()
+      .as(LedgerFYCollection.class).getLedgerFY().get(0);
   }
 
   private Budget getBudgetAndValidate(String endpoint) throws MalformedURLException {
