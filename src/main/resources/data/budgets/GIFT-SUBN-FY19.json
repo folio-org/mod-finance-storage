@@ -1,15 +1,10 @@
 {
   "id": "400afc07-4aa6-4dbb-8f2c-40cf8e69b0e6",
-  "name": "GIFT-SUBN-FY19",
+  "name": "GIFT-SUBN-FY2019",
   "budgetStatus": "Active",
   "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
-  "allocated": 25000.00,
-  "awaitingPayment": 4800.00,
-  "available": 18600.00,
-  "encumbered": 250.00,
-  "expenditures": 1350.00,
-  "overEncumbrance": 0,
+  "allocated": 0,
   "fundId": "e9f9bc2f-bad5-4613-9d6c-f55efa5805e7",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
 }

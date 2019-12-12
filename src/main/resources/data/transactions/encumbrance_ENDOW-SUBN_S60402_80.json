@@ -1,0 +1,19 @@
+{
+  "id": "7678d7e6-2826-4bf6-982d-01312d4a111a",
+  "amount": 199800,
+  "currency": "USD",
+  "encumbrance": {
+    "initialAmountEncumbered": 199800,
+    "status": "Released",
+    "orderType":  "Ongoing",
+    "subscription": false,
+    "reEncumber": false,
+    "sourcePurchaseOrderId": "07f65192-44a4-483d-97aa-b137bbd96390",
+    "sourcePoLineId": "a0fb5514-cdf1-11e8-a8d5-f2801f1b9fd1"
+  },
+  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
+  "fromFundId": "1714f71f-b845-444b-a79e-a577487a6f7d",
+  "source": "Voucher",
+  "sourceFiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
+  "transactionType": "Encumbrance"
+}
