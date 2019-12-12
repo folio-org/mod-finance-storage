@@ -658,8 +658,9 @@ class TransactionTest extends TestBase {
     double releasedAmount = encumbrance1.getAmount();
     double amountAwaitingPaymentDif = 5.5;
     encumbrance1.getEncumbrance().setStatus(Encumbrance.Status.RELEASED);
+    encumbrance2.setAmount(100d);
     encumbrance2.getEncumbrance().setStatus(Encumbrance.Status.UNRELEASED);
-    encumbrance2.getEncumbrance().setAmountAwaitingPayment(subtractValues(encumbrance2.getEncumbrance().getAmountAwaitingPayment(), 5.5));
+    encumbrance2.getEncumbrance().setAmountAwaitingPayment(sumValues(encumbrance2.getEncumbrance().getAmountAwaitingPayment(), 5.5));
 
     // First encumbrance update, save to temp table, changes won't get to transaction table
     putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
@@ -675,6 +676,9 @@ class TransactionTest extends TestBase {
     assertEquals(Encumbrance.Status.RELEASED, transaction1FromStorage.getEncumbrance().getStatus());
     assertEquals(0d, transaction1FromStorage.getAmount());
     assertEquals(transaction2FromStorage.getEncumbrance().getAmountAwaitingPayment(), encumbrance2.getEncumbrance().getAmountAwaitingPayment());
+    double expectedAmount = subtractValues(encumbrance2.getEncumbrance().getInitialAmountEncumbered(), encumbrance2.getEncumbrance().getAmountAwaitingPayment());
+    expectedAmount = subtractValues(expectedAmount, encumbrance2.getEncumbrance().getAmountExpended());
+    assertEquals(expectedAmount, transaction2FromStorage.getAmount());
 
     Budget fromBudgetAfterUpdate = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
 
