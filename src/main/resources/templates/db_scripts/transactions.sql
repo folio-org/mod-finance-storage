@@ -41,26 +41,28 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
         -- check if fromFundId exists
         IF (NEW.jsonb->'fromFundId' IS NOT NULL) THEN
           -- Update Budget identified by the transactions fiscal year (fiscalYearId) and source fund (fromFundId)
-          SELECT INTO fromBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'fromFundId');
+          SELECT INTO fromBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget
+            WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'fromFundId');
           IF (fromBudget IS NULL) THEN
             RAISE EXCEPTION 'source budget not found';
           END IF;
           --
-          fromBudgetAvailable = (SELECT COALESCE(fromBudget->>'available', '0'))::decimal - amount;
-          fromBudgetUnavailable = (SELECT COALESCE(fromBudget->>'unavailable', '0'))::decimal + amount;
+          fromBudgetAvailable = (fromBudget->>'available')::decimal - amount;
+          fromBudgetUnavailable = (fromBudget->>'unavailable')::decimal + amount;
 
           IF (transactionType = 'Allocation') THEN
-            fromBudgetAllocated = (SELECT COALESCE(fromBudget->>'allocated', '0'))::decimal - amount;
+            fromBudgetAllocated = (fromBudget->>'allocated')::decimal - amount;
             newBudgetValues = '{allocated,' || fromBudgetAllocated || ', available, ' || fromBudgetAvailable ||'}';
           ELSIF (transactionType = 'Transfer') THEN
             newBudgetValues = '{available, ' || fromBudgetAvailable || ', unavailable, ' || fromBudgetUnavailable ||'}';
           ELSIF (transactionType = 'Encumbrance') THEN
-            fromBudgetEncumbered = (SELECT COALESCE(fromBudget->>'encumbered', '0'))::decimal + amount;
+            fromBudgetEncumbered = (fromBudget->>'encumbered')::decimal + amount;
             --TODO: Budget overEncumbered will be calculated in a follow-on story
             newBudgetValues = '{available, ' || fromBudgetAvailable || ', unavailable, ' || fromBudgetUnavailable || ', encumbered, ' || fromBudgetEncumbered ||'}';
           END IF;
 
-          UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'fromFundId');
+          UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb
+            WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'fromFundId');
 
 
           -- Update LedgerFY identified by the transaction's fiscal year (fiscalYearId) and the source fund (fromFundId)
@@ -72,11 +74,11 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
             RAISE EXCEPTION 'Ledger fiscal year for source ledger not found';
           END IF;
 
-          fromLedgerFYAvailable = (SELECT COALESCE(fromLedgerFY->>'available', '0'))::decimal - amount;
-          fromLedgerFYUnavailable = (SELECT COALESCE(fromLedgerFY->>'unavailable', '0'))::decimal + amount;
+          fromLedgerFYAvailable = (fromLedgerFY->>'available')::decimal - amount;
+          fromLedgerFYUnavailable = (fromLedgerFY->>'unavailable')::decimal + amount;
 
           IF (transactionType = 'Allocation') THEN
-            fromLedgerFYAllocated = (SELECT COALESCE(fromLedgerFY->>'allocated', '0'))::decimal - amount;
+            fromLedgerFYAllocated = (fromLedgerFY->>'allocated')::decimal - amount;
             newLedgerValues = '{allocated,' || fromLedgerFYAllocated || ', available, ' || fromLedgerFYAvailable || '}';
           ELSIF (transactionType = 'Transfer' OR transactionType = 'Encumbrance') THEN
             newLedgerValues = '{available, ' || fromLedgerFYAvailable || ', unavailable, ' || fromLedgerFYUnavailable ||'}';
@@ -95,9 +97,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
               RAISE EXCEPTION 'destination budget not found';
             END IF;
 
-            toBudgetAvailable = (SELECT COALESCE(toBudget->>'available', '0'))::decimal + amount;
+            toBudgetAvailable = (toBudget->>'available')::decimal + amount;
             IF (transactionType = 'Allocation') THEN
-              toBudgetAllocated = (SELECT COALESCE(toBudget->>'allocated', '0'))::decimal + amount;
+              toBudgetAllocated = (toBudget->>'allocated')::decimal + amount;
               newBudgetValues = '{allocated,' || toBudgetAllocated || ', available, ' || toBudgetAvailable ||'}';
             ELSIF (transactionType = 'Transfer') THEN
               newBudgetValues = '{available, ' || toBudgetAvailable ||'}';
@@ -115,9 +117,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
               RAISE EXCEPTION 'Ledger fiscal year for destination ledger not found';
             END IF;
 
-            toLedgerFYAvailable = (SELECT COALESCE(toLedgerFY->>'available', '0'))::decimal + amount;
+            toLedgerFYAvailable = (toLedgerFY->>'available')::decimal + amount;
             IF (transactionType = 'Allocation') THEN
-              toLedgerFYAllocated = (SELECT COALESCE(toLedgerFY->>'allocated', '0'))::decimal + amount;
+              toLedgerFYAllocated = (toLedgerFY->>'allocated')::decimal + amount;
               newLedgerValues = '{allocated,' || toLedgerFYAllocated || ', available, ' || toLedgerFYAvailable ||'}';
             ELSIF (transactionType = 'Transfer') THEN
               newLedgerValues = '{available, ' || toLedgerFYAvailable ||'}';
