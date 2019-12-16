@@ -9,6 +9,7 @@ The primary focus of this release was to fix logic for the finance calculated va
 * [MODFISTO-67](https://issues.folio.org/browse/MODFISTO-67)  Update RMB to 29.1.1
 
 ### Bug Fixes
+* [MODFISTO-72](https://issues.folio.org/browse/MODFISTO-72)  ledgerFY.unavailable and budget.unavailable must not change during Transfer
 * [MODFISTO-71](https://issues.folio.org/browse/MODFISTO-71)  Persist totals to ledgerFY table
 * [MODFISTO-68](https://issues.folio.org/browse/MODFISTO-68)  Fix Transaction Calculations - Encumbrance upon update
 
