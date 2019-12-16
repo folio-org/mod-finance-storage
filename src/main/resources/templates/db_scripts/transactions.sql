@@ -16,12 +16,10 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
     toBudget                    jsonb;
     toBudgetAllocated           decimal;
     toBudgetAvailable           decimal;
-    toBudgetUnavailable         decimal;
 
     toLedgerFY                    jsonb;
     toLedgerFYAllocated           decimal;
     toLedgerFYAvailable           decimal;
-    toLedgerFYUnavailable         decimal;
 
     newBudgetValues             text[];
     newLedgerValues             text[];
@@ -54,7 +52,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
             fromBudgetAllocated = (fromBudget->>'allocated')::decimal - amount;
             newBudgetValues = '{allocated,' || fromBudgetAllocated || ', available, ' || fromBudgetAvailable ||'}';
           ELSIF (transactionType = 'Transfer') THEN
-            newBudgetValues = '{available, ' || fromBudgetAvailable || ', unavailable, ' || fromBudgetUnavailable ||'}';
+            newBudgetValues = '{available, ' || fromBudgetAvailable || '}';
           ELSIF (transactionType = 'Encumbrance') THEN
             fromBudgetEncumbered = (fromBudget->>'encumbered')::decimal + amount;
             --TODO: Budget overEncumbered will be calculated in a follow-on story
@@ -80,7 +78,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
           IF (transactionType = 'Allocation') THEN
             fromLedgerFYAllocated = (fromLedgerFY->>'allocated')::decimal - amount;
             newLedgerValues = '{allocated,' || fromLedgerFYAllocated || ', available, ' || fromLedgerFYAvailable || '}';
-          ELSIF (transactionType = 'Transfer' OR transactionType = 'Encumbrance') THEN
+          ELSEIF (transactionType = 'Transfer') THEN
+            newLedgerValues = '{available, ' || fromLedgerFYAvailable ||'}';
+          ELSIF (transactionType = 'Encumbrance') THEN
             newLedgerValues = '{available, ' || fromLedgerFYAvailable || ', unavailable, ' || fromLedgerFYUnavailable ||'}';
           END IF;
 

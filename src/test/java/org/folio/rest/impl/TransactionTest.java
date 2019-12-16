@@ -323,22 +323,18 @@ class TransactionTest extends TestBase {
     // check source budget and ledger totals
     final Double amount = jsonTx.getDouble("amount");
     double expectedBudgetsAvailable;
-    double expectedBudgetsUnavailable;
     double expectedLedgersAvailable;
-    double expectedLedgersUnavailable;
 
     if (StringUtils.isNotEmpty(jsonTx.getString("fromFundId"))){
       expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
-      expectedBudgetsUnavailable = sumValues(fromBudgetBefore.getUnavailable(), amount);
 
       expectedLedgersAvailable = subtractValues(fromLedgerFYBefore.getAvailable(), amount);
-      expectedLedgersUnavailable = sumValues(fromLedgerFYBefore.getUnavailable(), amount);
 
       assertEquals(expectedBudgetsAvailable, fromBudgetAfter.getAvailable());
-      assertEquals(expectedBudgetsUnavailable , fromBudgetAfter.getUnavailable());
+      assertEquals(fromBudgetBefore.getUnavailable() , fromBudgetAfter.getUnavailable());
 
       assertEquals(expectedLedgersAvailable, fromLedgerFYAfter.getAvailable());
-      assertEquals(expectedLedgersUnavailable , fromLedgerFYAfter.getUnavailable());
+      assertEquals(fromLedgerFYBefore.getUnavailable() , fromLedgerFYAfter.getUnavailable());
     }
 
     // check destination budget and ledger totals
