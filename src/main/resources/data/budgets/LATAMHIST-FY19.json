@@ -1,14 +1,10 @@
 {
   "id": "53c28e77-4623-4af7-ad3d-60a9ba470c45",
-  "name": "LATAMHIST-FY19",
+  "name": "LATAMHIST-FY2019",
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 12000.00,
-  "awaitingPayment": 72.29,
-  "available": 7350.46,
-  "encumbered": 3507.55,
-  "expenditures": 1069.7,
+  "allocated": 0.00,
   "overEncumbrance": 0,
   "fundId": "e6d7e91a-4dbc-4a70-9b38-e000d2fbdc79",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"

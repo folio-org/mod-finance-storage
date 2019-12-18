@@ -5,9 +5,6 @@
   "description": "This is the ledger for the Main Library",
   "fiscalYearOneId": "8da275b8-e099-49a1-9a31-b8241ff26ffc",
   "ledgerStatus": "Active",
-  "allocated": 2000,
-  "available": 1000,
-  "unavailable": 1000,
   "currency": "USD",
   "acqUnitIds": [
     "0ebb1f7d-983f-3026-8a4c-5318e0ebc041"

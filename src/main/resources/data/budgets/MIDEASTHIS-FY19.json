@@ -1,15 +1,10 @@
 {
   "id": "4eadbf22-e6dc-4ea4-9453-c6e9de2cb5a8",
-  "name": "MIDEASTHIS-FY19",
+  "name": "MIDEASTHIS-FY2019",
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 24000.00,
-  "awaitingPayment": 144.58,
-  "available": 14700.91,
-  "encumbered": 7015.1,
-  "expenditures": 2139.41,
-  "overEncumbrance": 0,
+  "allocated": 0.00,
   "fundId": "30fcc8e7-a019-43f4-b642-2edc389f4501",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
 }

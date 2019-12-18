@@ -5,9 +5,6 @@
   "description": "Funds used for all recurring purchases",
   "fiscalYearOneId": "8da275b8-e099-49a1-9a31-b8241ff26ffc",
   "ledgerStatus": "Frozen",
-  "allocated": 2400,
-  "available": 100,
-  "unavailable": 2300,
   "currency": "USD",
   "acqUnitIds": [
     "0ebb1f7d-983f-3026-8a4c-5318e0ebc041"
