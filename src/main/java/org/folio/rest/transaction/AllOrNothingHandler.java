@@ -1,6 +1,7 @@
 package org.folio.rest.transaction;
 
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.impl.LedgerAPI.LEDGER_TABLE;
 import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValue;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
 import static org.folio.rest.persist.HelperUtils.rollbackTransaction;
@@ -14,13 +15,19 @@ import java.util.function.Function;
 
 import javax.ws.rs.core.Response;
 
+import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Ledger;
+import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.HelperUtils;
+import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.javamoney.moneta.Money;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -34,6 +41,9 @@ import io.vertx.ext.web.handler.impl.HttpStatusException;
 public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   public static final String BUDGET_NOT_FOUND_FOR_TRANSACTION = "Budget not found for transaction";
+  public static final String LEDGER_NOT_FOUND_FOR_TRANSACTION = "Ledger not found for transaction";
+  public static final String BUDGET_IS_INACTIVE = "Cannot create encumbrance from the not active budget";
+  public static final String FUND_CANNOT_BE_PAID = "Fund cannot be paid due to restrictions";
   private String temporaryTransactionTable;
   private String summaryTable;
   private boolean isLastRecord;
@@ -114,7 +124,8 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       Function<Tx<List<Transaction>>, Future<Tx<List<Transaction>>>> processTransactions) {
     try {
       handleValidationError(transaction);
-      return verifyBudgetExistence(transaction)
+      return getExistentBudget(transaction)
+        .compose(budget -> verifyEncumbranceRestrictions(transaction, budget))
         .compose(v -> createTempTransaction(transaction))
         .compose(this::getSummary)
         .compose(this::getTempTransactions)
@@ -137,21 +148,39 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   }
 
-  protected Future<Void> verifyBudgetExistence(Transaction transaction){Promise<Void> promise = Promise.promise();
+  protected Future<Budget> getExistentBudget(Transaction transaction) {
+    Promise<Budget> promise = Promise.promise();
     Criteria criteria = getCriteriaByFieldNameAndValue("fundId", "=", transaction.getFromFundId());
     Criteria criteria1 = getCriteriaByFieldNameAndValue("fiscalYearId", "=", transaction.getFiscalYearId());
     Criterion criterion = new Criterion();
     criterion.addCriterion(criteria, "AND", criteria1);
-    getPostgresClient().get(BUDGET_TABLE, Transaction.class, criterion,true, reply -> {
+    getPostgresClient().get(BUDGET_TABLE, Budget.class, criterion,true, reply -> {
       if (reply.failed()) {
         handleFailure(promise, reply);
       } else if (reply.result().getResults().isEmpty()) {
         log.error(BUDGET_NOT_FOUND_FOR_TRANSACTION);
         promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_NOT_FOUND_FOR_TRANSACTION));
       } else {
-        promise.complete();
+        promise.complete(reply.result().getResults().get(0));
       }
     });
+    return promise.future();
+  }
+
+  private Future<Ledger> getExistentLedger(Transaction transaction) {
+    Promise<Ledger> promise = Promise.promise();
+    String query = "fund.id"+"="+ transaction.getFromFundId();
+    PgUtil.get(LEDGER_TABLE, Ledger.class, LedgerCollection.class, query , 0, 1, getOkapiHeaders(), getVertxContext(),
+      FinanceStorageLedgers.GetFinanceStorageLedgersResponse.class, reply-> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+          } else if (((LedgerCollection) reply.result().getEntity()).getLedgers().isEmpty()) {
+          log.error(LEDGER_NOT_FOUND_FOR_TRANSACTION);
+          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), LEDGER_NOT_FOUND_FOR_TRANSACTION));
+        } else {
+          promise.complete(((LedgerCollection) reply.result().getEntity()).getLedgers().get(0));
+        }
+      });
     return promise.future();
   }
 
@@ -263,6 +292,64 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         }
       });
     return promise.future();
+  }
+
+  private Future<Void> verifyEncumbranceRestrictions(Transaction transaction, Budget budget) {
+    Promise<Void> promise = Promise.promise();
+    if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
+      if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
+        log.error(BUDGET_IS_INACTIVE);
+        promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_IS_INACTIVE));
+      } else {
+        return checkLedgerRestrictions(transaction, budget);
+      }
+    } else {
+      promise.complete();
+    }
+    return promise.future();
+  }
+
+  private Future<Void> checkLedgerRestrictions(Transaction transaction, Budget budget) {
+    Promise<Void> promise = Promise.promise();
+    getExistentLedger(transaction).setHandler(result -> {
+      if (result.succeeded()) {
+        if (result.result().getRestrictEncumbrance() && budget.getAllowableEncumbrance() != null) {
+          Double remainingAmountForEncumbrance = getBudgetRemainingAmountForEncumbrance(budget, transaction.getCurrency());
+          if (remainingAmountForEncumbrance < transaction.getAmount()) {
+            promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID));
+            return;
+          }
+        }
+        promise.complete();
+      } else {
+        promise.fail(result.cause());
+      }
+    });
+    return promise.future();
+  }
+
+  /**
+   * Calculates remaining amount for encumbrance
+   * [remaining amount] = (allocated * allowableEncumbered) - (allocated - (unavailable + available)) - (encumbered + awaitingPayment)
+   *
+   * @param budget     processed budget
+   * @param currency   processed transaction currency
+   * @return remaining amount for encumbrance
+   */
+  private Double getBudgetRemainingAmountForEncumbrance(Budget budget, String currency) {
+    Money allocated = Money.of(budget.getAllocated(), currency);
+    // get allowableEncumbered converted from percentage value
+    Double allowableEncumbered = Money.of(budget.getAllowableEncumbrance(), currency).divide(100d).getNumber().doubleValue();
+    Money unavailable = Money.of(budget.getUnavailable(), currency);
+    Money available = Money.of(budget.getAvailable(), currency);
+    Money encumbered = Money.of(budget.getEncumbered(), currency);
+    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
+
+    Money result = allocated.multiply(allowableEncumbered);
+    result = result.subtract(allocated.subtract(unavailable.add(available)));
+    result = result.subtract(encumbered.add(awaitingPayment));
+
+    return result.getNumber().doubleValue();
   }
 
   String getTemporaryTransactionTable() {
