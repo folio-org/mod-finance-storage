@@ -18,6 +18,9 @@ class TransactionsSummariesTest extends TestBase {
   static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
   private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
 
+  static final String INVOICE_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/invoice-transaction-summaries";
+  private static final String INVOICE_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = INVOICE_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
+
   @Test
   void testOrderTransactionSummaries() throws MalformedURLException {
     OrderTransactionSummary sample = new JsonObject(getFile("order_transaction_summary.sample")).mapTo(OrderTransactionSummary.class);

@@ -2,25 +2,11 @@ package org.folio.rest.transaction;
 
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValue;
+import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
 import static org.folio.rest.persist.HelperUtils.rollbackTransaction;
 import static org.folio.rest.persist.HelperUtils.startTx;
 import static org.folio.rest.persist.PostgresClient.pojo2json;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
-
-import javax.ws.rs.core.Response;
-
-import org.folio.rest.jaxrs.model.Errors;
-import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
-import org.folio.rest.persist.HelperUtils;
-import org.folio.rest.persist.Tx;
-import org.folio.rest.persist.Criteria.Criteria;
-import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -30,6 +16,20 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.ws.rs.core.Response;
+import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
+import org.folio.rest.persist.HelperUtils;
+import org.folio.rest.persist.Tx;
+import org.folio.rest.persist.Criteria.Criteria;
+import org.folio.rest.persist.Criteria.Criterion;
 
 public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
@@ -46,6 +46,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     this.isLastRecord = false;
   }
 
+  @Override
   public void createTransaction(Transaction transaction) {
     processAllOrNothing(transaction, this::createPermanentTransactions).setHandler(result -> {
       if (result.failed()) {
@@ -85,7 +86,9 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   abstract String createPermanentTransactionsQuery();
 
-  private Future<Tx<List<Transaction>>> createPermanentTransactions(Tx<List<Transaction>> tx) {
+  abstract int getSummaryCount(JsonObject summary);
+
+  protected Future<Tx<List<Transaction>>> createPermanentTransactions(Tx<List<Transaction>> tx) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
     List<Transaction> transactions = tx.getEntity();
     JsonArray param = new JsonArray();
@@ -137,15 +140,19 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   }
 
-  protected Future<Void> verifyBudgetExistence(Transaction transaction){Promise<Void> promise = Promise.promise();
-    Criteria criteria = getCriteriaByFieldNameAndValue("fundId", "=", transaction.getFromFundId());
+  protected Future<Void> verifyBudgetExistence(Transaction transaction) {
+    Promise<Void> promise = Promise.promise();
+    Criteria criteria = getCriteriaByFieldNameAndValue("fundId", "=", transaction.getTransactionType()
+      .equals(Transaction.TransactionType.CREDIT) ? transaction.getToFundId() : transaction.getFromFundId());
     Criteria criteria1 = getCriteriaByFieldNameAndValue("fiscalYearId", "=", transaction.getFiscalYearId());
     Criterion criterion = new Criterion();
     criterion.addCriterion(criteria, "AND", criteria1);
-    getPostgresClient().get(BUDGET_TABLE, Transaction.class, criterion,true, reply -> {
+    getPostgresClient().get(BUDGET_TABLE, Transaction.class, criterion, true, reply -> {
       if (reply.failed()) {
         handleFailure(promise, reply);
-      } else if (reply.result().getResults().isEmpty()) {
+      } else if (reply.result()
+        .getResults()
+        .isEmpty()) {
         log.error(BUDGET_NOT_FOUND_FOR_TRANSACTION);
         promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_NOT_FOUND_FOR_TRANSACTION));
       } else {
@@ -240,11 +247,53 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       } else {
         List<Transaction> transactions = reply.result()
           .getResults();
-        isLastRecord = transactions.size() == summary.getInteger("numTransactions");
+
+        isLastRecord = transactions.size() == getSummaryCount(summary);
         promise.complete(transactions);
       }
     });
     return promise.future();
+  }
+
+
+  protected Future<Tx<List<Transaction>>> updateBudgets(Tx<List<Transaction>> tx, List<Budget> budgets) {
+    Promise<Tx<List<Transaction>>> promise = Promise.promise();
+    List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
+    String sql = "UPDATE " + getFullTableName(getTenantId(), BUDGET_TABLE) + " AS budgets " +
+      "SET jsonb = b.jsonb FROM (VALUES  " + getValues(jsonBudgets) + ") AS b (id, jsonb) " +
+      "WHERE b.id::uuid = budgets.id;";
+    tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
+      if (reply.failed()) {
+        handleFailure(promise, reply);
+      } else {
+        promise.complete(tx);
+      }
+    });
+    return promise.future();
+  }
+
+
+  protected Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
+    Promise<Tx<List<Transaction>>> promise = Promise.promise();
+    List<JsonObject> transactions = (tx.getEntity().stream().map(JsonObject::mapFrom).collect(Collectors.toList()));
+
+    String sql = "UPDATE " + getFullTransactionTableName() + " AS transactions " +
+      "SET jsonb = t.jsonb FROM (VALUES  "+ getValues(transactions) +") AS t (id, jsonb) " +
+      "WHERE t.id::uuid = transactions.id;";
+    tx.getPgClient()
+      .execute(tx.getConnection(), sql, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete(tx);
+        }
+      });
+    return promise.future();
+  }
+
+
+  protected String getValues(List<JsonObject> entities) {
+    return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));
   }
 
   private Future<Tx<List<Transaction>>> deleteTempTransactions(Tx<List<Transaction>> tx) {

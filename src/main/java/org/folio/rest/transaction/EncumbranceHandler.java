@@ -10,6 +10,14 @@ import static org.folio.rest.persist.HelperUtils.getCriterionByFieldNameAndValue
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,11 +25,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.ws.rs.core.Response;
-
 import org.apache.commons.collections4.keyvalue.MultiKey;
 import org.apache.commons.collections4.map.MultiKeyMap;
 import org.folio.rest.jaxrs.model.Budget;
@@ -35,14 +41,7 @@ import org.folio.rest.persist.MoneyUtils;
 import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criterion;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+
 
 public class EncumbranceHandler extends AllOrNothingHandler {
 
@@ -155,25 +154,6 @@ public class EncumbranceHandler extends AllOrNothingHandler {
       .compose(budgets -> updateBudgets(tx, budgets));
   }
 
-  private Future<Tx<List<Transaction>>> updateBudgets(Tx<List<Transaction>> tx, List<Budget> budgets) {
-    Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
-    String sql = "UPDATE " + getFullTableName(getTenantId(), BUDGET_TABLE) + " AS budgets " +
-      "SET jsonb = b.jsonb FROM (VALUES  " + getValues(jsonBudgets) + ") AS b (id, jsonb) " +
-      "WHERE b.id::uuid = budgets.id;";
-    tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
-      if (reply.failed()) {
-        handleFailure(promise, reply);
-      } else {
-        promise.complete(tx);
-      }
-    });
-    return promise.future();
-  }
-
-  private String getValues(List<JsonObject> entities) {
-    return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));
-  }
 
   private Future<List<Budget>> getBudgets(Tx<List<Transaction>> tx) {
     Promise<List<Budget>> promise = Promise.promise();
@@ -254,23 +234,6 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   }
 
-  private Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
-    Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    List<JsonObject> transactions = (tx.getEntity().stream().map(JsonObject::mapFrom).collect(Collectors.toList()));
-
-    String sql = "UPDATE " + getFullTransactionTableName() + " AS transactions " +
-      "SET jsonb = t.jsonb FROM (VALUES  "+ getValues(transactions) +") AS t (id, jsonb) " +
-      "WHERE t.id::uuid = transactions.id;";
-    tx.getPgClient()
-      .execute(tx.getConnection(), sql, reply -> {
-        if (reply.failed()) {
-          handleFailure(promise, reply);
-        } else {
-          promise.complete(tx);
-        }
-      });
-    return promise.future();
-  }
 
   private Future<List<Transaction>> getPermanentTransactions(String summaryId) {
     Promise<List<Transaction>> promise = Promise.promise();
@@ -302,6 +265,11 @@ public class EncumbranceHandler extends AllOrNothingHandler {
       }
     });
     return promise.future();
+  }
+
+  @Override
+  int getSummaryCount(JsonObject summary){
+    return summary.getInteger("numTransactions");
   }
 
 }

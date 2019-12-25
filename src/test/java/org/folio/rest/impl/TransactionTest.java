@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
+import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -14,7 +15,6 @@ import static org.folio.rest.utils.TestEntities.TRANSACTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
@@ -26,6 +26,7 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
@@ -444,6 +445,14 @@ class TransactionTest extends TestBase {
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
 
+  private void createInvoiceSummary(String invoiceId, int numOfPaymentsCredits) throws MalformedURLException {
+    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId)
+      .withNumEncumbrances(0)
+      .withNumPaymentsCredits(numOfPaymentsCredits);
+    postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
+      .encodePrettily(), TRANSACTION_TENANT_HEADER);
+  }
+
   @Test
   void testCreateEncumbranceWithMissedRequiredFields() throws MalformedURLException {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
@@ -710,6 +719,185 @@ class TransactionTest extends TestBase {
     deleteTenant(TRANSACTION_TENANT_HEADER);
   }
 
+  @Test
+  void testCreatePaymentsCreditsAllOrNothing() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
+    String invoiceId = UUID.randomUUID().toString();
+    String orderId = UUID.randomUUID().toString();
+    createOrderSummary(orderId, 2);
+    createInvoiceSummary(invoiceId, 2);
+    JsonObject jsonTx = new JsonObject(getFile("data/transactions/encumbrance.json"));
+    jsonTx.remove("id");
+
+    Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
+    encumbrance1.getEncumbrance().setSourcePurchaseOrderId(orderId);
+
+    Transaction encumbrance2 = jsonTx.mapTo(Transaction.class);
+    encumbrance2.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance2.getEncumbrance().setSourcePoLineId(UUID.randomUUID().toString());
+    String fY = encumbrance1.getFiscalYearId();
+    String fromFundId = encumbrance1.getFromFundId();
+
+
+    // prepare budget/ledger queries
+    String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+
+
+    // create 1st Encumbrance, expected number is 2
+    String encumbrance1Id = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class).getId();
+
+    // create 2nd Encumbrance
+    String encumbrance2Id = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance2).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class).getId();
+
+    Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+
+    JsonObject paymentjsonTx = new JsonObject(getFile("data/transactions/payment.json"));
+    paymentjsonTx.remove("id");
+
+    Transaction payment = paymentjsonTx.mapTo(Transaction.class);
+    payment.setSourceInvoiceId(invoiceId);
+    payment.setFiscalYearId(fY);
+    payment.setPaymentEncumbranceId(encumbrance1Id);
+
+    String paymentId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    .statusCode(201)
+    .extract()
+    .as(Transaction.class).getId();
+
+    // payment does not appear in transaction table
+    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(404);
+
+    JsonObject creditjsonTx = new JsonObject(getFile("data/transactions/credit.json"));
+    creditjsonTx.remove("id");
+
+    Transaction credit = creditjsonTx.mapTo(Transaction.class);
+    credit.setSourceInvoiceId(invoiceId);
+    credit.setFiscalYearId(fY);
+    credit.setPaymentEncumbranceId(encumbrance2Id);
+
+
+    String creditId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    .statusCode(201)
+    .extract()
+    .as(Transaction.class).getId();
+
+    // 2 transactions appear in transaction table
+    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+
+
+    Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+
+    //awaiting payment must decreases by payment amount
+    assertEquals(-payment.getAmount(), subtractValues(fromBudgetAfter.getAwaitingPayment(), fromBudgetBefore.getAwaitingPayment()));
+    //encumbered must increase by credit amount
+    assertEquals(credit.getAmount(), subtractValues(fromBudgetAfter.getEncumbered(), fromBudgetBefore.getEncumbered()));
+    //expenditures must increase by payment amt and decrease by credit amount
+    assertEquals(subtractValues(payment.getAmount(),credit.getAmount()), subtractValues(fromBudgetAfter.getExpenditures(), fromBudgetBefore.getExpenditures()));
+
+    // cleanup
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
+  @Test
+  void testCreatePaymentsCreditsAllOrNothingWithNoEncumbrances() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
+    String invoiceId = UUID.randomUUID().toString();
+    createInvoiceSummary(invoiceId, 2);
+
+    JsonObject paymentjsonTx = new JsonObject(getFile("data/transactions/payment.json"));
+    paymentjsonTx.remove("id");
+
+    Transaction payment = paymentjsonTx.mapTo(Transaction.class);
+    payment.setSourceInvoiceId(invoiceId);
+    payment.setPaymentEncumbranceId(null);
+
+    String fY = payment.getFiscalYearId();
+    String fromFundId = payment.getFromFundId();
+
+
+    // prepare budget/ledger queries
+    String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+
+
+    Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+
+    String paymentId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    .statusCode(201)
+    .extract()
+    .as(Transaction.class).getId();
+
+    // payment does not appear in transaction table
+    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(404);
+
+    JsonObject creditjsonTx = new JsonObject(getFile("data/transactions/credit.json"));
+    creditjsonTx.remove("id");
+
+    Transaction credit = creditjsonTx.mapTo(Transaction.class);
+    credit.setSourceInvoiceId(invoiceId);
+    credit.setFiscalYearId(fY);
+    credit.setPaymentEncumbranceId(null);
+    credit.setAmount(30.0d);
+
+
+    String creditId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    .statusCode(201)
+    .extract()
+    .as(Transaction.class).getId();
+
+    // 2 transactions appear in transaction table
+    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+
+
+    Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+
+    //awaiting payment, encumberedmexpenditures must remain same
+    assertEquals(0.0, subtractValues(fromBudgetAfter.getAwaitingPayment(), fromBudgetBefore.getAwaitingPayment()));
+    assertEquals(0.0, subtractValues(fromBudgetAfter.getEncumbered(), fromBudgetBefore.getEncumbered()));
+    assertEquals(0.0, subtractValues(fromBudgetAfter.getExpenditures(), fromBudgetBefore.getExpenditures()));
+
+
+    //available must increase by payment value and increase by credit value
+    assertEquals(subtractValues(credit.getAmount(), payment.getAmount()), subtractValues(fromBudgetAfter.getAvailable(), fromBudgetBefore.getAvailable()));
+
+    //Unavailable must increase by payment value and increase by credit value
+    assertEquals(subtractValues(payment.getAmount(), credit.getAmount()), subtractValues(fromBudgetAfter.getUnavailable(), fromBudgetBefore.getUnavailable()));
+
+
+
+    // cleanup
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
+  @Test
+  void testCreatePaymentWithoutSummary() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
+    String invoiceId = UUID.randomUUID().toString();
+
+    JsonObject jsonTx = new JsonObject(getFile("data/transactions/payment.json"));
+    jsonTx.remove("id");
+    Transaction payment = jsonTx.mapTo(Transaction.class);
+
+    payment.setSourceInvoiceId(invoiceId);
+
+    String transactionSample = JsonObject.mapFrom(payment).encodePrettily();
+
+    postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(400);
+
+    // cleanup
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
 
   private Ledger getLedgerAndValidate(String endpoint) throws MalformedURLException {
     return getData(endpoint, TRANSACTION_TENANT_HEADER).then()

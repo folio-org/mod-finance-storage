@@ -9,6 +9,7 @@ import javax.ws.rs.core.Response;
 
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.jaxrs.resource.FinanceStorage;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFundTypes;
@@ -16,7 +17,6 @@ import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
-import org.folio.rest.jaxrs.resource.FinanceStorageOrderTransactionSummaries;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PostgresClient;
@@ -85,7 +85,9 @@ public class TenantReferenceAPI extends TenantAPI {
         .add("funds", getUriPath(FinanceStorageFunds.class))
         .add("budgets", getUriPath(FinanceStorageBudgets.class))
         .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
-        .add("order-transaction-summaries", getUriPath(FinanceStorageOrderTransactionSummaries.class))
+        .add("order-transaction-summaries", getUriPath(FinanceStorage.class)+"/order-transaction-summaries")
+        .add("invoice-transaction-summaries", getUriPath(FinanceStorage.class)+"/invoice-transaction-summaries")
+        .withPostOnly() //Payments and credits don't support PUT
         .add("transactions", getUriPath(FinanceStorageTransactions.class));
       loadData = true;
     }

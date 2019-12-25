@@ -11,9 +11,10 @@ import javax.ws.rs.core.Response;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Parameter;
-import org.folio.rest.jaxrs.resource.FinanceStorageOrderTransactionSummaries;
+import org.folio.rest.jaxrs.resource.FinanceStorage;
 import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
@@ -27,12 +28,15 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
-public class TransactionSummaryAPI implements FinanceStorageOrderTransactionSummaries {
-
-  private static final Logger log = LoggerFactory.getLogger(TransactionSummaryAPI.class);
+public class TransactionSummaryAPI implements FinanceStorage {
 
   public static final String ORDER_TRANSACTION_SUMMARIES = "order_transaction_summaries";
   public static final String ORDER_TRANSACTION_SUMMARIES_LOCATION_PREFIX = "/finance-storage/order-transaction-summaries/";
+  public static final String INVOICE_TRANSACTION_SUMMARIES = "invoice_transaction_summaries";
+  public static final String INVOICE_TRANSACTION_SUMMARIES_LOCATION_PREFIX = "/finance-storage/invoice-transaction-summaries/";
+
+  private static final Logger log = LoggerFactory.getLogger(TransactionSummaryAPI.class);
+
   private PostgresClient pgClient;
   private String tenantId;
 
@@ -46,7 +50,7 @@ public class TransactionSummaryAPI implements FinanceStorageOrderTransactionSumm
    *
    * @param summary            how many transactions (encumbrances) to expect for a particular
    *                           order.{@link OrderTransactionSummary#numTransactions} must be greater that 0
-   * 
+   *
    * @param okapiHeaders
    * @param asyncResultHandler An AsyncResult<Response> Handler {@link Handler} which must be called as follows - Note the
    *                           'GetPatronsResponse' should be replaced with '[nameOfYourFunction]Response': (example only)
@@ -59,7 +63,7 @@ public class TransactionSummaryAPI implements FinanceStorageOrderTransactionSumm
   public void postFinanceStorageOrderTransactionSummaries(OrderTransactionSummary summary, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     if (summary.getNumTransactions() < 1) {
-      handleValidationError(summary, asyncResultHandler);
+      handleValidationError(summary.getNumTransactions(), asyncResultHandler);
     } else {
       String sql = "INSERT INTO " + getFullTableName(tenantId, ORDER_TRANSACTION_SUMMARIES)
           + " (id, jsonb) VALUES (?, ?::JSON) ON CONFLICT (id) DO NOTHING";
@@ -93,10 +97,9 @@ public class TransactionSummaryAPI implements FinanceStorageOrderTransactionSumm
 
   }
 
-  private void handleValidationError(OrderTransactionSummary summary, Handler<AsyncResult<Response>> asyncResultHandler) {
+  private void handleValidationError(int numOfTransactions, Handler<AsyncResult<Response>> asyncResultHandler) {
     Parameter parameter = new Parameter().withKey("numTransactions")
-      .withValue(summary.getNumTransactions()
-        .toString());
+      .withValue(String.valueOf(numOfTransactions));
     Error error = new Error().withCode("-1")
       .withMessage("must be greater than or equal to 1")
       .withParameters(Collections.singletonList(parameter));
@@ -118,5 +121,59 @@ public class TransactionSummaryAPI implements FinanceStorageOrderTransactionSumm
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(ORDER_TRANSACTION_SUMMARIES, id, okapiHeaders, vertxContext,
         DeleteFinanceStorageOrderTransactionSummariesByIdResponse.class, asyncResultHandler);
+  }
+
+  @Override
+  public void postFinanceStorageInvoiceTransactionSummaries(InvoiceTransactionSummary summary, Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    if (summary.getNumPaymentsCredits() < 1) {
+      handleValidationError(summary.getNumPaymentsCredits(), asyncResultHandler);
+    } else {
+      String sql = "INSERT INTO " + getFullTableName(tenantId, INVOICE_TRANSACTION_SUMMARIES)
+          + " (id, jsonb) VALUES (?, ?::JSON) ON CONFLICT (id) DO NOTHING";
+      try {
+        JsonArray params = new JsonArray();
+        params.add(summary.getId());
+        params.add(pojo2json(summary));
+
+        pgClient.execute(sql, params, result -> {
+          if (result.failed()) {
+            String badRequestMessage = PgExceptionUtil.badRequestMessage(result.cause());
+            if (badRequestMessage != null) {
+              asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageInvoiceTransactionSummariesResponse
+                .respond400WithTextPlain(Response.Status.BAD_REQUEST.getReasonPhrase())));
+            } else {
+              asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageInvoiceTransactionSummariesResponse
+                .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())));
+            }
+          } else {
+            log.debug("Preparing response to client");
+            asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageInvoiceTransactionSummariesResponse
+              .respond201WithApplicationJson(summary, PostFinanceStorageInvoiceTransactionSummariesResponse.headersFor201()
+                .withLocation(ORDER_TRANSACTION_SUMMARIES_LOCATION_PREFIX + summary.getId()))));
+          }
+        });
+      } catch (Exception e) {
+        asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageInvoiceTransactionSummariesResponse
+          .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())));
+      }
+    }
+
+
+
+  }
+
+  @Override
+  public void getFinanceStorageInvoiceTransactionSummariesById(String id, String lang, Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.getById(INVOICE_TRANSACTION_SUMMARIES, InvoiceTransactionSummary.class, id, okapiHeaders, vertxContext,
+        GetFinanceStorageInvoiceTransactionSummariesByIdResponse.class, asyncResultHandler);
+  }
+
+  @Override
+  public void deleteFinanceStorageInvoiceTransactionSummariesById(String id, String lang, Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.deleteById(INVOICE_TRANSACTION_SUMMARIES, id, okapiHeaders, vertxContext,
+        DeleteFinanceStorageInvoiceTransactionSummariesByIdResponse.class, asyncResultHandler);
   }
 }
