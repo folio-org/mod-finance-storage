@@ -219,7 +219,7 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
     Criterion criterion = new Criterion(getCriteriaByFieldNameAndValue("encumbrance", "=", summaryId).addField("'sourcePurchaseOrderId'"));
 
-    getPostgresClient().get(TRANSACTION_TABLE, Transaction.class, criterion, true, false, reply -> {
+    getPostgresClient().get(TRANSACTION_TABLE, Transaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to extract permanent transaction by purchaseOrderId id={}", reply.cause(), summaryId);
         handleFailure(promise, reply);

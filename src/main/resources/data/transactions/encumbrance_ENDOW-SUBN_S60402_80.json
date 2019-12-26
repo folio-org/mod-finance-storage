@@ -1,9 +1,10 @@
 {
   "id": "7678d7e6-2826-4bf6-982d-01312d4a111a",
-  "amount": 199800,
+  "amount": 200,
   "currency": "USD",
   "encumbrance": {
-    "initialAmountEncumbered": 199800,
+    "initialAmountEncumbered": 200,
+    "amountAwaitingPayment": 200,
     "status": "Released",
     "orderType":  "Ongoing",
     "subscription": false,

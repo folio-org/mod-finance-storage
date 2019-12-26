@@ -459,14 +459,6 @@
     {
       "tableName": "temporary_invoice_transactions",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
-      "ginIndex": [
-        {
-          "fieldName": "sourceInvoiceId",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        }
-      ],
       "uniqueIndex": [
         {
           "fieldName": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",

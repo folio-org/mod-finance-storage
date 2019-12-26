@@ -150,7 +150,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Criteria criteria1 = getCriteriaByFieldNameAndValue("fiscalYearId", "=", transaction.getFiscalYearId());
     Criterion criterion = new Criterion();
     criterion.addCriterion(criteria, "AND", criteria1);
-    getPostgresClient().get(BUDGET_TABLE, Transaction.class, criterion, true, reply -> {
+    getPostgresClient().get(BUDGET_TABLE, Transaction.class, criterion, false, reply -> {
       if (reply.failed()) {
         handleFailure(promise, reply);
       } else if (reply.result()
@@ -243,7 +243,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
     Criterion criterion = getTransactionBySummaryIdCriterion(summary.getString("id"));
 
-    getPostgresClient().get(temporaryTransactionTable, Transaction.class, criterion, true, false, reply -> {
+    getPostgresClient().get(temporaryTransactionTable, Transaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to extract temporary transaction by summary id={}", reply.cause(), summary.getString("id"));
         handleFailure(promise, reply);

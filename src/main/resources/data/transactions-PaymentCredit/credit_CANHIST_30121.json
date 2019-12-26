@@ -9,6 +9,5 @@
   "sourceInvoiceId": "041c1fe8-adfa-44eb-b6b3-f85acdd71f81",
   "sourceInvoiceLineId": "ee60ee78-f487-4940-adcf-fa0726989823",
   "toFundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
-  "fromFundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
   "transactionType": "Credit"
 }

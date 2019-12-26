@@ -98,7 +98,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
   }
 
   private void handleValidationError(int numOfTransactions, Handler<AsyncResult<Response>> asyncResultHandler) {
-    Parameter parameter = new Parameter().withKey("numTransactions")
+    Parameter parameter = new Parameter().withKey("numOfTransactions")
       .withValue(String.valueOf(numOfTransactions));
     Error error = new Error().withCode("-1")
       .withMessage("must be greater than or equal to 1")
@@ -158,9 +158,6 @@ public class TransactionSummaryAPI implements FinanceStorage {
           .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())));
       }
     }
-
-
-
   }
 
   @Override

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -39,6 +40,10 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   private static final String TEMPORARY_INVOICE_TRANSACTIONS = "temporary_invoice_transactions";
   private static final String TRANSACTIONS_TABLE = "transaction";
+
+  Predicate<Transaction> hasEncumbrance = txn -> txn.getPaymentEncumbranceId() != null;
+  Predicate<Transaction> isPaymentTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.PAYMENT);
+  Predicate<Transaction> isCreditTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.CREDIT);
 
   public PaymentCreditHandler(Map<String, String> okapiHeaders, Context ctx, Handler<AsyncResult<Response>> asyncResultHandler) {
     super(TEMPORARY_INVOICE_TRANSACTIONS, INVOICE_TRANSACTION_SUMMARIES, okapiHeaders, ctx, asyncResultHandler);
@@ -77,6 +82,10 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   }
 
+  /**
+   * To avoid partial transactions, all payments and credits must be done in a database transaction
+   * @param tx
+   */
   public Future<Tx<List<Transaction>>> processAllPaymentsCredits(Tx<List<Transaction>> tx) {
     return updateEncumbranceTotals(tx).compose(this::updateBudgetsTotals)
       .compose(this::createPermanentTransactions);
@@ -97,23 +106,28 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
   private Map<String, Budget> calculatePaymentBudgetsTotals(List<Transaction> tempTransactions,
       Map<String, Budget> groupedBudgets) {
     Map<Budget, List<Transaction>> paymentBudgetsGrouped = tempTransactions.stream()
-      .filter(txn -> isPaymentTransaction(txn) && txn.getPaymentEncumbranceId() != null)
+      .filter(isPaymentTransaction.and(hasEncumbrance))
       .collect(groupingBy(transaction -> groupedBudgets.get(transaction.getFromFundId())));
 
-    paymentBudgetsGrouped.entrySet()
-      .forEach(this::updateBudgetPaymentTotals);
+    if (!paymentBudgetsGrouped.isEmpty()) {
+      log.debug("Calculating budget totals for payment transactions");
+      paymentBudgetsGrouped.entrySet()
+        .forEach(this::updateBudgetPaymentTotals);
+    }
 
     return groupedBudgets;
-
   }
 
   private Map<String, Budget> calculateCreditBudgetsTotals(List<Transaction> tempTransactions, Map<String, Budget> groupedBudgets) {
     Map<Budget, List<Transaction>> creditBudgetsGrouped = tempTransactions.stream()
-      .filter(txn -> isCreditTransaction(txn) && txn.getPaymentEncumbranceId() != null)
+      .filter(isCreditTransaction.and(hasEncumbrance))
       .collect(groupingBy(transaction -> groupedBudgets.get(transaction.getToFundId())));
 
-    creditBudgetsGrouped.entrySet()
-      .forEach(this::updateBudgetCreditTotals);
+    if (!creditBudgetsGrouped.isEmpty()) {
+      log.debug("Calculating budget totals for credit transactions");
+      creditBudgetsGrouped.entrySet()
+        .forEach(this::updateBudgetCreditTotals);
+    }
 
     return groupedBudgets;
   }
@@ -122,10 +136,13 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
       Map<String, Budget> groupedBudgets) {
     Map<Budget, List<Transaction>> noEncumbranceBudgetsGrouped = tempTransactions.stream()
       .filter(txn -> txn.getPaymentEncumbranceId() == null)
-      .collect(groupingBy(transaction -> groupedBudgets.get(transaction.getFromFundId())));
+      .collect(groupingBy(txn -> groupedBudgets.get(isCreditTransaction.test(txn) ? txn.getToFundId() : txn.getFromFundId())));
 
-    noEncumbranceBudgetsGrouped.entrySet()
-      .forEach(this::updateBudgetNoEncumbranceTotals);
+    if (!noEncumbranceBudgetsGrouped.isEmpty()) {
+      log.info("Calculating budget totals for payments/credits with no Encumbrances attached");
+      noEncumbranceBudgetsGrouped.entrySet()
+        .forEach(this::updateBudgetNoEncumbranceTotals);
+    }
 
     return groupedBudgets;
 
@@ -160,6 +177,12 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     return budget;
   }
 
+  /**
+   * For the payments and credits that do not have corresponding encumbrances, the available and unavailable amounts in the budget
+   * are re-calculated
+   *
+   * @param entry- Budget with list of transactions that do have encumbrances
+   */
   private Budget updateBudgetNoEncumbranceTotals(Map.Entry<Budget, List<Transaction>> entry) {
     Budget budget = entry.getKey();
     CurrencyUnit currency = Monetary.getCurrency(entry.getValue()
@@ -168,10 +191,10 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     entry.getValue()
       .stream()
       .forEach(txn -> {
-        if (isCreditTransaction(txn)) {
+        if (isCreditTransaction.test(txn)) {
           budget.setAvailable(MoneyUtils.sumMoney(budget.getAvailable(), txn.getAmount(), currency));
           budget.setUnavailable(MoneyUtils.subtractMoney(budget.getUnavailable(), txn.getAmount(), currency));
-        } else if (isPaymentTransaction(txn)) {
+        } else if (isPaymentTransaction.test(txn)) {
           budget.setAvailable(MoneyUtils.subtractMoney(budget.getAvailable(), txn.getAmount(), currency));
           budget.setUnavailable(MoneyUtils.sumMoney(budget.getUnavailable(), txn.getAmount(), currency));
         }
@@ -180,11 +203,12 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     return budget;
   }
 
-  private boolean isPaymentTransaction(Transaction txn) {
-    return txn.getTransactionType()
-      .equals(Transaction.TransactionType.PAYMENT);
-  }
-
+  /**
+   * Update the Encumbrance transaction attached to the payment/Credit(from paymentEncumbranceID)
+   * in a transaction
+   *
+   * @param tx : the list of payments and credits
+   */
   private Future<Tx<List<Transaction>>> updateEncumbranceTotals(Tx<List<Transaction>> tx) {
     Boolean noEncumbrances = tx.getEntity()
       .stream()
@@ -198,6 +222,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
       .collect(toMap(Transaction::getId, Function.identity())))
       .map(encumbrancesMap -> applyPayments(tx.getEntity(), encumbrancesMap))
       .map(encumbrancesMap -> applyCredits(tx.getEntity(), encumbrancesMap))
+      //update all the re-calculated encumbrances into the Transaction table
       .map(map -> new Tx<>(map.values()
         .stream()
         .collect(Collectors.toList()), tx.getPgClient()).withConnection(tx.getConnection()))
@@ -206,11 +231,22 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   }
 
+  /**
+   * <pre>
+   * Encumbrances are recalculated with the credit transaction as below:
+   * - expended decreases by credit transaction amount (min 0)
+   * - amount (effectiveEncumbrance) is recalculated= (initialAmountEncumbered - (amountAwaitingPayment + amountExpended))
+   * </pre>
+   */
   private Map<String, Transaction> applyCredits(List<Transaction> tempTxns, Map<String, Transaction> encumbrancesMap) {
 
     List<Transaction> tempCredits = tempTxns.stream()
-      .filter(this::isCreditTransaction)
+      .filter(isCreditTransaction.and(hasEncumbrance))
       .collect(Collectors.toList());
+
+    if (tempCredits.isEmpty()) {
+      return encumbrancesMap;
+    }
     CurrencyUnit currency = Monetary.getCurrency(tempCredits.get(0)
       .getCurrency());
     tempCredits.forEach(creditTxn -> {
@@ -221,7 +257,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
       encumbranceTxn.getEncumbrance()
         .setAmountExpended(newExpended);
 
-      //recalculate effectiveEncumbrance ( initialAmountEncumbered - (amountAwaitingPayment + amountExpended))
+      // recalculate effectiveEncumbrance ( initialAmountEncumbered - (amountAwaitingPayment + amountExpended))
       double newAmount = MoneyUtils.subtractMoney(encumbranceTxn.getEncumbrance()
         .getInitialAmountEncumbered(),
           MoneyUtils.sumMoney(encumbranceTxn.getEncumbrance()
@@ -236,10 +272,22 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     return encumbrancesMap;
   }
 
+  /**
+   * <pre>
+   * Encumbrances are recalculated with the payment transaction as below:
+   * - awaitingPayment decreases by payment transaction amount
+   * - expended increases by payment transaction amount
+   * - amount decreases by the payment transaction amount
+   * </pre>
+   */
   private Map<String, Transaction> applyPayments(List<Transaction> tempTxns, Map<String, Transaction> encumbrancesMap) {
     List<Transaction> tempPayments = tempTxns.stream()
-      .filter(this::isPaymentTransaction)
+      .filter(isPaymentTransaction.and(hasEncumbrance))
       .collect(Collectors.toList());
+    if (tempPayments.isEmpty()) {
+      return encumbrancesMap;
+    }
+
     CurrencyUnit currency = Monetary.getCurrency(tempPayments.get(0)
       .getCurrency());
     tempPayments.forEach(pymtTxn -> {
@@ -248,7 +296,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
         .getAmountAwaitingPayment(), pymtTxn.getAmount(), currency);
       double newExpended = MoneyUtils.sumMoney(encumbranceTxn.getEncumbrance()
         .getAmountExpended(), pymtTxn.getAmount(), currency);
-      double newAmount = MoneyUtils.subtractMoney(encumbranceTxn.getAmount(), pymtTxn.getAmount(), currency);
+      double newAmount = MoneyUtils.subtractMoneyNonNegative(encumbranceTxn.getAmount(), pymtTxn.getAmount(), currency);
 
       encumbranceTxn.getEncumbrance()
         .setAmountAwaitingPayment(newAwaitingPayment);
@@ -298,7 +346,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
     List<Error> errors = new ArrayList<>();
 
-    if (isCreditTransaction(transaction)) {
+    if (isCreditTransaction.test(transaction)) {
       errors.addAll(buildNullValidationError(transaction.getToFundId(), "toFundId"));
     } else {
       errors.addAll(buildNullValidationError(transaction.getFromFundId(), "fromFundId"));
@@ -309,11 +357,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
         .encode());
     }
 
-  }
-
-  private boolean isCreditTransaction(Transaction transaction) {
-    return transaction.getTransactionType()
-      .equals(Transaction.TransactionType.CREDIT);
   }
 
   @Override
