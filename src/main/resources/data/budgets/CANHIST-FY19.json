@@ -1,14 +1,10 @@
 {
   "id": "383c59f9-d420-4f37-87ad-c0f7ee0e0283",
-  "name": "CANHIST-FY19",
+  "name": "CANHIST-FY2019",
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 4000.00,
-  "awaitingPayment": 24.10,
-  "available": 2450.15,
-  "encumbered": 1169.18,
-  "expenditures": 356.57,
+  "allocated": 0.00,
   "overEncumbrance": 0,
   "fundId": "68872d8a-bf16-420b-829f-206da38f6c10",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"

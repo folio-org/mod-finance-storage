@@ -1,12 +1,26 @@
 ## 4.1.0 - Unreleased
 
+## 4.0.1 - Released
+The primary focus of this release was to fix logic for the finance calculated values
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.0.0...v4.0.1)
+
+### Stories
+* [MODFISTO-67](https://issues.folio.org/browse/MODFISTO-67)  Update RMB to 29.1.1
+
+### Bug Fixes
+* [MODFISTO-72](https://issues.folio.org/browse/MODFISTO-72)  ledgerFY.unavailable and budget.unavailable must not change during Transfer
+* [MODFISTO-71](https://issues.folio.org/browse/MODFISTO-71)  Persist totals to ledgerFY table
+* [MODFISTO-68](https://issues.folio.org/browse/MODFISTO-68)  Fix Transaction Calculations - Encumbrance upon update
+
+
 ## 4.0.0 - Released
 The primary focus of this release was to implement additional finance API and significantly update existent finance schemas.
 
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v3.0.0...v4.0.0)
 
 ### Stories
-* [MODFISTO-59](https://issues.folio.org/browse/MODFISTO-59)  Transaction Calculations - Encumbrance upon update	
+* [MODFISTO-59](https://issues.folio.org/browse/MODFISTO-59)  Transaction Calculations - Encumbrance upon update
 * [MODFISTO-56](https://issues.folio.org/browse/MODFISTO-56)  Support all-or-nothing operations for encumbrances by order
 * [MODFISTO-55](https://issues.folio.org/browse/MODFISTO-55)  Create order_transaction_summaries API
 * [MODFISTO-54](https://issues.folio.org/browse/MODFISTO-54)  Encumbrance Schema Updates
@@ -48,7 +62,7 @@ This release contains only changes about removing acquisitionsUnit from fund sch
 
 
 ## 2.0.0 - Released
-This release contains implementation of `encumbrance` and `fund` endpoints, finance schemas updates, created 
+This release contains implementation of `encumbrance` and `fund` endpoints, finance schemas updates, created
 unique index on fund `code` column.
 
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v1.1.0...v2.0.0)

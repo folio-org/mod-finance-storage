@@ -17,13 +17,14 @@ class TransactionsSummariesTest extends TestBase {
 
   static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
   private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
+  public static final String ORDERS_SUMMARY_SAMPLE = "data/order-transaction-summaries/order-306857_transaction-summary.json";
 
   static final String INVOICE_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/invoice-transaction-summaries";
   private static final String INVOICE_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = INVOICE_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
 
   @Test
   void testOrderTransactionSummaries() throws MalformedURLException {
-    OrderTransactionSummary sample = new JsonObject(getFile("order_transaction_summary.sample")).mapTo(OrderTransactionSummary.class);
+    OrderTransactionSummary sample = new JsonObject(getFile(ORDERS_SUMMARY_SAMPLE)).mapTo(OrderTransactionSummary.class);
     postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
       .encodePrettily(), TENANT_HEADER).as(OrderTransactionSummary.class);
 
@@ -37,7 +38,7 @@ class TransactionsSummariesTest extends TestBase {
 
   @Test
   void testOrderTransactionSummariesWithValidationError() throws MalformedURLException {
-    OrderTransactionSummary sample = new JsonObject(getFile("order_transaction_summary.sample")).mapTo(OrderTransactionSummary.class);
+    OrderTransactionSummary sample = new JsonObject(getFile(ORDERS_SUMMARY_SAMPLE)).mapTo(OrderTransactionSummary.class);
     sample.setNumTransactions(0);
     Error error = postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
       .encodePrettily(), TENANT_HEADER).then().statusCode(422).contentType(APPLICATION_JSON)
