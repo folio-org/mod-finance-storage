@@ -807,7 +807,7 @@ class TransactionTest extends TestBase {
 
     Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
 
-    JsonObject paymentjsonTx = new JsonObject(getFile("data/transactions/payment.json"));
+    JsonObject paymentjsonTx = new JsonObject(getFile("data/transactions-paymentCredit/payment.json"));
     paymentjsonTx.remove("id");
 
     Transaction payment = paymentjsonTx.mapTo(Transaction.class);
@@ -823,7 +823,7 @@ class TransactionTest extends TestBase {
     // payment does not appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(404);
 
-    JsonObject creditjsonTx = new JsonObject(getFile("data/transactions/credit.json"));
+    JsonObject creditjsonTx = new JsonObject(getFile("data/transactions-paymentCredit/credit.json"));
     creditjsonTx.remove("id");
 
     Transaction credit = creditjsonTx.mapTo(Transaction.class);
@@ -838,6 +838,9 @@ class TransactionTest extends TestBase {
     .as(Transaction.class).getId();
 
     // 2 transactions appear in transaction table
+    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
     getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
@@ -862,7 +865,7 @@ class TransactionTest extends TestBase {
     String invoiceId = UUID.randomUUID().toString();
     createInvoiceSummary(invoiceId, 2);
 
-    JsonObject paymentjsonTx = new JsonObject(getFile("data/transactions/payment.json"));
+    JsonObject paymentjsonTx = new JsonObject(getFile("data/transactions-paymentCredit/payment.json"));
     paymentjsonTx.remove("id");
 
     Transaction payment = paymentjsonTx.mapTo(Transaction.class);
@@ -887,7 +890,7 @@ class TransactionTest extends TestBase {
     // payment does not appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(404);
 
-    JsonObject creditjsonTx = new JsonObject(getFile("data/transactions/credit.json"));
+    JsonObject creditjsonTx = new JsonObject(getFile("data/transactions-paymentCredit/credit.json"));
     creditjsonTx.remove("id");
 
     Transaction credit = creditjsonTx.mapTo(Transaction.class);
@@ -933,7 +936,7 @@ class TransactionTest extends TestBase {
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
     String invoiceId = UUID.randomUUID().toString();
 
-    JsonObject jsonTx = new JsonObject(getFile("data/transactions/payment.json"));
+    JsonObject jsonTx = new JsonObject(getFile("data/transactions-paymentCredit/payment.json"));
     jsonTx.remove("id");
     Transaction payment = jsonTx.mapTo(Transaction.class);
 
