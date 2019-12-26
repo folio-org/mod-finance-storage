@@ -87,8 +87,9 @@ public class TenantReferenceAPI extends TenantAPI {
         .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
         .add("order-transaction-summaries", getUriPath(FinanceStorage.class)+"/order-transaction-summaries")
         .add("invoice-transaction-summaries", getUriPath(FinanceStorage.class)+"/invoice-transaction-summaries")
+        .add("transactions", getUriPath(FinanceStorageTransactions.class))
         .withPostOnly() //Payments and credits don't support PUT
-        .add("transactions", getUriPath(FinanceStorageTransactions.class));
+        .add("transactions-PaymentCredit", getUriPath(FinanceStorageTransactions.class));
       loadData = true;
     }
     return loadData;
