@@ -841,8 +841,8 @@ class TransactionTest extends TestBase {
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
     getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
-    getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
-    getDataById(TRANSACTION.getEndpointWithId(), encumbrance2Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
 
     Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);

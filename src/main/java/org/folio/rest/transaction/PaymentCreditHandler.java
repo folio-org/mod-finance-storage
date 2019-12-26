@@ -190,7 +190,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
       .stream()
       .allMatch(tx1 -> StringUtils.isBlank(tx1.getPaymentEncumbranceId()));
 
-    if (noEncumbrances) {
+    if (Boolean.TRUE.equals(noEncumbrances)) {
       return Future.succeededFuture(tx);
     }
 
@@ -286,31 +286,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     return promise.future();
   }
 
-  private Future<List<Budget>> getBudgets(Tx<List<Transaction>> tx) {
-    Promise<List<Budget>> promise = Promise.promise();
-    String sql = "SELECT DISTINCT ON (budgets.id) budgets.jsonb " + "FROM " + getFullTableName(getTenantId(), BUDGET_TABLE)
-        + " AS budgets " + "INNER JOIN " + getFullTemporaryTransactionTableName() + " AS transactions "
-        + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
-        + "WHERE transactions.sourceInvoiceId = ?";
-    JsonArray params = new JsonArray();
-    params.add(getSummaryId(tx.getEntity()
-      .get(0)));
-    tx.getPgClient()
-      .select(tx.getConnection(), sql, params, reply -> {
-        if (reply.failed()) {
-          handleFailure(promise, reply);
-        } else {
-          List<Budget> budgets = reply.result()
-            .getResults()
-            .stream()
-            .flatMap(JsonArray::stream)
-            .map(o -> new JsonObject(o.toString()).mapTo(Budget.class))
-            .collect(Collectors.toList());
-          promise.complete(budgets);
-        }
-      });
-    return promise.future();
-  }
+
 
   @Override
   public void updateTransaction(Transaction transaction) {
@@ -355,6 +331,14 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
   @Override
   int getSummaryCount(JsonObject summary){
     return summary.getInteger("numPaymentsCredits");
+  }
+
+  @Override
+  protected String getBudgetsQuery(){
+   return "SELECT DISTINCT ON (budgets.id) budgets.jsonb " + "FROM " + getFullTableName(getTenantId(), BUDGET_TABLE)
+    + " AS budgets " + "INNER JOIN " + getFullTemporaryTransactionTableName() + " AS transactions "
+    + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
+    + "WHERE transactions.sourceInvoiceId = ?";
   }
 
 }

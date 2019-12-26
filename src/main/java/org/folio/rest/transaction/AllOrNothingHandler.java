@@ -294,6 +294,31 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
+  protected Future<List<Budget>> getBudgets(Tx<List<Transaction>> tx) {
+    Promise<List<Budget>> promise = Promise.promise();
+    String sql = getBudgetsQuery();
+    JsonArray params = new JsonArray();
+    params.add(getSummaryId(tx.getEntity()
+      .get(0)));
+    tx.getPgClient()
+      .select(tx.getConnection(), sql, params, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          List<Budget> budgets = reply.result()
+            .getResults()
+            .stream()
+            .flatMap(JsonArray::stream)
+            .map(o -> new JsonObject(o.toString()).mapTo(Budget.class))
+            .collect(Collectors.toList());
+          promise.complete(budgets);
+        }
+      });
+    return promise.future();
+  }
+
+
+  protected abstract String getBudgetsQuery();
 
   protected String getValues(List<JsonObject> entities) {
     return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));
