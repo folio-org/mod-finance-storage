@@ -5,6 +5,7 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.persist.HelperUtils.getEndpoint;
+import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_IS_INACTIVE;
 import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.rest.transaction.AllOrNothingHandler.FUND_CANNOT_BE_PAID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
@@ -51,7 +52,7 @@ class TransactionTest extends TestBase {
   private static final String LEDGER_FY_QUERY = "?query=ledgerId==%s AND fiscalYearId==%s";
   public static final String ALLOCATION_SAMPLE = "data/transactions/allocation_AFRICAHIST-FY19_ANZHIST-FY19.json";
   public static final String ENCUMBRANCE_SAMPLE = "data/transactions/encumbrance_AFRICAHIST_306857_1.json";
-  public static final String ENCUMBRANCE_SAMPLE_2 = "data/transactions/encumbrance_EUROHIST_268758-02.json";
+  public static final String BUDGET_SAMPLE = "data/budgets/AFRICAHIST-FY19.json";
   private static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
   private static String LEDGERS_QUERY = LEDGER.getEndpoint() + LEDGER_QUERY;
   private static String LEDGER_FYS_ENDPOINT = getEndpoint(FinanceStorageLedgerFiscalYears.class) + LEDGER_FY_QUERY;
@@ -468,6 +469,35 @@ class TransactionTest extends TestBase {
     postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(400)
       .body(containsString(FUND_CANNOT_BE_PAID));
+
+    // cleanup
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
+  @Test
+  void testCreateEncumbranceFromInactiveBudget() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+    verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
+
+    // prepare budget
+    Budget sampleBudget = (new JsonObject(getFile(BUDGET_SAMPLE))).mapTo(Budget.class);
+    sampleBudget.setBudgetStatus(Budget.BudgetStatus.INACTIVE);
+    putData(BUDGET.getEndpointWithId(), sampleBudget.getId(), JsonObject.mapFrom(sampleBudget).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(204);
+
+    String orderId = UUID.randomUUID().toString();
+    createOrderSummary(orderId, 1);
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
+    jsonTx.remove("id");
+
+    Transaction encumbrance = jsonTx.mapTo(Transaction.class);
+    encumbrance.setAmount((double) Integer.MAX_VALUE);
+    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
+
+    // create Encumbrance
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(400)
+      .body(containsString(BUDGET_IS_INACTIVE));
 
     // cleanup
     deleteTenant(TRANSACTION_TENANT_HEADER);
