@@ -112,17 +112,6 @@ public class EncumbranceHandler extends AllOrNothingHandler {
     }
   }
 
-  private List<Error> buildNullValidationError(String value, String key) {
-    if (value == null) {
-      Parameter parameter = new Parameter().withKey(key)
-        .withValue("null");
-      Error error = new Error().withCode("-1")
-        .withMessage("may not be null")
-        .withParameters(Collections.singletonList(parameter));
-      return Collections.singletonList(error);
-    }
-    return Collections.emptyList();
-  }
 
   @Override
   String createTempTransactionQuery() {

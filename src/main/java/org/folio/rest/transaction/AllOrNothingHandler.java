@@ -16,6 +16,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,7 +24,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.HelperUtils;
@@ -324,6 +327,18 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   String getFullTemporaryTransactionTableName() {
     return HelperUtils.getFullTableName(getTenantId(), temporaryTransactionTable);
+  }
+
+  public List<Error> buildNullValidationError(String value, String key) {
+    if (value == null) {
+      Parameter parameter = new Parameter().withKey(key)
+        .withValue("null");
+      Error error = new Error().withCode("-1")
+        .withMessage("may not be null")
+        .withParameters(Collections.singletonList(parameter));
+      return Collections.singletonList(error);
+    }
+    return Collections.emptyList();
   }
 
 }

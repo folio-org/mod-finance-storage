@@ -2,6 +2,7 @@ package org.folio.rest.transaction;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.TransactionSummaryAPI.INVOICE_TRANSACTION_SUMMARIES;
 import static org.folio.rest.persist.HelperUtils.getCriterionByFieldNameAndValueNotJsonb;
@@ -16,6 +17,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -25,6 +27,8 @@ import javax.money.Monetary;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Error;
+import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.MoneyUtils;
@@ -92,10 +96,8 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   private Map<String, Budget> calculatePaymentBudgetsTotals(List<Transaction> tempTransactions,
       Map<String, Budget> groupedBudgets) {
-    // multi map grouped by FundId and FYId , so fetching budget is easier
     Map<Budget, List<Transaction>> paymentBudgetsGrouped = tempTransactions.stream()
-      .filter(txn -> txn.getTransactionType()
-        .equals(Transaction.TransactionType.PAYMENT) && txn.getPaymentEncumbranceId() != null)
+      .filter(txn -> isPaymentTransaction(txn) && txn.getPaymentEncumbranceId() != null)
       .collect(groupingBy(transaction -> groupedBudgets.get(transaction.getFromFundId())));
 
     paymentBudgetsGrouped.entrySet()
@@ -106,10 +108,8 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
   }
 
   private Map<String, Budget> calculateCreditBudgetsTotals(List<Transaction> tempTransactions, Map<String, Budget> groupedBudgets) {
-    // multi map grouped by FundId and FYId , so fetching budget is easier
     Map<Budget, List<Transaction>> creditBudgetsGrouped = tempTransactions.stream()
-      .filter(txn -> txn.getTransactionType()
-        .equals(Transaction.TransactionType.CREDIT) && txn.getPaymentEncumbranceId() != null)
+      .filter(txn -> isCreditTransaction(txn) && txn.getPaymentEncumbranceId() != null)
       .collect(groupingBy(transaction -> groupedBudgets.get(transaction.getToFundId())));
 
     creditBudgetsGrouped.entrySet()
@@ -120,7 +120,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   private Map<String, Budget> calculateNonEncumbranceBudgetTotals(List<Transaction> tempTransactions,
       Map<String, Budget> groupedBudgets) {
-    // multi map grouped by FundId and FYId , so fetching budget is easier
     Map<Budget, List<Transaction>> noEncumbranceBudgetsGrouped = tempTransactions.stream()
       .filter(txn -> txn.getPaymentEncumbranceId() == null)
       .collect(groupingBy(transaction -> groupedBudgets.get(transaction.getFromFundId())));
@@ -137,7 +136,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     CurrencyUnit currency = Monetary.getCurrency(entry.getValue()
       .get(0)
       .getCurrency());
-    // check is not empty
     entry.getValue()
       .stream()
       .forEach(txn -> {
@@ -153,11 +151,10 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     CurrencyUnit currency = Monetary.getCurrency(entry.getValue()
       .get(0)
       .getCurrency());
-    // check is not empty
     entry.getValue()
       .stream()
       .forEach(txn -> {
-        budget.setExpenditures(MoneyUtils.subtractMoney(budget.getExpenditures(), txn.getAmount(), currency));
+        budget.setExpenditures(MoneyUtils.subtractMoneyNonNegative(budget.getExpenditures(), txn.getAmount(), currency));
         budget.setEncumbered(MoneyUtils.sumMoney(budget.getEncumbered(), txn.getAmount(), currency));
       });
     return budget;
@@ -168,22 +165,24 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     CurrencyUnit currency = Monetary.getCurrency(entry.getValue()
       .get(0)
       .getCurrency());
-    // check is not empty
     entry.getValue()
       .stream()
       .forEach(txn -> {
-        if (txn.getTransactionType()
-          .equals(Transaction.TransactionType.CREDIT)) {
+        if (isCreditTransaction(txn)) {
           budget.setAvailable(MoneyUtils.sumMoney(budget.getAvailable(), txn.getAmount(), currency));
           budget.setUnavailable(MoneyUtils.subtractMoney(budget.getUnavailable(), txn.getAmount(), currency));
-        } else if (txn.getTransactionType()
-          .equals(Transaction.TransactionType.PAYMENT)) {
+        } else if (isPaymentTransaction(txn)) {
           budget.setAvailable(MoneyUtils.subtractMoney(budget.getAvailable(), txn.getAmount(), currency));
           budget.setUnavailable(MoneyUtils.sumMoney(budget.getUnavailable(), txn.getAmount(), currency));
         }
 
       });
     return budget;
+  }
+
+  private boolean isPaymentTransaction(Transaction txn) {
+    return txn.getTransactionType()
+      .equals(Transaction.TransactionType.PAYMENT);
   }
 
   private Future<Tx<List<Transaction>>> updateEncumbranceTotals(Tx<List<Transaction>> tx) {
@@ -210,23 +209,27 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
   private Map<String, Transaction> applyCredits(List<Transaction> tempTxns, Map<String, Transaction> encumbrancesMap) {
 
     List<Transaction> tempCredits = tempTxns.stream()
-      .filter(txn -> txn.getTransactionType()
-        .equals(Transaction.TransactionType.CREDIT))
+      .filter(this::isCreditTransaction)
       .collect(Collectors.toList());
     CurrencyUnit currency = Monetary.getCurrency(tempCredits.get(0)
       .getCurrency());
     tempCredits.forEach(creditTxn -> {
       Transaction encumbranceTxn = encumbrancesMap.get(creditTxn.getPaymentEncumbranceId());
-      double newAwaitingPayment = MoneyUtils.subtractMoney(encumbranceTxn.getEncumbrance()
-        .getAmountAwaitingPayment(), creditTxn.getAmount(), currency);
-      double newExpended = MoneyUtils.sumMoney(encumbranceTxn.getEncumbrance()
-        .getAmountExpended(), creditTxn.getAmount(), currency);
-      double newAmount = MoneyUtils.subtractMoney(encumbranceTxn.getAmount(), creditTxn.getAmount(), currency);
 
-      encumbranceTxn.getEncumbrance()
-        .setAmountAwaitingPayment(newAwaitingPayment);
+      double newExpended = MoneyUtils.subtractMoneyNonNegative(encumbranceTxn.getEncumbrance()
+        .getAmountExpended(), creditTxn.getAmount(), currency);
       encumbranceTxn.getEncumbrance()
         .setAmountExpended(newExpended);
+
+      //recalculate effectiveEncumbrance ( initialAmountEncumbered - (amountAwaitingPayment + amountExpended))
+      double newAmount = MoneyUtils.subtractMoney(encumbranceTxn.getEncumbrance()
+        .getInitialAmountEncumbered(),
+          MoneyUtils.sumMoney(encumbranceTxn.getEncumbrance()
+            .getAmountAwaitingPayment(),
+              encumbranceTxn.getEncumbrance()
+                .getAmountExpended(),
+              currency),
+          currency);
       encumbranceTxn.setAmount(newAmount);
     });
 
@@ -235,17 +238,20 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   private Map<String, Transaction> applyPayments(List<Transaction> tempTxns, Map<String, Transaction> encumbrancesMap) {
     List<Transaction> tempPayments = tempTxns.stream()
-      .filter(txn -> txn.getTransactionType()
-        .equals(Transaction.TransactionType.PAYMENT))
+      .filter(this::isPaymentTransaction)
       .collect(Collectors.toList());
     CurrencyUnit currency = Monetary.getCurrency(tempPayments.get(0)
       .getCurrency());
     tempPayments.forEach(pymtTxn -> {
       Transaction encumbranceTxn = encumbrancesMap.get(pymtTxn.getPaymentEncumbranceId());
-      double newExpended = MoneyUtils.subtractMoney(encumbranceTxn.getEncumbrance()
+      double newAwaitingPayment = MoneyUtils.subtractMoney(encumbranceTxn.getEncumbrance()
+        .getAmountAwaitingPayment(), pymtTxn.getAmount(), currency);
+      double newExpended = MoneyUtils.sumMoney(encumbranceTxn.getEncumbrance()
         .getAmountExpended(), pymtTxn.getAmount(), currency);
-      double newAmount = MoneyUtils.sumMoney(encumbranceTxn.getAmount(), pymtTxn.getAmount(), currency);
+      double newAmount = MoneyUtils.subtractMoney(encumbranceTxn.getAmount(), pymtTxn.getAmount(), currency);
 
+      encumbranceTxn.getEncumbrance()
+        .setAmountAwaitingPayment(newAwaitingPayment);
       encumbranceTxn.getEncumbrance()
         .setAmountExpended(newExpended);
       encumbranceTxn.setAmount(newAmount);
@@ -313,7 +319,25 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   @Override
   void handleValidationError(Transaction transaction) {
-    // TODO Auto-generated method stub
+
+    List<Error> errors = new ArrayList<>();
+
+    if (isCreditTransaction(transaction)) {
+      errors.addAll(buildNullValidationError(transaction.getToFundId(), "toFundId"));
+    } else {
+      errors.addAll(buildNullValidationError(transaction.getFromFundId(), "fromFundId"));
+    }
+    if (isNotEmpty(errors)) {
+      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
+        .withTotalRecords(errors.size()))
+        .encode());
+    }
+
+  }
+
+  private boolean isCreditTransaction(Transaction transaction) {
+    return transaction.getTransactionType()
+      .equals(Transaction.TransactionType.CREDIT);
   }
 
   @Override
