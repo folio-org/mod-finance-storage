@@ -281,6 +281,11 @@
           "fieldName": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
+        },
+        {
+          "fieldName": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
+          "tOps": "ADD",
+          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment'OR (jsonb->>'transactionType')::text = 'Credit'"
         }
       ],
       "foreignKeys": [

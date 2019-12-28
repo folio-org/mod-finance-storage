@@ -154,7 +154,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
       .get(0)
       .getCurrency());
     entry.getValue()
-      .stream()
       .forEach(txn -> {
         budget.setExpenditures(MoneyUtils.sumMoney(budget.getExpenditures(), txn.getAmount(), currency));
         budget.setAwaitingPayment(MoneyUtils.subtractMoney(budget.getAwaitingPayment(), txn.getAmount(), currency));
@@ -169,7 +168,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
       .get(0)
       .getCurrency());
     entry.getValue()
-      .stream()
       .forEach(txn -> {
         budget.setExpenditures(MoneyUtils.subtractMoneyNonNegative(budget.getExpenditures(), txn.getAmount(), currency));
         budget.setEncumbered(MoneyUtils.sumMoney(budget.getEncumbered(), txn.getAmount(), currency));
@@ -189,7 +187,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
       .get(0)
       .getCurrency());
     entry.getValue()
-      .stream()
       .forEach(txn -> {
         if (isCreditTransaction.test(txn)) {
           budget.setAvailable(MoneyUtils.sumMoney(budget.getAvailable(), txn.getAmount(), currency));
@@ -210,11 +207,11 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
    * @param tx : the list of payments and credits
    */
   private Future<Tx<List<Transaction>>> updateEncumbranceTotals(Tx<List<Transaction>> tx) {
-    Boolean noEncumbrances = tx.getEntity()
+    boolean noEncumbrances = tx.getEntity()
       .stream()
       .allMatch(tx1 -> StringUtils.isBlank(tx1.getPaymentEncumbranceId()));
 
-    if (Boolean.TRUE.equals(noEncumbrances)) {
+    if (noEncumbrances) {
       return Future.succeededFuture(tx);
     }
 

@@ -124,6 +124,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
   }
 
   @Override
+  @Validate
   public void postFinanceStorageInvoiceTransactionSummaries(InvoiceTransactionSummary summary, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     if (summary.getNumPaymentsCredits() < 1) {
@@ -161,6 +162,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
   }
 
   @Override
+  @Validate
   public void getFinanceStorageInvoiceTransactionSummariesById(String id, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(INVOICE_TRANSACTION_SUMMARIES, InvoiceTransactionSummary.class, id, okapiHeaders, vertxContext,
@@ -168,6 +170,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
   }
 
   @Override
+  @Validate
   public void deleteFinanceStorageInvoiceTransactionSummariesById(String id, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(INVOICE_TRANSACTION_SUMMARIES, id, okapiHeaders, vertxContext,
