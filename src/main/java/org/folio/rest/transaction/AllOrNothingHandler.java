@@ -51,7 +51,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   @Override
   public void createTransaction(Transaction transaction) {
-    processAllOrNothing(transaction, this::createPermanentTransactions).setHandler(result -> {
+    processAllOrNothing(transaction, this::processTemporaryToPermanentTransactions).setHandler(result -> {
       if (result.failed()) {
         HttpStatusException cause = (HttpStatusException) result.cause();
         switch (cause.getStatusCode()) {
@@ -78,6 +78,8 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       }
     });
   }
+
+  abstract Future<Tx<List<Transaction>>> processTemporaryToPermanentTransactions(Tx<List<Transaction>> tx);
 
   abstract String getSummaryId(Transaction transaction);
 

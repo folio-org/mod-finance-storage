@@ -31,9 +31,10 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
+import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.MoneyUtils;
 import org.folio.rest.persist.Tx;
+import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 
 public class PaymentCreditHandler extends AllOrNothingHandler {
@@ -49,48 +50,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     super(TEMPORARY_INVOICE_TRANSACTIONS, INVOICE_TRANSACTION_SUMMARIES, okapiHeaders, ctx, asyncResultHandler);
   }
 
-  @Override
-  String getSummaryId(Transaction transaction) {
-    return transaction.getSourceInvoiceId();
-  }
-
-  @Override
-  Criterion getTransactionBySummaryIdCriterion(String value) {
-    return getCriterionByFieldNameAndValueNotJsonb("sourceInvoiceId", "=", value);
-  }
-
-  @Override
-  public void createTransaction(Transaction transaction) {
-    processAllOrNothing(transaction, this::processAllPaymentsCredits).setHandler(result -> {
-      if (result.failed()) {
-        HttpStatusException cause = (HttpStatusException) result.cause();
-        if (cause.getStatusCode() == Response.Status.BAD_REQUEST.getStatusCode()) {
-          getAsyncResultHandler().handle(Future.succeededFuture(
-              FinanceStorageTransactions.PostFinanceStorageTransactionsResponse.respond400WithTextPlain(cause.getPayload())));
-        } else {
-          getAsyncResultHandler().handle(Future.succeededFuture(FinanceStorageTransactions.PostFinanceStorageTransactionsResponse
-            .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())));
-        }
-      } else {
-        log.debug("Preparing response to client");
-        getAsyncResultHandler().handle(
-            Future.succeededFuture(FinanceStorageTransactions.PostFinanceStorageTransactionsResponse.respond201WithApplicationJson(
-                transaction, FinanceStorageTransactions.PostFinanceStorageTransactionsResponse.headersFor201()
-                  .withLocation(TRANSACTION_LOCATION_PREFIX + transaction.getId()))));
-      }
-    });
-
-  }
-
-  /**
-   * To avoid partial transactions, all payments and credits must be done in a database transaction
-   * @param tx
-   */
-  public Future<Tx<List<Transaction>>> processAllPaymentsCredits(Tx<List<Transaction>> tx) {
-    return updateEncumbranceTotals(tx).compose(this::updateBudgetsTotals)
-      .compose(this::createPermanentTransactions);
-
-  }
 
   private Future<Tx<List<Transaction>>> updateBudgetsTotals(Tx<List<Transaction>> tx) {
     return getBudgets(tx).map(budgets -> budgets.stream()
@@ -363,7 +322,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   @Override
   String createPermanentTransactionsQuery() {
-    return String.format("INSERT INTO %s (id, jsonb) " + "SELECT id, jsonb FROM %s WHERE sourceInvoiceId = ? "
+    return String.format("INSERT INTO %s (id, jsonb) " + "SELECT id, jsonb FROM %s WHERE sourceInvoiceId = ? AND jsonb ->> 'transactionType' != 'Encumbrance'"
         + "ON CONFLICT DO NOTHING;", getFullTransactionTableName(), getTemporaryTransactionTable());
 
   }
@@ -379,6 +338,36 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     + " AS budgets " + "INNER JOIN " + getFullTemporaryTransactionTableName() + " AS transactions "
     + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
     + "WHERE transactions.sourceInvoiceId = ?";
+  }
+
+  @Override
+  String getSummaryId(Transaction transaction) {
+    return transaction.getSourceInvoiceId();
+  }
+
+  /**
+   * Fetch only payments and credits from temporary table for a given Invoice Id
+   */
+  @Override
+  Criterion getTransactionBySummaryIdCriterion(String value) {
+    Criteria criteria = HelperUtils.getCriteriaByFieldNameAndValue("sourceInvoiceId", "=", value);
+    Criteria criteria1 = HelperUtils.getCriteriaByFieldNameAndValue("transactionType", "!=", "Encumbrance");
+
+    return new Criterion().addCriterion(criteria, "AND", criteria1);
+  }
+
+  /**
+   * Before the temporary transaction can be moved to permanent transaction table, the corresponding fields in encumbrances and
+   * budgets for payments/credits must be recalculated. To avoid partial transactions, all payments and credits must be done in a
+   * database transaction
+   *
+   * @param tx
+   */
+  @Override
+  public Future<Tx<List<Transaction>>> processTemporaryToPermanentTransactions(Tx<List<Transaction>> tx) {
+    return updateEncumbranceTotals(tx).compose(this::updateBudgetsTotals)
+      .compose(this::createPermanentTransactions);
+
   }
 
 }
