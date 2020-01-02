@@ -1,10 +1,11 @@
 {
-  "id": "4eadbf22-e6dc-4ea4-9453-c6e9de2cb5a8",
-  "name": "MIDEASTHIS-FY2019",
+  "id": "34fe0c8b-2b99-4fe2-81a5-4ed6872a32e6",
+  "name": "EUROHIST-FY2020",
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
   "allocated": 0.00,
-  "fundId": "30fcc8e7-a019-43f4-b642-2edc389f4501",
+  "overEncumbrance": 0,
+  "fundId": "e9285a1c-1dfc-4380-868c-e74073003f43",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
 }
