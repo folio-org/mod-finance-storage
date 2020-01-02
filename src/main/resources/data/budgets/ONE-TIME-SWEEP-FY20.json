@@ -1,6 +1,6 @@
 {
   "id": "d5e1df1e-3c55-42b9-bd22-82ff3157e29f",
-  "name": "ONE-TIME-SWEEP-FY2020",
+  "name": "ONE-TIME-SWEEP-FY2019",
   "budgetStatus": "Frozen",
   "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
@@ -11,5 +11,5 @@
   "expenditures": 0.00,
   "overEncumbrance": 0.00,
   "fundId": "cf23adf0-61ba-4887-bf82-956c4aae2260",
-  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
+  "fiscalYearId": "78110b4e-2f8e-4eef-81ee-3058c0c7a9ee"
 }
