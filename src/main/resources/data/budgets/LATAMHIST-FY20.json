@@ -1,11 +1,11 @@
 {
-  "id": "735fdf73-592b-4967-85ef-e8b82d09382c",
-  "name": "UNIV-SUBN-FY2019",
+  "id": "53c28e77-4623-4af7-ad3d-60a9ba470c45",
+  "name": "LATAMHIST-FY2020",
   "budgetStatus": "Active",
-  "allowableEncumbrance": 100,
+  "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
   "allocated": 0.00,
   "overEncumbrance": 0,
-  "fundId": "4428a37c-8bae-4f0d-865d-970d83d5ad55",
+  "fundId": "e6d7e91a-4dbc-4a70-9b38-e000d2fbdc79",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
 }

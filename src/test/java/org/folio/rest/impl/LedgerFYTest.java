@@ -41,7 +41,7 @@ public class LedgerFYTest extends TestBase {
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 1);
 
     // search with fields from "FY"
-    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=fiscalYear.code==FY2019", 1);
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=fiscalYear.code==FY2020", 1);
     // search with fields from "ledgers"
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT + "?query=ledger.ledgerStatus==Active", 1);
 

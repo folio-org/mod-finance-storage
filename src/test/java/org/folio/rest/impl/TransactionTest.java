@@ -47,7 +47,7 @@ class TransactionTest extends TestBase {
   private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";
   private static final String LEDGER_QUERY = "?query=fund.id==%s";
   private static final String LEDGER_FY_QUERY = "?query=ledgerId==%s AND fiscalYearId==%s";
-  public static final String ALLOCATION_SAMPLE = "data/transactions/allocation_AFRICAHIST-FY19_ANZHIST-FY19.json";
+  public static final String ALLOCATION_SAMPLE = "data/transactions/allocation_AFRICAHIST-FY20_ANZHIST-FY20.json";
   public static final String ENCUMBRANCE_SAMPLE = "data/transactions/encumbrance_AFRICAHIST_306857_1.json";
   private static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
   private static String LEDGERS_QUERY = LEDGER.getEndpoint() + LEDGER_QUERY;
