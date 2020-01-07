@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.TransactionSummaryAPI.INVOICE_TRANSACTION_SUMMARIES;
-import static org.folio.rest.persist.HelperUtils.getCriterionByFieldNameAndValueNotJsonb;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
 
@@ -48,6 +47,47 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   public PaymentCreditHandler(Map<String, String> okapiHeaders, Context ctx, Handler<AsyncResult<Response>> asyncResultHandler) {
     super(TEMPORARY_INVOICE_TRANSACTIONS, INVOICE_TRANSACTION_SUMMARIES, okapiHeaders, ctx, asyncResultHandler);
+  }
+
+  /**
+   * Before the temporary transaction can be moved to permanent transaction table, the corresponding fields in encumbrances and
+   * budgets for payments/credits must be recalculated. To avoid partial transactions, all payments and credits will be done in a
+   * database transaction
+   *
+   * @param tx
+   */
+  @Override
+  public Future<Tx<List<Transaction>>> processTemporaryToPermanentTransactions(Tx<List<Transaction>> tx) {
+    return updateEncumbranceTotals(tx).compose(this::updateBudgetsTotals)
+      .compose(this::createPermanentTransactions);
+  }
+
+  /**
+   * Update the Encumbrance transaction attached to the payment/Credit(from paymentEncumbranceID)
+   * in a transaction
+   *
+   * @param tx : the list of payments and credits
+   */
+  private Future<Tx<List<Transaction>>> updateEncumbranceTotals(Tx<List<Transaction>> tx) {
+    boolean noEncumbrances = tx.getEntity()
+      .stream()
+      .allMatch(tx1 -> StringUtils.isBlank(tx1.getPaymentEncumbranceId()));
+
+    if (noEncumbrances) {
+      return Future.succeededFuture(tx);
+    }
+
+    return getAllEncumbrances(tx).map(encumbrances -> encumbrances.stream()
+      .collect(toMap(Transaction::getId, Function.identity())))
+      .map(encumbrancesMap -> applyPayments(tx.getEntity(), encumbrancesMap))
+      .map(encumbrancesMap -> applyCredits(tx.getEntity(), encumbrancesMap))
+      //update all the re-calculated encumbrances into the Transaction table
+      .map(map -> new Tx<>(map.values()
+        .stream()
+        .collect(Collectors.toList()), tx.getPgClient()).withConnection(tx.getConnection()))
+      .compose(this::updatePermanentTransactions)
+      .compose(ok -> Future.succeededFuture(tx));
+
   }
 
 
@@ -157,34 +197,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
       });
     return budget;
-  }
-
-  /**
-   * Update the Encumbrance transaction attached to the payment/Credit(from paymentEncumbranceID)
-   * in a transaction
-   *
-   * @param tx : the list of payments and credits
-   */
-  private Future<Tx<List<Transaction>>> updateEncumbranceTotals(Tx<List<Transaction>> tx) {
-    boolean noEncumbrances = tx.getEntity()
-      .stream()
-      .allMatch(tx1 -> StringUtils.isBlank(tx1.getPaymentEncumbranceId()));
-
-    if (noEncumbrances) {
-      return Future.succeededFuture(tx);
-    }
-
-    return getAllEncumbrances(tx).map(encumbrances -> encumbrances.stream()
-      .collect(toMap(Transaction::getId, Function.identity())))
-      .map(encumbrancesMap -> applyPayments(tx.getEntity(), encumbrancesMap))
-      .map(encumbrancesMap -> applyCredits(tx.getEntity(), encumbrancesMap))
-      //update all the re-calculated encumbrances into the Transaction table
-      .map(map -> new Tx<>(map.values()
-        .stream()
-        .collect(Collectors.toList()), tx.getPgClient()).withConnection(tx.getConnection()))
-      .compose(this::updatePermanentTransactions)
-      .compose(ok -> Future.succeededFuture(tx));
-
   }
 
   /**
@@ -317,7 +329,12 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   @Override
   String createTempTransactionQuery() {
-    return "INSERT INTO " + getFullTemporaryTransactionTableName() + " (id, jsonb) VALUES (?, ?::JSON) ";
+    return "INSERT INTO " + getFullTemporaryTransactionTableName() + " (id, jsonb) VALUES (?, ?::JSON) "
+        + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), " + "lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
+        + "lower(f_unaccent(jsonb ->> 'sourceInvoiceId'::text)), "
+        + "lower(f_unaccent(jsonb ->> 'sourceInvoiceLineId'::text)), "
+        + "lower(f_unaccent(jsonb ->> 'toFundId'::text)), "
+        + "lower(f_unaccent(jsonb ->> 'transactionType'::text))) " + "DO UPDATE SET id = excluded.id RETURNING id;";
   }
 
   @Override
@@ -354,20 +371,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     Criteria criteria1 = HelperUtils.getCriteriaByFieldNameAndValue("transactionType", "!=", "Encumbrance");
 
     return new Criterion().addCriterion(criteria, "AND", criteria1);
-  }
-
-  /**
-   * Before the temporary transaction can be moved to permanent transaction table, the corresponding fields in encumbrances and
-   * budgets for payments/credits must be recalculated. To avoid partial transactions, all payments and credits must be done in a
-   * database transaction
-   *
-   * @param tx
-   */
-  @Override
-  public Future<Tx<List<Transaction>>> processTemporaryToPermanentTransactions(Tx<List<Transaction>> tx) {
-    return updateEncumbranceTotals(tx).compose(this::updateBudgetsTotals)
-      .compose(this::createPermanentTransactions);
-
   }
 
 }
