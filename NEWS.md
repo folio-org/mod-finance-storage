@@ -1,5 +1,10 @@
 ## 4.2.0 - Unreleased
 
+## 4.1.1 - Released
+This is a bugfix release, incrementing the fromModuleVersion so that updates to transactions.sql are captured
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.1.0...v4.1.1)
+
 ## 4.1.0 - Released
 This is a bugfix release, with fixes to sample data for new year FY20 and ledger schema changes
 
