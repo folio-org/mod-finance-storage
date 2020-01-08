@@ -1,4 +1,20 @@
-## 4.1.0 - Unreleased
+## 4.2.0 - Unreleased
+
+## 4.1.1 - Released
+This is a bugfix release, incrementing the fromModuleVersion so that updates to transactions.sql are captured
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.1.0...v4.1.1)
+
+## 4.1.0 - Released
+This is a bugfix release, with fixes to sample data for new year FY20 and ledger schema changes
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.0.1...v4.1.0)
+
+### Stories
+* [MODFISTO-64](https://issues.folio.org/browse/MODFISTO-64)  Ability to override allowableEncumbrance/allowableExpenditure
+
+### Bug Fixes
+* [MODFISTO-74](https://issues.folio.org/browse/MODFISTO-74)  mod-finance storage fails tenant init when loadSample is enabled
 
 ## 4.0.1 - Released
 The primary focus of this release was to fix logic for the finance calculated values
