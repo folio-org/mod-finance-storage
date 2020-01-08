@@ -313,7 +313,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Promise<Void> promise = Promise.promise();
     getExistentLedger(transaction).setHandler(result -> {
       if (result.succeeded()) {
-        if (result.result().getRestrictEncumbrance() && budget.getAllowableEncumbrance() != null) {
+        if (result.result().getRestrictEncumbrance().booleanValue() && budget.getAllowableEncumbrance() != null) {
           Double remainingAmountForEncumbrance = getBudgetRemainingAmountForEncumbrance(budget, transaction.getCurrency());
           if (remainingAmountForEncumbrance < transaction.getAmount()) {
             promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID));
