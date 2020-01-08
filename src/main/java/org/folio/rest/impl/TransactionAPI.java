@@ -13,6 +13,7 @@ import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.transaction.DefaultTransactionHandler;
 import org.folio.rest.transaction.EncumbranceHandler;
+import org.folio.rest.transaction.PaymentCreditHandler;
 import org.folio.rest.transaction.TransactionHandler;
 
 import io.vertx.core.AsyncResult;
@@ -58,6 +59,9 @@ public class TransactionAPI implements FinanceStorageTransactions {
   private TransactionHandler getTransactionHandler(Transaction transaction, Map<String, String> okapiHeaders, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
       return new EncumbranceHandler(okapiHeaders, vertxContext, asyncResultHandler);
+    } else if (transaction.getTransactionType() == Transaction.TransactionType.PAYMENT
+        || transaction.getTransactionType() == Transaction.TransactionType.CREDIT) {
+      return new PaymentCreditHandler(okapiHeaders, vertxContext, asyncResultHandler);
     }
     return new DefaultTransactionHandler(okapiHeaders, vertxContext, asyncResultHandler);
   }

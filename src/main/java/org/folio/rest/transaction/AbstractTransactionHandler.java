@@ -15,11 +15,10 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
 public abstract class AbstractTransactionHandler implements TransactionHandler {
-
-  protected final Logger log = LoggerFactory.getLogger(this.getClass());
-
   public static final String TRANSACTION_TABLE = "transaction";
   static final String TRANSACTION_LOCATION_PREFIX = "/finance-storage/transactions/";
+
+  protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
   private final Map<String, String> okapiHeaders;
   private final Handler<AsyncResult<Response>> asyncResultHandler;

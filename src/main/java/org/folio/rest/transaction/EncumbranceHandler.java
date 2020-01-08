@@ -12,38 +12,34 @@ import static org.folio.rest.persist.HelperUtils.handleFailure;
 import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.ws.rs.core.Response;
-
 import org.apache.commons.collections4.keyvalue.MultiKey;
 import org.apache.commons.collections4.map.MultiKeyMap;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
-import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criterion;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+
 
 public class EncumbranceHandler extends AllOrNothingHandler {
 
@@ -113,17 +109,6 @@ public class EncumbranceHandler extends AllOrNothingHandler {
     }
   }
 
-  private List<Error> buildNullValidationError(String value, String key) {
-    if (value == null) {
-      Parameter parameter = new Parameter().withKey(key)
-        .withValue("null");
-      Error error = new Error().withCode("-1")
-        .withMessage("may not be null")
-        .withParameters(Collections.singletonList(parameter));
-      return Collections.singletonList(error);
-    }
-    return Collections.emptyList();
-  }
 
   @Override
   String createTempTransactionQuery() {
@@ -156,47 +141,14 @@ public class EncumbranceHandler extends AllOrNothingHandler {
       .compose(budgets -> updateBudgets(tx, budgets));
   }
 
-  private Future<Tx<List<Transaction>>> updateBudgets(Tx<List<Transaction>> tx, List<Budget> budgets) {
-    Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
-    String sql = "UPDATE " + getFullTableName(getTenantId(), BUDGET_TABLE) + " AS budgets " +
-      "SET jsonb = b.jsonb FROM (VALUES  " + getValues(jsonBudgets) + ") AS b (id, jsonb) " +
-      "WHERE b.id::uuid = budgets.id;";
-    tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
-      if (reply.failed()) {
-        handleFailure(promise, reply);
-      } else {
-        promise.complete(tx);
-      }
-    });
-    return promise.future();
-  }
 
-  private String getValues(List<JsonObject> entities) {
-    return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));
-  }
-
-  private Future<List<Budget>> getBudgets(Tx<List<Transaction>> tx) {
-    Promise<List<Budget>> promise = Promise.promise();
-    String sql = "SELECT DISTINCT ON (budgets.id) budgets.jsonb " +
-      "FROM " + getFullTableName(getTenantId(), BUDGET_TABLE) + " AS budgets " +
-      "INNER JOIN "+ getFullTemporaryTransactionTableName() + " AS transactions " +
-      "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId " +
-      "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
-    JsonArray params = new JsonArray();
-    params.add(getSummaryId(tx.getEntity().get(0)));
-    tx.getPgClient().select(tx.getConnection(), sql, params, reply -> {
-      if (reply.failed()) {
-        handleFailure(promise, reply);
-      } else {
-        List<Budget> budgets = reply.result().getResults()
-          .stream().flatMap(JsonArray::stream)
-          .map(o -> new JsonObject(o.toString())
-            .mapTo(Budget.class)).collect(Collectors.toList());
-        promise.complete(budgets);
-      }
-    });
-    return promise.future();
+  @Override
+  protected String getBudgetsQuery() {
+    return "SELECT DISTINCT ON (budgets.id) budgets.jsonb " +
+    "FROM " + getFullTableName(getTenantId(), BUDGET_TABLE) + " AS budgets " +
+    "INNER JOIN "+ getFullTemporaryTransactionTableName() + " AS transactions " +
+    "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId " +
+    "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
   }
 
   private List<Budget> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> tempTransactions, List<Budget> budgets) {
@@ -258,30 +210,13 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   }
 
-  private Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
-    Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    List<JsonObject> transactions = (tx.getEntity().stream().map(JsonObject::mapFrom).collect(Collectors.toList()));
-
-    String sql = "UPDATE " + getFullTransactionTableName() + " AS transactions " +
-      "SET jsonb = t.jsonb FROM (VALUES  "+ getValues(transactions) +") AS t (id, jsonb) " +
-      "WHERE t.id::uuid = transactions.id;";
-    tx.getPgClient()
-      .execute(tx.getConnection(), sql, reply -> {
-        if (reply.failed()) {
-          handleFailure(promise, reply);
-        } else {
-          promise.complete(tx);
-        }
-      });
-    return promise.future();
-  }
 
   private Future<List<Transaction>> getPermanentTransactions(String summaryId) {
     Promise<List<Transaction>> promise = Promise.promise();
 
     Criterion criterion = new Criterion(getCriteriaByFieldNameAndValue("encumbrance", "=", summaryId).addField("'sourcePurchaseOrderId'"));
 
-    getPostgresClient().get(TRANSACTION_TABLE, Transaction.class, criterion, true, false, reply -> {
+    getPostgresClient().get(TRANSACTION_TABLE, Transaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to extract permanent transaction by purchaseOrderId id={}", reply.cause(), summaryId);
         handleFailure(promise, reply);
@@ -306,6 +241,19 @@ public class EncumbranceHandler extends AllOrNothingHandler {
       }
     });
     return promise.future();
+  }
+
+  @Override
+  int getSummaryCount(JsonObject summary){
+    return summary.getInteger("numTransactions");
+  }
+
+  /**
+   * To prevent partial encumbrance transactions for an order, all the encumbrances must be created following All or nothing
+   */
+  @Override
+  Future<Tx<List<Transaction>>> processTemporaryToPermanentTransactions(Tx<List<Transaction>> tx) {
+    return createPermanentTransactions(tx);
   }
 
 }
