@@ -307,6 +307,27 @@
       ]
     },
     {
+      "id": "finance-storage.invoice-transaction-summaries",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/invoice-transaction-summaries",
+          "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/invoice-transaction-summaries/{id}",
+          "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.get"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/invoice-transaction-summaries/{id}",
+          "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "_tenant",
       "version": "1.2",
       "interfaceType": "system",
@@ -681,6 +702,30 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.invoice-transaction-summaries.item.get",
+      "displayName" : "Retrieve an invoice transaction summary record",
+      "description" : "Retrieve an invoice transaction summary record"
+    },
+    {
+      "permissionName" : "finance-storage.invoice-transaction-summaries.item.post",
+      "displayName" : "Create a new invoice transaction summary record",
+      "description" : "Create a new invoice transaction summary record"
+    },    {
+      "permissionName" : "finance-storage.invoice-transaction-summaries.item.delete",
+      "displayName" : "Delete an invoice transaction summary record",
+      "description" : "Delete an  invoice transaction summary record"
+    },
+    {
+      "permissionName" : "finance-storage.invoice-transaction-summaries.all",
+      "displayName" : "All invoice transaction summary perms",
+      "description" : "All permissions for the invoice transaction summary",
+      "subPermissions" : [
+        "finance-storage.invoice-transaction-summaries.item.get",
+        "finance-storage.invoice-transaction-summaries.item.post",
+        "finance-storage.invoice-transaction-summaries.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance.module.all",
       "displayName" : "All finance-module perms",
       "description" : "All permissions for the finance module",
@@ -693,7 +738,8 @@
         "finance-storage.ledgers.all",
         "finance-storage.transactions.all",
         "finance-storage.fund-types.all",
-        "finance-storage.order-transaction-summaries.all"
+        "finance-storage.order-transaction-summaries.all",
+        "finance-storage.invoice-transaction-summaries.all"
       ]
     }
   ],

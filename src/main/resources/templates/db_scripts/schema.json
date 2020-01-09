@@ -497,6 +497,12 @@
           "tOps": "ADD"
         }
        ]
+    },
+    {
+      "tableName": "temporary_invoice_payments",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "mode": "delete",
+      "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     }
   ]
 
