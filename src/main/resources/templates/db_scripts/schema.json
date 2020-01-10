@@ -281,6 +281,11 @@
           "fieldName": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
+        },
+        {
+          "fieldName": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
+          "tOps": "ADD",
+          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment'OR (jsonb->>'transactionType')::text = 'Credit'"
         }
       ],
       "foreignKeys": [
@@ -422,24 +427,6 @@
       ]
     },
     {
-      "tableName": "temporary_invoice_payments",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
-      "ginIndex": [
-        {
-          "fieldName": "sourceInvoiceId",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        }
-      ],
-      "uniqueIndex": [
-        {
-          "fieldName": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
-          "tOps": "ADD"
-        }
-      ]
-    },
-    {
       "tableName": "order_transaction_summaries",
       "fromModuleVersion": "mod-finance-storage-4.0.0"
     },
@@ -469,6 +456,53 @@
           "tOps": "ADD"
         }
       ]
+    },
+    {
+      "tableName": "invoice_transaction_summaries",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
+    },
+    {
+      "tableName": "temporary_invoice_transactions",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "uniqueIndex": [
+        {
+          "fieldName": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
+          "tOps": "ADD"
+        }
+      ],
+      "foreignKeys": [
+        {
+          "fieldName": "sourceInvoiceId",
+          "targetTable": "invoice_transaction_summaries",
+          "tOps": "ADD"
+        },
+         {
+          "fieldName": "paymentEncumbranceId",
+          "targetTable": "transaction",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fromFundId",
+          "targetTable": "fund",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "toFundId",
+          "targetTable": "fund",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fiscalYearId",
+          "targetTable": "fiscal_year",
+          "tOps": "ADD"
+        }
+       ]
+    },
+    {
+      "tableName": "temporary_invoice_payments",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "mode": "delete",
+      "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     }
   ]
 
