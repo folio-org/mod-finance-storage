@@ -135,7 +135,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     try {
       handleValidationError(transaction);
       return getExistentBudget(transaction)
-        .compose(budget -> verifyEncumbranceRestrictions(transaction, budget))
+        .compose(budget -> checkEncumbranceRestrictions(transaction, budget))
         .compose(v -> createTempTransaction(transaction))
         .compose(this::getSummary)
         .compose(this::getTempTransactions)
@@ -374,7 +374,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
-  private Future<Void> verifyEncumbranceRestrictions(Transaction transaction, Budget budget) {
+  private Future<Void> checkEncumbranceRestrictions(Transaction transaction, Budget budget) {
     Promise<Void> promise = Promise.promise();
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
       if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {

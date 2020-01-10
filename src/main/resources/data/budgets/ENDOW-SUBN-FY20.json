@@ -2,10 +2,9 @@
   "id": "47144c36-7180-4840-aff4-bc9788c78d89",
   "name": "ENDOW-SUBN-FY2020",
   "budgetStatus": "Active",
-  "allowableEncumbrance": 105,
+  "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
-  "allocated": 200000.00,
-  "available": 200000.00,
+  "allocated": 0.00,
   "overEncumbrance": 0,
   "fundId": "1714f71f-b845-444b-a79e-a577487a6f7d",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"

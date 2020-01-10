@@ -4,8 +4,7 @@
   "budgetStatus": "Active",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 1230,
-  "available": 1230,
+  "allocated": 0,
   "overEncumbrance": 0,
   "fundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
