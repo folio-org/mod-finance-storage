@@ -42,7 +42,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class LedgerAPI implements FinanceStorageLedgers {
-  static final String LEDGER_TABLE = "ledger";
+  public static final String LEDGER_TABLE = "ledger";
 
   private static final Logger log = LoggerFactory.getLogger(LedgerAPI.class);
   private PostgresClient pgClient;

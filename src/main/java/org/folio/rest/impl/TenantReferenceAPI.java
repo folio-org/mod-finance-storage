@@ -85,11 +85,14 @@ public class TenantReferenceAPI extends TenantAPI {
         .add("funds", getUriPath(FinanceStorageFunds.class))
         .add("budgets", getUriPath(FinanceStorageBudgets.class))
         .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
-        .add("order-transaction-summaries", getUriPath(FinanceStorage.class)+"/order-transaction-summaries")
-        .add("invoice-transaction-summaries", getUriPath(FinanceStorage.class)+"/invoice-transaction-summaries")
-        .add("transactions", getUriPath(FinanceStorageTransactions.class))
+        .add("order-transaction-summaries", getUriPath(FinanceStorage.class) + "/order-transaction-summaries")
+        .add("invoice-transaction-summaries", getUriPath(FinanceStorage.class) + "/invoice-transaction-summaries")
+        .add("transactions/allocations", getUriPath(FinanceStorageTransactions.class))
+        .add("transactions/encumbrances", getUriPath(FinanceStorageTransactions.class))
         .withPostOnly() //Payments and credits don't support PUT
-        .add("transactions-PaymentCredit", getUriPath(FinanceStorageTransactions.class));
+        .add("transactions/transfers", getUriPath(FinanceStorageTransactions.class))
+        .add("transactions/payments", getUriPath(FinanceStorageTransactions.class))
+        .add("transactions/credits", getUriPath(FinanceStorageTransactions.class));
       loadData = true;
     }
     return loadData;
