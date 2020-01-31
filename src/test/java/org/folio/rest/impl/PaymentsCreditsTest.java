@@ -152,7 +152,7 @@ class PaymentsCreditsTest extends TestBase {
     Budget budgetAfter = getBudgetAndValidate(budgetEndpointWithQueryParams);
 
     // awaiting payment must decreases by payment amount
-    assertEquals(-payment.getAmount(), subtractValues(budgetAfter.getAwaitingPayment(), budgetBefore.getAwaitingPayment()));
+    assertEquals(0d, subtractValues(budgetAfter.getAwaitingPayment(), budgetBefore.getAwaitingPayment()));
     // encumbered must increase by credit amount
     assertEquals(credit.getAmount(), subtractValues(budgetAfter.getEncumbered(), budgetBefore.getEncumbered()));
     // expenditures must increase by payment amt and decrease by credit amount
