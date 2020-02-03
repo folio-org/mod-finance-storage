@@ -376,7 +376,8 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   private Future<Void> checkEncumbranceRestrictions(Transaction transaction, Budget budget) {
     Promise<Void> promise = Promise.promise();
-    if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
+    if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE
+        || transaction.getTransactionType() == Transaction.TransactionType.PAYMENT) {
       if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
         log.error(BUDGET_IS_INACTIVE);
         promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_IS_INACTIVE));
@@ -393,9 +394,16 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Promise<Void> promise = Promise.promise();
     getExistentLedger(transaction).setHandler(result -> {
       if (result.succeeded()) {
-        if (result.result().getRestrictEncumbrance().booleanValue() && budget.getAllowableEncumbrance() != null) {
-          Double remainingAmountForEncumbrance = getBudgetRemainingAmountForEncumbrance(budget, transaction.getCurrency());
+        if (isEncumbranceRestricted(transaction, budget, result.result())) {
+          double remainingAmountForEncumbrance = getBudgetRemainingAmountForEncumbrance(budget, transaction.getCurrency());
           if (remainingAmountForEncumbrance < transaction.getAmount()) {
+            promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID));
+            return;
+          }
+        }
+        else if (isPaymentRestricted(transaction, budget, result.result())) {
+          double remainingAmountForPayment = getBudgetRemainingAmountForPayment(budget, transaction.getCurrency());
+          if (remainingAmountForPayment < transaction.getAmount()) {
             promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID));
             return;
           }
@@ -408,6 +416,16 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
+  private boolean isEncumbranceRestricted(Transaction transaction, Budget budget, Ledger ledger) {
+    return transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE && ledger.getRestrictEncumbrance()
+        && budget.getAllowableEncumbrance() != null;
+  }
+
+  private boolean isPaymentRestricted(Transaction transaction, Budget budget, Ledger ledger) {
+    return transaction.getTransactionType() == Transaction.TransactionType.PAYMENT && ledger.getRestrictExpenditures()
+      && budget.getAllowableExpenditure() != null;
+  }
+
   /**
    * Calculates remaining amount for encumbrance
    * [remaining amount] = (allocated * allowableEncumbered) - (allocated - (unavailable + available)) - (encumbered + awaitingPayment)
@@ -416,10 +434,10 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
    * @param currency   processed transaction currency
    * @return remaining amount for encumbrance
    */
-  private Double getBudgetRemainingAmountForEncumbrance(Budget budget, String currency) {
+  private double getBudgetRemainingAmountForEncumbrance(Budget budget, String currency) {
     Money allocated = Money.of(budget.getAllocated(), currency);
     // get allowableEncumbered converted from percentage value
-    Double allowableEncumbered = Money.of(budget.getAllowableEncumbrance(), currency).divide(100d).getNumber().doubleValue();
+    double allowableEncumbered = Money.of(budget.getAllowableEncumbrance(), currency).divide(100d).getNumber().doubleValue();
     Money unavailable = Money.of(budget.getUnavailable(), currency);
     Money available = Money.of(budget.getAvailable(), currency);
     Money encumbered = Money.of(budget.getEncumbered(), currency);
@@ -428,6 +446,30 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Money result = allocated.multiply(allowableEncumbered);
     result = result.subtract(allocated.subtract(unavailable.add(available)));
     result = result.subtract(encumbered.add(awaitingPayment));
+
+    return result.getNumber().doubleValue();
+  }
+
+  /**
+   * Calculates remaining amount for payment
+   * [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable + available)) - (awaitingPayment + expended)
+   *
+   * @param budget     processed budget
+   * @param currency   processed transaction currency
+   * @return remaining amount for payment
+   */
+  private double getBudgetRemainingAmountForPayment(Budget budget, String currency) {
+    Money allocated = Money.of(budget.getAllocated(), currency);
+    // get allowableExpenditure from percentage value
+    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
+    Money unavailable = Money.of(budget.getUnavailable(), currency);
+    Money available = Money.of(budget.getAvailable(), currency);
+    Money expenditure = Money.of(budget.getExpenditures(), currency);
+    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
+
+    Money result = allocated.multiply(allowableExpenditure);
+    result = result.subtract(allocated.subtract(unavailable.add(available)));
+    result = result.subtract(expenditure.add(awaitingPayment));
 
     return result.getNumber().doubleValue();
   }
