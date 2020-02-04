@@ -10,6 +10,7 @@ import static org.folio.rest.persist.HelperUtils.getCriterionByFieldNameAndValue
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
 import static org.folio.rest.persist.MoneyUtils.subtractMoney;
+import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
 import io.vertx.core.AsyncResult;
@@ -178,7 +179,7 @@ public class EncumbranceHandler extends AllOrNothingHandler {
               newAmount = subtractMoney(newAmount, tmpTransaction.getEncumbrance().getAmountExpended(), currency);
               tmpTransaction.setAmount(newAmount);
               double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              newAwaitingPayment = subtractMoney(newAwaitingPayment, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              newAwaitingPayment = subtractMoneyNonNegative(newAwaitingPayment, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
               budget.setAwaitingPayment(newAwaitingPayment);
             }
           }
