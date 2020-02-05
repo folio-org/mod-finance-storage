@@ -167,7 +167,8 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     entry.getValue()
       .forEach(txn -> {
         budget.setExpenditures(MoneyUtils.sumMoney(budget.getExpenditures(), txn.getAmount(), currency));
-        budget.setAwaitingPayment(MoneyUtils.subtractMoney(budget.getAwaitingPayment(), txn.getAmount(), currency));
+        double newAwaitingPayment = MoneyUtils.subtractMoneyNonNegative(budget.getAwaitingPayment(), txn.getAmount(), currency);
+        budget.setAwaitingPayment(newAwaitingPayment);
       });
 
     return budget;
