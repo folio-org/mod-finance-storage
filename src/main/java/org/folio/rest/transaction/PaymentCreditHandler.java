@@ -155,7 +155,8 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     entry.getValue()
       .forEach(txn -> {
         budget.setExpenditures(MoneyUtils.sumMoney(budget.getExpenditures(), txn.getAmount(), currency));
-        budget.setAwaitingPayment(MoneyUtils.subtractMoney(budget.getAwaitingPayment(), txn.getAmount(), currency));
+        double newAwaitingPayment = MoneyUtils.subtractMoneyNonNegative(budget.getAwaitingPayment(), txn.getAmount(), currency);
+        budget.setAwaitingPayment(newAwaitingPayment);
       });
 
     return budget;
@@ -190,9 +191,11 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
         if (isCreditTransaction.test(txn)) {
           budget.setAvailable(MoneyUtils.sumMoney(budget.getAvailable(), txn.getAmount(), currency));
           budget.setUnavailable(MoneyUtils.subtractMoney(budget.getUnavailable(), txn.getAmount(), currency));
+          budget.setExpenditures(MoneyUtils.subtractMoneyNonNegative(budget.getExpenditures(), txn.getAmount(), currency));
         } else if (isPaymentTransaction.test(txn)) {
           budget.setAvailable(MoneyUtils.subtractMoney(budget.getAvailable(), txn.getAmount(), currency));
           budget.setUnavailable(MoneyUtils.sumMoney(budget.getUnavailable(), txn.getAmount(), currency));
+          budget.setExpenditures(MoneyUtils.sumMoney(budget.getExpenditures(), txn.getAmount(), currency));
         }
 
       });
