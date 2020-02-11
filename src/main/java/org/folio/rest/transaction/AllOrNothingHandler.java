@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -47,6 +49,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   public static final String BUDGET_NOT_FOUND_FOR_TRANSACTION = "Budget not found for transaction";
   public static final String LEDGER_NOT_FOUND_FOR_TRANSACTION = "Ledger not found for transaction";
+  public static final String TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION = "Transaction summary not found for transaction";
   public static final String BUDGET_IS_INACTIVE = "Cannot create encumbrance from the not active budget";
   public static final String FUND_CANNOT_BE_PAID = "Fund cannot be paid due to restrictions";
   private String temporaryTransactionTable;
@@ -102,8 +105,6 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   abstract String createTempTransactionQuery();
 
   abstract String createPermanentTransactionsQuery();
-
-  abstract int getSummaryCount(JsonObject summary);
 
   protected Future<Tx<List<Transaction>>> createPermanentTransactions(Tx<List<Transaction>> tx) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
@@ -249,12 +250,11 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage()));
       }
 
-
     return promise.future();
   }
 
-  private Future<JsonObject> getSummary(Transaction transaction) {
-    Promise<JsonObject> promise = Promise.promise();
+  private Future<Pair<String, Integer>> getSummary(Transaction transaction) {
+    Promise<Pair<String, Integer>> promise = Promise.promise();
 
     log.debug("Get summary={}", getSummaryId(transaction));
 
@@ -263,27 +263,41 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         log.error("Summary retrieval with id={} failed", reply.cause(), transaction.getId());
         handleFailure(promise, reply);
       } else {
-        log.debug("Summary with id={} successfully extracted", transaction.getId());
-        promise.complete(reply.result());
+        final JsonObject summary = reply.result();
+        if (summary == null) {
+          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
+        } else {
+          log.debug("Summary with id={} successfully extracted", transaction.getId());
+          Pair<String, Integer> result = new ImmutablePair<>(summary.getString("id"), getNumTransactions(summary, transaction));
+          promise.complete(result);
+        }
       }
     });
     return promise.future();
   }
 
-  private Future<List<Transaction>> getTempTransactions(JsonObject summary) {
+  private Integer getNumTransactions(JsonObject summary, Transaction transaction) {
+    if (Transaction.TransactionType.ENCUMBRANCE == transaction.getTransactionType()) {
+      return summary.getInteger("numEncumbrances") != null ? summary.getInteger("numEncumbrances") : summary.getInteger("numTransactions");
+    } else {
+      return summary.getInteger("numPaymentsCredits");
+    }
+  }
+
+  private Future<List<Transaction>> getTempTransactions(Pair<String, Integer> summary) {
     Promise<List<Transaction>> promise = Promise.promise();
 
-    Criterion criterion = getTransactionBySummaryIdCriterion(summary.getString("id"));
+    Criterion criterion = getTransactionBySummaryIdCriterion(summary.getKey());
 
     getPostgresClient().get(temporaryTransactionTable, Transaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
-        log.error("Failed to extract temporary transaction by summary id={}", reply.cause(), summary.getString("id"));
+        log.error("Failed to extract temporary transaction by summary id={}", reply.cause(), summary.getKey());
         handleFailure(promise, reply);
       } else {
         List<Transaction> transactions = reply.result()
           .getResults();
 
-        isLastRecord = transactions.size() == getSummaryCount(summary);
+        isLastRecord = transactions.size() == summary.getValue();
         promise.complete(transactions);
       }
     });
@@ -307,22 +321,28 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
-
   protected Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
-    Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    List<JsonObject> transactions = (tx.getEntity().stream().map(JsonObject::mapFrom).collect(Collectors.toList()));
+    return updatePermanentTransactions(tx, tx.getEntity());
+  }
 
-    String sql = "UPDATE " + getFullTransactionTableName() + " AS transactions " +
-      "SET jsonb = t.jsonb FROM (VALUES  "+ getValues(transactions) +") AS t (id, jsonb) " +
-      "WHERE t.id::uuid = transactions.id;";
-    tx.getPgClient()
-      .execute(tx.getConnection(), sql, reply -> {
-        if (reply.failed()) {
-          handleFailure(promise, reply);
-        } else {
-          promise.complete(tx);
-        }
-      });
+  protected Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx, List<Transaction> transactions) {
+    Promise<Tx<List<Transaction>>> promise = Promise.promise();
+    List<JsonObject> jsonTransactions = transactions.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
+    if (transactions.isEmpty()) {
+      promise.complete(tx);
+    } else {
+      String sql = "UPDATE " + getFullTransactionTableName() + " AS transactions " +
+        "SET jsonb = t.jsonb FROM (VALUES  " + getValues(jsonTransactions) + ") AS t (id, jsonb) " +
+        "WHERE t.id::uuid = transactions.id;";
+      tx.getPgClient()
+        .execute(tx.getConnection(), sql, reply -> {
+          if (reply.failed()) {
+            handleFailure(promise, reply);
+          } else {
+            promise.complete(tx);
+          }
+        });
+    }
     return promise.future();
   }
 

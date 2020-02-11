@@ -24,15 +24,26 @@ import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class PaymentsCreditsTest extends TestBase {
   private static final String CREDIT_SAMPLE = "data/transactions/credits/credit_CANHIST_30121.json";
   private static final String PAYMENT_SAMPLE = "data/transactions/payments/payment_ENDOW-SUBN_30121.json";
 
+  @BeforeEach
+  void prepareData() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+  }
+
+  @AfterEach
+  void cleanupData() throws MalformedURLException {
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
   @Test
   void testCreatePaymentsCreditsAllOrNothing() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID().toString();
     String orderId = UUID.randomUUID().toString();
@@ -159,13 +170,10 @@ class PaymentsCreditsTest extends TestBase {
     assertEquals(subtractValues(payment.getAmount(), credit.getAmount()),
         subtractValues(budgetAfter.getExpenditures(), budgetBefore.getExpenditures()));
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testCreatePaymentsCreditsAllOrNothingWithNoEncumbrances() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID().toString();
     createInvoiceSummary(invoiceId, 2);
@@ -240,13 +248,10 @@ class PaymentsCreditsTest extends TestBase {
     assertEquals(credit.getAmount(), subtractValues(creditBudgetAfter.getAvailable(), creditBudgetBefore.getAvailable()));
     assertEquals(-credit.getAmount(), subtractValues(creditBudgetAfter.getUnavailable(), creditBudgetBefore.getUnavailable()));
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testCreatePaymentWithoutInvoiceSummary() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID()
       .toString();
@@ -263,13 +268,10 @@ class PaymentsCreditsTest extends TestBase {
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(400);
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testPaymentsIdempotentInTemporaryTable() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID()
       .toString();
@@ -298,13 +300,10 @@ class PaymentsCreditsTest extends TestBase {
 
     assertNotEquals(retryId, id);
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testPaymentsWithInvalidPaymentEncumbranceInTemporaryTable() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID()
       .toString();
@@ -322,8 +321,6 @@ class PaymentsCreditsTest extends TestBase {
 
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(400);
-
-    deleteTenant(TRANSACTION_TENANT_HEADER);
 
   }
 

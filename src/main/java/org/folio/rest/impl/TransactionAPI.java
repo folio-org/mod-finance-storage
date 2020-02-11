@@ -12,8 +12,8 @@ import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.transaction.DefaultTransactionHandler;
-import org.folio.rest.transaction.EncumbranceHandler;
-import org.folio.rest.transaction.PaymentCreditHandler;
+import org.folio.rest.transaction.OrderTransactionsHandler;
+import org.folio.rest.transaction.InvoiceTransactionsHandler;
 import org.folio.rest.transaction.TransactionHandler;
 
 import io.vertx.core.AsyncResult;
@@ -33,7 +33,7 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Override
   @Validate
   public void postFinanceStorageTransactions(String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    getTransactionHandler(transaction, okapiHeaders, vertxContext, asyncResultHandler).createTransaction(transaction);
+    getCreateTransactionHandler(transaction, okapiHeaders, vertxContext, asyncResultHandler).createTransaction(transaction);
   }
 
   @Override
@@ -53,15 +53,22 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Validate
   public void putFinanceStorageTransactionsById(String id, String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     transaction.setId(id);
-    getTransactionHandler(transaction, okapiHeaders, vertxContext, asyncResultHandler).updateTransaction(transaction);
+    getUpdateTransactionHandler(transaction, okapiHeaders, vertxContext, asyncResultHandler).updateTransaction(transaction);
   }
 
-  private TransactionHandler getTransactionHandler(Transaction transaction, Map<String, String> okapiHeaders, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+  private TransactionHandler getCreateTransactionHandler(Transaction transaction, Map<String, String> okapiHeaders, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return new EncumbranceHandler(okapiHeaders, vertxContext, asyncResultHandler);
+      return new OrderTransactionsHandler(okapiHeaders, vertxContext, asyncResultHandler);
     } else if (transaction.getTransactionType() == Transaction.TransactionType.PAYMENT
         || transaction.getTransactionType() == Transaction.TransactionType.CREDIT) {
-      return new PaymentCreditHandler(okapiHeaders, vertxContext, asyncResultHandler);
+      return new InvoiceTransactionsHandler(okapiHeaders, vertxContext, asyncResultHandler);
+    }
+    return new DefaultTransactionHandler(okapiHeaders, vertxContext, asyncResultHandler);
+  }
+
+  private TransactionHandler getUpdateTransactionHandler(Transaction transaction, Map<String, String> okapiHeaders, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+    if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
+      return new InvoiceTransactionsHandler(okapiHeaders, vertxContext, asyncResultHandler);
     }
     return new DefaultTransactionHandler(okapiHeaders, vertxContext, asyncResultHandler);
   }
