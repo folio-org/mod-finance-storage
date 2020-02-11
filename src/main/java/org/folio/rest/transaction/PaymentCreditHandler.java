@@ -293,10 +293,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   private Future<List<Transaction>> getAllEncumbrances(Tx<List<Transaction>> tx) {
     Promise<List<Transaction>> promise = Promise.promise();
-    String sql = "SELECT DISTINCT ON (permtransactions.id) permtransactions.jsonb " + "FROM "
-        + getFullTableName(getTenantId(), TRANSACTIONS_TABLE) + " AS permtransactions " + "INNER JOIN "
-        + getFullTemporaryTransactionTableName() + " AS transactions "
-        + "ON transactions.paymentEncumbranceId = permtransactions.id" + " WHERE transactions.sourceInvoiceId = ?";
+    String sql = buildGetPermanentEncumbrancesQuery();
     JsonArray params = new JsonArray();
     params.add(getSummaryId(tx.getEntity()
       .get(0)));
@@ -315,6 +312,13 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
         }
       });
     return promise.future();
+  }
+
+  private String buildGetPermanentEncumbrancesQuery() {
+    return String.format(
+        "SELECT DISTINCT ON (permtransactions.id) permtransactions.jsonb FROM %s AS permtransactions INNER JOIN %s AS transactions "
+            + "ON transactions.paymentEncumbranceId = permtransactions.id WHERE transactions.sourceInvoiceId = ?",
+        getFullTableName(getTenantId(), TRANSACTIONS_TABLE), getFullTemporaryTransactionTableName());
   }
 
   private Future<Tx<List<Transaction>>> updateLedgerFYsTotals(Tx<List<Transaction>> tx) {
@@ -379,10 +383,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     if (ledgerFYs.isEmpty()) {
       promise.complete(tx);
     } else {
-      List<JsonObject> jsonLedgerFYs = ledgerFYs.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
-      String sql = "UPDATE " + getFullTableName(getTenantId(), LEDGERFY_TABLE) + " AS ledger_fy " +
-        "SET jsonb = b.jsonb FROM (VALUES  " + getValues(jsonLedgerFYs) + ") AS b (id, jsonb) " +
-        "WHERE b.id::uuid = ledger_fy.id;";
+      String sql = getLedgerFyUpdateQuery(ledgerFYs);
       tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
@@ -394,16 +395,20 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     return promise.future();
   }
 
-  private String getLedgersQuery(){
-    return "SELECT ledger_fy.jsonb, transactions.jsonb FROM " + getFullTableName(getTenantId(), LEDGERFY_TABLE)
-      + " AS ledger_fy INNER JOIN " + getFullTableName(getTenantId(), FUND_TABLE) + " AS funds"
-      + " ON (funds.ledgerId = ledger_fy.ledgerId)"
-      + " INNER JOIN " + getFullTemporaryTransactionTableName() + " AS transactions"
-      + " ON (funds.id = transactions.fromFundId OR funds.id = transactions.toFundId)"
-      + " WHERE (transactions.sourceInvoiceId = ? AND ledger_fy.fiscalYearId = transactions.fiscalYearId AND transactions.paymentEncumbranceId IS NULL);";
+  private String getLedgerFyUpdateQuery(List<LedgerFY> ledgerFYs) {
+    List<JsonObject> jsonLedgerFYs = ledgerFYs.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
+    return String.format("UPDATE %s AS ledger_fy SET jsonb = b.jsonb FROM (VALUES  %s) AS b (id, jsonb) "
+        + "WHERE b.id::uuid = ledger_fy.id;", getFullTableName(getTenantId(), LEDGERFY_TABLE), getValues(jsonLedgerFYs));
   }
 
-
+  private String getLedgersQuery() {
+    return String.format("SELECT ledger_fy.jsonb, transactions.jsonb FROM %s AS ledger_fy INNER JOIN %s AS funds"
+        + " ON (funds.ledgerId = ledger_fy.ledgerId) INNER JOIN %s AS transactions"
+        + " ON (funds.id = transactions.fromFundId OR funds.id = transactions.toFundId)"
+        + " WHERE (transactions.sourceInvoiceId = ? AND ledger_fy.fiscalYearId = transactions.fiscalYearId AND transactions.paymentEncumbranceId IS NULL);",
+        getFullTableName(getTenantId(), LEDGERFY_TABLE), getFullTableName(getTenantId(), FUND_TABLE),
+        getFullTemporaryTransactionTableName());
+  }
 
   @Override
   public void updateTransaction(Transaction transaction) {
@@ -430,17 +435,17 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   @Override
   String createTempTransactionQuery() {
-    return "INSERT INTO " + getFullTemporaryTransactionTableName() + " (id, jsonb) VALUES (?, ?::JSON) "
-        + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), " + "lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
+    return String.format("INSERT INTO %s (id, jsonb) VALUES (?, ?::JSON) "
+        + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
         + "lower(f_unaccent(jsonb ->> 'sourceInvoiceId'::text)), "
         + "lower(f_unaccent(jsonb ->> 'sourceInvoiceLineId'::text)), "
         + "lower(f_unaccent(jsonb ->> 'toFundId'::text)), "
-        + "lower(f_unaccent(jsonb ->> 'transactionType'::text))) " + "DO UPDATE SET id = excluded.id RETURNING id;";
+        + "lower(f_unaccent(jsonb ->> 'transactionType'::text))) DO UPDATE SET id = excluded.id RETURNING id;", getFullTemporaryTransactionTableName());
   }
 
   @Override
   String createPermanentTransactionsQuery() {
-    return String.format("INSERT INTO %s (id, jsonb) " + "SELECT id, jsonb FROM %s WHERE sourceInvoiceId = ? AND jsonb ->> 'transactionType' != 'Encumbrance'"
+    return String.format("INSERT INTO %s (id, jsonb) SELECT id, jsonb FROM %s WHERE sourceInvoiceId = ? AND jsonb ->> 'transactionType' != 'Encumbrance'"
         + "ON CONFLICT DO NOTHING;", getFullTransactionTableName(), getTemporaryTransactionTable());
 
   }
@@ -452,10 +457,10 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   @Override
   protected String getBudgetsQuery(){
-   return "SELECT DISTINCT ON (budgets.id) budgets.jsonb " + "FROM " + getFullTableName(getTenantId(), BUDGET_TABLE)
-    + " AS budgets " + "INNER JOIN " + getFullTemporaryTransactionTableName() + " AS transactions "
-    + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = ?";
+    return String.format("SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+        + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
+        + "WHERE transactions.sourceInvoiceId = ?", getFullTableName(getTenantId(), BUDGET_TABLE),
+        getFullTemporaryTransactionTableName());
   }
 
   @Override

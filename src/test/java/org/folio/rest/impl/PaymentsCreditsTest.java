@@ -273,11 +273,9 @@ class PaymentsCreditsTest extends TestBase {
     Double expectedBudgetAvailable = sumValues(sumValues(creditBudgetBefore.getAvailable(), credit.getAmount()), credit.getAmount());
     Double expectedBudgetUnavailable = subtractValues(subtractValues(creditBudgetBefore.getUnavailable(), credit.getAmount()), credit.getAmount());
     // credit changes, available must increase and unavailable decreases
-    assertEquals(credit.getAmount(), subtractValues(creditBudgetAfter.getAvailable(), creditBudgetBefore.getAvailable()));
-    assertEquals(-credit.getAmount(), subtractValues(creditBudgetAfter.getUnavailable(), creditBudgetBefore.getUnavailable()));
-    assertEquals(Math.max(0d, -credit.getAmount()), subtractValues(creditBudgetAfter.getExpenditures(), creditBudgetBefore.getExpenditures()));
     assertEquals(expectedBudgetAvailable, creditBudgetAfter.getAvailable());
     assertEquals(expectedBudgetUnavailable, creditBudgetAfter.getUnavailable());
+    assertEquals(Math.max(0d, -credit.getAmount()), subtractValues(creditBudgetAfter.getExpenditures(), creditBudgetBefore.getExpenditures()));
 
 
     assertEquals(paymentLedgerFYAfter.getAvailable(), subtractValues(paymentLedgerFYBefore.getAvailable(), payment.getAmount()));
