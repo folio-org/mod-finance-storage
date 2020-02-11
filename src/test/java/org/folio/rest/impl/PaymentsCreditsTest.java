@@ -3,28 +3,34 @@ package org.folio.rest.impl;
 import static org.folio.rest.impl.TransactionTest.BUDGETS;
 import static org.folio.rest.impl.TransactionTest.BUDGETS_QUERY;
 import static org.folio.rest.impl.TransactionTest.ENCUMBRANCE_SAMPLE;
+import static org.folio.rest.impl.TransactionTest.LEDGER_FYS_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
+import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import io.vertx.core.json.JsonObject;
-
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.util.UUID;
+
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
+import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
+import org.folio.rest.jaxrs.model.LedgerFY;
+import org.folio.rest.jaxrs.model.LedgerFYCollection;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.junit.jupiter.api.Test;
+
+import io.vertx.core.json.JsonObject;
 
 class PaymentsCreditsTest extends TestBase {
   private static final String CREDIT_SAMPLE = "data/transactions/credits/credit_CANHIST_30121.json";
@@ -56,6 +62,8 @@ class PaymentsCreditsTest extends TestBase {
 
     // prepare budget queries
     String budgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+    Fund paymentFund = getDataById(FUND.getEndpointWithId(), fromFundId, TRANSACTION_TENANT_HEADER).as(Fund.class);
+    String paymentLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, paymentFund.getLedgerId(), fY);
 
     // create 1st Encumbrance, expected number is 2
     String paymentEncumbranceId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(paymentEncumbranceBefore)
@@ -74,11 +82,12 @@ class PaymentsCreditsTest extends TestBase {
         .getId();
 
     Budget budgetBefore = getBudgetAndValidate(budgetEndpointWithQueryParams);
+    LedgerFY ledgerFYBefore = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
 
-    JsonObject paymentjsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
-    paymentjsonTx.remove("id");
+    JsonObject paymentJsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
+    paymentJsonTx.remove("id");
 
-    Transaction payment = paymentjsonTx.mapTo(Transaction.class);
+    Transaction payment = paymentJsonTx.mapTo(Transaction.class);
     payment.setSourceInvoiceId(invoiceId);
     payment.setFiscalYearId(fY);
     payment.setFromFundId(fromFundId);
@@ -95,10 +104,10 @@ class PaymentsCreditsTest extends TestBase {
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(404);
 
-    JsonObject creditjsonTx = new JsonObject(getFile(CREDIT_SAMPLE));
-    creditjsonTx.remove("id");
+    JsonObject creditJsonTx = new JsonObject(getFile(CREDIT_SAMPLE));
+    creditJsonTx.remove("id");
 
-    Transaction credit = creditjsonTx.mapTo(Transaction.class);
+    Transaction credit = creditJsonTx.mapTo(Transaction.class);
     credit.setSourceInvoiceId(invoiceId);
     credit.setFiscalYearId(fY);
     credit.setToFundId(fromFundId);
@@ -131,6 +140,10 @@ class PaymentsCreditsTest extends TestBase {
           .statusCode(200)
           .extract()
           .as(Transaction.class);
+
+    LedgerFY ledgerFYAfter = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
+
+    assertEquals(ledgerFYBefore, ledgerFYAfter);
 
     // Encumbrance Changes for payment
     assertEquals(-payment.getAmount(), subtractValues(paymentEncumbranceAfter.getEncumbrance()
@@ -168,21 +181,27 @@ class PaymentsCreditsTest extends TestBase {
     prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID().toString();
-    createInvoiceSummary(invoiceId, 2);
+    createInvoiceSummary(invoiceId, 3);
 
-    JsonObject paymentjsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
-    paymentjsonTx.remove("id");
+    JsonObject paymentJsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
+    paymentJsonTx.remove("id");
 
-    Transaction payment = paymentjsonTx.mapTo(Transaction.class);
+    Transaction payment = paymentJsonTx.mapTo(Transaction.class);
     payment.setSourceInvoiceId(invoiceId);
     payment.setPaymentEncumbranceId(null);
 
     String fY = payment.getFiscalYearId();
     String fromFundId = payment.getFromFundId();
 
+
+    Fund paymentFund = getDataById(FUND.getEndpointWithId(), fromFundId, TRANSACTION_TENANT_HEADER).as(Fund.class);
+
     // prepare budget queries
     String paymentBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+    String paymentLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, paymentFund.getLedgerId(), fY);
+
     Budget paymentBudgetBefore = getBudgetAndValidate(paymentBudgetEndpointWithQueryParams);
+    LedgerFY paymentLedgerFYBefore = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
 
     String paymentId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
       .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
@@ -195,16 +214,21 @@ class PaymentsCreditsTest extends TestBase {
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(404);
 
-    JsonObject creditjsonTx = new JsonObject(getFile(CREDIT_SAMPLE));
-    creditjsonTx.remove("id");
+    JsonObject creditJsonTx = new JsonObject(getFile(CREDIT_SAMPLE));
+    creditJsonTx.remove("id");
 
-    Transaction credit = creditjsonTx.mapTo(Transaction.class);
+    Transaction credit = creditJsonTx.mapTo(Transaction.class);
     credit.setSourceInvoiceId(invoiceId);
     credit.setFiscalYearId(fY);
     credit.setPaymentEncumbranceId(null);
     credit.setAmount(30d);
 
+    Fund creditFund = getDataById(FUND.getEndpointWithId(), credit.getToFundId(), TRANSACTION_TENANT_HEADER).as(Fund.class);
+
     String creditBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, credit.getToFundId());
+    String creditLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, creditFund.getLedgerId(), credit.getFiscalYearId());
+
+    LedgerFY creditLedgerFYBefore = getLedgerFYAndValidate(creditLedgerFYEndpointWithQueryParams);
     Budget creditBudgetBefore = getBudgetAndValidate(creditBudgetEndpointWithQueryParams);
 
     String creditId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit)
@@ -213,6 +237,13 @@ class PaymentsCreditsTest extends TestBase {
         .extract()
         .as(Transaction.class)
         .getId();
+
+    String creditId1 = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit)
+      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class)
+      .getId();
 
     // 2 transactions appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
@@ -227,6 +258,9 @@ class PaymentsCreditsTest extends TestBase {
     Budget paymentBudgetAfter = getBudgetAndValidate(paymentBudgetEndpointWithQueryParams);
     Budget creditBudgetAfter = getBudgetAndValidate(creditBudgetEndpointWithQueryParams);
 
+    LedgerFY creditLedgerFYAfter = getLedgerFYAndValidate(creditLedgerFYEndpointWithQueryParams);
+    LedgerFY paymentLedgerFYAfter = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
+
     // awaiting payment, encumberedmexpenditures must remain same
     assertEquals(0d, subtractValues(paymentBudgetAfter.getAwaitingPayment(), paymentBudgetBefore.getAwaitingPayment()));
     assertEquals(0d, subtractValues(paymentBudgetAfter.getEncumbered(), paymentBudgetBefore.getEncumbered()));
@@ -236,10 +270,19 @@ class PaymentsCreditsTest extends TestBase {
     assertEquals(-payment.getAmount(), subtractValues(paymentBudgetAfter.getAvailable(), paymentBudgetBefore.getAvailable()));
     assertEquals(payment.getAmount(), subtractValues(paymentBudgetAfter.getUnavailable(), paymentBudgetBefore.getUnavailable()));
 
+    Double expectedBudgetAvailable = sumValues(sumValues(creditBudgetBefore.getAvailable(), credit.getAmount()), credit.getAmount());
+    Double expectedBudgetUnavailable = subtractValues(subtractValues(creditBudgetBefore.getUnavailable(), credit.getAmount()), credit.getAmount());
     // credit changes, available must increase and unavailable decreases
-    assertEquals(credit.getAmount(), subtractValues(creditBudgetAfter.getAvailable(), creditBudgetBefore.getAvailable()));
-    assertEquals(-credit.getAmount(), subtractValues(creditBudgetAfter.getUnavailable(), creditBudgetBefore.getUnavailable()));
+    assertEquals(expectedBudgetAvailable, creditBudgetAfter.getAvailable());
+    assertEquals(expectedBudgetUnavailable, creditBudgetAfter.getUnavailable());
     assertEquals(Math.max(0d, -credit.getAmount()), subtractValues(creditBudgetAfter.getExpenditures(), creditBudgetBefore.getExpenditures()));
+
+
+    assertEquals(paymentLedgerFYAfter.getAvailable(), subtractValues(paymentLedgerFYBefore.getAvailable(), payment.getAmount()));
+    assertEquals(paymentLedgerFYAfter.getUnavailable(), sumValues(paymentLedgerFYBefore.getUnavailable(), payment.getAmount()));
+
+    assertEquals(creditLedgerFYAfter.getAvailable(),  sumValues(sumValues(creditLedgerFYBefore.getAvailable(), credit.getAmount()), credit.getAmount()));
+    assertEquals(creditLedgerFYAfter.getUnavailable(), subtractValues(subtractValues(creditLedgerFYBefore.getUnavailable(), credit.getAmount()), credit.getAmount()));
 
     deleteTenant(TRANSACTION_TENANT_HEADER);
 
@@ -344,12 +387,24 @@ class PaymentsCreditsTest extends TestBase {
     return BigDecimal.valueOf(d1).subtract(BigDecimal.valueOf(d2)).doubleValue();
   }
 
+  protected double sumValues(double d1, double d2) {
+    return BigDecimal.valueOf(d1).add(BigDecimal.valueOf(d2)).doubleValue();
+  }
+
   protected Budget getBudgetAndValidate(String endpoint) throws MalformedURLException {
     return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .body(BUDGETS, hasSize(1))
       .extract()
       .as(BudgetCollection.class).getBudgets().get(0);
+  }
+
+  protected LedgerFY getLedgerFYAndValidate(String endpoint) throws MalformedURLException {
+    return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(200)
+      .body("ledgerFY", hasSize(1))
+      .extract()
+      .as(LedgerFYCollection.class).getLedgerFY().get(0);
   }
 
 }

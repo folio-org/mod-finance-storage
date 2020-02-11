@@ -113,12 +113,13 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   @Override
   String createTempTransactionQuery() {
-    return "INSERT INTO " + getFullTemporaryTransactionTableName() + " (id, jsonb) VALUES (?, ?::JSON) "
-        + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), " + "lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
+    return String.format("INSERT INTO %s (id, jsonb) VALUES (?, ?::JSON) "
+        + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
         + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text)), "
         + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text)), "
         + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text)), "
-        + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'status'::text))) " + "DO UPDATE SET id = excluded.id RETURNING id;";
+        + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'status'::text))) DO UPDATE SET id = excluded.id RETURNING id;",
+        getFullTemporaryTransactionTableName());
   }
 
   @Override
@@ -145,11 +146,11 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   @Override
   protected String getBudgetsQuery() {
-    return "SELECT DISTINCT ON (budgets.id) budgets.jsonb " +
-    "FROM " + getFullTableName(getTenantId(), BUDGET_TABLE) + " AS budgets " +
-    "INNER JOIN "+ getFullTemporaryTransactionTableName() + " AS transactions " +
-    "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId " +
-    "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
+    return String.format(
+        "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+            + "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId "
+            + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?",
+        getFullTableName(getTenantId(), BUDGET_TABLE), getFullTemporaryTransactionTableName());
   }
 
   private List<Budget> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> tempTransactions, List<Budget> budgets) {
