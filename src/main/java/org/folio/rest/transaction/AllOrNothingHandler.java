@@ -135,7 +135,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     try {
       handleValidationError(transaction);
       return getExistentBudget(transaction)
-        .compose(budget -> checkEncumbranceRestrictions(transaction, budget))
+        .compose(budget -> checkTransactionRestrictions(transaction, budget))
         .compose(v -> createTempTransaction(transaction))
         .compose(this::getSummary)
         .compose(this::getTempTransactions)
@@ -382,7 +382,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
-  private Future<Void> checkEncumbranceRestrictions(Transaction transaction, Budget budget) {
+  private Future<Void> checkTransactionRestrictions(Transaction transaction, Budget budget) {
     Promise<Void> promise = Promise.promise();
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE
         || transaction.getTransactionType() == Transaction.TransactionType.PAYMENT) {
@@ -460,7 +460,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   /**
    * Calculates remaining amount for payment
-   * [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable + available)) - (awaitingPayment + expended)
+   * [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable + available)) - (awaitingPayment + expended + encumbered)
    *
    * @param budget     processed budget
    * @param currency   processed transaction currency
@@ -474,10 +474,11 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Money available = Money.of(budget.getAvailable(), currency);
     Money expenditure = Money.of(budget.getExpenditures(), currency);
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
+    Money encumbered = Money.of(budget.getEncumbered(), currency);
 
     Money result = allocated.multiply(allowableExpenditure);
     result = result.subtract(allocated.subtract(unavailable.add(available)));
-    result = result.subtract(expenditure.add(awaitingPayment));
+    result = result.subtract(expenditure.add(awaitingPayment).add(encumbered));
 
     return result.getNumber().doubleValue();
   }
