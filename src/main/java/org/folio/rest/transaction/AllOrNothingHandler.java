@@ -308,9 +308,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   protected Future<Tx<List<Transaction>>> updateBudgets(Tx<List<Transaction>> tx, List<Budget> budgets) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
     List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
-    String sql = "UPDATE " + getFullTableName(getTenantId(), BUDGET_TABLE) + " AS budgets " +
-      "SET jsonb = b.jsonb FROM (VALUES  " + getValues(jsonBudgets) + ") AS b (id, jsonb) " +
-      "WHERE b.id::uuid = budgets.id;";
+    String sql = buildUpdateBudgetsQuery(jsonBudgets);
     tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
       if (reply.failed()) {
         handleFailure(promise, reply);
@@ -320,6 +318,13 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     });
     return promise.future();
   }
+
+  private String buildUpdateBudgetsQuery(List<JsonObject> jsonBudgets) {
+    return String.format(
+        "UPDATE %s AS budgets SET jsonb = b.jsonb FROM (VALUES  %s) AS b (id, jsonb) WHERE b.id::uuid = budgets.id;",
+        getFullTableName(getTenantId(), BUDGET_TABLE), getValues(jsonBudgets));
+  }
+
 
   protected Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
     return updatePermanentTransactions(tx, tx.getEntity());
@@ -331,9 +336,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     if (transactions.isEmpty()) {
       promise.complete(tx);
     } else {
-      String sql = "UPDATE " + getFullTransactionTableName() + " AS transactions " +
-        "SET jsonb = t.jsonb FROM (VALUES  " + getValues(jsonTransactions) + ") AS t (id, jsonb) " +
-        "WHERE t.id::uuid = transactions.id;";
+      String sql =buildUpdatePermanentTransactionQuery(transactions);
       tx.getPgClient()
         .execute(tx.getConnection(), sql, reply -> {
           if (reply.failed()) {
@@ -344,6 +347,12 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         });
     }
     return promise.future();
+  }
+
+  private String buildUpdatePermanentTransactionQuery(List<JsonObject> transactions) {
+    return String.format("UPDATE %s AS transactions " +
+      "SET jsonb = t.jsonb FROM (VALUES  %s) AS t (id, jsonb) " +
+      "WHERE t.id::uuid = transactions.id;", getFullTransactionTableName(), getValues(transactions));
   }
 
   protected Future<List<Budget>> getBudgets(Tx<List<Transaction>> tx) {

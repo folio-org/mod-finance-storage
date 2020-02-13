@@ -21,7 +21,7 @@ import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.Tx;
 
 public class FinanceStorageAPI implements FinanceStorageLedgerFiscalYears {
-  static final String LEDGERFY_TABLE = "ledgerFY";
+  public static final String LEDGERFY_TABLE = "ledgerFY";
 
   @Override
   public void getFinanceStorageLedgerFiscalYears(int offset, int limit, String query, String lang, Map<String, String> okapiHeaders,

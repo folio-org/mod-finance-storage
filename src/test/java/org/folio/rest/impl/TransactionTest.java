@@ -59,7 +59,7 @@ class TransactionTest extends TestBase {
   public static final String BUDGET_SAMPLE = "data/budgets/AFRICAHIST-FY20.json";
   static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
   private static String LEDGERS_QUERY = LEDGER.getEndpoint() + LEDGER_QUERY;
-  private static String LEDGER_FYS_ENDPOINT = getEndpoint(FinanceStorageLedgerFiscalYears.class) + LEDGER_FY_QUERY;
+  public static String LEDGER_FYS_ENDPOINT = getEndpoint(FinanceStorageLedgerFiscalYears.class) + LEDGER_FY_QUERY;
   static final String BUDGETS = "budgets";
   private static final String LEDGERS = "ledgers";
 

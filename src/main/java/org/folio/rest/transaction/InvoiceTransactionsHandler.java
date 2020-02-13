@@ -2,9 +2,12 @@ package org.folio.rest.transaction;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
+import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.impl.TransactionSummaryAPI.INVOICE_TRANSACTION_SUMMARIES;
 import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValue;
 import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValueNotJsonb;
@@ -14,22 +17,19 @@ import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
+import javax.money.MonetaryAmount;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.collections4.keyvalue.MultiKey;
@@ -39,6 +39,7 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.Criteria.GroupedCriterias;
@@ -47,6 +48,17 @@ import org.folio.rest.persist.MoneyUtils;
 import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.javamoney.moneta.Money;
+import org.javamoney.moneta.function.MonetaryFunctions;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class InvoiceTransactionsHandler extends AllOrNothingHandler {
 
@@ -71,6 +83,7 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
   @Override
   public Future<Tx<List<Transaction>>> processTemporaryToPermanentTransactions(Tx<List<Transaction>> tx) {
     return updateEncumbranceTotals(tx).compose(this::updateBudgetsTotals)
+      .compose(this::updateLedgerFYsTotals)
       .compose(this::createPermanentTransactions);
   }
 
@@ -105,13 +118,11 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
 
   private Future<Tx<List<Transaction>>> updateBudgetsTotals(Tx<List<Transaction>> tx) {
     return getBudgets(tx).map(budgets -> budgets.stream()
-      .collect(toMap(Budget::getFundId, identity())))
-      .map(groupedbudgets -> calculatePaymentBudgetsTotals(tx.getEntity(), groupedbudgets))
+      .collect(toMap(Budget::getFundId, Function.identity())))
+      .map(groupedBudgets -> calculatePaymentBudgetsTotals(tx.getEntity(), groupedBudgets))
       .map(grpBudgets -> calculateCreditBudgetsTotals(tx.getEntity(), grpBudgets))
       .map(grpBudgets -> calculateNonEncumbranceBudgetTotals(tx.getEntity(), grpBudgets))
-      .compose(budgets -> updateBudgets(tx, budgets.values()
-        .stream()
-        .collect(Collectors.toList())));
+      .compose(budgets -> updateBudgets(tx, new ArrayList<Budget>(budgets.values())));
   }
 
   private Map<String, Budget> calculatePaymentBudgetsTotals(List<Transaction> tempTransactions,
@@ -203,9 +214,11 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
         if (isCreditTransaction.test(txn)) {
           budget.setAvailable(MoneyUtils.sumMoney(budget.getAvailable(), txn.getAmount(), currency));
           budget.setUnavailable(MoneyUtils.subtractMoney(budget.getUnavailable(), txn.getAmount(), currency));
+          budget.setExpenditures(MoneyUtils.subtractMoneyNonNegative(budget.getExpenditures(), txn.getAmount(), currency));
         } else if (isPaymentTransaction.test(txn)) {
           budget.setAvailable(MoneyUtils.subtractMoney(budget.getAvailable(), txn.getAmount(), currency));
           budget.setUnavailable(MoneyUtils.sumMoney(budget.getUnavailable(), txn.getAmount(), currency));
+          budget.setExpenditures(MoneyUtils.sumMoney(budget.getExpenditures(), txn.getAmount(), currency));
         }
 
       });
@@ -291,10 +304,7 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
 
   private Future<List<Transaction>> getAllEncumbrances(Tx<List<Transaction>> tx) {
     Promise<List<Transaction>> promise = Promise.promise();
-    String sql = "SELECT DISTINCT ON (permtransactions.id) permtransactions.jsonb " + "FROM "
-        + getFullTableName(getTenantId(), TRANSACTIONS_TABLE) + " AS permtransactions " + "INNER JOIN "
-        + getFullTemporaryTransactionTableName() + " AS transactions "
-        + "ON transactions.paymentEncumbranceId = permtransactions.id" + " WHERE transactions.sourceInvoiceId = ?";
+    String sql = buildGetPermanentEncumbrancesQuery();
     JsonArray params = new JsonArray();
     params.add(getSummaryId(tx.getEntity()
       .get(0)));
@@ -313,6 +323,102 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
         }
       });
     return promise.future();
+  }
+
+  private String buildGetPermanentEncumbrancesQuery() {
+    return String.format(
+        "SELECT DISTINCT ON (permtransactions.id) permtransactions.jsonb FROM %s AS permtransactions INNER JOIN %s AS transactions "
+            + "ON transactions.paymentEncumbranceId = permtransactions.id WHERE transactions.sourceInvoiceId = ?",
+        getFullTableName(getTenantId(), TRANSACTIONS_TABLE), getFullTemporaryTransactionTableName());
+  }
+
+  private Future<Tx<List<Transaction>>> updateLedgerFYsTotals(Tx<List<Transaction>> tx) {
+    return groupTempTransactionsByLedgerFy(tx)
+      .map(this::calculateLedgerFyTotals)
+      .compose(ledgers -> updateLedgerFYs(tx, ledgers));
+  }
+
+  private Future<Map<LedgerFY, List<Transaction>>> groupTempTransactionsByLedgerFy(Tx<List<Transaction>> tx) {
+    Promise<Map<LedgerFY, List<Transaction>>> promise = Promise.promise();
+    String sql = getLedgersQuery();
+    JsonArray params = new JsonArray();
+    params.add(getSummaryId(tx.getEntity()
+      .get(0)));
+    tx.getPgClient()
+      .select(tx.getConnection(), sql, params, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          Map<LedgerFY, List<Transaction>> ledgers = reply.result()
+            .getResults()
+            .stream()
+            .collect(ledgerFYTransactionsMapping());
+          promise.complete(ledgers);
+        }
+      });
+    return promise.future();
+  }
+
+  private Collector<JsonArray, ?, HashMap<LedgerFY, List<Transaction>>> ledgerFYTransactionsMapping() {
+    int ledgerFYColumnNumber = 0;
+    int transactionsColumnNumber = 1;
+    return toMap(o -> new JsonObject(o.getString(ledgerFYColumnNumber))
+      .mapTo(LedgerFY.class), o -> Collections.singletonList(new JsonObject(o.getString(transactionsColumnNumber))
+      .mapTo(Transaction.class)), (o, o2) -> {
+      List<Transaction> newList = new ArrayList<>(o); newList.addAll(o2); return newList;}, HashMap::new);
+  }
+
+  private List<LedgerFY> calculateLedgerFyTotals(Map<LedgerFY, List<Transaction>> groupedLedgerFYs) {
+    return groupedLedgerFYs.entrySet().stream().map(this::updateLedgerFY).collect(toList());
+  }
+
+  private LedgerFY updateLedgerFY(Map.Entry<LedgerFY, List<Transaction>> ledgerFYListEntry) {
+    LedgerFY ledgerFY = ledgerFYListEntry.getKey();
+    MonetaryAmount totalAmount = getTotalTransactionsAmount(ledgerFYListEntry);
+    double newAvailable = Math.max(Money.of(ledgerFY.getAvailable(), ledgerFY.getCurrency()).add(totalAmount).getNumber().doubleValue(), 0d);
+    double newUnavailable = Math.max(Money.of(ledgerFY.getUnavailable(), ledgerFY.getCurrency()).subtract(totalAmount).getNumber().doubleValue(), 0d);
+
+    return ledgerFY
+      .withAvailable(newAvailable)
+      .withUnavailable(newUnavailable);
+  }
+
+  private MonetaryAmount getTotalTransactionsAmount(Map.Entry<LedgerFY, List<Transaction>> ledgerFYListEntry) {
+    return ledgerFYListEntry.getValue().stream()
+      .map(transaction -> (MonetaryAmount) Money.of(transaction.getTransactionType() == Transaction.TransactionType.PAYMENT ? - transaction.getAmount() : transaction.getAmount(), transaction.getCurrency()))
+      .reduce(MonetaryFunctions::sum).orElse(Money.zero(Monetary.getCurrency(ledgerFYListEntry.getKey().getCurrency())));
+  }
+
+  private Future<Tx<List<Transaction>>> updateLedgerFYs(Tx<List<Transaction>> tx, List<LedgerFY> ledgerFYs) {
+    Promise<Tx<List<Transaction>>> promise = Promise.promise();
+    if (ledgerFYs.isEmpty()) {
+      promise.complete(tx);
+    } else {
+      String sql = getLedgerFyUpdateQuery(ledgerFYs);
+      tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete(tx);
+        }
+      });
+    }
+    return promise.future();
+  }
+
+  private String getLedgerFyUpdateQuery(List<LedgerFY> ledgerFYs) {
+    List<JsonObject> jsonLedgerFYs = ledgerFYs.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
+    return String.format("UPDATE %s AS ledger_fy SET jsonb = b.jsonb FROM (VALUES  %s) AS b (id, jsonb) "
+        + "WHERE b.id::uuid = ledger_fy.id;", getFullTableName(getTenantId(), LEDGERFY_TABLE), getValues(jsonLedgerFYs));
+  }
+
+  private String getLedgersQuery() {
+    return String.format("SELECT ledger_fy.jsonb, transactions.jsonb FROM %s AS ledger_fy INNER JOIN %s AS funds"
+        + " ON (funds.ledgerId = ledger_fy.ledgerId) INNER JOIN %s AS transactions"
+        + " ON (funds.id = transactions.fromFundId OR funds.id = transactions.toFundId)"
+        + " WHERE (transactions.sourceInvoiceId = ? AND ledger_fy.fiscalYearId = transactions.fiscalYearId AND transactions.paymentEncumbranceId IS NULL);",
+        getFullTableName(getTenantId(), LEDGERFY_TABLE), getFullTableName(getTenantId(), FUND_TABLE),
+        getFullTemporaryTransactionTableName());
   }
 
   @Override
@@ -490,27 +596,27 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
 
   @Override
   String createTempTransactionQuery() {
-    return "INSERT INTO " + getFullTemporaryTransactionTableName() + " (id, jsonb) VALUES (?, ?::JSON) "
-        + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), " + "lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
+    return String.format("INSERT INTO %s (id, jsonb) VALUES (?, ?::JSON) "
+        + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
         + "lower(f_unaccent(jsonb ->> 'sourceInvoiceId'::text)), "
         + "lower(f_unaccent(jsonb ->> 'sourceInvoiceLineId'::text)), "
         + "lower(f_unaccent(jsonb ->> 'toFundId'::text)), "
-        + "lower(f_unaccent(jsonb ->> 'transactionType'::text))) " + "DO UPDATE SET id = excluded.id RETURNING id;";
+        + "lower(f_unaccent(jsonb ->> 'transactionType'::text))) DO UPDATE SET id = excluded.id RETURNING id;", getFullTemporaryTransactionTableName());
   }
 
   @Override
   String createPermanentTransactionsQuery() {
-    return String.format("INSERT INTO %s (id, jsonb) " + "SELECT id, jsonb FROM %s WHERE sourceInvoiceId = ? AND jsonb ->> 'transactionType' != 'Encumbrance'"
+    return String.format("INSERT INTO %s (id, jsonb) SELECT id, jsonb FROM %s WHERE sourceInvoiceId = ? AND jsonb ->> 'transactionType' != 'Encumbrance'"
         + "ON CONFLICT DO NOTHING;", getFullTransactionTableName(), getTemporaryTransactionTable());
 
   }
 
   @Override
-  protected String getBudgetsQuery() {
-   return "SELECT DISTINCT ON (budgets.id) budgets.jsonb " + "FROM " + getFullTableName(getTenantId(), BUDGET_TABLE)
-    + " AS budgets " + "INNER JOIN " + getFullTemporaryTransactionTableName() + " AS transactions "
-    + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = ?";
+  protected String getBudgetsQuery(){
+    return String.format("SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+        + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
+        + "WHERE transactions.sourceInvoiceId = ?", getFullTableName(getTenantId(), BUDGET_TABLE),
+        getFullTemporaryTransactionTableName());
   }
 
   @Override
