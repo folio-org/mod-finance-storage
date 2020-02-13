@@ -182,7 +182,8 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   private Future<Ledger> getExistentLedger(Transaction transaction) {
     Promise<Ledger> promise = Promise.promise();
-    String query = "fund.id"+"="+ transaction.getFromFundId();
+    String fundId = transaction.getTransactionType() == Transaction.TransactionType.CREDIT ? transaction.getToFundId() : transaction.getFromFundId();
+    String query = "fund.id"+"=" + fundId;
     PgUtil.get(LEDGER_TABLE, Ledger.class, LedgerCollection.class, query , 0, 1, getOkapiHeaders(), getVertxContext(),
       FinanceStorageLedgers.GetFinanceStorageLedgersResponse.class, reply-> {
         if (reply.failed()) {
@@ -383,19 +384,12 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   }
 
   private Future<Void> checkTransactionRestrictions(Transaction transaction, Budget budget) {
-    Promise<Void> promise = Promise.promise();
-    if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE
-        || transaction.getTransactionType() == Transaction.TransactionType.PAYMENT) {
       if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
         log.error(BUDGET_IS_INACTIVE);
-        promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_IS_INACTIVE));
+        throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_IS_INACTIVE);
       } else {
         return checkLedgerRestrictions(transaction, budget);
       }
-    } else {
-      promise.complete();
-    }
-    return promise.future();
   }
 
   private Future<Void> checkLedgerRestrictions(Transaction transaction, Budget budget) {
@@ -403,15 +397,15 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     getExistentLedger(transaction).setHandler(result -> {
       if (result.succeeded()) {
         if (isEncumbranceRestricted(transaction, budget, result.result())) {
-          double remainingAmountForEncumbrance = getBudgetRemainingAmountForEncumbrance(budget, transaction.getCurrency());
-          if (remainingAmountForEncumbrance < transaction.getAmount()) {
+          Money remainingAmountForEncumbrance = getBudgetRemainingAmountForEncumbrance(budget, transaction.getCurrency());
+          if (Money.of(transaction.getAmount(), transaction.getCurrency()).isGreaterThan(remainingAmountForEncumbrance)) {
             promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID));
             return;
           }
         }
         else if (isPaymentRestricted(transaction, budget, result.result())) {
-          double remainingAmountForPayment = getBudgetRemainingAmountForPayment(budget, transaction.getCurrency());
-          if (remainingAmountForPayment < transaction.getAmount()) {
+          Money remainingAmountForPayment = getBudgetRemainingAmountForPayment(budget, transaction.getCurrency());
+          if (Money.of(transaction.getAmount(), transaction.getCurrency()).isGreaterThan(remainingAmountForPayment)) {
             promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID));
             return;
           }
@@ -442,7 +436,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
    * @param currency   processed transaction currency
    * @return remaining amount for encumbrance
    */
-  private double getBudgetRemainingAmountForEncumbrance(Budget budget, String currency) {
+  private Money getBudgetRemainingAmountForEncumbrance(Budget budget, String currency) {
     Money allocated = Money.of(budget.getAllocated(), currency);
     // get allowableEncumbered converted from percentage value
     double allowableEncumbered = Money.of(budget.getAllowableEncumbrance(), currency).divide(100d).getNumber().doubleValue();
@@ -455,7 +449,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     result = result.subtract(allocated.subtract(unavailable.add(available)));
     result = result.subtract(encumbered.add(awaitingPayment));
 
-    return result.getNumber().doubleValue();
+    return result;
   }
 
   /**
@@ -466,7 +460,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
    * @param currency   processed transaction currency
    * @return remaining amount for payment
    */
-  private double getBudgetRemainingAmountForPayment(Budget budget, String currency) {
+  private Money getBudgetRemainingAmountForPayment(Budget budget, String currency) {
     Money allocated = Money.of(budget.getAllocated(), currency);
     // get allowableExpenditure from percentage value
     double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
@@ -480,7 +474,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     result = result.subtract(allocated.subtract(unavailable.add(available)));
     result = result.subtract(expenditure.add(awaitingPayment).add(encumbered));
 
-    return result.getNumber().doubleValue();
+    return result;
   }
 
   String getTemporaryTransactionTable() {
