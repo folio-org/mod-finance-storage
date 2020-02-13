@@ -336,7 +336,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     if (transactions.isEmpty()) {
       promise.complete(tx);
     } else {
-      String sql =buildUpdatePermanentTransactionQuery(transactions);
+      String sql = buildUpdatePermanentTransactionQuery(jsonTransactions);
       tx.getPgClient()
         .execute(tx.getConnection(), sql, reply -> {
           if (reply.failed()) {
