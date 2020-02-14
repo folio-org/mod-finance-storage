@@ -4,6 +4,31 @@
       "run": "after",
       "snippetPath": "group_budget_view.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/transaction.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/ledgers.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/funds.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/fiscal_years.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/budgets.sql",
+      "fromModuleVersion": "mod-finance-storage-4.0.0"
     }
   ],
   "tables": [
@@ -44,7 +69,6 @@
     },
     {
       "tableName": "ledger",
-      "customSnippetPath": "migration/ledgers.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [
@@ -91,7 +115,6 @@
     },
     {
       "tableName": "fund",
-      "customSnippetPath": "migration/funds.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [
@@ -149,7 +172,6 @@
     },
     {
       "tableName": "fiscal_year",
-      "customSnippetPath": "migration/fiscal_years.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "index": [
@@ -185,7 +207,6 @@
     },
     {
       "tableName": "budget",
-      "customSnippetPath": "migration/budgets.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
       "foreignKeys": [

@@ -1,5 +1,6 @@
 package org.folio.rest.impl;
 
+import static java.lang.Math.max;
 import static org.folio.rest.impl.TransactionTest.BUDGETS;
 import static org.folio.rest.impl.TransactionTest.BUDGETS_QUERY;
 import static org.folio.rest.impl.TransactionTest.ENCUMBRANCE_SAMPLE;
@@ -28,6 +29,8 @@ import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.LedgerFYCollection;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.core.json.JsonObject;
@@ -36,9 +39,18 @@ class PaymentsCreditsTest extends TestBase {
   private static final String CREDIT_SAMPLE = "data/transactions/credits/credit_CANHIST_30121.json";
   private static final String PAYMENT_SAMPLE = "data/transactions/payments/payment_ENDOW-SUBN_30121.json";
 
+  @BeforeEach
+  void prepareData() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+  }
+
+  @AfterEach
+  void cleanupData() throws MalformedURLException {
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
   @Test
   void testCreatePaymentsCreditsAllOrNothing() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID().toString();
     String orderId = UUID.randomUUID().toString();
@@ -172,13 +184,10 @@ class PaymentsCreditsTest extends TestBase {
     assertEquals(subtractValues(payment.getAmount(), credit.getAmount()),
         subtractValues(budgetAfter.getExpenditures(), budgetBefore.getExpenditures()));
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testCreatePaymentsCreditsAllOrNothingWithNoEncumbrances() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID().toString();
     createInvoiceSummary(invoiceId, 3);
@@ -245,12 +254,16 @@ class PaymentsCreditsTest extends TestBase {
       .as(Transaction.class)
       .getId();
 
-    // 2 transactions appear in transaction table
+    // 3 transactions appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .extract()
       .as(Transaction.class);
     getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(200)
+      .extract()
+      .as(Transaction.class);
+    getDataById(TRANSACTION.getEndpointWithId(), creditId1, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .extract()
       .as(Transaction.class);
@@ -261,7 +274,7 @@ class PaymentsCreditsTest extends TestBase {
     LedgerFY creditLedgerFYAfter = getLedgerFYAndValidate(creditLedgerFYEndpointWithQueryParams);
     LedgerFY paymentLedgerFYAfter = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
 
-    // awaiting payment, encumberedmexpenditures must remain same
+    // awaiting payment, encumbered must remain the same
     assertEquals(0d, subtractValues(paymentBudgetAfter.getAwaitingPayment(), paymentBudgetBefore.getAwaitingPayment()));
     assertEquals(0d, subtractValues(paymentBudgetAfter.getEncumbered(), paymentBudgetBefore.getEncumbered()));
     assertEquals(payment.getAmount(), subtractValues(paymentBudgetAfter.getExpenditures(), paymentBudgetBefore.getExpenditures()));
@@ -275,22 +288,18 @@ class PaymentsCreditsTest extends TestBase {
     // credit changes, available must increase and unavailable decreases
     assertEquals(expectedBudgetAvailable, creditBudgetAfter.getAvailable());
     assertEquals(expectedBudgetUnavailable, creditBudgetAfter.getUnavailable());
-    assertEquals(Math.max(0d, -credit.getAmount()), subtractValues(creditBudgetAfter.getExpenditures(), creditBudgetBefore.getExpenditures()));
-
+    assertEquals(max(0d, -credit.getAmount()), subtractValues(creditBudgetAfter.getExpenditures(), creditBudgetBefore.getExpenditures()));
 
     assertEquals(paymentLedgerFYAfter.getAvailable(), subtractValues(paymentLedgerFYBefore.getAvailable(), payment.getAmount()));
     assertEquals(paymentLedgerFYAfter.getUnavailable(), sumValues(paymentLedgerFYBefore.getUnavailable(), payment.getAmount()));
 
     assertEquals(creditLedgerFYAfter.getAvailable(),  sumValues(sumValues(creditLedgerFYBefore.getAvailable(), credit.getAmount()), credit.getAmount()));
-    assertEquals(creditLedgerFYAfter.getUnavailable(), subtractValues(subtractValues(creditLedgerFYBefore.getUnavailable(), credit.getAmount()), credit.getAmount()));
-
-    deleteTenant(TRANSACTION_TENANT_HEADER);
+    assertEquals(creditLedgerFYAfter.getUnavailable(), max(subtractValues(subtractValues(creditLedgerFYBefore.getUnavailable(), credit.getAmount()), credit.getAmount()), 0));
 
   }
 
   @Test
   void testCreatePaymentWithoutInvoiceSummary() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID()
       .toString();
@@ -307,13 +316,10 @@ class PaymentsCreditsTest extends TestBase {
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(400);
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testPaymentsIdempotentInTemporaryTable() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID()
       .toString();
@@ -342,13 +348,10 @@ class PaymentsCreditsTest extends TestBase {
 
     assertNotEquals(retryId, id);
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testPaymentsWithInvalidPaymentEncumbranceInTemporaryTable() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID()
       .toString();
@@ -366,8 +369,6 @@ class PaymentsCreditsTest extends TestBase {
 
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(400);
-
-    deleteTenant(TRANSACTION_TENANT_HEADER);
 
   }
 

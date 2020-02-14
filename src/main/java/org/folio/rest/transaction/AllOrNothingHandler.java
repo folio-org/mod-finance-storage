@@ -1,6 +1,8 @@
 package org.folio.rest.transaction;
 
+import static java.util.stream.Collectors.toList;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.LedgerAPI.LEDGER_TABLE;
 import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValue;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
@@ -23,6 +25,7 @@ import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
+import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
@@ -290,10 +293,9 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
-
   protected Future<Tx<List<Transaction>>> updateBudgets(Tx<List<Transaction>> tx, List<Budget> budgets) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
+    List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(toList());
     String sql = buildUpdateBudgetsQuery(jsonBudgets);
     tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
       if (reply.failed()) {
@@ -314,7 +316,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   protected Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    List<JsonObject> transactions = (tx.getEntity().stream().map(JsonObject::mapFrom).collect(Collectors.toList()));
+    List<JsonObject> transactions = (tx.getEntity().stream().map(JsonObject::mapFrom).collect(toList()));
 
     String sql = buildUpdatePermanentTransactionQuery(transactions);
     tx.getPgClient()
@@ -350,13 +352,12 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
             .stream()
             .flatMap(JsonArray::stream)
             .map(o -> new JsonObject(o.toString()).mapTo(Budget.class))
-            .collect(Collectors.toList());
+            .collect(toList());
           promise.complete(budgets);
         }
       });
     return promise.future();
   }
-
 
   protected abstract String getBudgetsQuery();
 
@@ -401,7 +402,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Promise<Void> promise = Promise.promise();
     getExistentLedger(transaction).setHandler(result -> {
       if (result.succeeded()) {
-        if (result.result().getRestrictEncumbrance().booleanValue() && budget.getAllowableEncumbrance() != null) {
+        if (result.result().getRestrictEncumbrance() && budget.getAllowableEncumbrance() != null) {
           Double remainingAmountForEncumbrance = getBudgetRemainingAmountForEncumbrance(budget, transaction.getCurrency());
           if (remainingAmountForEncumbrance < transaction.getAmount()) {
             promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID));
@@ -414,6 +415,29 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       }
     });
     return promise.future();
+  }
+
+  Future<Tx<List<Transaction>>> updateLedgerFYs(Tx<List<Transaction>> tx, List<LedgerFY> ledgerFYs) {
+    Promise<Tx<List<Transaction>>> promise = Promise.promise();
+    if (ledgerFYs.isEmpty()) {
+      promise.complete(tx);
+    } else {
+      String sql = getLedgerFyUpdateQuery(ledgerFYs);
+      tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete(tx);
+        }
+      });
+    }
+    return promise.future();
+  }
+
+  private String getLedgerFyUpdateQuery(List<LedgerFY> ledgerFYs) {
+    List<JsonObject> jsonLedgerFYs = ledgerFYs.stream().map(JsonObject::mapFrom).collect(toList());
+    return String.format("UPDATE %s AS ledger_fy SET jsonb = b.jsonb FROM (VALUES  %s) AS b (id, jsonb) "
+      + "WHERE b.id::uuid = ledger_fy.id;", getFullTableName(getTenantId(), LEDGERFY_TABLE), getValues(jsonLedgerFYs));
   }
 
   /**

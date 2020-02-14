@@ -111,7 +111,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
       .map(groupedBudgets -> calculatePaymentBudgetsTotals(tx.getEntity(), groupedBudgets))
       .map(grpBudgets -> calculateCreditBudgetsTotals(tx.getEntity(), grpBudgets))
       .map(grpBudgets -> calculateNonEncumbranceBudgetTotals(tx.getEntity(), grpBudgets))
-      .compose(budgets -> updateBudgets(tx, new ArrayList<Budget>(budgets.values())));
+      .compose(budgets -> updateBudgets(tx, new ArrayList<>(budgets.values())));
   }
 
   private Map<String, Budget> calculatePaymentBudgetsTotals(List<Transaction> tempTransactions,
@@ -159,7 +159,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   }
 
-  private Budget updateBudgetPaymentTotals(Map.Entry<Budget, List<Transaction>> entry) {
+  private void updateBudgetPaymentTotals(Map.Entry<Budget, List<Transaction>> entry) {
     Budget budget = entry.getKey();
     CurrencyUnit currency = Monetary.getCurrency(entry.getValue()
       .get(0)
@@ -170,11 +170,9 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
         double newAwaitingPayment = MoneyUtils.subtractMoneyNonNegative(budget.getAwaitingPayment(), txn.getAmount(), currency);
         budget.setAwaitingPayment(newAwaitingPayment);
       });
-
-    return budget;
   }
 
-  private Budget updateBudgetCreditTotals(Map.Entry<Budget, List<Transaction>> entry) {
+  private void updateBudgetCreditTotals(Map.Entry<Budget, List<Transaction>> entry) {
     Budget budget = entry.getKey();
     CurrencyUnit currency = Monetary.getCurrency(entry.getValue()
       .get(0)
@@ -184,7 +182,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
         budget.setExpenditures(MoneyUtils.subtractMoneyNonNegative(budget.getExpenditures(), txn.getAmount(), currency));
         budget.setEncumbered(MoneyUtils.sumMoney(budget.getEncumbered(), txn.getAmount(), currency));
       });
-    return budget;
   }
 
   /**
@@ -193,7 +190,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
    *
    * @param entry- Budget with list of transactions that do have encumbrances
    */
-  private Budget updateBudgetNoEncumbranceTotals(Map.Entry<Budget, List<Transaction>> entry) {
+  private void updateBudgetNoEncumbranceTotals(Map.Entry<Budget, List<Transaction>> entry) {
     Budget budget = entry.getKey();
     CurrencyUnit currency = Monetary.getCurrency(entry.getValue()
       .get(0)
@@ -211,7 +208,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
         }
 
       });
-    return budget;
   }
 
   /**
@@ -329,7 +325,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   private Future<Map<LedgerFY, List<Transaction>>> groupTempTransactionsByLedgerFy(Tx<List<Transaction>> tx) {
     Promise<Map<LedgerFY, List<Transaction>>> promise = Promise.promise();
-    String sql = getLedgersQuery();
+    String sql = getLedgerFYsQuery();
     JsonArray params = new JsonArray();
     params.add(getSummaryId(tx.getEntity()
       .get(0)));
@@ -378,30 +374,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
       .reduce(MonetaryFunctions::sum).orElse(Money.zero(Monetary.getCurrency(ledgerFYListEntry.getKey().getCurrency())));
   }
 
-  private Future<Tx<List<Transaction>>> updateLedgerFYs(Tx<List<Transaction>> tx, List<LedgerFY> ledgerFYs) {
-    Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    if (ledgerFYs.isEmpty()) {
-      promise.complete(tx);
-    } else {
-      String sql = getLedgerFyUpdateQuery(ledgerFYs);
-      tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
-        if (reply.failed()) {
-          handleFailure(promise, reply);
-        } else {
-          promise.complete(tx);
-        }
-      });
-    }
-    return promise.future();
-  }
-
-  private String getLedgerFyUpdateQuery(List<LedgerFY> ledgerFYs) {
-    List<JsonObject> jsonLedgerFYs = ledgerFYs.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
-    return String.format("UPDATE %s AS ledger_fy SET jsonb = b.jsonb FROM (VALUES  %s) AS b (id, jsonb) "
-        + "WHERE b.id::uuid = ledger_fy.id;", getFullTableName(getTenantId(), LEDGERFY_TABLE), getValues(jsonLedgerFYs));
-  }
-
-  private String getLedgersQuery() {
+  private String getLedgerFYsQuery() {
     return String.format("SELECT ledger_fy.jsonb, transactions.jsonb FROM %s AS ledger_fy INNER JOIN %s AS funds"
         + " ON (funds.ledgerId = ledger_fy.ledgerId) INNER JOIN %s AS transactions"
         + " ON (funds.id = transactions.fromFundId OR funds.id = transactions.toFundId)"

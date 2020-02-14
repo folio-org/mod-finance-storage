@@ -18,27 +18,23 @@ import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
 import javax.ws.rs.core.Response;
+
 import org.apache.commons.collections4.keyvalue.MultiKey;
 import org.apache.commons.collections4.map.MultiKeyMap;
 import org.folio.rest.jaxrs.model.Budget;
@@ -52,6 +48,15 @@ import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 
 public class EncumbranceHandler extends AllOrNothingHandler {
@@ -122,7 +127,6 @@ public class EncumbranceHandler extends AllOrNothingHandler {
     }
   }
 
-
   @Override
   String createTempTransactionQuery() {
     return String.format("INSERT INTO %s (id, jsonb) VALUES (?, ?::JSON) "
@@ -145,22 +149,24 @@ public class EncumbranceHandler extends AllOrNothingHandler {
     List<Transaction> tempTransactions = tx.getEntity();
 
     return getPermanentTransactions(getSummaryId(tempTransactions.get(0)))
-      .compose(existingTransactions -> updateBudgetsTotals(tx, existingTransactions))
+      .compose(existingTransactions -> updateBudgetsWithTotals(tx, existingTransactions))
       .compose(this::updatePermanentTransactions);
   }
 
-  private Future<Tx<List<Transaction>>> updateBudgetsTotals(Tx<List<Transaction>> tx, List<Transaction> existingTransactions) {
+  private Future<Tx<List<Transaction>>> updateBudgetsWithTotals(Tx<List<Transaction>> tx, List<Transaction> existingTransactions) {
     return getBudgets(tx)
       .map(budgets -> updateBudgetsTotals(existingTransactions, tx.getEntity(), budgets))
       .compose(budgets -> updateBudgets(tx, budgets));
   }
 
-  private Future<Tx<List<Transaction>>> updateBudgetsTotals(Tx<List<Transaction>> tx) {
+  private Future<Tx<List<Transaction>>> updateBudgetsWithTotals(Tx<List<Transaction>> tx) {
     return getBudgets(tx)
-      .map(budgets -> updateBudgetsTotals(tx.getEntity(), budgets))
-      .compose(budgets -> updateBudgets(tx, budgets));
+      .compose(oldBudgets -> {
+        List<Budget> newBudgets = updateBudgetsTotals(tx.getEntity(), oldBudgets);
+        return updateBudgets(tx, newBudgets)
+          .compose(listTx -> updateLedgerFYsWithTotals(listTx, oldBudgets, newBudgets));
+      });
   }
-
 
   @Override
   protected String getBudgetsQuery() {
@@ -215,7 +221,7 @@ public class EncumbranceHandler extends AllOrNothingHandler {
   }
 
   private Budget updateBudgetTotals(Map.Entry<Budget, List<Transaction>> entry) {
-    Budget budget = entry.getKey();
+    Budget budget = JsonObject.mapFrom(entry.getKey()).mapTo(Budget.class);
     if (isNotEmpty(entry.getValue())) {
       CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
       entry.getValue()
@@ -235,8 +241,8 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   private void releaseEncumbrance(Budget budget, CurrencyUnit currency, Transaction tmpTransaction) {
     budget.setAvailable(sumMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency));
-    double newUnavailable = subtractMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
-    budget.setUnavailable(newUnavailable < 0 ? 0 : newUnavailable);
+    double newUnavailable = subtractMoneyNonNegative(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
+    budget.setUnavailable(newUnavailable);
     budget.setEncumbered(subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
     tmpTransaction.setAmount(0d);
   }
@@ -248,6 +254,7 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> existingTransactions, List<Budget> budgets) {
     MultiKeyMap<String, Budget> groupedBudgets = new MultiKeyMap<>();
+
     groupedBudgets.putAll(budgets.stream().collect(toMap(budget -> new MultiKey<>(budget.getFundId(), budget.getFiscalYearId()), Function.identity())));
 
     return existingTransactions.stream()
@@ -255,7 +262,6 @@ public class EncumbranceHandler extends AllOrNothingHandler {
           transaction -> groupedBudgets.get(transaction.getFromFundId(), transaction.getFiscalYearId())));
 
   }
-
 
   private Future<List<Transaction>> getPermanentTransactions(String summaryId) {
     Promise<List<Transaction>> promise = Promise.promise();
@@ -299,20 +305,72 @@ public class EncumbranceHandler extends AllOrNothingHandler {
    */
   @Override
   Future<Tx<List<Transaction>>> processTemporaryToPermanentTransactions(Tx<List<Transaction>> tx) {
-    return updateBudgetsTotals(tx)
-      .compose(this::updateLedgerFYsTotals)
+    return updateBudgetsWithTotals(tx)
       .compose(this::createPermanentTransactions);
   }
 
-  private Future<Tx<List<Transaction>>> updateLedgerFYsTotals(Tx<List<Transaction>> tx) {
-    return groupTempTransactionsByLedgerFy(tx)
-      .map(this::calculateLedgerFyTotals)
+  protected Future<Tx<List<Transaction>>> updateLedgerFYsWithTotals(Tx<List<Transaction>> tx, List<Budget> oldBudgets, List<Budget> newBudgets) {
+    String currency = tx.getEntity().get(0).getCurrency();
+    Map<String, MonetaryAmount> oldAvailableByFundId = oldBudgets.stream().collect(groupingBy(Budget::getFundId, sumAvailable(currency)));
+    Map<String, MonetaryAmount> oldUnavailableByFundId = oldBudgets.stream().collect(groupingBy(Budget::getFundId, sumUnavailable(currency)));
+
+    Map<String, MonetaryAmount> newAvailableByFundId = newBudgets.stream().collect(groupingBy(Budget::getFundId, sumAvailable(currency)));
+    Map<String, MonetaryAmount> newUnavailableByFundId = newBudgets.stream().collect(groupingBy(Budget::getFundId, sumUnavailable(currency)));
+
+    Map<String, MonetaryAmount> availableDifference = getAmountDifference(oldAvailableByFundId, newAvailableByFundId);
+
+    Map<String, MonetaryAmount> unavailableDifference = getAmountDifference(oldUnavailableByFundId, newUnavailableByFundId);
+
+    return groupFundIdsByLedgerFy(tx)
+      .map(ledgerFYListMap -> calculateLedgerFyTotals(ledgerFYListMap, availableDifference, unavailableDifference))
       .compose(ledgers -> updateLedgerFYs(tx, ledgers));
   }
 
-  private Future<Map<LedgerFY, List<Transaction>>> groupTempTransactionsByLedgerFy(Tx<List<Transaction>> tx) {
-    Promise<Map<LedgerFY, List<Transaction>>> promise = Promise.promise();
-    String sql = getLedgersQuery();
+  private Map<String, MonetaryAmount> getAmountDifference(Map<String, MonetaryAmount> oldAvailableByFundId, Map<String, MonetaryAmount> newAvailableByFundId) {
+    return oldAvailableByFundId.entrySet().stream()
+      .peek(entry -> {
+        MonetaryAmount diff = entry.getValue().subtract(newAvailableByFundId.get(entry.getKey()));
+        entry.setValue(diff);
+      })
+      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private Collector<Budget, ?, MonetaryAmount> sumAvailable(String currency) {
+    return Collectors.mapping(budget -> Money.of(budget.getAvailable(), currency),
+      Collectors.reducing(Money.of(0, currency), MonetaryFunctions::sum));
+  }
+
+  private Collector<Budget, ?, MonetaryAmount> sumUnavailable(String currency) {
+    return Collectors.mapping(budget -> Money.of(budget.getUnavailable(), currency),
+      Collectors.reducing(Money.of(0, currency), MonetaryFunctions::sum));
+  }
+
+  private List<LedgerFY> calculateLedgerFyTotals(Map<LedgerFY, Set<String>> groupedLedgerFYs, Map<String, MonetaryAmount> availableDifference, Map<String, MonetaryAmount> unavailableDifference) {
+    return groupedLedgerFYs.entrySet().stream().map(ledgerFYListEntry -> updateLedgerFY(ledgerFYListEntry, availableDifference, unavailableDifference)).collect(toList());
+  }
+
+  private LedgerFY updateLedgerFY(Map.Entry<LedgerFY, Set<String>> ledgerFYListEntry, Map<String, MonetaryAmount> availableDifference, Map<String, MonetaryAmount> unavailableDifference) {
+    LedgerFY ledgerFY = ledgerFYListEntry.getKey();
+
+    MonetaryAmount availableAmount = ledgerFYListEntry.getValue().stream()
+      .map(availableDifference::get).reduce(MonetaryFunctions::sum)
+      .orElse(Money.zero(Monetary.getCurrency(ledgerFY.getCurrency())));
+
+    MonetaryAmount unavailableAmount = ledgerFYListEntry.getValue().stream()
+      .map(unavailableDifference::get).reduce(MonetaryFunctions::sum)
+      .orElse(Money.zero(Monetary.getCurrency(ledgerFY.getCurrency())));
+
+    double newAvailable = Math.max(Money.of(ledgerFY.getAvailable(), ledgerFY.getCurrency()).subtract(availableAmount).getNumber().doubleValue(), 0d);
+    double newUnavailable = Math.max(Money.of(ledgerFY.getUnavailable(), ledgerFY.getCurrency()).subtract(unavailableAmount).getNumber().doubleValue(), 0d);
+
+    return ledgerFY
+      .withAvailable(newAvailable)
+      .withUnavailable(newUnavailable);
+  }
+
+  private Future<Map<LedgerFY, Set<String>>> groupFundIdsByLedgerFy(Tx<List<Transaction>> tx) {
+    Promise<Map<LedgerFY, Set<String>>> promise = Promise.promise();
+    String sql = getLedgerFYsQuery();
     JsonArray params = new JsonArray();
     params.add(getSummaryId(tx.getEntity()
       .get(0)));
@@ -321,73 +379,41 @@ public class EncumbranceHandler extends AllOrNothingHandler {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          Map<LedgerFY, List<Transaction>> ledgers = reply.result()
+          Map<LedgerFY, Set<String>> ledgers = reply.result()
             .getResults()
             .stream()
-            .collect(ledgerFYTransactionsMapping());
+            .collect(ledgerFYFundIdsMapping());
           promise.complete(ledgers);
         }
       });
     return promise.future();
   }
-  private List<LedgerFY> calculateLedgerFyTotals(Map<LedgerFY, List<Transaction>> groupedLedgerFYs) {
-    return groupedLedgerFYs.entrySet().stream().map(this::updateLedgerFY).collect(toList());
-  }
 
-
-  private String getLedgersQuery(){
-    return "SELECT ledger_fy.jsonb, transactions.jsonb FROM " + getFullTableName(getTenantId(), LEDGERFY_TABLE)
-      + " AS ledger_fy INNER JOIN " + getFullTableName(getTenantId(), FUND_TABLE) + " AS funds"
-      + " ON (funds.ledgerId = ledger_fy.ledgerId)"
-      + " INNER JOIN " + getFullTemporaryTransactionTableName() + " AS transactions"
-      + " ON (funds.id = transactions.fromFundId)"
-      + " WHERE (transactions.encumbrance_sourcePurchaseOrderId = ? AND ledger_fy.fiscalYearId = transactions.fiscalYearId);";
-  }
-
-  private Collector<JsonArray, ?, HashMap<LedgerFY, List<Transaction>>> ledgerFYTransactionsMapping() {
+  private Collector<JsonArray, ?, HashMap<LedgerFY, Set<String>>> ledgerFYFundIdsMapping() {
     int ledgerFYColumnNumber = 0;
-    int transactionsColumnNumber = 1;
-    return toMap(o -> new JsonObject(o.getString(ledgerFYColumnNumber))
-      .mapTo(LedgerFY.class), o -> Collections.singletonList(new JsonObject(o.getString(transactionsColumnNumber))
-      .mapTo(Transaction.class)), (o, o2) -> {
-      List<Transaction> newList = new ArrayList<>(o); newList.addAll(o2); return newList;}, HashMap::new);
-  }
-  private Future<Tx<List<Transaction>>> updateLedgerFYs(Tx<List<Transaction>> tx, List<LedgerFY> ledgerFYs) {
-    Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    if (ledgerFYs.isEmpty()) {
-      promise.complete(tx);
-    } else {
-      List<JsonObject> jsonLedgerFYs = ledgerFYs.stream().map(JsonObject::mapFrom).collect(toList());
-      String sql = "UPDATE " + getFullTableName(getTenantId(), LEDGERFY_TABLE) + " AS ledger_fy " +
-        "SET jsonb = b.jsonb FROM (VALUES  " + getValues(jsonLedgerFYs) + ") AS b (id, jsonb) " +
-        "WHERE b.id::uuid = ledger_fy.id;";
-      tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
-        if (reply.failed()) {
-          handleFailure(promise, reply);
-        } else {
-          promise.complete(tx);
-        }
-      });
-    }
-    return promise.future();
+    int fundIdColumnNumber = 1;
+    return toMap(o -> new JsonObject(o.getString(ledgerFYColumnNumber)).mapTo(LedgerFY.class),
+      o -> Collections.singleton(o.getString(fundIdColumnNumber)), (o, o2) -> {
+        Set<String> newList = new HashSet<>(o);
+        newList.addAll(o2);
+        return newList;
+      }, HashMap::new);
   }
 
-
-  private LedgerFY updateLedgerFY(Map.Entry<LedgerFY, List<Transaction>> ledgerFYListEntry) {
-    LedgerFY ledgerFY = ledgerFYListEntry.getKey();
-    MonetaryAmount totalAmount = getTotalTransactionsAmount(ledgerFYListEntry);
-    double newAvailable = Math.max(Money.of(ledgerFY.getAvailable(), ledgerFY.getCurrency()).subtract(totalAmount).getNumber().doubleValue(), 0d);
-    double newUnavailable = Math.max(Money.of(ledgerFY.getUnavailable(), ledgerFY.getCurrency()).add(totalAmount).getNumber().doubleValue(), 0d);
-
-    return ledgerFY
-      .withAvailable(newAvailable)
-      .withUnavailable(newUnavailable);
+  public String getLedgerFYsQuery() {
+    return String.format(
+        "SELECT ledger_fy.jsonb, funds.id FROM %s AS ledger_fy INNER JOIN %s AS funds"
+            + " ON (funds.ledgerId = ledger_fy.ledgerId) INNER JOIN %s AS transactions"
+            + " ON (funds.id = transactions.fromFundId)"
+            + " WHERE (transactions.encumbrance_sourcePurchaseOrderId = ? AND ledger_fy.fiscalYearId = transactions.fiscalYearId);",
+        getFullTableName(getTenantId(), LEDGERFY_TABLE), getFullTableName(getTenantId(), FUND_TABLE),
+        getFullTemporaryTransactionTableName());
   }
-  private MonetaryAmount getTotalTransactionsAmount(Map.Entry<LedgerFY, List<Transaction>> ledgerFYListEntry) {
+
+  public MonetaryAmount getTotalTransactionsAmount(Map.Entry<LedgerFY, List<Transaction>> ledgerFYListEntry) {
     return ledgerFYListEntry.getValue().stream()
       .map(transaction -> (MonetaryAmount) Money.of(transaction.getAmount(), transaction.getCurrency()))
       .reduce(MonetaryFunctions::sum).orElse(Money.zero(Monetary.getCurrency(ledgerFYListEntry.getKey().getCurrency())));
   }
-
 
 }
