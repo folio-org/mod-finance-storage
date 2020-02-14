@@ -430,7 +430,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   /**
    * Calculates remaining amount for encumbrance
-   * [remaining amount] = (allocated * allowableEncumbered) - (allocated - (unavailable + available)) - (encumbered + awaitingPayment)
+   * [remaining amount] = (allocated * allowableEncumbered) - (allocated - (unavailable + available)) - (encumbered + awaitingPayment + expenditures)
    *
    * @param budget     processed budget
    * @param currency   processed transaction currency
@@ -444,10 +444,11 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Money available = Money.of(budget.getAvailable(), currency);
     Money encumbered = Money.of(budget.getEncumbered(), currency);
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
+    Money expenditures = Money.of(budget.getExpenditures(), currency);
 
     Money result = allocated.multiply(allowableEncumbered);
     result = result.subtract(allocated.subtract(unavailable.add(available)));
-    result = result.subtract(encumbered.add(awaitingPayment));
+    result = result.subtract(encumbered.add(awaitingPayment).add(expenditures));
 
     return result;
   }
