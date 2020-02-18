@@ -73,7 +73,8 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
   public Future<Tx<List<Transaction>>> processTemporaryToPermanentTransactions(Tx<List<Transaction>> tx) {
     return updateEncumbranceTotals(tx).compose(this::updateBudgetsTotals)
       .compose(this::updateLedgerFYsTotals)
-      .compose(this::createPermanentTransactions);
+      .compose(this::createPermanentTransactions)
+      .map(tx);
   }
 
   /**

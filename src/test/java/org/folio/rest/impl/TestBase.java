@@ -9,12 +9,11 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-
-import javax.ws.rs.Path;
 
 import org.apache.commons.io.IOUtils;
 import org.folio.rest.utils.TestEntities;
@@ -232,8 +231,11 @@ public abstract class TestBase {
         .statusCode(404);
   }
 
+  protected double subtractValues(double d1, double d2) {
+    return BigDecimal.valueOf(d1).subtract(BigDecimal.valueOf(d2)).doubleValue();
+  }
 
-  static String getUriPath(Class<?> clazz) {
-    return clazz.getAnnotation(Path.class).value();
+  protected double sumValues(double d1, double d2) {
+    return BigDecimal.valueOf(d1).add(BigDecimal.valueOf(d2)).doubleValue();
   }
 }

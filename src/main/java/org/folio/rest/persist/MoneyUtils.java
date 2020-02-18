@@ -1,8 +1,11 @@
 package org.folio.rest.persist;
 
-import org.javamoney.moneta.Money;
+import java.math.BigDecimal;
+import java.util.stream.Stream;
 
 import javax.money.CurrencyUnit;
+
+import org.javamoney.moneta.Money;
 
 public class MoneyUtils {
 
@@ -24,6 +27,15 @@ public class MoneyUtils {
   }
 
   public static Double subtractMoneyNonNegative(Double minuend, Double subtrahend, CurrencyUnit currency) {
-    return Math.max(subtractMoney(minuend, subtrahend, currency), 0d);
+    return BigDecimal.valueOf(subtractMoney(minuend, subtrahend, currency)).max(BigDecimal.ZERO).doubleValue();
+  }
+
+  public static Double sumMoney(CurrencyUnit currency, Double ... values) {
+    return Stream.of(values)
+      .map(aDouble -> Money.of(aDouble, currency))
+      .reduce(Money::add)
+      .orElse(Money.zero(currency))
+      .getNumber()
+      .doubleValue();
   }
 }

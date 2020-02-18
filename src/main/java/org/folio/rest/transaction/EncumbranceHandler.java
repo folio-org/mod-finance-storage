@@ -1,7 +1,5 @@
 package org.folio.rest.transaction;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -140,7 +138,7 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   @Override
   String createPermanentTransactionsQuery() {
-    return String.format("INSERT INTO %s (id, jsonb) " + "SELECT id, jsonb FROM %s WHERE encumbrance_sourcePurchaseOrderId = ? "
+    return String.format("INSERT INTO %s (id, jsonb) SELECT id, jsonb FROM %s WHERE encumbrance_sourcePurchaseOrderId = ? "
         + "ON CONFLICT DO NOTHING;", getFullTransactionTableName(), getTemporaryTransactionTable());
   }
 
@@ -204,15 +202,19 @@ public class EncumbranceHandler extends AllOrNothingHandler {
             if (isEncumbranceReleased(tmpTransaction)) {
               releaseEncumbrance(budget, currency, tmpTransaction);
             } else {
-              double newEncumbered = subtractMoney(budget.getEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              newEncumbered = sumMoney(newEncumbered, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              budget.setEncumbered(newEncumbered);
+
+              double newEncumbered = sumMoney(budget.getEncumbered(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              newEncumbered = subtractMoneyNonNegative(newEncumbered, tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
               double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
               newAmount = subtractMoney(newAmount, tmpTransaction.getEncumbrance().getAmountExpended(), currency);
-              tmpTransaction.setAmount(newAmount);
               double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
               newAwaitingPayment = subtractMoneyNonNegative(newAwaitingPayment, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+
+              budget.setEncumbered(newEncumbered);
               budget.setAwaitingPayment(newAwaitingPayment);
+
+              recalculateOverEncumbered(budget, currency);
+              tmpTransaction.setAmount(newAmount);
             }
           }
         });
@@ -226,25 +228,44 @@ public class EncumbranceHandler extends AllOrNothingHandler {
       CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
       entry.getValue()
         .forEach(tmpTransaction -> {
+
           double newEncumbered = sumMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency);
           budget.setEncumbered(newEncumbered);
-          double newAvailable = subtractMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency);
-          budget.setAvailable(newAvailable);
-          double newUnavailable = min(budget.getAllocated(), sumMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency));
-          budget.setUnavailable(newUnavailable);
-          double newOverEncumbrance = max(0, subtractMoney(subtractMoney(newEncumbered, newUnavailable, currency), newAvailable, currency));
-          budget.setOverEncumbrance(newOverEncumbrance);
+
+          recalculateOverEncumbered(budget, currency);
+
+          recalculateAvailableUnavailable(budget, currency);
+
         });
     }
     return budget;
   }
 
+  private void recalculateOverEncumbered(Budget budget, CurrencyUnit currency) {
+    double a = subtractMoneyNonNegative(budget.getAllocated(), budget.getExpenditures(), currency);
+    a = subtractMoneyNonNegative(a, budget.getAwaitingPayment(), currency);
+    double newOverEncumbrance = subtractMoneyNonNegative(budget.getEncumbered(), a, currency);
+    budget.setOverEncumbrance(newOverEncumbrance);
+  }
+
   private void releaseEncumbrance(Budget budget, CurrencyUnit currency, Transaction tmpTransaction) {
-    budget.setAvailable(sumMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency));
-    double newUnavailable = subtractMoneyNonNegative(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
-    budget.setUnavailable(newUnavailable);
-    budget.setEncumbered(subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
+
+    double newEncumbered = subtractMoneyNonNegative(budget.getEncumbered(), tmpTransaction.getAmount(), currency);
+    budget.setEncumbered(newEncumbered);
+
+    recalculateOverEncumbered(budget, currency);
+    recalculateAvailableUnavailable(budget, currency);
+
     tmpTransaction.setAmount(0d);
+  }
+
+  private void recalculateAvailableUnavailable(Budget budget, CurrencyUnit currency) {
+    double newUnavailable = sumMoney(currency, budget.getEncumbered(), budget.getAwaitingPayment(), budget.getExpenditures(),
+      -budget.getOverEncumbrance(), -budget.getOverExpended());
+    double newAvailable = subtractMoneyNonNegative(budget.getAllocated(), newUnavailable, currency);
+
+    budget.setAvailable(newAvailable);
+    budget.setUnavailable(newUnavailable);
   }
 
   private boolean isEncumbranceReleased(Transaction tmpTransaction) {
@@ -305,8 +326,13 @@ public class EncumbranceHandler extends AllOrNothingHandler {
    */
   @Override
   Future<Tx<List<Transaction>>> processTemporaryToPermanentTransactions(Tx<List<Transaction>> tx) {
-    return updateBudgetsWithTotals(tx)
-      .compose(this::createPermanentTransactions);
+    return createPermanentTransactions(tx)
+      .compose(updated -> {
+        if (updated > 0) {
+          return updateBudgetsWithTotals(tx);
+        }
+        return Future.succeededFuture(tx);
+      });
   }
 
   protected Future<Tx<List<Transaction>>> updateLedgerFYsWithTotals(Tx<List<Transaction>> tx, List<Budget> oldBudgets, List<Budget> newBudgets) {
@@ -408,12 +434,6 @@ public class EncumbranceHandler extends AllOrNothingHandler {
             + " WHERE (transactions.encumbrance_sourcePurchaseOrderId = ? AND ledger_fy.fiscalYearId = transactions.fiscalYearId);",
         getFullTableName(getTenantId(), LEDGERFY_TABLE), getFullTableName(getTenantId(), FUND_TABLE),
         getFullTemporaryTransactionTableName());
-  }
-
-  public MonetaryAmount getTotalTransactionsAmount(Map.Entry<LedgerFY, List<Transaction>> ledgerFYListEntry) {
-    return ledgerFYListEntry.getValue().stream()
-      .map(transaction -> (MonetaryAmount) Money.of(transaction.getAmount(), transaction.getCurrency()))
-      .reduce(MonetaryFunctions::sum).orElse(Money.zero(Monetary.getCurrency(ledgerFYListEntry.getKey().getCurrency())));
   }
 
 }

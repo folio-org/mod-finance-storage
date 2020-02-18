@@ -1,9 +1,9 @@
 package org.folio.rest.impl;
 
 import static java.lang.Math.max;
+import static org.folio.rest.impl.EncumbrancesTest.ENCUMBRANCE_SAMPLE;
 import static org.folio.rest.impl.TransactionTest.BUDGETS;
 import static org.folio.rest.impl.TransactionTest.BUDGETS_QUERY;
-import static org.folio.rest.impl.TransactionTest.ENCUMBRANCE_SAMPLE;
 import static org.folio.rest.impl.TransactionTest.LEDGER_FYS_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
