@@ -354,9 +354,10 @@ public class EncumbranceHandler extends AllOrNothingHandler {
 
   private Map<String, MonetaryAmount> getAmountDifference(Map<String, MonetaryAmount> oldAvailableByFundId, Map<String, MonetaryAmount> newAvailableByFundId) {
     return oldAvailableByFundId.entrySet().stream()
-      .peek(entry -> {
+      .map(entry -> {
         MonetaryAmount diff = entry.getValue().subtract(newAvailableByFundId.get(entry.getKey()));
         entry.setValue(diff);
+        return entry;
       })
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
   }

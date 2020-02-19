@@ -313,7 +313,6 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         getFullTableName(getTenantId(), BUDGET_TABLE), getValues(jsonBudgets));
   }
 
-
   protected Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
     List<JsonObject> transactions = (tx.getEntity().stream().map(JsonObject::mapFrom).collect(toList()));
@@ -402,7 +401,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Promise<Void> promise = Promise.promise();
     getExistentLedger(transaction).setHandler(result -> {
       if (result.succeeded()) {
-        if (result.result().getRestrictEncumbrance() && budget.getAllowableEncumbrance() != null) {
+        if (Boolean.TRUE.equals(result.result().getRestrictEncumbrance()) && budget.getAllowableEncumbrance() != null) {
           Double remainingAmountForEncumbrance = getBudgetRemainingAmountForEncumbrance(budget, transaction.getCurrency());
           if (remainingAmountForEncumbrance < transaction.getAmount()) {
             promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID));
