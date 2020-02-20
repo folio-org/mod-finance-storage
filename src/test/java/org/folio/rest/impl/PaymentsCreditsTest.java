@@ -9,7 +9,6 @@ import static org.folio.rest.impl.TransactionTest.TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
-
 import static org.folio.rest.transaction.AllOrNothingHandler.FUND_CANNOT_BE_PAID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -20,7 +19,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.util.UUID;
 
@@ -406,14 +404,6 @@ class PaymentsCreditsTest extends TestBase {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numPaymentsCredits).withNumEncumbrances(0);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
-  }
-
-  protected double subtractValues(double d1, double d2) {
-    return BigDecimal.valueOf(d1).subtract(BigDecimal.valueOf(d2)).doubleValue();
-  }
-
-  protected double sumValues(double d1, double d2) {
-    return BigDecimal.valueOf(d1).add(BigDecimal.valueOf(d2)).doubleValue();
   }
 
   protected Budget getBudgetAndValidate(String endpoint) throws MalformedURLException {

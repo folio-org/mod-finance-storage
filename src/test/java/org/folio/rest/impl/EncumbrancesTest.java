@@ -4,6 +4,7 @@ import static java.lang.Math.max;
 import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.TransactionTest.LEDGER_FYS_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
+import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_IS_INACTIVE;
 import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_NOT_FOUND_FOR_TRANSACTION;
@@ -34,6 +35,7 @@ import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
+import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.LedgerFYCollection;
@@ -141,7 +143,6 @@ public class EncumbrancesTest extends TestBase {
     verifyLedgerFYAfterCreateEncumbrance(ledgerFYBefore, ledgerFYAfter,
       Collections.singletonList(budgetBefore), Collections.singletonList(budgetAfter));
 
-
     //create same encumbrances again
     postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201)
@@ -178,13 +179,13 @@ public class EncumbrancesTest extends TestBase {
     postData(BUDGET.getEndpoint(), JsonObject.mapFrom(fromBudgetBefore).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201).extract().as(Budget.class);
 
-    String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
+    String invoiceId = UUID.randomUUID().toString();
+    createInvoiceSummary(invoiceId, 1);
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
 
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
     encumbrance.setAmount(1000000d);
-    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance.setSourceInvoiceId(invoiceId);
 
     // create Encumbrance
     postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
@@ -263,6 +264,12 @@ public class EncumbrancesTest extends TestBase {
   protected void createOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
     OrderTransactionSummary summary = new OrderTransactionSummary().withId(orderId).withNumTransactions(encumbranceNumber);
     postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
+      .encodePrettily(), TRANSACTION_TENANT_HEADER);
+  }
+
+  protected void createInvoiceSummary(String invoiceId, int numEncumbrances) throws MalformedURLException {
+    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(2).withNumEncumbrances(numEncumbrances);
+    postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
 
@@ -394,15 +401,21 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201).extract().as(Budget.class).getId();
 
     String orderId = UUID.randomUUID().toString();
+    String invoiceId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 2);
+    createInvoiceSummary(invoiceId, 2);
 
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
     Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
+    encumbrance1.setSourceInvoiceId(invoiceId);
     encumbrance1.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance1.setSourceInvoiceLineId(UUID.randomUUID().toString());
 
     Transaction encumbrance2 = jsonTx.mapTo(Transaction.class);
     encumbrance2.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance2.setSourceInvoiceId(invoiceId);
     encumbrance2.getEncumbrance().setSourcePoLineId(UUID.randomUUID().toString());
+    encumbrance2.setSourceInvoiceLineId(UUID.randomUUID().toString());
 
     String transactionSample = JsonObject.mapFrom(encumbrance1).encodePrettily();
 
@@ -484,7 +497,9 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201).extract().as(Budget.class).getId();
 
     String orderId = UUID.randomUUID().toString();
+    String invoiceId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 1);
+    createInvoiceSummary(invoiceId, 1);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
@@ -496,6 +511,8 @@ public class EncumbrancesTest extends TestBase {
     encumbrance.setSourceFiscalYearId(fiscalYearId);
     encumbrance.setFiscalYearId(fiscalYearId);
     encumbrance.setFromFundId(fundId);
+    encumbrance.setSourceInvoiceId(invoiceId);
+
 
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
@@ -513,8 +530,8 @@ public class EncumbrancesTest extends TestBase {
 
     putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
     Transaction transaction1FromStorage = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
-    assertEquals(5d, transaction1FromStorage.getEncumbrance().getAmountAwaitingPayment());
-    assertEquals(2d, transaction1FromStorage.getAmount());
+    assertEquals(10d, transaction1FromStorage.getEncumbrance().getAmountAwaitingPayment());
+    assertEquals(0d, transaction1FromStorage.getAmount());
     Budget fromBudgetAfterUpdate = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
 
     assertEquals(fromBudgetBefore.getEncumbered(), fromBudgetAfterUpdate.getEncumbered());
@@ -527,13 +544,13 @@ public class EncumbrancesTest extends TestBase {
   @Test
   void testUpdateEncumbranceNotFound() throws MalformedURLException {
 
-    String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 2);
+    String invoiceId = UUID.randomUUID().toString();
+    createInvoiceSummary(invoiceId, 2);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
-    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance.setSourceInvoiceId(invoiceId);
 
     // Try to update non-existent transaction
     putData(TRANSACTION.getEndpointWithId(), UUID.randomUUID().toString(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(404);
