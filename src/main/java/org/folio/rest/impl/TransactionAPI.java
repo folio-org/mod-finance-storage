@@ -12,8 +12,8 @@ import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.transaction.DefaultTransactionHandler;
-import org.folio.rest.transaction.OrderTransactionsHandler;
 import org.folio.rest.transaction.InvoiceTransactionsHandler;
+import org.folio.rest.transaction.OrderTransactionsHandler;
 import org.folio.rest.transaction.TransactionHandler;
 
 import io.vertx.core.AsyncResult;

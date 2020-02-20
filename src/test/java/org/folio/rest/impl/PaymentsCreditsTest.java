@@ -8,6 +8,7 @@ import static org.folio.rest.impl.TransactionTest.TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
+
 import static org.folio.rest.transaction.AllOrNothingHandler.FUND_CANNOT_BE_PAID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -373,7 +374,6 @@ class PaymentsCreditsTest extends TestBase {
 
   @Test
   void testCreatePaymentWithRestrictedLedgerAndNotEnoughMoney() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID().toString();
     createInvoiceSummary(invoiceId, 1);
@@ -390,9 +390,6 @@ class PaymentsCreditsTest extends TestBase {
       .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(400)
       .body(containsString(FUND_CANNOT_BE_PAID));
-
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   protected void createOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {

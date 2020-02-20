@@ -57,7 +57,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   private boolean isLastRecord;
 
   AllOrNothingHandler(String temporaryTransactionTable, String summaryTable, Map<String, String> okapiHeaders, Context context,
-      Handler<AsyncResult<Response>> handler) {
+                      Handler<AsyncResult<Response>> handler) {
     super(okapiHeaders, context, handler);
     this.temporaryTransactionTable = temporaryTransactionTable;
     this.summaryTable = summaryTable;
@@ -184,7 +184,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   private Future<Ledger> getExistentLedger(Transaction transaction) {
     Promise<Ledger> promise = Promise.promise();
     String fundId = transaction.getTransactionType() == Transaction.TransactionType.CREDIT ? transaction.getToFundId() : transaction.getFromFundId();
-    String query = "fund.id"+"=" + fundId;
+    String query = "fund.id =" + fundId;
     PgUtil.get(LEDGER_TABLE, Ledger.class, LedgerCollection.class, query , 0, 1, getOkapiHeaders(), getVertxContext(),
       FinanceStorageLedgers.GetFinanceStorageLedgersResponse.class, reply-> {
         if (reply.failed()) {
