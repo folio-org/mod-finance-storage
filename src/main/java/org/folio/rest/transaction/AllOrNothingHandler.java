@@ -1,6 +1,8 @@
 package org.folio.rest.transaction;
 
+import static java.util.stream.Collectors.toList;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.LedgerAPI.LEDGER_TABLE;
 import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValue;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
@@ -25,6 +27,7 @@ import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
+import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
@@ -106,8 +109,18 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   abstract String createPermanentTransactionsQuery();
 
-  protected Future<Tx<List<Transaction>>> createPermanentTransactions(Tx<List<Transaction>> tx) {
-    Promise<Tx<List<Transaction>>> promise = Promise.promise();
+  protected String createPermanentTransactionsQuery(String sql) {
+    return String.format(sql, getFullTransactionTableName(), getTemporaryTransactionTable());
+  }
+
+  protected abstract String getSelectBudgetsQuery();
+
+  protected String getSelectBudgetsQuery(String sql) {
+    return String.format(sql, getFullTableName(getTenantId(), BUDGET_TABLE), getFullTemporaryTransactionTableName());
+  }
+
+  protected Future<Integer> createPermanentTransactions(Tx<List<Transaction>> tx) {
+    Promise<Integer> promise = Promise.promise();
     List<Transaction> transactions = tx.getEntity();
     JsonArray param = new JsonArray();
     param.add(getSummaryId(transactions.get(0)));
@@ -116,7 +129,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          promise.complete(tx);
+          promise.complete(reply.result().getUpdated());
         }
       });
     return promise.future();
@@ -305,10 +318,9 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
-
   protected Future<Tx<List<Transaction>>> updateBudgets(Tx<List<Transaction>> tx, List<Budget> budgets) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
-    List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
+    List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(toList());
     String sql = buildUpdateBudgetsQuery(jsonBudgets);
     tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
       if (reply.failed()) {
@@ -325,7 +337,6 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         "UPDATE %s AS budgets SET jsonb = b.jsonb FROM (VALUES  %s) AS b (id, jsonb) WHERE b.id::uuid = budgets.id;",
         getFullTableName(getTenantId(), BUDGET_TABLE), getValues(jsonBudgets));
   }
-
 
   protected Future<Tx<List<Transaction>>> updatePermanentTransactions(Tx<List<Transaction>> tx) {
     return updatePermanentTransactions(tx, tx.getEntity());
@@ -358,7 +369,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   protected Future<List<Budget>> getBudgets(Tx<List<Transaction>> tx) {
     Promise<List<Budget>> promise = Promise.promise();
-    String sql = getBudgetsQuery();
+    String sql = getSelectBudgetsQuery();
     JsonArray params = new JsonArray();
     params.add(getSummaryId(tx.getEntity()
       .get(0)));
@@ -378,9 +389,6 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       });
     return promise.future();
   }
-
-
-  protected abstract String getBudgetsQuery();
 
   protected String getValues(List<JsonObject> entities) {
     return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));
@@ -447,6 +455,29 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   private boolean isPaymentRestricted(Transaction transaction, Budget budget, Ledger ledger) {
     return transaction.getTransactionType() == Transaction.TransactionType.PAYMENT && ledger.getRestrictExpenditures()
       && budget.getAllowableExpenditure() != null;
+  }
+
+  Future<Tx<List<Transaction>>> updateLedgerFYs(Tx<List<Transaction>> tx, List<LedgerFY> ledgerFYs) {
+    Promise<Tx<List<Transaction>>> promise = Promise.promise();
+    if (ledgerFYs.isEmpty()) {
+      promise.complete(tx);
+    } else {
+      String sql = getLedgerFyUpdateQuery(ledgerFYs);
+      tx.getPgClient().execute(tx.getConnection(), sql, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete(tx);
+        }
+      });
+    }
+    return promise.future();
+  }
+
+  private String getLedgerFyUpdateQuery(List<LedgerFY> ledgerFYs) {
+    List<JsonObject> jsonLedgerFYs = ledgerFYs.stream().map(JsonObject::mapFrom).collect(toList());
+    return String.format("UPDATE %s AS ledger_fy SET jsonb = b.jsonb FROM (VALUES  %s) AS b (id, jsonb) "
+      + "WHERE b.id::uuid = ledger_fy.id;", getFullTableName(getTenantId(), LEDGERFY_TABLE), getValues(jsonLedgerFYs));
   }
 
   /**

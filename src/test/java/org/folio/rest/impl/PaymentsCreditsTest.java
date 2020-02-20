@@ -1,14 +1,14 @@
 package org.folio.rest.impl;
 
+import static java.lang.Math.max;
+import static org.folio.rest.impl.EncumbrancesTest.ENCUMBRANCE_SAMPLE;
 import static org.folio.rest.impl.TransactionTest.BUDGETS;
 import static org.folio.rest.impl.TransactionTest.BUDGETS_QUERY;
-import static org.folio.rest.impl.TransactionTest.ENCUMBRANCE_SAMPLE;
 import static org.folio.rest.impl.TransactionTest.LEDGER_FYS_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
-
 import static org.folio.rest.transaction.AllOrNothingHandler.FUND_CANNOT_BE_PAID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -19,13 +19,11 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
-import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.LedgerFY;
@@ -257,12 +255,16 @@ class PaymentsCreditsTest extends TestBase {
       .as(Transaction.class)
       .getId();
 
-    // 2 transactions appear in transaction table
+    // 3 transactions appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .extract()
       .as(Transaction.class);
     getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(200)
+      .extract()
+      .as(Transaction.class);
+    getDataById(TRANSACTION.getEndpointWithId(), creditId1, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .extract()
       .as(Transaction.class);
@@ -273,7 +275,7 @@ class PaymentsCreditsTest extends TestBase {
     LedgerFY creditLedgerFYAfter = getLedgerFYAndValidate(creditLedgerFYEndpointWithQueryParams);
     LedgerFY paymentLedgerFYAfter = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
 
-    // awaiting payment, encumberedmexpenditures must remain same
+    // awaiting payment, encumbered must remain the same
     assertEquals(0d, subtractValues(paymentBudgetAfter.getAwaitingPayment(), paymentBudgetBefore.getAwaitingPayment()));
     assertEquals(0d, subtractValues(paymentBudgetAfter.getEncumbered(), paymentBudgetBefore.getEncumbered()));
     assertEquals(payment.getAmount(), subtractValues(paymentBudgetAfter.getExpenditures(), paymentBudgetBefore.getExpenditures()));
@@ -287,14 +289,13 @@ class PaymentsCreditsTest extends TestBase {
     // credit changes, available must increase and unavailable decreases
     assertEquals(expectedBudgetAvailable, creditBudgetAfter.getAvailable());
     assertEquals(expectedBudgetUnavailable, creditBudgetAfter.getUnavailable());
-    assertEquals(Math.max(0d, -credit.getAmount()), subtractValues(creditBudgetAfter.getExpenditures(), creditBudgetBefore.getExpenditures()));
-
+    assertEquals(max(0d, -credit.getAmount()), subtractValues(creditBudgetAfter.getExpenditures(), creditBudgetBefore.getExpenditures()));
 
     assertEquals(paymentLedgerFYAfter.getAvailable(), subtractValues(paymentLedgerFYBefore.getAvailable(), payment.getAmount()));
     assertEquals(paymentLedgerFYAfter.getUnavailable(), sumValues(paymentLedgerFYBefore.getUnavailable(), payment.getAmount()));
 
     assertEquals(creditLedgerFYAfter.getAvailable(),  sumValues(sumValues(creditLedgerFYBefore.getAvailable(), credit.getAmount()), credit.getAmount()));
-    assertEquals(creditLedgerFYAfter.getUnavailable(), subtractValues(subtractValues(creditLedgerFYBefore.getUnavailable(), credit.getAmount()), credit.getAmount()));
+    assertEquals(creditLedgerFYAfter.getUnavailable(), max(subtractValues(subtractValues(creditLedgerFYBefore.getUnavailable(), credit.getAmount()), credit.getAmount()), 0));
 
   }
 
@@ -390,6 +391,7 @@ class PaymentsCreditsTest extends TestBase {
       .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(400)
       .body(containsString(FUND_CANNOT_BE_PAID));
+
   }
 
   protected void createOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
@@ -402,14 +404,6 @@ class PaymentsCreditsTest extends TestBase {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numPaymentsCredits).withNumEncumbrances(0);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
-  }
-
-  protected double subtractValues(double d1, double d2) {
-    return BigDecimal.valueOf(d1).subtract(BigDecimal.valueOf(d2)).doubleValue();
-  }
-
-  protected double sumValues(double d1, double d2) {
-    return BigDecimal.valueOf(d1).add(BigDecimal.valueOf(d2)).doubleValue();
   }
 
   protected Budget getBudgetAndValidate(String endpoint) throws MalformedURLException {

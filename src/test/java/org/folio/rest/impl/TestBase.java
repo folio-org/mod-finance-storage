@@ -9,12 +9,12 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-
-import javax.ws.rs.Path;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 import org.folio.rest.utils.TestEntities;
@@ -232,8 +232,12 @@ public abstract class TestBase {
         .statusCode(404);
   }
 
+  protected double subtractValues(double d1, Double ... subtrahends) {
+    BigDecimal subtrahendSum = Stream.of(subtrahends).map(BigDecimal::valueOf).reduce(BigDecimal::add).orElse(BigDecimal.ZERO);
+    return BigDecimal.valueOf(d1).subtract(subtrahendSum).doubleValue();
+  }
 
-  static String getUriPath(Class<?> clazz) {
-    return clazz.getAnnotation(Path.class).value();
+  protected double sumValues(Double ... doubles) {
+    return Stream.of(doubles).map(BigDecimal::valueOf).reduce(BigDecimal::add).orElse(BigDecimal.ZERO).doubleValue();
   }
 }

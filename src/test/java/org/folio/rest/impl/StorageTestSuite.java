@@ -153,4 +153,9 @@ public class StorageTestSuite {
   @Nested
   class PaymentsCreditsTestNested extends PaymentsCreditsTest {
   }
+
+  @Nested
+  class EncumbrancesTestNested extends EncumbrancesTest {
+  }
+
 }

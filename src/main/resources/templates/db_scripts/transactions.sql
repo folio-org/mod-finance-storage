@@ -22,7 +22,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
     toLedgerFYAvailable           decimal;
 
     newBudgetValues             text[];
-    newLedgerValues             text[];
+    newLedgerFYValues             text[];
     amount                      decimal;
     transactionType             text;
 
@@ -30,12 +30,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
       amount = (NEW.jsonb->>'amount')::decimal;
       transactionType = NEW.jsonb->>'transactionType';
 
-      -- Recalculate Allocation / Transfer / Encumbrance
-      IF (transactionType = 'Allocation' OR transactionType = 'Transfer' OR transactionType = 'Encumbrance') THEN
-        -- abort calculations if fromFundId not specified
-        IF ((NEW.jsonb->'fromFundId' IS NULL) AND (transactionType = 'Encumbrance')) THEN
-          RAISE EXCEPTION 'fromFundId is not specified for Encumbrance';
-        END IF;
+      -- Recalculate Allocation / Transfer
+      IF (transactionType = 'Allocation' OR transactionType = 'Transfer') THEN
         -- check if fromFundId exists
         IF (NEW.jsonb->'fromFundId' IS NOT NULL) THEN
           -- Update Budget identified by the transactions fiscal year (fiscalYearId) and source fund (fromFundId)
@@ -53,10 +49,6 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
             newBudgetValues = '{allocated,' || fromBudgetAllocated || ', available, ' || fromBudgetAvailable ||'}';
           ELSIF (transactionType = 'Transfer') THEN
             newBudgetValues = '{available, ' || fromBudgetAvailable || '}';
-          ELSIF (transactionType = 'Encumbrance') THEN
-            fromBudgetEncumbered = (fromBudget->>'encumbered')::decimal + amount;
-            --TODO: Budget overEncumbered will be calculated in a follow-on story
-            newBudgetValues = '{available, ' || fromBudgetAvailable || ', unavailable, ' || fromBudgetUnavailable || ', encumbered, ' || fromBudgetEncumbered ||'}';
           END IF;
 
           UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb
@@ -77,14 +69,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
 
           IF (transactionType = 'Allocation') THEN
             fromLedgerFYAllocated = (fromLedgerFY->>'allocated')::decimal - amount;
-            newLedgerValues = '{allocated,' || fromLedgerFYAllocated || ', available, ' || fromLedgerFYAvailable || '}';
+            newLedgerFYValues = '{allocated,' || fromLedgerFYAllocated || ', available, ' || fromLedgerFYAvailable || '}';
           ELSEIF (transactionType = 'Transfer') THEN
-            newLedgerValues = '{available, ' || fromLedgerFYAvailable ||'}';
-          ELSIF (transactionType = 'Encumbrance') THEN
-            newLedgerValues = '{available, ' || fromLedgerFYAvailable || ', unavailable, ' || fromLedgerFYUnavailable ||'}';
+            newLedgerFYValues = '{available, ' || fromLedgerFYAvailable ||'}';
           END IF;
 
-          UPDATE ${myuniversity}_${mymodule}.ledgerFY SET jsonb = jsonb || json_object(newLedgerValues)::jsonb
+          UPDATE ${myuniversity}_${mymodule}.ledgerFY SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
           WHERE (ledgerId::text = fromLedgerFY->>'ledgerId') AND (fiscalYearId::text = fromLedgerFY->>'fiscalYearId');
 
         END IF;
@@ -120,12 +110,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
             toLedgerFYAvailable = (toLedgerFY->>'available')::decimal + amount;
             IF (transactionType = 'Allocation') THEN
               toLedgerFYAllocated = (toLedgerFY->>'allocated')::decimal + amount;
-              newLedgerValues = '{allocated,' || toLedgerFYAllocated || ', available, ' || toLedgerFYAvailable ||'}';
+              newLedgerFYValues = '{allocated,' || toLedgerFYAllocated || ', available, ' || toLedgerFYAvailable ||'}';
             ELSIF (transactionType = 'Transfer') THEN
-              newLedgerValues = '{available, ' || toLedgerFYAvailable ||'}';
+              newLedgerFYValues = '{available, ' || toLedgerFYAvailable ||'}';
             END IF;
 
-            UPDATE ${myuniversity}_${mymodule}.ledgerFY SET jsonb = jsonb || json_object(newLedgerValues)::jsonb
+            UPDATE ${myuniversity}_${mymodule}.ledgerFY SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
             WHERE (ledgerId::text = toLedgerFY->>'ledgerId') AND (fiscalYearId::text = toLedgerFY->>'fiscalYearId');
 
         END IF;
@@ -137,69 +127,3 @@ $recalculate_totals$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS recalculate_totals on ${myuniversity}_${mymodule}."transaction";
 CREATE TRIGGER recalculate_totals AFTER INSERT ON "transaction" FOR EACH ROW EXECUTE PROCEDURE ${myuniversity}_${mymodule}.recalculate_totals();
-
--- Rename fields
-
-UPDATE ${myuniversity}_${mymodule}.transaction
-SET
-  jsonb = jsonb_set(jsonb - '{awaitingPayment, encumbered, expenditures}'::text[], '{encumbrance}',
-     jsonb_strip_nulls(jsonb_build_object('amountAwaitingPayment', jsonb::json -> 'awaitingPayment')
-      || jsonb_build_object('initialAmountEncumbered', jsonb::json -> 'encumbered')
-	    || jsonb_build_object('amountExpended', jsonb::json -> 'expenditures')))
-WHERE
-  NOT jsonb ? 'encumbrance';
-
--- Required fields
-
-UPDATE ${myuniversity}_${mymodule}.transaction
-SET
-  jsonb = jsonb->'encumbrance' || jsonb_build_object('initialAmountEncumbered', 0)
-WHERE
-  NOT jsonb->'encumbrance' ? 'initialAmountEncumbered';
-
-UPDATE ${myuniversity}_${mymodule}.transaction
-SET
-  jsonb = jsonb || jsonb_build_object('currency', 'USD')
-WHERE
-  NOT jsonb ? 'currency';
-
-UPDATE ${myuniversity}_${mymodule}.transaction
-SET
-  jsonb = jsonb || jsonb_build_object('fiscalYearId',
-  (SELECT ${myuniversity}_${mymodule}.budget.fiscalYearId
-  	FROM ${myuniversity}_${mymodule}.budget
-  	WHERE ${myuniversity}_${mymodule}.budget.id::text
-    = (SELECT (jsonb::json ->> 'budgetId')::text FROM ${myuniversity}_${mymodule}.transaction LIMIT 1)))
-WHERE NOT
-  jsonb ?'fiscalYearId';
-
-UPDATE ${myuniversity}_${mymodule}.transaction
-SET
-  jsonb = jsonb || jsonb_build_object('source', 'Manual')
-WHERE
-  NOT jsonb ? 'source'
-  OR (jsonb::json->>'source' <> 'Credit' AND jsonb::json ->> 'source' <> 'Manual' AND jsonb::json->>'source' <> 'User'
-  AND jsonb::json ->> 'source' <> 'Voucher');
-
-UPDATE ${myuniversity}_${mymodule}.transaction
-SET
-  jsonb = jsonb || jsonb_build_object('transactionType', 'Allocation')
-WHERE
-  NOT jsonb ? 'transactionType'
-  OR (jsonb::json ->> 'transactionType' <> 'Allocation' AND jsonb::json ->> 'transactionType' <> 'Credit'
-  AND jsonb::json ->> 'transactionType' <> 'Encumbrance'
-  AND jsonb::json ->> 'transactionType' <> 'Payment' AND jsonb::json ->> 'transactionType' <> 'Transfer');
-
--- Update tags
-
-UPDATE ${myuniversity}_${mymodule}.transaction
-SET
-  jsonb = jsonb || jsonb_build_object('tags', jsonb_build_object('tagList', jsonb::json -> 'tags'))
-WHERE
-  jsonb::json #> '{tags, tagList}' iS NULL AND jsonb ? 'tags';
-
--- Remove fields
-
-UPDATE ${myuniversity}_${mymodule}.transaction
-SET
-  jsonb = jsonb - '{available, note, overcharge, timestamp, sourceId, budgetId}'::text[];
