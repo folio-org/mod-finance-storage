@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static io.restassured.RestAssured.given;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
+import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.persist.HelperUtils.getEndpoint;
 import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_IS_INACTIVE;
@@ -28,6 +29,7 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.model.LedgerFY;
@@ -35,6 +37,8 @@ import org.folio.rest.jaxrs.model.LedgerFYCollection;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgerFiscalYears;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
@@ -59,9 +63,18 @@ class TransactionTest extends TestBase {
   static final String BUDGETS = "budgets";
   private static final String LEDGERS = "ledgers";
 
+  @BeforeEach
+  void prepareData() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+  }
+
+  @AfterEach
+  void deleteData() throws MalformedURLException {
+    deleteTenant(TRANSACTION_TENANT_HEADER);
+  }
+
   @Test
   void testCreateAllocation() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     jsonTx.remove("id");
@@ -135,13 +148,10 @@ class TransactionTest extends TestBase {
 
     assertEquals(expectedLedgersAvailable, toLedgerFYAfter.getAvailable());
     assertEquals(expectedLedgersAllocated, toLedgerFYAfter.getAllocated());
-
-    deleteTenant(TRANSACTION_TENANT_HEADER);
   }
 
   @Test
   void testCreateAllocationWithDestinationFundEmpty() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     jsonTx.remove("id");
@@ -183,13 +193,10 @@ class TransactionTest extends TestBase {
       assertEquals(fromLedgerBefore.getUnavailable() , fromLedgerAfter.getUnavailable());
     }
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testCreateAllocationWithSourceBudgetNotExist() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     jsonTx.remove("id");
@@ -241,13 +248,11 @@ class TransactionTest extends TestBase {
       assertEquals(toLedgerBefore.getAvailable(), toLedgerAfter.getAvailable());
       assertEquals(toLedgerBefore.getUnavailable() , toLedgerAfter.getUnavailable());
     }
-    deleteTenant(TRANSACTION_TENANT_HEADER);
 
   }
 
   @Test
   void testCreateAllocationWithSourceLedgerFYNotExist() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     jsonTx.remove("id");
@@ -272,13 +277,10 @@ class TransactionTest extends TestBase {
       .then()
       .statusCode(500);
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testCreateTransfer() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     JsonObject jsonTx = new JsonObject(getFile("data/transactions/transfers/transfer.json"));
     jsonTx.remove("id");
@@ -341,14 +343,11 @@ class TransactionTest extends TestBase {
     assertEquals(expectedBudgetsAvailable, toBudgetAfter.getAvailable());
     assertEquals(expectedLedgersAvailable, toLedgerFYAfter.getAvailable());
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
 
   @Test
   void testCreateEncumbranceAllOrNothingIdempotent() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String orderId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 2);
@@ -441,17 +440,14 @@ class TransactionTest extends TestBase {
     assertEquals(expectedLedgersAvailable, fromLedgerFYAfter.getAvailable());
     assertEquals(expectedLedgersUnavailable , fromLedgerFYAfter.getUnavailable());
 
-    // cleanup
-    deleteTenant(TRANSACTION_TENANT_HEADER);
   }
 
   @Test
   void testCreateEncumbranceWithNotEnoughBudgetMoney() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
+    createInvoiceSummary(orderId, 1, 1);
     JsonObject jsonTx = new JsonObject(getFile(RESTRICTED_ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
 
@@ -464,13 +460,11 @@ class TransactionTest extends TestBase {
       .statusCode(400)
       .body(containsString(FUND_CANNOT_BE_PAID));
 
-    // cleanup
-    deleteTenant(TRANSACTION_TENANT_HEADER);
   }
 
   @Test
   void testCreateEncumbranceFromInactiveBudget() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+
     verifyCollectionQuantity(TRANSACTION_ENDPOINT, TRANSACTION.getInitialQuantity(), TRANSACTION_TENANT_HEADER);
 
     // prepare budget
@@ -493,13 +487,10 @@ class TransactionTest extends TestBase {
       .statusCode(400)
       .body(containsString(BUDGET_IS_INACTIVE));
 
-    // cleanup
-    deleteTenant(TRANSACTION_TENANT_HEADER);
   }
 
   @Test
   void testCreateEncumbranceWithoutSummary() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String orderId = UUID.randomUUID().toString();
 
@@ -514,13 +505,10 @@ class TransactionTest extends TestBase {
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(400);
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testCreateEncumbranceWithoutBudget() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String orderId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 2);
@@ -537,8 +525,6 @@ class TransactionTest extends TestBase {
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(400).body(containsString(BUDGET_NOT_FOUND_FOR_TRANSACTION));
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   protected void createOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
@@ -547,9 +533,15 @@ class TransactionTest extends TestBase {
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
 
+  protected void createInvoiceSummary(String invoiceId, int encumbranceNumber, int paymentNumber) throws MalformedURLException {
+    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId)
+      .withNumEncumbrances(encumbranceNumber).withNumPaymentsCredits(paymentNumber);
+    postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
+      .encodePrettily(), TRANSACTION_TENANT_HEADER);
+  }
+
   @Test
   void testCreateEncumbranceWithMissedRequiredFields() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
 
@@ -564,13 +556,10 @@ class TransactionTest extends TestBase {
       .statusCode(422).extract().as(Errors.class);
     assertThat(errors.getErrors(), hasSize(2));
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testCreateEncumbrancesDuplicateInTemporaryTable() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String orderId = UUID.randomUUID().toString();
 
@@ -592,13 +581,10 @@ class TransactionTest extends TestBase {
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(201);
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testCreateEncumbrancesDuplicateInTransactionTable() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String orderId = UUID.randomUUID().toString();
     createOrderSummary(orderId,  2);
@@ -650,25 +636,28 @@ class TransactionTest extends TestBase {
       .then()
       .statusCode(201);
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testUpdateEncumbranceAllOrNothing() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String orderId = UUID.randomUUID().toString();
+    String invoiceId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 2);
+    createInvoiceSummary(invoiceId, 2, 1);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
+    encumbrance1.setSourceInvoiceId(invoiceId);
     encumbrance1.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance1.setSourceInvoiceLineId(UUID.randomUUID().toString());
 
     Transaction encumbrance2 = jsonTx.mapTo(Transaction.class);
     encumbrance2.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance2.setSourceInvoiceId(invoiceId);
     encumbrance2.getEncumbrance().setSourcePoLineId(UUID.randomUUID().toString());
+    encumbrance2.setSourceInvoiceLineId(UUID.randomUUID().toString());
 
     String fY = encumbrance1.getFiscalYearId();
     String fromFundId = encumbrance1.getFromFundId();
@@ -739,16 +728,15 @@ class TransactionTest extends TestBase {
     assertEquals(expectedBudgetsUnavailable, fromBudgetAfterUpdate.getUnavailable());
     assertEquals(expectedAwaitingPayment, fromBudgetAfterUpdate.getAwaitingPayment());
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
 
   @Test
   void testUpdateAlreadyReleasedEncumbranceBudgetNotUpdated() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String orderId = UUID.randomUUID().toString();
-      createOrderSummary(orderId, 1);
+    String invoiceId = UUID.randomUUID().toString();
+    createOrderSummary(orderId, 1);
+    createInvoiceSummary(invoiceId, 1, 2);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
@@ -757,6 +745,7 @@ class TransactionTest extends TestBase {
     encumbrance.getEncumbrance().setStatus(Encumbrance.Status.RELEASED);
     encumbrance.setAmount(0d);
     encumbrance.getEncumbrance().setAmountAwaitingPayment(10d);
+    encumbrance.setSourceInvoiceId(invoiceId);
 
     String fY = encumbrance.getFiscalYearId();
     String fromFundId = encumbrance.getFromFundId();
@@ -765,24 +754,24 @@ class TransactionTest extends TestBase {
     // prepare budget queries
     String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
 
-    // create 1st Encumbrance, expected number is 2
-    String encumbrance1Id = postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+    String encumbranceId = postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
 
     // encumbrance appearS in transaction table
-    getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    getDataById(TRANSACTION.getEndpointWithId(), encumbranceId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
     Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
 
     encumbrance.getEncumbrance().setAmountAwaitingPayment(5d);
     encumbrance.setAmount(2d);
 
-    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
-    Transaction transaction1FromStorage = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
-    assertEquals(5d, transaction1FromStorage.getEncumbrance().getAmountAwaitingPayment());
-    assertEquals(2d, transaction1FromStorage.getAmount());
+    putData(TRANSACTION.getEndpointWithId(), encumbranceId, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
+    //encumbrance mustn't be updated if it is already released
+    Transaction transaction1FromStorage = getDataById(TRANSACTION.getEndpointWithId(), encumbranceId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    assertEquals(10d, transaction1FromStorage.getEncumbrance().getAmountAwaitingPayment());
+    assertEquals(0d, transaction1FromStorage.getAmount());
     Budget fromBudgetAfterUpdate = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
 
     assertEquals(fromBudgetBefore.getEncumbered(), fromBudgetAfterUpdate.getEncumbered());
@@ -790,31 +779,23 @@ class TransactionTest extends TestBase {
     assertEquals(fromBudgetBefore.getUnavailable(), fromBudgetAfterUpdate.getUnavailable());
     assertEquals(fromBudgetBefore.getAwaitingPayment(), fromBudgetAfterUpdate.getAwaitingPayment());
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
-
 
   @Test
   void testUpdateEncumbranceNotFound() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
-    String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 2);
+    String invoiceId = UUID.randomUUID().toString();
+    createInvoiceSummary(invoiceId, 2, 2);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
-    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance.setSourceInvoiceId(invoiceId);
 
     // Try to update non-existent transaction
     putData(TRANSACTION.getEndpointWithId(), UUID.randomUUID().toString(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(404);
 
-    deleteTenant(TRANSACTION_TENANT_HEADER);
-
   }
-
-
 
   private Ledger getLedgerAndValidate(String endpoint) throws MalformedURLException {
     return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
