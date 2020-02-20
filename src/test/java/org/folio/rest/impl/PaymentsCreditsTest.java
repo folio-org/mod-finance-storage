@@ -9,10 +9,12 @@ import static org.folio.rest.impl.TransactionTest.TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
+import static org.folio.rest.transaction.AllOrNothingHandler.FUND_CANNOT_BE_PAID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -23,6 +25,7 @@ import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
+import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.LedgerFY;
@@ -369,6 +372,30 @@ class PaymentsCreditsTest extends TestBase {
 
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(400);
+
+  }
+
+  @Test
+  void testCreatePaymentWithRestrictedLedgerAndNotEnoughMoney() throws MalformedURLException {
+    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+
+    String invoiceId = UUID.randomUUID().toString();
+    createInvoiceSummary(invoiceId, 1);
+
+    JsonObject paymentJsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
+    paymentJsonTx.remove("id");
+
+    Transaction payment = paymentJsonTx.mapTo(Transaction.class);
+    payment.setSourceInvoiceId(invoiceId);
+    payment.setPaymentEncumbranceId(null);
+    payment.setAmount((double) Integer.MAX_VALUE);
+
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
+      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(400)
+      .body(containsString(FUND_CANNOT_BE_PAID));
+
+    deleteTenant(TRANSACTION_TENANT_HEADER);
 
   }
 
