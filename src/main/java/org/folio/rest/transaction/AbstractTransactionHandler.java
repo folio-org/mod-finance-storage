@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
+import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.PostgresClient;
 
 import io.vertx.core.AsyncResult;
@@ -28,6 +29,11 @@ public abstract class AbstractTransactionHandler implements TransactionHandler {
     this.okapiHeaders = okapiHeaders;
     this.vertxContext = ctx;
     this.asyncResultHandler = handler;
+  }
+
+  @Override
+  public void updateTransaction(Transaction transaction) {
+    throw new UnsupportedOperationException("Transactions are Immutable");
   }
 
   String getTenantId() {

@@ -1,5 +1,6 @@
 package org.folio.rest.transaction;
 
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -8,8 +9,12 @@ import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.impl.TransactionSummaryAPI.INVOICE_TRANSACTION_SUMMARIES;
+import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValueNotJsonb;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
+import static org.folio.rest.persist.MoneyUtils.subtractMoney;
+import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
+import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,17 +31,22 @@ import javax.money.Monetary;
 import javax.money.MonetaryAmount;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.collections4.keyvalue.MultiKey;
+import org.apache.commons.collections4.map.MultiKeyMap;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.MoneyUtils;
 import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.Criteria.GroupedCriterias;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
 
@@ -49,7 +59,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
-public class PaymentCreditHandler extends AllOrNothingHandler {
+public class InvoiceTransactionsHandler extends AllOrNothingHandler {
 
   private static final String TEMPORARY_INVOICE_TRANSACTIONS = "temporary_invoice_transactions";
   private static final String TRANSACTIONS_TABLE = "transaction";
@@ -58,7 +68,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
   Predicate<Transaction> isPaymentTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.PAYMENT);
   Predicate<Transaction> isCreditTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.CREDIT);
 
-  public PaymentCreditHandler(Map<String, String> okapiHeaders, Context ctx, Handler<AsyncResult<Response>> asyncResultHandler) {
+  public InvoiceTransactionsHandler(Map<String, String> okapiHeaders, Context ctx, Handler<AsyncResult<Response>> asyncResultHandler) {
     super(TEMPORARY_INVOICE_TRANSACTIONS, INVOICE_TRANSACTION_SUMMARIES, okapiHeaders, ctx, asyncResultHandler);
   }
 
@@ -93,7 +103,7 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
     }
 
     return getAllEncumbrances(tx).map(encumbrances -> encumbrances.stream()
-      .collect(toMap(Transaction::getId, Function.identity())))
+      .collect(toMap(Transaction::getId, identity())))
       .map(encumbrancesMap -> applyPayments(tx.getEntity(), encumbrancesMap))
       .map(encumbrancesMap -> applyCredits(tx.getEntity(), encumbrancesMap))
       //update all the re-calculated encumbrances into the Transaction table
@@ -386,7 +396,157 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
 
   @Override
   public void updateTransaction(Transaction transaction) {
-    throw new UnsupportedOperationException("Payments and credits are Immutable");
+    verifyTransactionExistence(transaction.getId())
+      .compose(aVoid -> processAllOrNothing(transaction, this::processTransactionsUponUpdate))
+      .setHandler(result -> {
+        if (result.failed()) {
+          HttpStatusException cause = (HttpStatusException) result.cause();
+          switch (cause.getStatusCode()) {
+            case 400:
+              getAsyncResultHandler().handle(Future.succeededFuture(
+                FinanceStorageTransactions.PutFinanceStorageTransactionsByIdResponse.respond400WithTextPlain(cause.getPayload())));
+              break;
+            case 404:
+              getAsyncResultHandler().handle(Future.succeededFuture(
+                FinanceStorageTransactions.PutFinanceStorageTransactionsByIdResponse.respond404WithTextPlain(cause.getPayload())));
+              break;
+            case 422:
+              getAsyncResultHandler()
+                .handle(Future.succeededFuture(FinanceStorageTransactions.PutFinanceStorageTransactionsByIdResponse
+                  .respond422WithApplicationJson(new JsonObject(cause.getPayload()).mapTo(Errors.class))));
+              break;
+            default:
+              getAsyncResultHandler()
+                .handle(Future.succeededFuture(FinanceStorageTransactions.PutFinanceStorageTransactionsByIdResponse
+                  .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())));
+          }
+        } else {
+          log.debug("Preparing response to client");
+          getAsyncResultHandler()
+            .handle(Future.succeededFuture(FinanceStorageTransactions.PutFinanceStorageTransactionsByIdResponse.respond204()));
+        }
+      });
+  }
+
+  private Future<Void> verifyTransactionExistence(String transactionId) {
+    Promise<Void> promise = Promise.promise();
+    getPostgresClient().getById(TRANSACTION_TABLE, transactionId, reply -> {
+      if (reply.failed()) {
+        handleFailure(promise, reply);
+      } else if (reply.result() == null) {
+        promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Not found"));
+      } else {
+        promise.complete();
+      }
+    });
+    return promise.future();
+  }
+
+  private Future<Tx<List<Transaction>>> processTransactionsUponUpdate(Tx<List<Transaction>> tx) {
+
+    return getPermanentTransactions(tx)
+      .compose(existingTransactions -> updateBudgetsTotals(tx, existingTransactions)
+        .map(listTx -> excludeReleasedEncumbrances(tx.getEntity(), existingTransactions)))
+      .compose(transactions -> updatePermanentTransactions(tx, transactions));
+  }
+
+
+
+  private List<Transaction> excludeReleasedEncumbrances(List<Transaction> newTransactions, List<Transaction> existingTransactions) {
+    Map<String, Transaction> groupedTransactions = existingTransactions.stream().collect(toMap(Transaction::getId, identity()));
+    return newTransactions.stream()
+      .filter(transaction -> groupedTransactions.get(transaction.getId()).getEncumbrance().getStatus() != Encumbrance.Status.RELEASED)
+      .collect(Collectors.toList());
+  }
+
+
+  private Future<Tx<List<Transaction>>> updateBudgetsTotals(Tx<List<Transaction>> tx, List<Transaction> existingTransactions) {
+    return getBudgets(tx)
+      .map(budgets -> updateBudgetsTotals(existingTransactions, tx.getEntity(), budgets))
+      .compose(budgets -> updateBudgets(tx, budgets));
+  }
+
+
+  private List<Budget> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> tempTransactions, List<Budget> budgets) {
+    Map<String, Transaction> existingGrouped = existingTransactions.stream().collect(toMap(Transaction::getId, identity()));
+    Map<Budget, List<Transaction>> tempGrouped = groupTransactionsByBudget(tempTransactions, budgets);
+    return tempGrouped.entrySet().stream()
+      .map(listEntry -> updateBudgetTotals(listEntry, existingGrouped))
+      .collect(Collectors.toList());
+  }
+
+  private Budget updateBudgetTotals(Map.Entry<Budget, List<Transaction>> entry, Map<String, Transaction> existingGrouped) {
+    Budget budget = entry.getKey();
+
+    if (isNotEmpty(entry.getValue())) {
+      CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
+      entry.getValue()
+        .forEach(tmpTransaction -> {
+          Transaction existingTransaction = existingGrouped.get(tmpTransaction.getId());
+          if (!isEncumbranceReleased(existingTransaction)) {
+            if (isEncumbranceReleased(tmpTransaction)) {
+              releaseEncumbrance(budget, currency, tmpTransaction);
+            } else {
+              double newEncumbered = subtractMoney(budget.getEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              newEncumbered = sumMoney(newEncumbered, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              budget.setEncumbered(newEncumbered);
+              double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              newAmount = subtractMoney(newAmount, tmpTransaction.getEncumbrance().getAmountExpended(), currency);
+              tmpTransaction.setAmount(newAmount);
+              double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              newAwaitingPayment = subtractMoneyNonNegative(newAwaitingPayment, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+              budget.setAwaitingPayment(newAwaitingPayment);
+            }
+          }
+        });
+    }
+    return budget;
+  }
+
+  private void releaseEncumbrance(Budget budget, CurrencyUnit currency, Transaction tmpTransaction) {
+    budget.setAvailable(sumMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency));
+    double newUnavailable = subtractMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
+    budget.setUnavailable(newUnavailable < 0 ? 0 : newUnavailable);
+    budget.setEncumbered(subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
+    tmpTransaction.setAmount(0d);
+  }
+
+  private boolean isEncumbranceReleased(Transaction transaction) {
+    return transaction.getEncumbrance()
+      .getStatus() == Encumbrance.Status.RELEASED;
+  }
+
+  private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> existingTransactions, List<Budget> budgets) {
+    MultiKeyMap<String, Budget> groupedBudgets = new MultiKeyMap<>();
+    groupedBudgets.putAll(budgets.stream().collect(toMap(budget -> new MultiKey<>(budget.getFundId(), budget.getFiscalYearId()), identity())));
+
+    return existingTransactions.stream()
+      .collect(groupingBy(
+        transaction -> groupedBudgets.get(transaction.getFromFundId(), transaction.getFiscalYearId())));
+
+  }
+
+  private Future<List<Transaction>> getPermanentTransactions(Tx<List<Transaction>> tx) {
+    Promise<List<Transaction>> promise = Promise.promise();
+    List<Criteria> criteriaList = tx.getEntity().stream()
+      .map(Transaction::getId)
+      .map(id -> getCriteriaByFieldNameAndValueNotJsonb("id", "=", id)).collect(Collectors.toList());
+    GroupedCriterias groupedCriterias = new GroupedCriterias();
+    criteriaList.forEach(c -> groupedCriterias.addCriteria(c, "OR"));
+    Criterion criterion = new Criterion();
+    criterion.addGroupOfCriterias(groupedCriterias);
+
+    getPostgresClient().get(TRANSACTION_TABLE, Transaction.class, criterion, false, false, reply -> {
+      if (reply.failed()) {
+        log.error("Failed to extract permanent transactions", reply.cause());
+        handleFailure(promise, reply);
+      } else {
+        List<Transaction> transactions = reply.result()
+          .getResults();
+        promise.complete(transactions);
+      }
+    });
+    return promise.future();
   }
 
   @Override
@@ -425,11 +585,6 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
   }
 
   @Override
-  int getSummaryCount(JsonObject summary){
-    return summary.getInteger("numPaymentsCredits");
-  }
-
-  @Override
   protected String getBudgetsQuery(){
     return String.format("SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
         + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
@@ -443,14 +598,13 @@ public class PaymentCreditHandler extends AllOrNothingHandler {
   }
 
   /**
-   * Fetch only payments and credits from temporary table for a given Invoice Id
+   * Fetch transactions from temporary table for a given Invoice Id
    */
   @Override
   Criterion getTransactionBySummaryIdCriterion(String value) {
     Criteria criteria = HelperUtils.getCriteriaByFieldNameAndValue("sourceInvoiceId", "=", value);
-    Criteria criteria1 = HelperUtils.getCriteriaByFieldNameAndValue("transactionType", "!=", "Encumbrance");
 
-    return new Criterion().addCriterion(criteria, "AND", criteria1);
+    return new Criterion().addCriterion(criteria);
   }
 
 }
