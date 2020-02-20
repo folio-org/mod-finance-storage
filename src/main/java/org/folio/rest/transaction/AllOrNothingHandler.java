@@ -108,8 +108,8 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   abstract int getSummaryCount(JsonObject summary);
 
-  protected Future<Tx<List<Transaction>>> createPermanentTransactions(Tx<List<Transaction>> tx) {
-    Promise<Tx<List<Transaction>>> promise = Promise.promise();
+  protected Future<Integer> createPermanentTransactions(Tx<List<Transaction>> tx) {
+    Promise<Integer> promise = Promise.promise();
     List<Transaction> transactions = tx.getEntity();
     JsonArray param = new JsonArray();
     param.add(getSummaryId(transactions.get(0)));
@@ -118,7 +118,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          promise.complete(tx);
+          promise.complete(reply.result().getUpdated());
         }
       });
     return promise.future();

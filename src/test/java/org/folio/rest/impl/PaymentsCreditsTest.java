@@ -25,7 +25,6 @@ import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
-import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.LedgerFY;
@@ -377,7 +376,6 @@ class PaymentsCreditsTest extends TestBase {
 
   @Test
   void testCreatePaymentWithRestrictedLedgerAndNotEnoughMoney() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
 
     String invoiceId = UUID.randomUUID().toString();
     createInvoiceSummary(invoiceId, 1);
@@ -394,8 +392,6 @@ class PaymentsCreditsTest extends TestBase {
       .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(400)
       .body(containsString(FUND_CANNOT_BE_PAID));
-
-    deleteTenant(TRANSACTION_TENANT_HEADER);
 
   }
 

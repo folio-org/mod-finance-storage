@@ -14,6 +14,7 @@ import java.net.MalformedURLException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 import org.folio.rest.utils.TestEntities;
@@ -231,11 +232,12 @@ public abstract class TestBase {
         .statusCode(404);
   }
 
-  protected double subtractValues(double d1, double d2) {
-    return BigDecimal.valueOf(d1).subtract(BigDecimal.valueOf(d2)).doubleValue();
+  protected double subtractValues(double d1, Double ... subtrahends) {
+    BigDecimal subtrahendSum = Stream.of(subtrahends).map(BigDecimal::valueOf).reduce(BigDecimal::add).orElse(BigDecimal.ZERO);
+    return BigDecimal.valueOf(d1).subtract(subtrahendSum).doubleValue();
   }
 
-  protected double sumValues(double d1, double d2) {
-    return BigDecimal.valueOf(d1).add(BigDecimal.valueOf(d2)).doubleValue();
+  protected double sumValues(Double ... doubles) {
+    return Stream.of(doubles).map(BigDecimal::valueOf).reduce(BigDecimal::add).orElse(BigDecimal.ZERO).doubleValue();
   }
 }
