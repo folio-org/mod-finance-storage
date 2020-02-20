@@ -109,6 +109,16 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   abstract String createPermanentTransactionsQuery();
 
+  protected String createPermanentTransactionsQuery(String sql) {
+    return String.format(sql, getFullTransactionTableName(), getTemporaryTransactionTable());
+  }
+
+  protected abstract String getSelectBudgetsQuery();
+
+  protected String getSelectBudgetsQuery(String sql) {
+    return String.format(sql, getFullTableName(getTenantId(), BUDGET_TABLE), getFullTemporaryTransactionTableName());
+  }
+
   protected Future<Integer> createPermanentTransactions(Tx<List<Transaction>> tx) {
     Promise<Integer> promise = Promise.promise();
     List<Transaction> transactions = tx.getEntity();
@@ -359,7 +369,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   protected Future<List<Budget>> getBudgets(Tx<List<Transaction>> tx) {
     Promise<List<Budget>> promise = Promise.promise();
-    String sql = getBudgetsQuery();
+    String sql = getSelectBudgetsQuery();
     JsonArray params = new JsonArray();
     params.add(getSummaryId(tx.getEntity()
       .get(0)));
@@ -379,8 +389,6 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       });
     return promise.future();
   }
-
-  protected abstract String getBudgetsQuery();
 
   protected String getValues(List<JsonObject> entities) {
     return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));

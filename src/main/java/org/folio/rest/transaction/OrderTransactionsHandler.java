@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.impl.TransactionSummaryAPI.ORDER_TRANSACTION_SUMMARIES;
@@ -58,24 +57,24 @@ public class OrderTransactionsHandler extends AllOrNothingHandler {
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
 
-  public static final String SELECT_LEDGERFY_FUND_ID = "SELECT ledger_fy.jsonb, funds.id FROM %s AS ledger_fy INNER JOIN %s AS funds"
+  public static final String GROUP_FUND_ID_BY_LEDGERFY = "SELECT ledger_fy.jsonb, funds.id FROM %s AS ledger_fy INNER JOIN %s AS funds"
     + " ON (funds.ledgerId = ledger_fy.ledgerId) INNER JOIN %s AS transactions"
     + " ON (funds.id = transactions.fromFundId)"
     + " WHERE (transactions.encumbrance_sourcePurchaseOrderId = ? AND ledger_fy.fiscalYearId = transactions.fiscalYearId);";
 
-  public static final String SELECT_BUDGETS = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+  public static final String SELECT_BUDGETS_BY_ORDER_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId "
     + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
 
-  public static final String INSERT_PERMANENT_TRANSACTIONS = "INSERT INTO %s (id, jsonb) SELECT id, jsonb FROM %s WHERE encumbrance_sourcePurchaseOrderId = ? "
+  public static final String INSERT_PERMANENT_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) SELECT id, jsonb FROM %s WHERE encumbrance_sourcePurchaseOrderId = ? "
     + "ON CONFLICT DO NOTHING;";
 
-  public static final String INSERT_TEMPORARY_TRANSACTIONS = "INSERT INTO %s (id, jsonb) VALUES (?, ?::JSON) "
-      + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
-      + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text)), "
-      + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text)), "
-      + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text)), "
-      + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'status'::text))) DO UPDATE SET id = excluded.id RETURNING id;";
+  public static final String INSERT_TEMPORARY_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) VALUES (?, ?::JSON) "
+    + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
+    + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text)), "
+    + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text)), "
+    + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text)), "
+    + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'status'::text))) DO UPDATE SET id = excluded.id RETURNING id;";
 
   public OrderTransactionsHandler(Map<String, String> okapiHeaders, Context ctx, Handler<AsyncResult<Response>> asyncResultHandler) {
     super(TEMPORARY_ORDER_TRANSACTIONS, ORDER_TRANSACTION_SUMMARIES, okapiHeaders, ctx, asyncResultHandler);
@@ -109,20 +108,17 @@ public class OrderTransactionsHandler extends AllOrNothingHandler {
 
   @Override
   String createTempTransactionQuery() {
-    return String.format(INSERT_TEMPORARY_TRANSACTIONS,
-      getFullTemporaryTransactionTableName());
+    return String.format(INSERT_TEMPORARY_ENCUMBRANCES, getFullTemporaryTransactionTableName());
   }
 
   @Override
   String createPermanentTransactionsQuery() {
-    return String.format(INSERT_PERMANENT_TRANSACTIONS, getFullTransactionTableName(), getTemporaryTransactionTable());
+    return createPermanentTransactionsQuery(INSERT_PERMANENT_ENCUMBRANCES);
   }
 
   @Override
-  protected String getBudgetsQuery() {
-    return String.format(
-      SELECT_BUDGETS,
-      getFullTableName(getTenantId(), BUDGET_TABLE), getFullTemporaryTransactionTableName());
+  protected String getSelectBudgetsQuery() {
+    return getSelectBudgetsQuery(SELECT_BUDGETS_BY_ORDER_ID);
   }
 
   /**
@@ -292,10 +288,8 @@ public class OrderTransactionsHandler extends AllOrNothingHandler {
   }
 
   public String getLedgerFYsQuery() {
-    return String.format(
-      SELECT_LEDGERFY_FUND_ID,
-        getFullTableName(getTenantId(), LEDGERFY_TABLE), getFullTableName(getTenantId(), FUND_TABLE),
-        getFullTemporaryTransactionTableName());
+    return String.format(GROUP_FUND_ID_BY_LEDGERFY, getFullTableName(getTenantId(), LEDGERFY_TABLE),
+        getFullTableName(getTenantId(), FUND_TABLE), getFullTemporaryTransactionTableName());
   }
 
 }

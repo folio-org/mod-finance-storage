@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.impl.TransactionSummaryAPI.INVOICE_TRANSACTION_SUMMARIES;
@@ -71,10 +70,10 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
     + "lower(f_unaccent(jsonb ->> 'toFundId'::text)), "
     + "lower(f_unaccent(jsonb ->> 'transactionType'::text))) DO UPDATE SET id = excluded.id RETURNING id;";
 
-  public static final String INSERT_PERMANENT_TRANSACTIONS = "INSERT INTO %s (id, jsonb) SELECT id, jsonb FROM %s WHERE sourceInvoiceId = ? AND jsonb ->> 'transactionType' != 'Encumbrance'"
+  public static final String INSERT_PERMANENT_PAYMENTS_CREDITS = "INSERT INTO %s (id, jsonb) SELECT id, jsonb FROM %s WHERE sourceInvoiceId = ? AND jsonb ->> 'transactionType' != 'Encumbrance'"
     + "ON CONFLICT DO NOTHING;";
 
-  public static final String SELECT_BUDGETS = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+  public static final String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
       + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
       + "WHERE transactions.sourceInvoiceId = ?";
 
@@ -588,14 +587,12 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
 
   @Override
   String createPermanentTransactionsQuery() {
-    return String.format(INSERT_PERMANENT_TRANSACTIONS, getFullTransactionTableName(), getTemporaryTransactionTable());
-
+    return createPermanentTransactionsQuery(INSERT_PERMANENT_PAYMENTS_CREDITS);
   }
 
   @Override
-  protected String getBudgetsQuery(){
-    return String.format(SELECT_BUDGETS, getFullTableName(getTenantId(), BUDGET_TABLE),
-        getFullTemporaryTransactionTableName());
+  protected String getSelectBudgetsQuery(){
+    return getSelectBudgetsQuery(SELECT_BUDGETS_BY_INVOICE_ID);
   }
 
   @Override
