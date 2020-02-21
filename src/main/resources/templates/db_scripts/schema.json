@@ -28,7 +28,7 @@
     {
       "run": "after",
       "snippetPath": "migration/budgets.sql",
-      "fromModuleVersion": "mod-finance-storage-4.0.0"
+      "fromModuleVersion": "mod-finance-storage-4.1.2"
     }
   ],
   "tables": [
