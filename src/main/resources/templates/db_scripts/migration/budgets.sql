@@ -50,5 +50,10 @@ UPDATE ${myuniversity}_${mymodule}.budget
 SET
   jsonb = jsonb - '{code}'::text[];
 
+-- Rename duplicates
+
+UPDATE ${myuniversity}_${mymodule}.budget
+SET jsonb = jsonb || jsonb_build_object('name', jsonb ->> 'name' || '_' || floor(random() * 2147483646 + 1)::int)
+WHERE jsonb ->> 'name' IN (SELECT jsonb->>'name' AS name FROM ${myuniversity}_${mymodule}.budget GROUP BY name HAVING COUNT(*) > 1);
 
 
