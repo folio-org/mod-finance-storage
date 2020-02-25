@@ -207,7 +207,7 @@
     },
     {
       "tableName": "budget",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "fromModuleVersion": "mod-finance-storage-4.1.2",
       "withMetadata": true,
       "foreignKeys": [
         {
@@ -232,10 +232,6 @@
         }
       ],
       "uniqueIndex": [
-        {
-          "fieldName": "name",
-          "tOps": "ADD"
-        },
         {
           "fieldName": "fundId, fiscalYearId",
           "tOps": "ADD"
