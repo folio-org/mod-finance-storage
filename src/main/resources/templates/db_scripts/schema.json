@@ -171,41 +171,6 @@
       ]
     },
     {
-      "tableName": "fiscal_year",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
-      "withMetadata": true,
-      "index": [
-        {
-          "fieldName" : "periodEnd",
-          "tOps": "ADD"
-        }
-      ],
-      "ginIndex": [
-        {
-          "fieldName": "name",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        },
-        {
-          "fieldName": "acqUnitIds",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        },
-        {
-          "fieldName": "code",
-          "tOps": "DELETE"
-        }
-      ],
-      "uniqueIndex": [
-        {
-          "fieldName": "code",
-          "tOps": "ADD"
-        }
-      ]
-    },
-    {
       "tableName": "budget",
       "fromModuleVersion": "mod-finance-storage-4.1.2",
       "withMetadata": true,
