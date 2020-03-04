@@ -497,18 +497,9 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
         .forEach(tmpTransaction -> {
           Transaction existingTransaction = existingGrouped.get(tmpTransaction.getId());
           if (!isEncumbranceReleased(existingTransaction)) {
+            processBudget(budget, currency, tmpTransaction, existingTransaction);
             if (isEncumbranceReleased(tmpTransaction)) {
               releaseEncumbrance(budget, currency, tmpTransaction);
-            } else {
-              double newEncumbered = subtractMoney(budget.getEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              newEncumbered = sumMoney(newEncumbered, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              budget.setEncumbered(newEncumbered);
-              double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              newAmount = subtractMoney(newAmount, tmpTransaction.getEncumbrance().getAmountExpended(), currency);
-              tmpTransaction.setAmount(newAmount);
-              double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              newAwaitingPayment = subtractMoneyNonNegative(newAwaitingPayment, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-              budget.setAwaitingPayment(newAwaitingPayment);
             }
           }
         });
@@ -517,12 +508,37 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
   }
 
   private void releaseEncumbrance(Budget budget, CurrencyUnit currency, Transaction tmpTransaction) {
+    //encumbered decreases by the amount being released
+    budget.setEncumbered(subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
+
+    // available increases by the amount being released
     budget.setAvailable(sumMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency));
+
+    // unavailable decreases by the amount being released (min 0)
     double newUnavailable = subtractMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
     budget.setUnavailable(newUnavailable < 0 ? 0 : newUnavailable);
-    budget.setEncumbered(subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
+
+    // transaction.amount becomes 0 (save the original value for updating the budget)
     tmpTransaction.setAmount(0d);
   }
+
+  private void processBudget(Budget budget, CurrencyUnit currency, Transaction tmpTransaction, Transaction existingTransaction) {
+    // encumbered decreases by the difference between provided and previous transaction.encumbrance.amountAwaitingPayment values
+    double newEncumbered = subtractMoney(budget.getEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    newEncumbered = sumMoney(newEncumbered, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    budget.setEncumbered(newEncumbered);
+
+    // awaitingPayment increases by the same amount
+    double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    newAwaitingPayment = subtractMoneyNonNegative(newAwaitingPayment, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    budget.setAwaitingPayment(newAwaitingPayment);
+
+    // encumbrance transaction.amount is updated to (initial encumbrance - awaiting payment - expended)
+    double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    newAmount = subtractMoney(newAmount, tmpTransaction.getEncumbrance().getAmountExpended(), currency);
+    tmpTransaction.setAmount(newAmount);
+  }
+
 
   private boolean isEncumbranceReleased(Transaction transaction) {
     return transaction.getEncumbrance()
