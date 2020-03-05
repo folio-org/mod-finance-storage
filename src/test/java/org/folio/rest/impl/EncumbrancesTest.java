@@ -470,10 +470,12 @@ public class EncumbrancesTest extends TestBase {
 
     Budget fromBudgetAfterUpdate = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
 
-    double expectedBudgetsEncumbered = subtractValues(fromBudgetBeforeUpdate.getEncumbered(), releasedAmount);
+    double newAmount = subtractValues(transaction1FromStorage.getEncumbrance().getInitialAmountEncumbered(),
+      transaction1FromStorage.getEncumbrance().getAmountAwaitingPayment(), transaction1FromStorage.getEncumbrance().getAmountExpended());
+    double expectedBudgetsEncumbered = subtractValues(fromBudgetBeforeUpdate.getEncumbered(), newAmount);
     expectedBudgetsEncumbered = subtractValues(expectedBudgetsEncumbered, amountAwaitingPaymentDif);
-    double expectedBudgetsAvailable = sumValues(fromBudgetBeforeUpdate.getAvailable(), releasedAmount);
-    double expectedBudgetsUnavailable = subtractValues(fromBudgetBeforeUpdate.getUnavailable(), releasedAmount);
+    double expectedBudgetsAvailable = sumValues(fromBudgetBeforeUpdate.getAvailable(), newAmount);
+    double expectedBudgetsUnavailable = subtractValues(fromBudgetBeforeUpdate.getUnavailable(), newAmount);
     expectedBudgetsUnavailable = expectedBudgetsUnavailable < 0 ? 0 : expectedBudgetsUnavailable;
     double expectedAwaitingPayment = sumValues(fromBudgetBeforeUpdate.getAwaitingPayment(), amountAwaitingPaymentDif);
 
