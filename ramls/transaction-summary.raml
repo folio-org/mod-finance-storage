@@ -1,7 +1,7 @@
 #%RAML 1.0
 title: "mod-finance-storage"
 baseUri: https://github.com/folio-org/mod-finance-storage
-version: v1
+version: v2
 
 documentation:
   - title: mod-finance-storage (Transaction summaries)
@@ -60,7 +60,7 @@ resourceTypes:
           text/plain:
             example: "Internal server error, contact administrator"
   is: [validate]
-  
+
   /{id}:
     uriParameters:
       id:
@@ -71,7 +71,7 @@ resourceTypes:
         exampleItem: !include acq-models/mod-finance/examples/order_transaction_summary.sample
         schema: order-transaction-summary
     is: [validate]
-  
+
  /invoice-transaction-summaries:
   post:
     description: Create a new invoice transaction summary item.
