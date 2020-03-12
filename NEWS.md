@@ -6,6 +6,7 @@ The primary focus of this release was to implement calculations and restrictions
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.1.1...v4.2.0)
 
 ### Stories
+* [MODFISTO-91](https://issues.folio.org/browse/MODFISTO-91) Budgets aren't updated correctly upon updating/releasing encumbrance
 * [MODFISTO-86](https://issues.folio.org/browse/MODFISTO-86) Update encumbrance doesn't work as expected
 * [MODFISTO-83](https://issues.folio.org/browse/MODFISTO-83) Migration script improvement to support transition of non-unique index to unique one
 * [MODFISTO-82](https://issues.folio.org/browse/MODFISTO-82) AwaitingPayment should never go below 0
