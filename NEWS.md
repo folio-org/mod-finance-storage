@@ -1,4 +1,24 @@
-## 4.2.0 - Unreleased
+## 4.3.0 - Unreleased
+
+## 4.2.0 - Released
+The primary focus of this release was to implement calculations and restrictions based on finance data
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.1.1...v4.2.0)
+
+### Stories
+* [MODFISTO-86](https://issues.folio.org/browse/MODFISTO-86) Update encumbrance doesn't work as expected
+* [MODFISTO-83](https://issues.folio.org/browse/MODFISTO-83) Migration script improvement to support transition of non-unique index to unique one
+* [MODFISTO-82](https://issues.folio.org/browse/MODFISTO-82) AwaitingPayment should never go below 0
+* [MODFISTO-81](https://issues.folio.org/browse/MODFISTO-81) Budget expenditures must always be updated on payments/credits
+* [MODFISTO-80](https://issues.folio.org/browse/MODFISTO-80) LedgerFY records must be updated on payments/credits
+* [MODFISTO-63](https://issues.folio.org/browse/MODFISTO-63) Encumbrance restrictions
+* [MODFISTO-62](https://issues.folio.org/browse/MODFISTO-62) Payment restrictions
+* [MODFISTO-61](https://issues.folio.org/browse/MODFISTO-61) Budget/ledger unavailable shouldn't include overEncumbered amounts
+* [MODFISTO-28](https://issues.folio.org/browse/MODFISTO-28) Transaction Calculations - Payments/Credits
+
+### Bug Fixes
+* [MODFISTO-91](https://issues.folio.org/browse/MODFISTO-91) Budgets aren't updated correctly upon updating/releasing encumbrance
+
 
 ## 4.1.1 - Released
 This is a bugfix release, incrementing the fromModuleVersion so that updates to transactions.sql are captured
