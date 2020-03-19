@@ -225,33 +225,9 @@
     },
     {
       "tableName": "fund_distribution",
-      "fromModuleVersion": 1.0,
-      "withMetadata": true,
-      "foreignKeys": [
-        {
-          "fieldName": "budgetId",
-          "targetTable": "budget",
-          "tOps": "ADD"
-        }
-      ],
-      "ginIndex": [
-        {
-          "fieldName": "currency",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        },
-        {
-          "fieldName": "source_type",
-          "tOps": "DELETE"
-        },
-        {
-          "fieldName": "sourceType",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        }
-      ]
+      "fromModuleVersion": "mod-finance-storage-4.3.0",
+      "mode": "delete",
+      "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     },
     {
       "tableName": "transaction",

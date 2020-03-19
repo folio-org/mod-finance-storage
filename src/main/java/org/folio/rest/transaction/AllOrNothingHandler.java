@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toList;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.LedgerAPI.LEDGER_TABLE;
+import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
 import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValue;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.handleFailure;
@@ -37,6 +38,7 @@ import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.service.TransactionSummaryService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.AsyncResult;
@@ -55,9 +57,11 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   public static final String TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION = "Transaction summary not found for transaction";
   public static final String BUDGET_IS_INACTIVE = "Cannot create encumbrance from the not active budget";
   public static final String FUND_CANNOT_BE_PAID = "Fund cannot be paid due to restrictions";
+  public static final String ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED = "All expected transactions already processed";
   private String temporaryTransactionTable;
   private String summaryTable;
   private boolean isLastRecord;
+  private TransactionSummaryService transactionSummaryService;
 
   AllOrNothingHandler(String temporaryTransactionTable, String summaryTable, Map<String, String> okapiHeaders, Context context,
                       Handler<AsyncResult<Response>> handler) {
@@ -65,6 +69,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     this.temporaryTransactionTable = temporaryTransactionTable;
     this.summaryTable = summaryTable;
     this.isLastRecord = false;
+    this.transactionSummaryService = new TransactionSummaryService(context, okapiHeaders);
   }
 
   @Override
@@ -151,7 +156,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       return getExistentBudget(transaction)
         .compose(budget -> checkTransactionRestrictions(transaction, budget))
         .compose(v -> createTempTransaction(transaction))
-        .compose(this::getSummary)
+        .compose(this::getTransactionSummary)
         .compose(this::getTempTransactions)
         .compose(transactions -> {
           Promise<Void> promise = Promise.promise();
@@ -220,6 +225,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
     startTx(tx).compose(processTransactions)
       .compose(this::deleteTempTransactions)
+      .compose(this::setTransactionsSummariesProcessed)
       .compose(HelperUtils::endTx)
       .setHandler(result -> {
         if (result.failed()) {
@@ -235,6 +241,13 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
     return promise;
   }
+
+
+  private Future<Tx<List<Transaction>>> setTransactionsSummariesProcessed(Tx<List<Transaction>> tx) {
+    String summaryId = getSummaryId(tx.getEntity().get(0));
+    return transactionSummaryService.setTransactionsSummariesProcessed(tx, summaryId,summaryTable);
+  }
+
 
   private Future<Transaction> createTempTransaction(Transaction transaction) {
     Promise<Transaction> promise = Promise.promise();
@@ -267,27 +280,17 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
-  private Future<Pair<String, Integer>> getSummary(Transaction transaction) {
-    Promise<Pair<String, Integer>> promise = Promise.promise();
-
+  private Future<Pair<String, Integer>> getTransactionSummary(Transaction transaction) {
     log.debug("Get summary={}", getSummaryId(transaction));
-
-    getPostgresClient().getById(summaryTable, getSummaryId(transaction), reply -> {
-      if (reply.failed()) {
-        log.error("Summary retrieval with id={} failed", reply.cause(), transaction.getId());
-        handleFailure(promise, reply);
-      } else {
-        final JsonObject summary = reply.result();
-        if (summary == null) {
-          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
-        } else {
-          log.debug("Summary with id={} successfully extracted", transaction.getId());
-          Pair<String, Integer> result = new ImmutablePair<>(summary.getString("id"), getNumTransactions(summary, transaction));
-          promise.complete(result);
+    String summaryId = getSummaryId(transaction);
+    return transactionSummaryService.getSummaryById(summaryId, summaryTable)
+      .map(summary -> {
+        if ((transactionSummaryService.isProcessed(summary))) {
+          log.debug("Expected number of transactions for summary with id={} already processed", summary.getString(ID_FIELD_NAME));
+          throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED);
         }
-      }
-    });
-    return promise.future();
+        return new ImmutablePair<>(summary.getString(ID_FIELD_NAME), getNumTransactions(summary, transaction));
+      });
   }
 
   private Integer getNumTransactions(JsonObject summary, Transaction transaction) {

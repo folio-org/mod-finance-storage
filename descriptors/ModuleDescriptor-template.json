@@ -70,37 +70,6 @@
       ]
     },
     {
-      "id": "finance-storage.fund-distributions",
-      "version": "1.0",
-      "handlers": [
-        {
-          "methods": ["GET"],
-          "pathPattern": "/finance-storage/fund-distributions",
-          "permissionsRequired": ["finance-storage.fund-distributions.collection.get"]
-        },
-        {
-          "methods": ["POST"],
-          "pathPattern": "/finance-storage/fund-distributions",
-          "permissionsRequired": ["finance-storage.fund-distributions.item.post"]
-        },
-        {
-          "methods": ["GET"],
-          "pathPattern": "/finance-storage/fund-distributions/{id}",
-          "permissionsRequired": ["finance-storage.fund-distributions.item.get"]
-        },
-        {
-          "methods": ["PUT"],
-          "pathPattern": "/finance-storage/fund-distributions/{id}",
-          "permissionsRequired": ["finance-storage.fund-distributions.item.put"]
-        },
-        {
-          "methods": ["DELETE"],
-          "pathPattern": "/finance-storage/fund-distributions/{id}",
-          "permissionsRequired": ["finance-storage.fund-distributions.item.delete"]
-        }
-      ]
-    },
-    {
       "id": "finance-storage.fund-types",
       "version": "1.0",
       "handlers": [
@@ -421,43 +390,6 @@
       ]
     },
     {
-      "permissionName" : "finance-storage.fund-distributions.collection.get",
-      "displayName" : "fund-distribution-collection get",
-      "description" : "Get collection of fund distributions"
-    },
-    {
-      "permissionName" : "finance-storage.fund-distributions.item.post",
-      "displayName" : "fund-distribution-item post",
-      "description" : "Create a new fund distribution"
-    },
-    {
-      "permissionName" : "finance-storage.fund-distributions.item.get",
-      "displayName" : "fund-distribution-item get",
-      "description" : "Fetch a fund distribution"
-    },
-    {
-      "permissionName" : "finance-storage.fund-distributions.item.put",
-      "displayName" : "fund-distribution-item put",
-      "description" : "Update a fund distribution"
-    },
-    {
-      "permissionName" : "finance-storage.fund-distributions.item.delete",
-      "displayName" : "fund-distribution-item delete",
-      "description" : "Delete a fund distribution"
-    },
-    {
-      "permissionName" : "finance-storage.fund-distributions.all",
-      "displayName" : "All fund_distribution perms",
-      "description" : "All permissions for the fund distribution",
-      "subPermissions" : [
-        "finance-storage.fund-distributions.collection.get",
-        "finance-storage.fund-distributions.item.post",
-        "finance-storage.fund-distributions.item.get",
-        "finance-storage.fund-distributions.item.put",
-        "finance-storage.fund-distributions.item.delete"
-      ]
-    },
-    {
       "permissionName" : "finance-storage.fund-types.collection.get",
       "displayName" : "Fund-type - get the collection of Fund-types",
       "description" : "Get collection of fund types"
@@ -732,7 +664,6 @@
       "subPermissions" : [
         "finance-storage.budgets.all",
         "finance-storage.fiscal-years.all",
-        "finance-storage.fund-distributions.all",
         "finance-storage.funds.all",
         "finance-storage.groups.all",
         "finance-storage.ledgers.all",
