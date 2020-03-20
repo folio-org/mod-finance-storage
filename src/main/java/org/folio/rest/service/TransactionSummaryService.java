@@ -48,7 +48,7 @@ public class TransactionSummaryService {
 
     pgClient.getById(summaryTable, summaryId, reply -> {
       if (reply.failed()) {
-        logger.error("Summary retrieval for transaction with id={} failed", reply.cause(), summaryId);
+        logger.error("Summary retrieval with id={} failed", reply.cause(), summaryId);
         handleFailure(promise, reply);
       } else {
         final JsonObject summary = reply.result();
@@ -85,10 +85,10 @@ public class TransactionSummaryService {
 
     pgClient.update(tx.getConnection(), summaryTable, summary, cql, false, reply -> {
       if (reply.failed()) {
-        logger.error("Summary retrieval for transaction with id={} failed", reply.cause(), "");
+        logger.error("Summary update with id={} failed", reply.cause(), summary.getString(ID_FIELD_NAME));
         handleFailure(promise, reply);
       } else {
-        logger.debug("Summary with id={} successfully extracted", "");
+        logger.debug("Summary with id={} successfully updated", summary.getString(ID_FIELD_NAME));
         promise.complete(tx);
       }
     });
