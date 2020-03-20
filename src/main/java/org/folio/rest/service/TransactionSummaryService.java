@@ -69,13 +69,8 @@ public class TransactionSummaryService {
   }
 
 
-  public Future<Tx<List<Transaction>>> setTransactionsSummariesProcessed(Tx<List<Transaction>> tx, String summaryId,
+  public Future<Tx<List<Transaction>>> setTransactionsSummariesProcessed(Tx<List<Transaction>> tx, JsonObject summary,
       String summaryTable) {
-    return getSummaryById(summaryId, summaryTable)
-      .compose(summary -> updateOrderTransactionSummary(tx, summary, summaryTable));
-  }
-
-  public Future<Tx<List<Transaction>>> updateOrderTransactionSummary(Tx<List<Transaction>> tx, JsonObject summary, String summaryTable) {
     Promise<Tx<List<Transaction>>> promise = Promise.promise();
 
     Criterion criterion = new CriterionBuilder().with(ID_FIELD_NAME, summary.getString(ID_FIELD_NAME)).build();
