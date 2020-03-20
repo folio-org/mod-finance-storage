@@ -49,9 +49,9 @@ public class TransactionSummaryAPI implements FinanceStorage {
    * Create {@link OrderTransactionSummary} record if it doesn't already exist for the order, otherwise return existing record.
    *
    * @param summary            how many transactions (encumbrances) to expect for a particular
-   *                           order.{@link OrderTransactionSummary#numTransactions} must be greater that 0
+   *                           order.{@link OrderTransactionSummary#getNumTransactions()} must be greater that 0
    *
-   * @param okapiHeaders
+   * @param okapiHeaders       A Map which represents okapi headers
    * @param asyncResultHandler An AsyncResult<Response> Handler {@link Handler} which must be called as follows - Note the
    *                           'GetPatronsResponse' should be replaced with '[nameOfYourFunction]Response': (example only)
    *                           <code>asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetPatronsResponse.withJsonOK( new ObjectMapper().readValue(reply.result().body().toString(), Patron.class))));</code>
@@ -151,7 +151,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
             log.debug("Preparing response to client");
             asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageInvoiceTransactionSummariesResponse
               .respond201WithApplicationJson(summary, PostFinanceStorageInvoiceTransactionSummariesResponse.headersFor201()
-                .withLocation(ORDER_TRANSACTION_SUMMARIES_LOCATION_PREFIX + summary.getId()))));
+                .withLocation(INVOICE_TRANSACTION_SUMMARIES_LOCATION_PREFIX + summary.getId()))));
           }
         });
       } catch (Exception e) {

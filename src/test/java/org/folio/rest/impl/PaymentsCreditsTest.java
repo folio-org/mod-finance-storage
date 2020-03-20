@@ -9,6 +9,7 @@ import static org.folio.rest.impl.TransactionTest.TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
+import static org.folio.rest.transaction.AllOrNothingHandler.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
 import static org.folio.rest.transaction.AllOrNothingHandler.FUND_CANNOT_BE_PAID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -132,6 +133,11 @@ class PaymentsCreditsTest extends TestBase {
         .extract()
         .as(Transaction.class)
         .getId();
+
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit)
+      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+        .statusCode(400)
+        .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
     // 2 transactions(each for a payment and credit) appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()

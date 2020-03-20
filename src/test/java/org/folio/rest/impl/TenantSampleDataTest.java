@@ -85,39 +85,6 @@ public class TenantSampleDataTest extends TestBase {
     }
   }
 
-  @Test
-  public void testPartialSampleDataLoading() throws MalformedURLException {
-    logger.info("load sample data");
-
-    try {
-      postToTenant(PARTIAL_TENANT_HEADER, prepareTenantBody())
-        .assertThat()
-        .statusCode(201);
-
-      String getTransactionEndpoint = TRANSACTION.getEndpoint() + "?limit=" + TRANSACTION.getInitialQuantity();
-      Response response = getData(getTransactionEndpoint, PARTIAL_TENANT_HEADER)
-        .then()
-          .extract()
-          .response();
-
-      TransactionCollection transactions = new JsonObject(response.asString()).mapTo(TransactionCollection.class);
-
-      for (Transaction transaction : transactions.getTransactions()) {
-        deleteData(TRANSACTION.getEndpointWithId(), transaction.getId(), PARTIAL_TENANT_HEADER);
-      }
-
-      postToTenant(PARTIAL_TENANT_HEADER, prepareTenantBody())
-        .assertThat()
-        .statusCode(201);
-
-      for (TestEntities entity : TestEntities.values()) {
-        logger.info("Test expected quantity for " + entity.name());
-        verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), PARTIAL_TENANT_HEADER);
-      }
-    } finally {
-      deleteTenant(PARTIAL_TENANT_HEADER);
-    }
-  }
 
   @Test
   public void testLoadReferenceData() throws MalformedURLException {
