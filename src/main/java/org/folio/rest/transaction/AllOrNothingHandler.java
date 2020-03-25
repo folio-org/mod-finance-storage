@@ -149,9 +149,9 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       Function<Tx<List<Transaction>>, Future<Tx<List<Transaction>>>> processTransactions) {
     try {
       handleValidationError(transaction);
-      return getExistentBudget(transaction).compose(budget -> checkTransactionRestrictions(transaction, budget))
-        .compose(v -> createTempTransaction(transaction))
-        .compose(this::getTransactionSummary)
+      return getExistentBudget(transaction)
+        .compose(budget -> checkTransactionRestrictions(transaction, budget))
+        .compose(v -> getAndCheckTransactionSummary(transaction).compose(summary -> createTempTransaction(transaction).map(summary)))
         .compose(summary -> getTempTransactions(summary).compose(transactions -> {
           Promise<Void> promise = Promise.promise();
           try {
@@ -266,12 +266,12 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     return promise.future();
   }
 
-  private Future<JsonObject> getTransactionSummary(Transaction transaction) {
+  private Future<JsonObject> getAndCheckTransactionSummary(Transaction transaction) {
     log.debug("Get summary={}", getSummaryId(transaction));
     String summaryId = getSummaryId(transaction);
     return transactionSummaryService.getSummaryById(summaryId, summaryTable)
       .map(summary -> {
-        if ((transactionSummaryService.isProcessed(summary))) {
+        if ((transactionSummaryService.isProcessed(summary, transaction))) {
           log.debug("Expected number of transactions for summary with id={} already processed", summary.getString(ID_FIELD_NAME));
           throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED);
         }

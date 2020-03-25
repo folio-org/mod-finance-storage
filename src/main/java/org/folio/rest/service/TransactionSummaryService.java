@@ -28,7 +28,9 @@ import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class TransactionSummaryService {
 
-  public static final String IS_PROCESSED = "isProcessed";
+  public static final String NUM_ENCUMBRANCES = "numEncumbrances";
+  public static final String NUM_TRANSACTIONS = "numTransactions";
+  public static final String NUM_PAYMENTS_CREDITS = "numPaymentsCredits";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private PostgresClient pgClient;
 
@@ -64,8 +66,16 @@ public class TransactionSummaryService {
   }
 
 
-  public boolean isProcessed(JsonObject summary) {
-    return summary.getBoolean(IS_PROCESSED);
+  public boolean isProcessed(JsonObject summary, Transaction transaction) {
+    if (Transaction.TransactionType.ENCUMBRANCE == transaction.getTransactionType()) {
+      if (summary.getInteger(NUM_ENCUMBRANCES) != null) {
+        return summary.getInteger(NUM_ENCUMBRANCES) < 0;
+      }
+      return summary.getInteger(NUM_TRANSACTIONS) < 0;
+    }
+
+    return summary.getInteger(NUM_PAYMENTS_CREDITS) < 0;
+
   }
 
 
@@ -76,7 +86,7 @@ public class TransactionSummaryService {
     Criterion criterion = new CriterionBuilder().with(ID_FIELD_NAME, summary.getString(ID_FIELD_NAME)).build();
     CQLWrapper cql = new CQLWrapper(criterion);
 
-    summary.put(IS_PROCESSED, true);
+    setTransactionsSummariesProcessed(summary, tx.getEntity().get(0));
 
     pgClient.update(tx.getConnection(), summaryTable, summary, cql, false, reply -> {
       if (reply.failed()) {
@@ -89,6 +99,24 @@ public class TransactionSummaryService {
     });
 
     return promise.future();
+  }
+
+  /**
+   * Updates summary with negative numbers to highlight that associated transaction list was successfully processed
+   *
+   * @param summary     processed transaction
+   * @param transaction one of the processed transactions
+   */
+  private void setTransactionsSummariesProcessed(JsonObject summary, Transaction transaction) {
+    if (Transaction.TransactionType.ENCUMBRANCE == transaction.getTransactionType()) {
+      if (summary.getInteger(NUM_ENCUMBRANCES) != null) {
+        summary.put(NUM_ENCUMBRANCES, -summary.getInteger(NUM_ENCUMBRANCES));
+      } else {
+        summary.put(NUM_TRANSACTIONS, -summary.getInteger(NUM_TRANSACTIONS));
+      }
+    } else {
+      summary.put(NUM_PAYMENTS_CREDITS, -summary.getInteger(NUM_PAYMENTS_CREDITS));
+    }
   }
 
 }
