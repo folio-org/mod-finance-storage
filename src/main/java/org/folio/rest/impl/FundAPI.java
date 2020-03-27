@@ -4,6 +4,8 @@ import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
+import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
 import java.util.Map;
 
@@ -13,7 +15,7 @@ import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
-import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
@@ -93,28 +95,18 @@ public class FundAPI implements FinanceStorageFunds {
   private void handleFundStatusUpdate(Fund fund, Handler<AsyncResult<Response>> asyncResultHandler) {
     Tx<Fund> tx = new Tx<>(fund, pgClient);
 
-    HelperUtils.startTx(tx)
+    tx.startTx()
       .compose(this::updateRelatedCurrentFYBudgets)
       .compose(this::updateFund)
-      .compose(HelperUtils::endTx)
-      .setHandler(result -> {
-        if (result.failed()) {
-          HttpStatusException cause = (HttpStatusException) result.cause();
-          log.error("Update of the fund record {} has failed", cause, tx.getEntity());
-
-          HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
-        } else {
-          log.info("Fund record {} and associated data were successfully updated", tx.getEntity());
-          asyncResultHandler.handle(succeededFuture(FinanceStorageLedgers.DeleteFinanceStorageLedgersByIdResponse.respond204()));
-        }
-      });
+      .compose(Tx::endTx)
+      .setHandler(handleNoContentResponse(asyncResultHandler, tx, "Fund {} {} updated"));
   }
 
   private Future<Boolean> isFundStatusChanged(Fund fund) {
     Promise<Boolean> promise = Promise.promise();
     pgClient.getById(FUND_TABLE, fund.getId(), Fund.class, event -> {
       if (event.failed()) {
-        HelperUtils.handleFailure(promise, event);
+        handleFailure(promise, event);
       } else {
         if (event.result() != null) {
           promise.complete(event.result().getFundStatus() != fund.getFundStatus());
@@ -130,10 +122,12 @@ public class FundAPI implements FinanceStorageFunds {
     Promise<Tx<Fund>> promise = Promise.promise();
     Fund fund = tx.getEntity();
 
-    Criterion criterion = HelperUtils.getCriterionByFieldNameAndValue("id", "=", fund.getId());
+    Criterion criterion = new CriterionBuilder()
+      .with("id", fund.getId()).build();
+
     tx.getPgClient().update(tx.getConnection(), FUND_TABLE, fund, "jsonb", criterion.toString(), false, event -> {
       if (event.failed()) {
-        HelperUtils.handleFailure(promise, event);
+        handleFailure(promise, event);
       } else {
         log.info("Fund record {} was successfully updated", tx.getEntity());
         promise.complete(tx);
@@ -160,7 +154,7 @@ public class FundAPI implements FinanceStorageFunds {
 
     fundTx.getPgClient().execute(fundTx.getConnection(), sql, queryParams, event -> {
       if (event.failed()) {
-        HelperUtils.handleFailure(promise, event);
+        handleFailure(promise, event);
       } else {
         promise.complete(fundTx);
       }

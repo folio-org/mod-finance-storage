@@ -5,12 +5,9 @@ import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.LedgerAPI.LEDGER_TABLE;
 import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
-import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValue;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.persist.HelperUtils.handleFailure;
-import static org.folio.rest.persist.HelperUtils.rollbackTransaction;
-import static org.folio.rest.persist.HelperUtils.startTx;
 import static org.folio.rest.persist.PostgresClient.pojo2json;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,10 +28,10 @@ import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.Tx;
-import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.service.TransactionSummaryService;
 import org.javamoney.moneta.Money;
@@ -172,11 +169,13 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
   protected Future<Budget> getExistentBudget(Transaction transaction) {
     Promise<Budget> promise = Promise.promise();
-    Criteria criteria = getCriteriaByFieldNameAndValue("fundId", "=", transaction.getTransactionType()
-      .equals(Transaction.TransactionType.CREDIT) ? transaction.getToFundId() : transaction.getFromFundId());
-    Criteria criteria1 = getCriteriaByFieldNameAndValue("fiscalYearId", "=", transaction.getFiscalYearId());
-    Criterion criterion = new Criterion();
-    criterion.addCriterion(criteria, "AND", criteria1);
+
+    Criterion criterion = new CriterionBuilder()
+      .with("fundId", transaction.getTransactionType()
+        .equals(Transaction.TransactionType.CREDIT) ? transaction.getToFundId() : transaction.getFromFundId())
+      .with("fiscalYearId", transaction.getFiscalYearId())
+      .build();
+
     getPostgresClient().get(BUDGET_TABLE, Budget.class, criterion, false, reply -> {
       if (reply.failed()) {
         handleFailure(promise, reply);
@@ -216,16 +215,16 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
     Promise<Void> promise = Promise.promise();
     Tx<List<Transaction>> tx = new Tx<>(transactions, getPostgresClient());
 
-    startTx(tx).compose(processTransactions)
+    tx.startTx().compose(processTransactions)
       .compose(this::deleteTempTransactions)
       .compose(tr -> transactionSummaryService.setTransactionsSummariesProcessed(tx, summary, summaryTable))
-      .compose(HelperUtils::endTx)
+      .compose(Tx::endTx)
       .setHandler(result -> {
         if (result.failed()) {
           HttpStatusException cause = (HttpStatusException) result.cause();
           log.error("Transactions {} or associated data failed to be processed", cause, tx.getEntity());
 
-          rollbackTransaction(tx).setHandler(res -> promise.fail(cause));
+          tx.rollbackTransaction().setHandler(res -> promise.fail(cause));
         } else {
           log.info("Transactions {} and associated data were successfully processed", tx.getEntity());
           promise.complete();
