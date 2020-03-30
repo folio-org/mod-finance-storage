@@ -21,6 +21,11 @@ public class CriterionBuilder {
     groupedCriterias = new GroupedCriterias();
   }
 
+  public CriterionBuilder withOperation(String operation) {
+    this.operation = operation;
+    return this;
+  }
+
   public CriterionBuilder withJson(String fieldName, String withOp ,String fieldValue) {
     groupedCriterias.addCriteria(getCriteria(String.format(QUOTES, fieldName) , withOp, fieldValue), operation);
     return this;

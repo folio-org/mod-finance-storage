@@ -40,6 +40,20 @@ public class ResponseUtils {
     };
   }
 
+  public static <T> Handler<AsyncResult<Tx<T>>> handleNoContentResponse(Handler<AsyncResult<Response>> asyncResultHandler, String id,
+                                                                        String logMessage) {
+    return result -> {
+      if (result.failed()) {
+        HttpStatusException cause = (HttpStatusException) result.cause();
+        logger.error(logMessage, cause, id, "or associated data failed to be");
+        asyncResultHandler.handle(buildErrorResponse(cause));
+      } else {
+        logger.info(logMessage, id, "and associated data were successfully");
+        asyncResultHandler.handle(buildNoContentResponse());
+      }
+    };
+  }
+
   public static void handleFailure(Promise promise, AsyncResult reply) {
     Throwable cause = reply.cause();
     String badRequestMessage = PgExceptionUtil.badRequestMessage(cause);
