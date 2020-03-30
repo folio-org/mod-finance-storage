@@ -1,6 +1,7 @@
 package org.folio.rest.impl;
 
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
+import static org.folio.rest.service.BudgetService.TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.BUDGET;
@@ -10,6 +11,7 @@ import static org.folio.rest.utils.TestEntities.GROUP;
 import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,7 +66,9 @@ class BudgetTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(TRANSACTION, TRANSACTION.getPathToSampleFile()));
 
-    deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then().statusCode(400);
+    deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then()
+      .statusCode(400)
+      .body(containsString(TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
 
     deleteTenant(BUDGET_TENANT_HEADER);
   }
@@ -95,6 +99,23 @@ class BudgetTest extends TestBase {
     assertThat(groupFundFiscalYearAfter, HasProperty.hasProperty("fundId"));
     assertThat(groupFundFiscalYearAfter, HasProperty.hasProperty("fiscalYearId"));
     assertThat(groupFundFiscalYearAfter, HasProperty.hasProperty("groupId"));
+
+    deleteTenant(BUDGET_TENANT_HEADER);
+  }
+
+  @Test
+  void testDeleteBudgetWithoutReferenceWithGroupFundFiscalYear() throws MalformedURLException {
+    prepareTenant(BUDGET_TENANT_HEADER, false, true);
+
+    givenTestData(BUDGET_TENANT_HEADER,
+      Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
+      Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
+      Pair.of(GROUP, GROUP.getPathToSampleFile()),
+      Pair.of(FUND, FUND.getPathToSampleFile()),
+      Pair.of(BUDGET, BUDGET.getPathToSampleFile()));
+
+    deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then().statusCode(204);
+
 
     deleteTenant(BUDGET_TENANT_HEADER);
   }

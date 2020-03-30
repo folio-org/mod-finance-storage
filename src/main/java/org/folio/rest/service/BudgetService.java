@@ -32,6 +32,7 @@ public class BudgetService {
   private static final String BUDGET_TABLE = "budget";
   private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
   private static final String TRANSACTIONS_TABLE = "transaction";
+  public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final String tenantId;
@@ -47,7 +48,7 @@ public class BudgetService {
         Tx<String> tx = new Tx<>(id, pgClient);
         getBudgetById(id)
           .compose(this::checkTransactions)
-            .compose(stringTx -> tx.startTx()
+            .compose(aVoid -> tx.startTx()
             .compose(this::unlinkGroupFundFiscalYears)
             .compose(this::deleteBudget)
             .compose(Tx::endTx)
@@ -111,7 +112,7 @@ public class BudgetService {
         handleFailure(promise, reply);
       } else {
         if (reply.result().getResultInfo().getTotalRecords() > 0) {
-          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), "transactionIsPresentBudgetDeleteError"));
+          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
         }
         promise.complete();
       }
