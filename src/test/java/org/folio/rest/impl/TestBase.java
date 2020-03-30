@@ -11,12 +11,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -63,6 +65,20 @@ public abstract class TestBase {
 
     if (invokeStorageTestSuiteAfter) {
       StorageTestSuite.after();
+    }
+  }
+
+  @SafeVarargs
+  final void givenTestData(Header header, Pair<TestEntities, String> ... testPairs) throws MalformedURLException {
+    for(Pair<TestEntities, String> pair: testPairs) {
+
+      String sample = getFile(pair.getRight());
+      String id = new JsonObject(sample).getString("id");
+      pair.getLeft().setId(id);
+
+      postData(pair.getLeft().getEndpoint(), sample, header)
+        .then()
+        .statusCode(201);
     }
   }
 

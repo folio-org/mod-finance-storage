@@ -3,6 +3,7 @@ package org.folio.rest.persist;
 import static io.vertx.core.Future.succeededFuture;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.folio.rest.persist.PgUtil.response;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -13,8 +14,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.folio.rest.persist.Criteria.Criteria;
-import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.cql.CQLQueryValidationException;
 import org.folio.rest.persist.interfaces.Results;
 
@@ -34,28 +33,12 @@ public final class HelperUtils {
     return clazz.getAnnotation(Path.class).value();
   }
 
-  public static <T> Future<Tx<T>> startTx(Tx<T> tx) {
-    Promise<Tx<T>> promise = Promise.promise();
-
-    tx.getPgClient().startTx(sqlConnection -> {
-      tx.setConnection(sqlConnection);
-      promise.complete(tx);
-    });
-    return promise.future();
-  }
-
-  public static <T> Future<Tx<T>> endTx(Tx<T> tx) {
-    Promise<Tx<T>> promise = Promise.promise();
-    tx.getPgClient().endTx(tx.getConnection(), v -> promise.complete(tx));
-    return promise.future();
-  }
-
   public static Future<Tx<String>> deleteRecordById(Tx<String> tx, String table) {
     Promise<Tx<String>> promise = Promise.promise();
 
     tx.getPgClient().delete(tx.getConnection(), table, tx.getEntity(), reply -> {
       if(reply.failed()) {
-        HelperUtils.handleFailure(promise, reply);
+        handleFailure(promise, reply);
       } else if (reply.result().getUpdated() == 0) {
         promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
       } else {
@@ -65,56 +48,11 @@ public final class HelperUtils {
     return promise.future();
   }
 
-  public static void handleFailure(Promise promise, AsyncResult reply) {
-    Throwable cause = reply.cause();
-    String badRequestMessage = PgExceptionUtil.badRequestMessage(cause);
-    if (badRequestMessage != null) {
-      promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), badRequestMessage));
-    } else {
-      promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), cause.getMessage()));
-    }
-  }
-
-  public static Future<Void> rollbackTransaction(Tx<?> tx) {
-    Promise<Void> promise = Promise.promise();
-    if (tx.getConnection().failed()) {
-      promise.fail(tx.getConnection().cause());
-    } else {
-      tx.getPgClient().rollbackTx(tx.getConnection(), promise);
-    }
-    return promise.future();
-  }
-
   public static void replyWithErrorResponse(Handler<AsyncResult<Response>> asyncResultHandler, HttpStatusException cause) {
     asyncResultHandler.handle(succeededFuture(Response.status(cause.getStatusCode())
       .entity(Optional.of(cause).map(HttpStatusException::getPayload).orElse(cause.getMessage()))
       .header(CONTENT_TYPE, MediaType.TEXT_PLAIN)
       .build()));
-  }
-
-  public static Criterion getCriterionByFieldNameAndValue(String fieldName, String operation, String fieldValue) {
-    return new Criterion(getCriteriaByFieldNameAndValue(fieldName, operation, fieldValue));
-  }
-
-  public static Criterion getCriterionByFieldNameAndValueNotJsonb(String fieldName, String operation, String fieldValue) {
-    return new Criterion(getCriteriaByFieldNameAndValueNotJsonb(fieldName, operation, fieldValue));
-  }
-
-  public static Criteria getCriteriaByFieldNameAndValue(String fieldName, String operation, String fieldValue) {
-    Criteria a = new Criteria();
-    a.addField("'" + fieldName + "'");
-    a.setOperation(operation);
-    a.setVal(fieldValue);
-    return a;
-  }
-
-  public static Criteria getCriteriaByFieldNameAndValueNotJsonb(String fieldName, String operation, String fieldValue) {
-    Criteria a = new Criteria();
-    a.addField(fieldName);
-    a.setOperation(operation);
-    a.setVal(fieldValue);
-    a.setJSONB(false);
-    return a;
   }
 
   public static <T, E> void getEntitiesCollectionWithDistinctOn(EntitiesMetadataHolder<T, E> entitiesMetadataHolder, QueryHolder queryHolder, String sortField, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext, Map<String, String> okapiHeaders) {
@@ -132,7 +70,6 @@ public final class HelperUtils {
       asyncResultHandler.handle(response(e.getMessage(), respond500, respond500));
     }
   }
-
 
   private static Method getRespond500(EntitiesMetadataHolder entitiesMetadataHolder, Handler<AsyncResult<Response>> asyncResultHandler) {
     try {

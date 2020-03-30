@@ -1,8 +1,8 @@
 package org.folio.rest.service;
 
 import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
-import static org.folio.rest.persist.HelperUtils.handleFailure;
 import static org.folio.rest.transaction.AllOrNothingHandler.TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.List;
 import java.util.Map;
