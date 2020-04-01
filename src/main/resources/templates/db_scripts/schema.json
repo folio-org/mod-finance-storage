@@ -28,7 +28,7 @@
     {
       "run": "after",
       "snippetPath": "migration/budgets.sql",
-      "fromModuleVersion": "mod-finance-storage-4.1.2"
+      "fromModuleVersion": "mod-finance-storage-4.2.1"
     }
   ],
   "tables": [
@@ -225,13 +225,13 @@
     },
     {
       "tableName": "fund_distribution",
-      "fromModuleVersion": "mod-finance-storage-4.3.0",
+      "fromModuleVersion": "mod-finance-storage-4.2.1",
       "mode": "delete",
       "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-4.1.1",
+      "fromModuleVersion": "mod-finance-storage-4.2.1",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
@@ -417,11 +417,11 @@
     },
     {
       "tableName": "invoice_transaction_summaries",
-      "fromModuleVersion": "mod-finance-storage-4.0.0"
+      "fromModuleVersion": "mod-finance-storage-4.2.1"
     },
     {
       "tableName": "temporary_invoice_transactions",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "fromModuleVersion": "mod-finance-storage-4.2.1",
       "uniqueIndex": [
         {
           "fieldName": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
@@ -458,7 +458,7 @@
     },
     {
       "tableName": "temporary_invoice_payments",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "fromModuleVersion": "mod-finance-storage-4.2.1",
       "mode": "delete",
       "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     }
