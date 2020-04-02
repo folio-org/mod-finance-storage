@@ -29,6 +29,11 @@
       "run": "after",
       "snippetPath": "migration/budgets.sql",
       "fromModuleVersion": "mod-finance-storage-4.2.1"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/delete_trigger_functions.sql",
+      "fromModuleVersion": "mod-finance-storage-4.2.1"
     }
   ],
   "tables": [
