@@ -88,7 +88,7 @@ public class TransactionSummaryService {
 
     setTransactionsSummariesProcessed(summary, tx.getEntity().get(0));
 
-    pgClient.update(tx.getConnection(), summaryTable, summary, cql, false, reply -> {
+    tx.getPgClient().update(tx.getConnection(), summaryTable, summary, cql, false, reply -> {
       if (reply.failed()) {
         logger.error("Summary update with id={} failed", reply.cause(), summary.getString(ID_FIELD_NAME));
         handleFailure(promise, reply);

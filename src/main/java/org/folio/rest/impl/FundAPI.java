@@ -76,7 +76,7 @@ public class FundAPI implements FinanceStorageFunds {
     fund.setId(id);
     vertxContext.runOnContext(event ->
       isFundStatusChanged(fund)
-        .setHandler(result -> {
+        .onComplete(result -> {
           if (result.failed()) {
             HttpStatusException cause = (HttpStatusException) result.cause();
             log.error("Update of the fund record {} has failed", cause, fund.getId());
@@ -99,7 +99,7 @@ public class FundAPI implements FinanceStorageFunds {
       .compose(this::updateRelatedCurrentFYBudgets)
       .compose(this::updateFund)
       .compose(Tx::endTx)
-      .setHandler(handleNoContentResponse(asyncResultHandler, tx, "Fund {} {} updated"));
+      .onComplete(handleNoContentResponse(asyncResultHandler, tx, "Fund {} {} updated"));
   }
 
   private Future<Boolean> isFundStatusChanged(Fund fund) {
