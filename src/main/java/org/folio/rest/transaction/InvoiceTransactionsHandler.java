@@ -134,8 +134,8 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
   }
 
   private Future<Tx<List<Transaction>>> updateBudgetsTotals(Tx<List<Transaction>> tx) {
-    return getBudgets(tx).map(budgets -> budgets.stream()
-      .collect(toMap(Budget::getFundId, Function.identity())))
+    return getBudgets(tx)
+      .map(budgets -> budgets.stream().collect(toMap(Budget::getFundId, Function.identity())))
       .map(groupedBudgets -> calculatePaymentBudgetsTotals(tx.getEntity(), groupedBudgets))
       .map(grpBudgets -> calculateCreditBudgetsTotals(tx.getEntity(), grpBudgets))
       .map(grpBudgets -> calculateNonEncumbranceBudgetTotals(tx.getEntity(), grpBudgets))
@@ -410,7 +410,7 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
   public void updateTransaction(Transaction transaction) {
     verifyTransactionExistence(transaction.getId())
       .compose(aVoid -> processAllOrNothing(transaction, this::processTransactionsUponUpdate))
-      .setHandler(result -> {
+      .onComplete(result -> {
         if (result.failed()) {
           HttpStatusException cause = (HttpStatusException) result.cause();
           switch (cause.getStatusCode()) {
@@ -562,7 +562,7 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
 
     Criterion criterion = criterionBuilder.build();
 
-    getPostgresClient().get(TRANSACTION_TABLE, Transaction.class, criterion, false, false, reply -> {
+    tx.getPgClient().get(tx.getConnection(), TRANSACTION_TABLE, Transaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to extract permanent transactions", reply.cause());
         handleFailure(promise, reply);
