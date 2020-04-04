@@ -32,7 +32,7 @@ public class ResponseUtils {
         logger.error(logMessage, cause, tx.getEntity(), "or associated data failed to be");
 
         // The result of rollback operation is not so important, main failure cause is used to build the response
-        tx.rollbackTransaction().setHandler(res -> asyncResultHandler.handle(buildErrorResponse(cause)));
+        tx.rollbackTransaction().onComplete(res -> asyncResultHandler.handle(buildErrorResponse(cause)));
       } else {
         logger.info(logMessage, tx.getEntity(), "and associated data were successfully");
         asyncResultHandler.handle(buildNoContentResponse());

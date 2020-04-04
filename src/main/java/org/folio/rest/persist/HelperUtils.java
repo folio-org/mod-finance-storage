@@ -60,7 +60,7 @@ public final class HelperUtils {
     Method respond400 = getRespond400(entitiesMetadataHolder, asyncResultHandler);
     try {
       PostgresClient postgresClient = PgUtil.postgresClient(vertxContext, okapiHeaders);
-      postgresClient.get(queryHolder.getTable(), entitiesMetadataHolder.getClazz(), QueryHolder.JSONB, queryHolder.buildCQLQuery(), true, false, false, null, sortField,
+      postgresClient.get(queryHolder.getTable(), entitiesMetadataHolder.getClazz(), QueryHolder.JSONB, queryHolder.buildCQLQuery(), true, false, null, sortField,
         reply -> processDbQueryReply(entitiesMetadataHolder, asyncResultHandler, respond500, respond400, reply));
     } catch (CQLQueryValidationException e) {
 

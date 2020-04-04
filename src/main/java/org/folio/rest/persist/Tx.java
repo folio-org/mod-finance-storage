@@ -50,7 +50,7 @@ public class Tx<T> {
 
   public Future<Tx<T>> endTx() {
     Promise<Tx<T>> promise = Promise.promise();
-    pgClient.endTx(sqlConnection, v -> promise.complete(this));
+    pgClient.endTx(sqlConnection, asyncResult -> promise.complete(this));
     return promise.future();
   }
 

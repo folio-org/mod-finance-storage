@@ -52,18 +52,18 @@ public class BudgetService {
             .compose(this::unlinkGroupFundFiscalYears)
             .compose(this::deleteBudget)
             .compose(Tx::endTx)
-            .setHandler(reply -> {
+            .onComplete(reply -> {
               if (reply.failed()) {
                 tx.rollbackTransaction();
               }
             }))
-          .setHandler(handleNoContentResponse(asyncResultHandler, id, "Budget {} {} deleted"));
+          .onComplete(handleNoContentResponse(asyncResultHandler, id, "Budget {} {} deleted"));
       });
   }
 
   private Future<Tx<String>> deleteBudget(Tx<String> tx) {
     Promise<Tx<String>> promise = Promise.promise();
-    pgClient.delete(tx.getConnection(), BUDGET_TABLE, tx.getEntity(), reply -> {
+    tx.getPgClient().delete(tx.getConnection(), BUDGET_TABLE, tx.getEntity(), reply -> {
       if (reply.result().getUpdated() == 0) {
         promise.fail(new HttpStatusException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase()));
       } else {
@@ -127,7 +127,7 @@ public class BudgetService {
     queryParams.add(stringTx.getEntity());
     String sql = "UPDATE "+ getFullTableName(tenantId, GROUP_FUND_FY_TABLE)  + " SET jsonb = jsonb - 'budgetId' WHERE budgetId=?;";
 
-    pgClient.execute(stringTx.getConnection(), sql, queryParams, reply -> {
+    stringTx.getPgClient().execute(stringTx.getConnection(), sql, queryParams, reply -> {
       if (reply.failed()) {
         logger.error("Failed to update group_fund_fiscal_year by budgetId={}", reply.cause(), stringTx.getEntity());
         handleFailure(promise, reply);

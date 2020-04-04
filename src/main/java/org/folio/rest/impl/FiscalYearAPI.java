@@ -64,13 +64,13 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
         .compose(this::saveFiscalYear)
         .compose(this::createLedgerFiscalYearRecords)
         .compose(Tx::endTx)
-        .setHandler(result -> {
+        .onComplete(result -> {
           if (result.failed()) {
             HttpStatusException cause = (HttpStatusException) result.cause();
             log.error("New fiscal year record creation has failed: {}", cause, tx.getEntity());
 
             // The result of rollback operation is not so important, main failure cause is used to build the response
-            tx.rollbackTransaction().setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
+            tx.rollbackTransaction().onComplete(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
           } else {
             log.info("New fiscal year record {} and associated data were successfully created", tx.getEntity());
             asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageFiscalYearsResponse
@@ -99,7 +99,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
         .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(tx, criterion))
         .compose(ok -> HelperUtils.deleteRecordById(tx, FISCAL_YEAR_TABLE))
         .compose(Tx::endTx)
-        .setHandler(handleNoContentResponse(asyncResultHandler, tx, "Fiscal year {} {} deleted"))
+        .onComplete(handleNoContentResponse(asyncResultHandler, tx, "Fiscal year {} {} deleted"))
     );
   }
 
@@ -119,7 +119,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
 
     log.debug("Creating new fiscal year record with id={}", fiscalYear.getId());
 
-    pgClient.save(tx.getConnection(), FISCAL_YEAR_TABLE, fiscalYear.getId(), fiscalYear, reply -> {
+    tx.getPgClient().save(tx.getConnection(), FISCAL_YEAR_TABLE, fiscalYear.getId(), fiscalYear, reply -> {
       if (reply.failed()) {
         handleFailure(future, reply);
       } else {
@@ -142,7 +142,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
     getLedgers(tx)
       .map(ledgers -> buildLedgerFiscalYearRecords(fiscalYear, ledgers))
       .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(tx, ledgerFYs))
-      .setHandler(result -> {
+      .onComplete(result -> {
         if (result.failed()) {
           handleFailure(promise, result);
         } else {
@@ -164,7 +164,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
 
   private Future<List<Ledger>> getLedgers(Tx<FiscalYear> tx) {
     Promise<List<Ledger>> promise = Promise.promise();
-    pgClient.get(tx.getConnection(), LedgerAPI.LEDGER_TABLE, Ledger.class, new Criterion(), true, true, reply -> {
+    tx.getPgClient().get(tx.getConnection(), LedgerAPI.LEDGER_TABLE, Ledger.class, new Criterion(), true, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to find ledgers");
         handleFailure(promise, reply);
