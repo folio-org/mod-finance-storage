@@ -1,5 +1,18 @@
 ## 4.3.0 - Unreleased
 
+## 4.2.1 - Released
+The primary focus of this release was to restrict processing transactions after performing "all or nothing" mechanism.
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.2.0...v4.2.1)
+
+### Bug Fixes
+* [MODFISTO-98](https://issues.folio.org/browse/MODFISTO-98) Impossible to delete/enable modules after running API tests
+* [MODFISTO-97](https://issues.folio.org/browse/MODFISTO-97)  Issues upgrading module from Edelweiss to Fameflower
+* [MODFISTO-96](https://issues.folio.org/browse/MODFISTO-96) Add logic upon budget deletion
+* [MODFISTO-95](https://issues.folio.org/browse/MODFISTO-95) Not able to pay invoice after approval
+* [MODFISTO-87](https://issues.folio.org/browse/MODFISTO-87) Able to apply transactions after all or nothing operation was performed
+* [MODFISTO-84](https://issues.folio.org/browse/MODFISTO-84) Remove default values for budget.allowableEncumbrance and budget.allowableExpenditure
+
 ## 4.2.0 - Released
 The primary focus of this release was to implement calculations and restrictions based on finance data
 
