@@ -5,6 +5,8 @@ import static org.folio.rest.utils.TestEntities.LEDGER;
 
 import java.net.MalformedURLException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
@@ -26,6 +28,9 @@ import io.vertx.core.json.JsonObject;
 public class LedgerFYTest extends TestBase {
 
   private static final String LEDGER_FY_ENDPOINT = HelperUtils.getEndpoint(FinanceStorageLedgerFiscalYears.class);
+  private static final int CURRENT_YEAR = LocalDateTime.now().getYear();
+  private static final int PAST_YEAR = CURRENT_YEAR - 1;
+  private static final int FUTURE_YEAR = CURRENT_YEAR + 1;
 
   @Test
   public void testGetQueryForOneRecord() throws Exception {
@@ -129,35 +134,110 @@ public class LedgerFYTest extends TestBase {
     String ledgerId = createFirstRecord(LEDGER);
     verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
 
-    FiscalYear fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class)
-      .withPeriodStart(dateInDaysFromNow(-365))
-      .withPeriodEnd(dateInDaysFromNow(-30))
-      .withId(null);
-    String fiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear);
-    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
-
-    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
-
     deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
   }
 
   @Test
-  public void testGetNoRecordsForFiscalYearInPast() throws Exception {
-    logger.info("--- Test that GET ledger/fiscal year finds nothing when fiscal year has no currency ---");
+  public void ledgerFYCreatedUponFYCreationOnlyForFYInSeries() throws Exception {
+    logger.info("--- Test that ledgerFY records are created for each FY in the series ---");
+    List<String> fiscalYearIds = new ArrayList<>();
+    // create first fiscal year
+    FiscalYear fiscalYear = prepareFiscalYear(CURRENT_YEAR, "FY").withCode("FY2018");
+    String fiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear);
+    fiscalYearIds.add(fiscalYearId);
+    // create a ledger
+    Ledger ledger = new JsonObject(getFile(LEDGER.getSampleFileName())).mapTo(Ledger.class).withFiscalYearOneId(fiscalYearId);
+    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger);
+    // initial ledgerFY records quantity is 1
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 1);
 
-    FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
-    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017").withCurrency(null));
+    // add fiscal years with same series
+    fiscalYearIds.add(postFiscalYear(PAST_YEAR, "FY"));
+    fiscalYearIds.add(postFiscalYear(CURRENT_YEAR, "FY"));
+    fiscalYearIds.add(postFiscalYear(FUTURE_YEAR, "FY"));
+    // ledgerFY records quantity should be 4
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 4);
 
-    String ledgerId = createFirstRecord(LEDGER);
-    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+    // add fiscal years with another series
+    fiscalYearIds.add(postFiscalYear(PAST_YEAR, "QFY"));
+    fiscalYearIds.add(postFiscalYear(CURRENT_YEAR, "QFY"));
+    fiscalYearIds.add(postFiscalYear(FUTURE_YEAR, "QFY"));
+    // ledgerFY records quantity should remain 4
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 4);
 
-    String fiscalYearId = createEntity(FISCAL_YEAR.getEndpoint(), prepareFiscalYear().withCurrency(null));
-    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
-
-    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearId);
+    // delete test data
     deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
-    deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), fiscalYearOneId);
+    fiscalYearIds.forEach(id -> {
+      try {
+        deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), id);
+      } catch (MalformedURLException e) {
+        Assertions.fail("Cannot delete fiscal year");
+      }
+    });
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+  }
+
+  @Test
+  public void ledgerFYRecordsCreatedForEachFYInSeriesUponLedgerCreation() throws MalformedURLException {
+    logger.info("--- Test that ledgerFY records are created for all FY in the series upon ledger creation ---");
+    List<String> fiscalYearIds = new ArrayList<>();
+    // add fiscal years
+    String fiscalYearOneId = postFiscalYear(PAST_YEAR, "FY");
+    fiscalYearIds.add(fiscalYearOneId);
+    fiscalYearIds.add(postFiscalYear(CURRENT_YEAR, "FY"));
+    fiscalYearIds.add(postFiscalYear(FUTURE_YEAR, "FY"));
+    // initial ledgerFY records quantity is 0
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+    // create a ledger
+    Ledger ledger = new JsonObject(getFile(LEDGER.getSampleFileName())).mapTo(Ledger.class).withFiscalYearOneId(fiscalYearOneId);
+    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger);
+
+    // expected ledgerFY records quantity is 3
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 3);
+
+    // delete test data
+    deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+    fiscalYearIds.forEach(id -> {
+      try {
+        deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), id);
+      } catch (MalformedURLException e) {
+        Assertions.fail("Cannot delete fiscal year");
+      }
+    });
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+  }
+
+  @Test
+  public void ledgerFYRecordsNotCreatedForFYNotInSeriesUponLedgerCreation() throws MalformedURLException {
+    logger.info("--- Test that ledgerFY records aren't created for FY not in the series ---");
+    List<String> fiscalYearIds = new ArrayList<>();
+    // create first fiscal year
+    FiscalYear fiscalYear = prepareFiscalYear(CURRENT_YEAR, "FY").withCode("FY2018");
+    String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear);
+    fiscalYearIds.add(fiscalYearOneId);
+    // add fiscal years with another series
+    fiscalYearIds.add(postFiscalYear(PAST_YEAR, "QFY"));
+    fiscalYearIds.add(postFiscalYear(CURRENT_YEAR, "QFY"));
+    fiscalYearIds.add(postFiscalYear(FUTURE_YEAR, "QFY"));
+    // initial ledgerFY records quantity is 0
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
+    // create a ledger
+    Ledger ledger = new JsonObject(getFile(LEDGER.getSampleFileName())).mapTo(Ledger.class).withFiscalYearOneId(fiscalYearOneId);
+    String ledgerId = createEntity(LEDGER.getEndpoint(), ledger);
+    // as ledgerFY record is created for fiscalYearOne, expected records quantity is 1
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 1);
+
+    // delete test data
+    deleteDataSuccess(LEDGER.getEndpointWithId(), ledgerId);
+    fiscalYearIds.forEach(id -> {
+      try {
+        deleteDataSuccess(FISCAL_YEAR.getEndpointWithId(), id);
+      } catch (MalformedURLException e) {
+        Assertions.fail("Cannot delete fiscal year");
+      }
+    });
+    verifyCollectionQuantity(LEDGER_FY_ENDPOINT, 0);
   }
 
   @Test
@@ -192,6 +272,18 @@ public class LedgerFYTest extends TestBase {
       .withCurrency("USD")
       .withPeriodStart(new Date())
       .withPeriodEnd(dateInDaysFromNow(10));
+  }
+
+  private FiscalYear prepareFiscalYear(int year, String series) {
+    return prepareFiscalYear()
+      .withCode(series + year)
+      .withPeriodStart(Date.from(LocalDateTime.of(year, 1, 1, 0, 0, 1).toInstant(ZoneOffset.UTC)))
+      .withPeriodEnd(Date.from(LocalDateTime.of(year, 12, 31, 23, 59, 59).toInstant(ZoneOffset.UTC)))
+      .withSeries(series);
+  }
+
+  private String postFiscalYear(int year, String series) throws MalformedURLException {
+    return createEntity(FISCAL_YEAR.getEndpoint(), prepareFiscalYear(year, series));
   }
 
   private Date dateInDaysFromNow(int i) {

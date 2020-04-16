@@ -1,6 +1,7 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
@@ -8,7 +9,6 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -273,18 +273,30 @@ public class LedgerAPI implements FinanceStorageLedgers {
 
   private Future<List<FiscalYear>> getFiscalYears(Tx<Ledger> tx) {
     Promise<List<FiscalYear>> promise = Promise.promise();
-    CriterionBuilder criterionBuilder = new CriterionBuilder();
-    Criterion criterion = criterionBuilder.withJson("periodEnd", ">", Instant.now().toString()).build();
-    tx.getPgClient().get(tx.getConnection(), FiscalYearAPI.FISCAL_YEAR_TABLE, FiscalYear.class, criterion, true, false, reply -> {
+    tx.getPgClient().get(tx.getConnection(), FiscalYearAPI.FISCAL_YEAR_TABLE, FiscalYear.class, new Criterion(), true, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to find fiscal years");
         handleFailure(promise, reply);
       } else {
-        List<FiscalYear> results = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
-        log.info("{} fiscal years have been found", results.size());
-        promise.complete(results);
+        List<FiscalYear> allFiscalYears = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
+        List<FiscalYear> fiscalYearsWithSeries = getFiscalYearsWithSeries(allFiscalYears, getFiscalYearSeries(allFiscalYears, tx.getEntity().getFiscalYearOneId()));
+        log.info("{} fiscal years have been found", fiscalYearsWithSeries.size());
+        promise.complete(fiscalYearsWithSeries);
       }
     });
     return promise.future();
+  }
+
+  private String getFiscalYearSeries(List<FiscalYear> fiscalYears, String fiscalYearId) {
+    return fiscalYears.stream()
+      .filter(fiscalYear -> fiscalYear.getId().equals(fiscalYearId))
+      .map(FiscalYear::getSeries)
+      .findFirst().orElse(EMPTY);
+  }
+
+  private List<FiscalYear> getFiscalYearsWithSeries(List<FiscalYear> fiscalYears, String series) {
+    return fiscalYears.stream()
+      .filter(fiscalYear -> fiscalYear.getSeries().equals(series))
+      .collect(Collectors.toList());
   }
 }

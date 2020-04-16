@@ -3,7 +3,6 @@ package org.folio.rest.impl;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -133,22 +132,24 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
   private Future<Tx<FiscalYear>> createLedgerFiscalYearRecords(Tx<FiscalYear> tx) {
     FiscalYear fiscalYear = tx.getEntity();
 
-    // In case no currency or period's end date of the fiscal year is for some reason in past, do not create any related records
-    if (StringUtils.isEmpty(fiscalYear.getCurrency()) || fiscalYear.getPeriodEnd().toInstant().isBefore(Instant.now())) {
+    // In case no currency, do not create any related records
+    if (StringUtils.isEmpty(fiscalYear.getCurrency())) {
       return Future.succeededFuture(tx);
     }
 
     Promise<Tx<FiscalYear>> promise = Promise.promise();
-    getLedgers(tx)
-      .map(ledgers -> buildLedgerFiscalYearRecords(fiscalYear, ledgers))
-      .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(tx, ledgerFYs))
-      .onComplete(result -> {
-        if (result.failed()) {
-          handleFailure(promise, result);
-        } else {
-          promise.complete(tx);
-        }
-      });
+    getFiscalYearIdsForSeries(tx, fiscalYear.getSeries())
+      .compose(fiscalYearIds -> getLedgers(tx, fiscalYearIds)
+        .map(ledgers -> buildLedgerFiscalYearRecords(fiscalYear, ledgers))
+        .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(tx, ledgerFYs))
+        .onComplete(result -> {
+          if (result.failed()) {
+            handleFailure(promise, result);
+          } else {
+            promise.complete(tx);
+          }
+        })
+    );
     return promise.future();
   }
 
@@ -162,16 +163,39 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
       .collect(Collectors.toList());
   }
 
-  private Future<List<Ledger>> getLedgers(Tx<FiscalYear> tx) {
+  private Future<List<Ledger>> getLedgers(Tx<FiscalYear> tx, List<String> fiscalYearIds) {
     Promise<List<Ledger>> promise = Promise.promise();
     tx.getPgClient().get(tx.getConnection(), LedgerAPI.LEDGER_TABLE, Ledger.class, new Criterion(), true, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to find ledgers");
         handleFailure(promise, reply);
       } else {
-        List<Ledger> results = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
-        log.info("{} ledgers have been found", results.size());
-        promise.complete(results);
+        List<Ledger> allLedgers = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
+        List<Ledger> ledgersWithSeriesInUse = allLedgers.stream()
+          .filter(ledger -> fiscalYearIds.contains(ledger.getFiscalYearOneId()))
+          .collect(Collectors.toList());
+        log.info("{} ledgers have been found", ledgersWithSeriesInUse.size());
+        promise.complete(ledgersWithSeriesInUse);
+      }
+    });
+    return promise.future();
+  }
+
+  private Future<List<String>> getFiscalYearIdsForSeries(Tx<FiscalYear> tx, String series) {
+    Promise<List<String>> promise = Promise.promise();
+    CriterionBuilder criterionBuilder = new CriterionBuilder();
+    Criterion criterion = criterionBuilder.withJson("series", "=", series).build();
+    tx.getPgClient().get(tx.getConnection(), FISCAL_YEAR_TABLE, FiscalYear.class, criterion, true, false, reply ->{
+      if (reply.failed()) {
+        log.error("Failed to find fiscal year Ids");
+        handleFailure(promise, reply);
+      } else {
+        List<FiscalYear> fiscalYears = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
+        List<String> ids = fiscalYears.stream()
+          .map(FiscalYear::getId)
+          .collect(Collectors.toList());
+        log.info("{} fiscal year Ids were found", ids.size());
+        promise.complete(ids);
       }
     });
     return promise.future();
