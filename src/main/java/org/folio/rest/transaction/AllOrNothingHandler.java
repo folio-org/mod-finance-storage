@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.shareddata.Lock;
+import io.vertx.core.shareddata.SharedData;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -146,22 +148,21 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       Function<Tx<List<Transaction>>, Future<Tx<List<Transaction>>>> processTransactions) {
     try {
       handleValidationError(transaction);
-      return getExistentBudget(transaction)
-        .compose(budget -> checkTransactionRestrictions(transaction, budget))
-        .compose(v -> getAndCheckTransactionSummary(transaction).compose(summary -> createTempTransaction(transaction).map(summary)))
-        .compose(summary -> getTempTransactions(summary).compose(transactions -> {
-          Promise<Void> promise = Promise.promise();
-          try {
-            if (transactions.size() == getNumTransactions(summary, transaction)) {
-              return moveFromTempToPermanentTable(processTransactions, transactions, summary);
-            } else {
-              promise.complete();
+      return getExistentBudget(transaction).compose(budget -> checkTransactionRestrictions(transaction, budget))
+        .compose(v -> getAndCheckTransactionSummary(transaction)
+          .compose(summary -> addTempTransactionSequentially(transaction, summary).compose(transactions -> {
+            Promise<Void> promise = Promise.promise();
+            try {
+              if (transactions.size() == getNumTransactions(summary, transaction)) {
+                return moveFromTempToPermanentTable(processTransactions, transactions, summary);
+              } else {
+                promise.complete();
+              }
+            } catch (Exception e) {
+              promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
             }
-          } catch (Exception e) {
-            promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
-          }
-          return promise.future();
-        }));
+            return promise.future();
+          })));
     } catch (HttpStatusException e) {
       return Future.failedFuture(e);
     }
@@ -237,8 +238,42 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
   }
 
 
-  private Future<Transaction> createTempTransaction(Transaction transaction) {
-    Promise<Transaction> promise = Promise.promise();
+  private Future<List<Transaction>> addTempTransactionSequentially(Transaction transaction, JsonObject summary) {
+    Promise<List<Transaction>> promise = Promise.promise();
+    SharedData sharedData = getVertxContext().owner().sharedData();
+    // define unique lockName based on combination of transactions type and summary id
+    String lockName = transaction.getTransactionType() + getSummaryId(transaction);
+
+    sharedData.getLock(lockName, lockResult -> {
+      if (lockResult.succeeded()) {
+        log.info("Got lock {}", lockName);
+        Lock lock = lockResult.result();
+        try {
+          getVertxContext().owner()
+            .setTimer(30000, timerId -> releaseLock(lock, lockName));
+
+          addTempTransaction(transaction, summary).onComplete(trnsResult -> {
+            releaseLock(lock, lockName);
+            if (trnsResult.succeeded()) {
+              promise.complete(trnsResult.result());
+            } else {
+              promise.fail(trnsResult.cause());
+            }
+          });
+        } catch (Exception e) {
+          releaseLock(lock, lockName);
+        }
+      } else {
+        promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), lockResult.cause().getMessage()));
+      }
+    });
+
+    return promise.future();
+  }
+
+
+  private Future<List<Transaction>> addTempTransaction(Transaction transaction, JsonObject summary) {
+    Promise<List<Transaction>> promise = Promise.promise();
 
     if (transaction.getId() == null) {
       transaction.setId(UUID.randomUUID().toString());
@@ -246,23 +281,31 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
 
     log.debug("Creating new transaction with id={}", transaction.getId());
 
-      try {
-        JsonArray params = new JsonArray();
-        params.add(transaction.getId());
-        params.add(pojo2json(transaction));
+    try {
+      JsonArray params = new JsonArray();
+      params.add(transaction.getId());
+      params.add(pojo2json(transaction));
 
-        getPostgresClient().execute(createTempTransactionQuery(), params, reply -> {
-          if (reply.failed()) {
-            log.error("Transaction creation with id={} failed", reply.cause(), transaction.getId());
-            handleFailure(promise, reply);
-          } else {
-            log.debug("New transaction with id={} successfully created", transaction.getId());
-            promise.complete(transaction);
-          }
-        });
-      } catch (Exception e) {
-        promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage()));
-      }
+      getPostgresClient().execute(createTempTransactionQuery(), params, reply -> {
+        if (reply.succeeded()) {
+          log.debug("New transaction with id={} successfully created", transaction.getId());
+          getTempTransactions(summary).onComplete(trnsResult -> {
+            if (trnsResult.succeeded()) {
+              promise.complete(trnsResult.result());
+
+            } else {
+              handleFailure(promise, reply);
+            }
+          });
+
+        } else {
+          log.error("Transaction creation with id={} failed", reply.cause(), transaction.getId());
+          handleFailure(promise, reply);
+        }
+      });
+    } catch (Exception e) {
+      promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage()));
+    }
 
     return promise.future();
   }
@@ -298,8 +341,7 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
         log.error("Failed to extract temporary transaction by summary id={}", reply.cause(), summary.getString(ID_FIELD_NAME));
         handleFailure(promise, reply);
       } else {
-        List<Transaction> transactions = reply.result()
-          .getResults();
+        List<Transaction> transactions = reply.result().getResults();
         promise.complete(transactions);
       }
     });
@@ -541,6 +583,11 @@ public abstract class AllOrNothingHandler extends AbstractTransactionHandler {
       return Collections.singletonList(error);
     }
     return Collections.emptyList();
+  }
+
+  private void releaseLock(Lock lock, String lockName) {
+    log.info("Released lock {}", lockName);
+    lock.release();
   }
 
 }

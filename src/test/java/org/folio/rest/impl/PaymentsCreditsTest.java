@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.net.MalformedURLException;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
@@ -31,8 +32,11 @@ import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.LedgerFYCollection;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.core.json.JsonObject;
@@ -398,6 +402,46 @@ class PaymentsCreditsTest extends TestBase {
       .statusCode(400)
       .body(containsString(FUND_CANNOT_BE_PAID));
 
+  }
+
+  @RepeatedTest(3)
+  void testCreateAllOrNothing10Payments() throws MalformedURLException {
+    int numberOfPayments = 10;
+    int initialNumberOfTransactions = getData(TRANSACTION_ENDPOINT, TRANSACTION_TENANT_HEADER).then()
+      .extract()
+      .as(TransactionCollection.class)
+      .getTotalRecords();
+
+    String invoiceId = UUID.randomUUID().toString();
+    createInvoiceSummary(invoiceId, numberOfPayments);
+
+    JsonObject paymentJsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
+    paymentJsonTx.remove("id");
+
+    Transaction payment = paymentJsonTx.mapTo(Transaction.class);
+    payment.setSourceInvoiceId(invoiceId);
+    payment.setPaymentEncumbranceId(null);
+    payment.setAmount(1d);
+
+    IntStream.range(0, numberOfPayments)
+      .parallel()
+      .forEach(i -> {
+        try {
+          postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
+            .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+              .statusCode(201);
+        } catch (MalformedURLException e) {
+          logger.error(e.getMessage());
+        }
+      });
+
+    int newNumberOfTransactions = getData(TRANSACTION_ENDPOINT, TRANSACTION_TENANT_HEADER).then()
+      .extract()
+      .as(TransactionCollection.class)
+      .getTotalRecords();
+
+    Assertions.assertEquals(initialNumberOfTransactions + numberOfPayments, newNumberOfTransactions,
+      String.format("initialNum = %s, newNum = %s", initialNumberOfTransactions, newNumberOfTransactions));
   }
 
   protected void createOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
