@@ -175,13 +175,13 @@ public class EncumbrancesTest extends TestBase {
     postData(BUDGET.getEndpoint(), JsonObject.mapFrom(fromBudgetBefore).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201).extract().as(Budget.class);
 
-    String invoiceId = UUID.randomUUID().toString();
-    createInvoiceSummary(invoiceId, 1);
+    String orderId = UUID.randomUUID().toString();
+    createOrderSummary(orderId, 1);
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
 
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
     encumbrance.setAmount(1000000d);
-    encumbrance.setSourceInvoiceId(invoiceId);
+    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
     // create Encumbrance
     postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
