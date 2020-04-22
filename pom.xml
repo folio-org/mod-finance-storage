@@ -475,7 +475,7 @@
     <url>https://github.com/folio-org/mod-finance-storage</url>
     <connection>scm:git:git://github.com/folio-org/mod-finance-storage.git</connection>
     <developerConnection>scm:git:git@github.com:folio-org/mod-finance-storage.git</developerConnection>
-    <tag>v4.2.0</tag>
+    <tag>v4.2.2</tag>
   </scm>
 
 </project>
