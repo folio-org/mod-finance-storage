@@ -36,7 +36,7 @@
       "fromModuleVersion": "mod-finance-storage-4.2.1"
     },
     {
-      "run": "before",
+      "run": "after",
       "snippetPath": "migration/transaction_source_enum.sql",
       "fromModuleVersion": "mod-finance-storage-5.0.0"
     }
@@ -241,7 +241,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-5.0.0",
+      "fromModuleVersion": "mod-finance-storage-4.2.1",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [

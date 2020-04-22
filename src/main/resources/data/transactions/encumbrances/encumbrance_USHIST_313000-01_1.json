@@ -14,7 +14,7 @@
   },
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "fromFundId": "65032151-39a5-4cef-8810-5350eb316300",
-  "source": "Voucher",
+  "source": "Invoice",
   "sourceFiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "transactionType": "Encumbrance"
 }
