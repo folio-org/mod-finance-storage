@@ -34,6 +34,11 @@
       "run": "after",
       "snippetPath": "migration/delete_trigger_functions.sql",
       "fromModuleVersion": "mod-finance-storage-4.2.1"
+    },
+    {
+      "run": "before",
+      "snippetPath": "migration/transaction_source_enum.sql",
+      "fromModuleVersion": "mod-finance-storage-5.0.0"
     }
   ],
   "tables": [
@@ -236,7 +241,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-4.2.1",
+      "fromModuleVersion": "mod-finance-storage-5.0.0",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
