@@ -8,12 +8,11 @@ import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.impl.TransactionSummaryAPI.INVOICE_TRANSACTION_SUMMARIES;
-import static org.folio.rest.persist.HelperUtils.getCriteriaByFieldNameAndValueNotJsonb;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.persist.HelperUtils.handleFailure;
 import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,12 +39,10 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
-import org.folio.rest.persist.HelperUtils;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.MoneyUtils;
 import org.folio.rest.persist.Tx;
-import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.Criteria.GroupedCriterias;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
 
@@ -137,8 +134,8 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
   }
 
   private Future<Tx<List<Transaction>>> updateBudgetsTotals(Tx<List<Transaction>> tx) {
-    return getBudgets(tx).map(budgets -> budgets.stream()
-      .collect(toMap(Budget::getFundId, Function.identity())))
+    return getBudgets(tx)
+      .map(budgets -> budgets.stream().collect(toMap(Budget::getFundId, Function.identity())))
       .map(groupedBudgets -> calculatePaymentBudgetsTotals(tx.getEntity(), groupedBudgets))
       .map(grpBudgets -> calculateCreditBudgetsTotals(tx.getEntity(), grpBudgets))
       .map(grpBudgets -> calculateNonEncumbranceBudgetTotals(tx.getEntity(), grpBudgets))
@@ -413,7 +410,7 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
   public void updateTransaction(Transaction transaction) {
     verifyTransactionExistence(transaction.getId())
       .compose(aVoid -> processAllOrNothing(transaction, this::processTransactionsUponUpdate))
-      .setHandler(result -> {
+      .onComplete(result -> {
         if (result.failed()) {
           HttpStatusException cause = (HttpStatusException) result.cause();
           switch (cause.getStatusCode()) {
@@ -557,15 +554,15 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
 
   private Future<List<Transaction>> getPermanentTransactions(Tx<List<Transaction>> tx) {
     Promise<List<Transaction>> promise = Promise.promise();
-    List<Criteria> criteriaList = tx.getEntity().stream()
-      .map(Transaction::getId)
-      .map(id -> getCriteriaByFieldNameAndValueNotJsonb("id", "=", id)).collect(Collectors.toList());
-    GroupedCriterias groupedCriterias = new GroupedCriterias();
-    criteriaList.forEach(c -> groupedCriterias.addCriteria(c, "OR"));
-    Criterion criterion = new Criterion();
-    criterion.addGroupOfCriterias(groupedCriterias);
 
-    getPostgresClient().get(TRANSACTION_TABLE, Transaction.class, criterion, false, false, reply -> {
+    CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
+    tx.getEntity().stream()
+      .map(Transaction::getId)
+      .forEach(id -> criterionBuilder.with("id", id));
+
+    Criterion criterion = criterionBuilder.build();
+
+    tx.getPgClient().get(tx.getConnection(), TRANSACTION_TABLE, Transaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to extract permanent transactions", reply.cause());
         handleFailure(promise, reply);
@@ -621,9 +618,8 @@ public class InvoiceTransactionsHandler extends AllOrNothingHandler {
    */
   @Override
   Criterion getTransactionBySummaryIdCriterion(String value) {
-    Criteria criteria = HelperUtils.getCriteriaByFieldNameAndValue("sourceInvoiceId", "=", value);
-
-    return new Criterion().addCriterion(criteria);
+    CriterionBuilder criterionBuilder = new CriterionBuilder().with("sourceInvoiceId", value);
+    return criterionBuilder.build();
   }
 
 }

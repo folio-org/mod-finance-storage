@@ -9,13 +9,21 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
 import org.folio.rest.persist.PgUtil;
+import org.folio.rest.service.BudgetService;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 public class BudgetAPI implements FinanceStorageBudgets {
   public static final String BUDGET_TABLE = "budget";
+
+  private BudgetService budgetService;
+
+  public BudgetAPI(Vertx vertx, String tenantId) {
+    budgetService = new BudgetService(vertx, tenantId);
+  }
 
   @Override
   @Validate
@@ -39,7 +47,7 @@ public class BudgetAPI implements FinanceStorageBudgets {
   @Override
   @Validate
   public void deleteFinanceStorageBudgetsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.deleteById(BUDGET_TABLE, id, okapiHeaders, vertxContext, DeleteFinanceStorageBudgetsByIdResponse.class, asyncResultHandler);
+    budgetService.deleteById(id, vertxContext, asyncResultHandler);
   }
 
   @Override

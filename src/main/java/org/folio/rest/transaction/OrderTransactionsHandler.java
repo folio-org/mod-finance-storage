@@ -7,11 +7,10 @@ import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.impl.TransactionSummaryAPI.ORDER_TRANSACTION_SUMMARIES;
-import static org.folio.rest.persist.HelperUtils.getCriterionByFieldNameAndValueNotJsonb;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.persist.HelperUtils.handleFailure;
 import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +37,7 @@ import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.javamoney.moneta.Money;
@@ -89,7 +89,7 @@ public class OrderTransactionsHandler extends AllOrNothingHandler {
 
   @Override
   Criterion getTransactionBySummaryIdCriterion(String value) {
-    return getCriterionByFieldNameAndValueNotJsonb("encumbrance_sourcePurchaseOrderId", "=", value);
+    return new CriterionBuilder().with("encumbrance_sourcePurchaseOrderId", value).build();
   }
 
   @Override

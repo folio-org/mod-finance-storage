@@ -3,7 +3,6 @@ package org.folio.rest.impl;
 import static org.folio.rest.utils.TestEntities.BUDGET;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
-import static org.folio.rest.utils.TestEntities.FUND_DISTRIBUTION;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 import static org.folio.rest.utils.TestEntities.GROUP;
 import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
@@ -39,7 +38,7 @@ public class EntitiesCrudTest extends TestBase {
    *
    */
   static Stream<TestEntities> deleteOrder() {
-    return Stream.of(FUND_DISTRIBUTION, TRANSACTION, GROUP_FUND_FY, BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
+    return Stream.of(TRANSACTION, GROUP_FUND_FY, BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
   }
 
   static Stream<TestEntities> deleteFailOrder() {
@@ -48,7 +47,7 @@ public class EntitiesCrudTest extends TestBase {
 
   /**
    * Test order of creation of records to fail because of foreign key dependencies
-   * @return
+   * @return stream of ordered entities list
    */
   static Stream<TestEntities> createFailOrder() {
     return Stream.of(BUDGET, FUND);
@@ -56,7 +55,7 @@ public class EntitiesCrudTest extends TestBase {
 
   /**
    * The creation of records must fail because of unique constraint
-   * @return
+   * @return stream of ordered entities list
    */
   static Stream<TestEntities> createDuplicateRecords() {
     return Stream.of(BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);

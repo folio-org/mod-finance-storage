@@ -5,6 +5,8 @@ import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
+import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -24,6 +26,7 @@ import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
@@ -65,17 +68,17 @@ public class LedgerAPI implements FinanceStorageLedgers {
   public void postFinanceStorageLedgers(String lang, Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Tx<Ledger> tx = new Tx<>(entity, pgClient);
     vertxContext.runOnContext(event ->
-      HelperUtils.startTx(tx)
+      tx.startTx()
         .compose(this::saveLedger)
         .compose(this::createLedgerFiscalYearRecords)
-        .compose(HelperUtils::endTx)
-        .setHandler(result -> {
+        .compose(Tx::endTx)
+        .onComplete(result -> {
           if (result.failed()) {
             HttpStatusException cause = (HttpStatusException) result.cause();
             log.error("New ledger record creation has failed: {}", cause, tx.getEntity());
 
             // The result of rollback operation is not so important, main failure cause is used to build the response
-            HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
+            tx.rollbackTransaction().onComplete(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
           } else {
             log.info("New ledger record {} and associated data were successfully created", tx.getEntity());
             asyncResultHandler.handle(succeededFuture(PostFinanceStorageLedgersResponse
@@ -96,24 +99,14 @@ public class LedgerAPI implements FinanceStorageLedgers {
   @Validate
   public void deleteFinanceStorageLedgersById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Tx<String> tx = new Tx<>(id, pgClient);
+    CriterionBuilder criterionBuilder = new CriterionBuilder().with("ledgerId", id);
     vertxContext.runOnContext(event ->
-      HelperUtils.startTx(tx)
+      tx.startTx()
       .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(tx,
-        HelperUtils.getCriterionByFieldNameAndValue("ledgerId", "=", id)))
+        criterionBuilder.build()))
       .compose(ok -> HelperUtils.deleteRecordById(tx, LEDGER_TABLE))
-      .compose(HelperUtils::endTx)
-      .setHandler(result -> {
-        if (result.failed()) {
-          HttpStatusException cause = (HttpStatusException) result.cause();
-          log.error("Deletion of the ledger record {} has failed", cause, tx.getEntity());
-
-          // The result of rollback operation is not so important, main failure cause is used to build the response
-          HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
-        } else {
-          log.info("Ledger record {} and associated data were successfully deleted", tx.getEntity());
-          asyncResultHandler.handle(succeededFuture(DeleteFinanceStorageLedgersByIdResponse.respond204()));
-        }
-      })
+      .compose(Tx::endTx)
+      .onComplete(handleNoContentResponse(asyncResultHandler, tx, "Ledger {} {} deleted"))
     );
   }
 
@@ -123,7 +116,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
     ledger.setId(id);
     vertxContext.runOnContext(event ->
       isLedgerStatusChanged(ledger)
-        .setHandler(result -> {
+        .onComplete(result -> {
           if (result.failed()) {
             HttpStatusException cause = (HttpStatusException) result.cause();
             log.error("Update of the ledger record {} has failed", cause, ledger.getId());
@@ -141,28 +134,17 @@ public class LedgerAPI implements FinanceStorageLedgers {
 
   private void handleLedgerStatusUpdate(Ledger ledger, Handler<AsyncResult<Response>> asyncResultHandler) {
     Tx<Ledger> tx = new Tx<>(ledger, pgClient);
-    HelperUtils.startTx(tx)
+    tx.startTx()
       .compose(this::updateLedger)
       .compose(this::updateRelatedFunds)
-      .compose(idsTx -> updateRelatedBudgets(idsTx, ledger))
-      .compose(HelperUtils::endTx)
-      .setHandler(asyncResult -> {
-        if (asyncResult.failed()) {
-          HttpStatusException cause = (HttpStatusException) asyncResult.cause();
-          log.error("Update of the ledger record {} has failed", cause, tx.getEntity());
-
-          // The result of rollback operation is not so important, main failure cause is used to build the response
-          HelperUtils.rollbackTransaction(tx).setHandler(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
-        } else {
-          log.info("Ledger record {} and associated data were successfully updated", tx.getEntity());
-          asyncResultHandler.handle(succeededFuture(DeleteFinanceStorageLedgersByIdResponse.respond204()));
-        }
-      });
+      .compose(fundIds -> updateRelatedBudgets(tx, fundIds))
+      .compose(Tx::endTx)
+      .onComplete(handleNoContentResponse(asyncResultHandler, tx, "Ledger {} {} updated"));
   }
 
-  private Future<Tx<List<String>>> updateRelatedBudgets(Tx<List<String>> tx, Ledger ledger) {
-    Promise<Tx<List<String>>> promise = Promise.promise();
-    List<String> fundIds = tx.getEntity();
+  private Future<Tx<Ledger>> updateRelatedBudgets(Tx<Ledger> tx, List<String> fundIds) {
+    Promise<Tx<Ledger>> promise = Promise.promise();
+    Ledger ledger = tx.getEntity();
     if (CollectionUtils.isEmpty(fundIds)) {
       promise.complete(tx);
     } else {
@@ -180,7 +162,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
         "AND (jsonb->>'periodEnd')::timestamp)));";
       tx.getPgClient().execute(tx.getConnection(), sql, params, event -> {
         if (event.failed()) {
-          HelperUtils.handleFailure(promise, event);
+          handleFailure(promise, event);
         } else {
           log.info("{} budget records are updated", event.result().getUpdated());
           promise.complete(tx);
@@ -194,7 +176,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
     Promise<Boolean> promise = Promise.promise();
     pgClient.getById(LEDGER_TABLE, ledger.getId(), Ledger.class, event -> {
       if (event.failed()) {
-        HelperUtils.handleFailure(promise, event);
+        handleFailure(promise, event);
       } else {
         if (event.result() != null) {
           promise.complete(event.result().getLedgerStatus() != ledger.getLedgerStatus());
@@ -211,7 +193,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
     Ledger ledger = tx.getEntity();
     tx.getPgClient().update(tx.getConnection(), LEDGER_TABLE, ledger, "jsonb", " WHERE id='" + ledger.getId() + "'", false, event -> {
         if (event.failed()) {
-        HelperUtils.handleFailure(promise, event);
+        handleFailure(promise, event);
       } else {
         log.info("Ledger record {} was successfully updated", tx.getEntity());
         promise.complete(tx);
@@ -220,8 +202,8 @@ public class LedgerAPI implements FinanceStorageLedgers {
     return promise.future();
   }
 
-  private Future<Tx<List<String>>> updateRelatedFunds(Tx<Ledger> tx) {
-    Promise<Tx<List<String>>> promise = Promise.promise();
+  private Future<List<String>> updateRelatedFunds(Tx<Ledger> tx) {
+    Promise<List<String>> promise = Promise.promise();
     Ledger ledger = tx.getEntity();
     String fullFundTableName = getFullTableName(tenantId, FUND_TABLE);
     String sql = "UPDATE " + fullFundTableName + "  SET jsonb = jsonb_set(jsonb,'{fundStatus}', ?::jsonb) " +
@@ -233,11 +215,11 @@ public class LedgerAPI implements FinanceStorageLedgers {
 
     tx.getPgClient().select(tx.getConnection(), sql, params, event -> {
       if (event.failed()) {
-        HelperUtils.handleFailure(promise, event);
+        handleFailure(promise, event);
       } else {
         log.info("All fund records related to ledger with id={} has been successfully updated", tx.getEntity().getId());
         List<String> ids = event.result().getResults().stream().flatMap(JsonArray::stream).map(Object::toString).collect(Collectors.toList());
-        promise.complete(new Tx<>(ids, tx.getPgClient()).withConnection(tx.getConnection()));
+        promise.complete(ids);
       }
     });
         return promise.future();
@@ -253,9 +235,9 @@ public class LedgerAPI implements FinanceStorageLedgers {
 
     log.debug("Creating new ledger record with id={}", ledger.getId());
 
-    pgClient.save(tx.getConnection(), LEDGER_TABLE, ledger.getId(), ledger, reply -> {
+    tx.getPgClient().save(tx.getConnection(), LEDGER_TABLE, ledger.getId(), ledger, reply -> {
       if (reply.failed()) {
-        HelperUtils.handleFailure(promise, reply);
+        handleFailure(promise, reply);
       } else {
         promise.complete(tx);
       }
@@ -268,9 +250,9 @@ public class LedgerAPI implements FinanceStorageLedgers {
     getFiscalYears(tx)
       .map(fiscalYears -> buildLedgerFiscalYearRecords(tx.getEntity(), fiscalYears))
       .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(tx, ledgerFYs))
-      .setHandler(result -> {
+      .onComplete(result -> {
         if (result.failed()) {
-          HelperUtils.handleFailure(promise, result);
+          handleFailure(promise, result);
         } else {
           promise.complete(tx);
         }
@@ -291,11 +273,12 @@ public class LedgerAPI implements FinanceStorageLedgers {
 
   private Future<List<FiscalYear>> getFiscalYears(Tx<Ledger> tx) {
     Promise<List<FiscalYear>> promise = Promise.promise();
-    Criterion criterion = HelperUtils.getCriterionByFieldNameAndValue("periodEnd", ">", Instant.now().toString());
-    pgClient.get(tx.getConnection(), FiscalYearAPI.FISCAL_YEAR_TABLE, FiscalYear.class, criterion, true, true, reply -> {
+    CriterionBuilder criterionBuilder = new CriterionBuilder();
+    Criterion criterion = criterionBuilder.withJson("periodEnd", ">", Instant.now().toString()).build();
+    tx.getPgClient().get(tx.getConnection(), FiscalYearAPI.FISCAL_YEAR_TABLE, FiscalYear.class, criterion, true, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to find fiscal years");
-        HelperUtils.handleFailure(promise, reply);
+        handleFailure(promise, reply);
       } else {
         List<FiscalYear> results = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
         log.info("{} fiscal years have been found", results.size());

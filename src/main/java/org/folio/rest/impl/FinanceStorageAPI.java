@@ -1,24 +1,25 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.ws.rs.core.Response;
+
+import org.folio.rest.jaxrs.model.LedgerFY;
+import org.folio.rest.jaxrs.model.LedgerFYCollection;
+import org.folio.rest.jaxrs.resource.FinanceStorageLedgerFiscalYears;
+import org.folio.rest.persist.PgUtil;
+import org.folio.rest.persist.Tx;
+import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-
-import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.Response;
-
 import io.vertx.core.Promise;
-import org.folio.rest.jaxrs.model.LedgerFY;
-import org.folio.rest.jaxrs.model.LedgerFYCollection;
-import org.folio.rest.jaxrs.resource.FinanceStorageLedgerFiscalYears;
-import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.HelperUtils;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.Tx;
 
 public class FinanceStorageAPI implements FinanceStorageLedgerFiscalYears {
   public static final String LEDGERFY_TABLE = "ledgerFY";
@@ -48,7 +49,7 @@ public class FinanceStorageAPI implements FinanceStorageLedgerFiscalYears {
 
   private <T> void handleAsyncResult(Promise<Void> promise, AsyncResult<T> reply) {
     if(reply.failed()) {
-      HelperUtils.handleFailure(promise, reply);
+      handleFailure(promise, reply);
     } else {
       promise.complete();
     }

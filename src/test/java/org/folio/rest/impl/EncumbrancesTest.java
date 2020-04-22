@@ -6,6 +6,7 @@ import static org.folio.rest.impl.TransactionTest.LEDGER_FYS_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
+import static org.folio.rest.transaction.AllOrNothingHandler.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
 import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_IS_INACTIVE;
 import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.rest.transaction.AllOrNothingHandler.FUND_CANNOT_BE_PAID;
@@ -145,13 +146,8 @@ public class EncumbrancesTest extends TestBase {
 
     //create same encumbrances again
     postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(201)
-      .extract()
-      .as(Transaction.class);
-
-    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance2).encodePrettily(), TRANSACTION_TENANT_HEADER)
-      .then()
-      .statusCode(201);
+      .statusCode(400)
+      .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
     budgetAfter = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().extract().as(Budget.class);
 
@@ -373,18 +369,9 @@ public class EncumbrancesTest extends TestBase {
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance2Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
-    encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample1, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(201)
-      .extract()
-      .as(Transaction.class).getId();
-
-    // encumbrance do not appear in transaction table
-    getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(404);
-
-    // create 2nd Encumbrance
-    postData(TRANSACTION.getEndpoint(), transactionSample2, TRANSACTION_TENANT_HEADER)
-      .then()
-      .statusCode(201);
+    postData(TRANSACTION.getEndpoint(), transactionSample1, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(400)
+      .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
   }
 
@@ -436,6 +423,10 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
+
+    postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(400)
+      .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
     // 2 encumbrances appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
