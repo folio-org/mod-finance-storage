@@ -1,5 +1,13 @@
 ## 4.3.0 - Unreleased
 
+## 4.2.2 - Released
+The primary focus of this release was to fix critical issue with performing "all or nothing" mechanism
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.2.1...v4.2.2)
+
+### Bug Fixes
+* [MODFISTO-99](https://issues.folio.org/browse/MODFISTO-99) "All or nothing mechanism" performs two times
+
 ## 4.2.1 - Released
 The primary focus of this release was to restrict processing transactions after performing "all or nothing" mechanism.
 
