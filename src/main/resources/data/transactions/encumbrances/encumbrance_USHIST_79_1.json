@@ -15,7 +15,7 @@
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "fromFundId": "65032151-39a5-4cef-8810-5350eb316300",
   "paymentEncumbranceId": "80c28fb4-c34e-48d6-b8c2-de6660c3e0aa",
-  "source": "Voucher",
+  "source": "PoLine",
   "sourceFiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "transactionType": "Encumbrance"
 }
