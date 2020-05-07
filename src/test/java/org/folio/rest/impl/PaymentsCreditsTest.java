@@ -44,6 +44,7 @@ import io.vertx.core.json.JsonObject;
 class PaymentsCreditsTest extends TestBase {
   private static final String CREDIT_SAMPLE = "data/transactions/credits/credit_CANHIST_30121.json";
   private static final String PAYMENT_SAMPLE = "data/transactions/payments/payment_ENDOW-SUBN_30121.json";
+  private static final String TRANSACTION_SAMPLE = "data/transactions/encumbrances/encumbrance_ENDOW-SUBN_S60402_80.json";
 
   @BeforeEach
   void prepareData() throws MalformedURLException {
@@ -331,6 +332,15 @@ class PaymentsCreditsTest extends TestBase {
 
   @Test
   void testPaymentsIdempotentInTemporaryTable() throws MalformedURLException {
+
+    JsonObject encumbranceJson = new JsonObject(getFile(TRANSACTION_SAMPLE));
+    Transaction encumbrance = encumbranceJson.mapTo(Transaction.class);
+    String encumbranceSample = JsonObject.mapFrom(encumbrance).encodePrettily();
+
+    createOrderSummary(encumbrance.getEncumbrance().getSourcePurchaseOrderId(), 1);
+
+    postData(TRANSACTION.getEndpoint(), encumbranceSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201).extract().as(Transaction.class);
 
     String invoiceId = UUID.randomUUID()
       .toString();
