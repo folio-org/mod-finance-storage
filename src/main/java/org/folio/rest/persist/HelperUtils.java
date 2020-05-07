@@ -4,16 +4,22 @@ import static io.vertx.core.Future.succeededFuture;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.folio.rest.persist.PgUtil.response;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
+import static org.folio.rest.utils.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
 
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.StringUtils;
+import org.folio.rest.jaxrs.model.Error;
+import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.persist.cql.CQLQueryValidationException;
 import org.folio.rest.persist.interfaces.Results;
 
@@ -116,4 +122,20 @@ public final class HelperUtils {
     return PostgresClient.convertToPsqlStandard(tenantId) + "." + tableName;
   }
 
+  public static String getSQLUniqueConstraintName(String errorMessage){
+    if (!StringUtils.isEmpty(errorMessage)) {
+      Pattern pattern = Pattern.compile("(unique constraint)\\s+\"(?<constraint>.*?)\"");
+      Matcher matcher = pattern.matcher(errorMessage);
+      matcher.find();
+      return matcher.group("constraint");
+    }
+    return StringUtils.EMPTY;
+  }
+
+  public static Error buildFieldConstraintError(String fieldName) {
+    final String FIELD_NAME = "field";
+    Error error = UNIQUE_FIELD_CONSTRAINT_ERROR.toError();
+    error.getParameters().add(new Parameter().withKey(FIELD_NAME).withValue(fieldName));
+    return error;
+  }
 }
