@@ -9,7 +9,6 @@ import javax.ws.rs.core.Response;
 
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
-import org.folio.rest.jaxrs.resource.FinanceStorage;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFundTypes;
