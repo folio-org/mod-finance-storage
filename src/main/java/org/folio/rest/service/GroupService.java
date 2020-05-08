@@ -41,11 +41,12 @@ public class GroupService {
 
   public void createGroup(Group entity, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
     vertxContext.runOnContext(v -> {
-      createGroup(entity).onSuccess(group -> {
-        logger.debug("Group wit id {} created", entity.getId());
-        asyncResultHandler.handle(Future.succeededFuture(
-            FinanceStorageGroups.PostFinanceStorageGroupsResponse.respond201WithApplicationJson(group, headersFor201())));
-      })
+      createGroup(entity)
+        .onSuccess(group -> {
+          logger.debug("Group wit id {} created", entity.getId());
+          asyncResultHandler.handle(Future.succeededFuture(
+              FinanceStorageGroups.PostFinanceStorageGroupsResponse.respond201WithApplicationJson(group, headersFor201())));
+        })
         .onFailure(throwable -> {
           logger.error("Group creation with id {} failed", throwable, entity.getId());
           asyncResultHandler.handle(buildErrorResponse(throwable));
@@ -53,12 +54,12 @@ public class GroupService {
     });
   }
 
-  private Future<Group> createGroup(Group group) {
+  public Future<Group> createGroup(Group group) {
     Promise<Group> promise = Promise.promise();
     if (group.getId() == null) {
       group.setId(UUID.randomUUID().toString());
     }
-    pgClient.save(GROUPS_TABLE, group, reply -> {
+    pgClient.save(GROUPS_TABLE, group.getId(), group, reply -> {
       if (reply.failed()) {
         promise.fail(createException(reply));
       } else {

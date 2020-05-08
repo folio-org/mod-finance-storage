@@ -58,7 +58,7 @@ public class EntitiesCrudTest extends TestBase {
    * @return stream of ordered entities list
    */
   static Stream<TestEntities> createDuplicateRecords() {
-    return Stream.of(BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
+    return Stream.of(BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR);
   }
 
   @ParameterizedTest
