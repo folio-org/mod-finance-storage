@@ -134,12 +134,14 @@ public final class HelperUtils {
     return StringUtils.EMPTY;
   }
 
-  public static Error buildFieldConstraintError(String fieldName) {
+  public static Error buildFieldConstraintError(String entityName, String fieldName) {
     final String FIELD_NAME = "field";
+    final String ENTITY_NAME = "entity";
     String description = MessageFormat.format(UNIQUE_FIELD_CONSTRAINT_ERROR.getDescription(), fieldName);
-    Error error =new Error().withCode(UNIQUE_FIELD_CONSTRAINT_ERROR.getCode()).withMessage(description);
-    error.setMessage(MessageFormat.format(error.getMessage(), fieldName));
+    String code = MessageFormat.format(UNIQUE_FIELD_CONSTRAINT_ERROR.getCode(), entityName, fieldName);
+    Error error =new Error().withCode(code).withMessage(description);
     error.getParameters().add(new Parameter().withKey(FIELD_NAME).withValue(fieldName));
+    error.getParameters().add(new Parameter().withKey(ENTITY_NAME).withValue(entityName));
     return error;
   }
 }

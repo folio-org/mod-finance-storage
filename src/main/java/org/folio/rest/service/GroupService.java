@@ -71,13 +71,14 @@ public class GroupService {
   }
 
   private String buildFieldConstraintError(String msg) {
-    final String FIELD_CODE = "code";
-    final String FIELD_NAME = "name";
+    final String ENTITY_NAME = "Group";
+    final String FIELD_CODE = "Code";
+    final String FIELD_NAME = "Name";
     String uniqueConstraintName = HelperUtils.getSQLUniqueConstraintName(msg);
-    if (uniqueConstraintName.contains(FIELD_CODE)) {
-      return JsonObject.mapFrom(HelperUtils.buildFieldConstraintError(FIELD_CODE)).encode();
-    } else if (uniqueConstraintName.contains(FIELD_NAME)) {
-      return JsonObject.mapFrom(HelperUtils.buildFieldConstraintError(FIELD_NAME)).encode();
+    if (uniqueConstraintName.contains(FIELD_CODE.toLowerCase())) {
+      return JsonObject.mapFrom(HelperUtils.buildFieldConstraintError(ENTITY_NAME, FIELD_CODE)).encode();
+    } else if (uniqueConstraintName.contains(FIELD_NAME.toLowerCase())) {
+      return JsonObject.mapFrom(HelperUtils.buildFieldConstraintError(ENTITY_NAME, FIELD_NAME)).encode();
     }
     return JsonObject.mapFrom(GENERIC_ERROR_CODE.toError()).encode();
   }

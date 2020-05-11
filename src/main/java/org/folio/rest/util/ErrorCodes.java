@@ -4,7 +4,7 @@ import org.folio.rest.jaxrs.model.Error;
 
 public enum ErrorCodes {
   GENERIC_ERROR_CODE("genericError", "Generic error"),
-  UNIQUE_FIELD_CONSTRAINT_ERROR("uniqueFieldConstraintError", "Field {0} must be unique");
+  UNIQUE_FIELD_CONSTRAINT_ERROR("uniqueField{0}{1}Error", "Field {0} must be unique");
 
   private final String code;
   private final String description;
