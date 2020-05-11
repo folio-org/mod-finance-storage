@@ -9,7 +9,6 @@ import javax.ws.rs.core.Response;
 
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
-import org.folio.rest.jaxrs.resource.FinanceStorage;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFundTypes;
@@ -85,14 +84,9 @@ public class TenantReferenceAPI extends TenantAPI {
         .add("funds", getUriPath(FinanceStorageFunds.class))
         .add("budgets", getUriPath(FinanceStorageBudgets.class))
         .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
-        .add("order-transaction-summaries", getUriPath(FinanceStorage.class) + "/order-transaction-summaries")
-        .add("invoice-transaction-summaries", getUriPath(FinanceStorage.class) + "/invoice-transaction-summaries")
         .add("transactions/allocations", getUriPath(FinanceStorageTransactions.class))
-        .add("transactions/encumbrances", getUriPath(FinanceStorageTransactions.class))
         .withPostOnly() //Payments and credits don't support PUT
-        .add("transactions/transfers", getUriPath(FinanceStorageTransactions.class))
-        .add("transactions/payments", getUriPath(FinanceStorageTransactions.class))
-        .add("transactions/credits", getUriPath(FinanceStorageTransactions.class));
+        .add("transactions/transfers", getUriPath(FinanceStorageTransactions.class));
       loadData = true;
     }
     return loadData;
