@@ -17,7 +17,6 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
-import org.folio.rest.util.HelperUtilsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -144,7 +143,7 @@ public class StorageTestSuite {
   }
 
   @Nested
-  class HelperUtilsTestNested extends HelperUtilsTest {
+  class HelperUtilsTestNested extends BudgetTest.HelperUtilsTest {
   }
 
   @Nested
