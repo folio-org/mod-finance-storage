@@ -30,55 +30,57 @@ public class HelperUtilsTest extends TestBase {
 
   @Test
   public void getEntitiesCollectionWithDistinctOnFailCqlExTest() throws Exception {
-    new MockUp<PgUtil>() {
+    new MockUp<PgUtil>()
+    {
       @Mock
       PostgresClient postgresClient(Context vertxContext, Map<String, String> okapiHeaders) {
         throw new CQLQueryValidationException(null);
       }
     };
-    get(storageUrl(GROUP_BUDGET_ENDPOINT)).statusCode(HttpStatus.HTTP_BAD_REQUEST.toInt())
-      .contentType(TEXT_PLAIN);
+    get(storageUrl(GROUP_BUDGET_ENDPOINT)).statusCode(HttpStatus.HTTP_BAD_REQUEST.toInt()).contentType(TEXT_PLAIN);
   }
+
 
   @Test
   public void entitiesMetadataHolderRespond400FailTest() throws Exception {
-    new MockUp<EntitiesMetadataHolder>() {
+    new MockUp<EntitiesMetadataHolder>()
+    {
       @Mock
       Method getRespond400WithTextPlainMethod() throws NoSuchMethodException {
         throw new NoSuchMethodException();
       }
     };
-    get(storageUrl(GROUP_BUDGET_ENDPOINT)).statusCode(HttpStatus.HTTP_INTERNAL_SERVER_ERROR.toInt())
-      .contentType(TEXT_PLAIN);
+    get(storageUrl(GROUP_BUDGET_ENDPOINT)).statusCode(HttpStatus.HTTP_INTERNAL_SERVER_ERROR.toInt()).contentType(TEXT_PLAIN);
   }
 
   @Test
   public void entitiesMetadataHolderRespond500FailTest() throws Exception {
-    new MockUp<EntitiesMetadataHolder>() {
+    new MockUp<EntitiesMetadataHolder>()
+    {
       @Mock
       Method getRespond500WithTextPlainMethod() throws NoSuchMethodException {
         throw new NoSuchMethodException();
       }
     };
-    get(storageUrl(GROUP_BUDGET_ENDPOINT)).statusCode(HttpStatus.HTTP_INTERNAL_SERVER_ERROR.toInt())
-      .contentType(TEXT_PLAIN);
+    get(storageUrl(GROUP_BUDGET_ENDPOINT)).statusCode(HttpStatus.HTTP_INTERNAL_SERVER_ERROR.toInt()).contentType(TEXT_PLAIN);
   }
 
   @Test
   public void entitiesMetadataHolderRespond200FailTest() throws Exception {
-    new MockUp<EntitiesMetadataHolder>() {
+    new MockUp<EntitiesMetadataHolder>()
+    {
       @Mock
       Method getRespond200WithApplicationJson() throws NoSuchMethodException {
         throw new NoSuchMethodException();
       }
     };
-    get(storageUrl(GROUP_BUDGET_ENDPOINT)).statusCode(HttpStatus.HTTP_INTERNAL_SERVER_ERROR.toInt())
-      .contentType(TEXT_PLAIN);
+    get(storageUrl(GROUP_BUDGET_ENDPOINT)).statusCode(HttpStatus.HTTP_INTERNAL_SERVER_ERROR.toInt()).contentType(TEXT_PLAIN);
   }
 
   @Test
   public void getEntitiesCollectionWithDistinctOnFailNpExTest() throws Exception {
-    new MockUp<PgUtil>() {
+    new MockUp<PgUtil>()
+    {
       @Mock
       PostgresClient postgresClient(Context vertxContext, Map<String, String> okapiHeaders) {
         throw new NullPointerException();
@@ -101,7 +103,8 @@ public class HelperUtilsTest extends TestBase {
   }
 
   private ValidatableResponse get(URL endpoint) {
-    return RestAssured.with()
+    return RestAssured
+      .with()
       .header(TENANT_HEADER)
       .get(endpoint)
       .then();

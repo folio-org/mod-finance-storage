@@ -143,7 +143,7 @@ public class StorageTestSuite {
   }
 
   @Nested
-  class HelperUtilsTestNested extends BudgetTest.HelperUtilsTest {
+  class HelperUtilsTestNested extends HelperUtilsTest {
   }
 
   @Nested
