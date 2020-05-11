@@ -91,13 +91,13 @@ public class HelperUtilsTest extends TestBase {
   }
 
   @Test
-  public void testSQLUniqueConstraintFound() throws Exception {
+  public void testSQLUniqueConstraintFound() {
     String constraintName = HelperUtils.getSQLUniqueConstraintName("unique constraint \"idx_name_code\"");
     Assert.assertEquals("idx_name_code", constraintName);
   }
 
   @Test
-  public void testSQLUniqueConstraintNotFound() throws Exception {
+  public void testSQLUniqueConstraintNotFound() {
     String constraintName = HelperUtils.getSQLUniqueConstraintName("error \"error\"");
     Assert.assertEquals(StringUtils.EMPTY, constraintName);
   }
