@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio.rest.util;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.folio.rest.impl.StorageTestSuite.storageUrl;
@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.folio.HttpStatus;
+import org.folio.rest.impl.TestBase;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroupBudgets;
 import org.folio.rest.persist.EntitiesMetadataHolder;
 import org.folio.rest.persist.HelperUtils;

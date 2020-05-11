@@ -2,7 +2,7 @@ package org.folio.rest.service;
 
 import static org.folio.rest.jaxrs.resource.FinanceStorageGroups.PostFinanceStorageGroupsResponse.headersFor201;
 import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
-import static org.folio.rest.utils.ErrorCodes.GENERIC_ERROR_CODE;
+import static org.folio.rest.util.ErrorCodes.GENERIC_ERROR_CODE;
 
 import java.util.Optional;
 import java.util.UUID;

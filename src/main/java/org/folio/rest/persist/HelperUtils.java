@@ -4,7 +4,7 @@ import static io.vertx.core.Future.succeededFuture;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.folio.rest.persist.PgUtil.response;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
-import static org.folio.rest.utils.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
+import static org.folio.rest.util.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
 
 import java.lang.reflect.Method;
 import java.util.List;

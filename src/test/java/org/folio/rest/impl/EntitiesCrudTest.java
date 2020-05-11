@@ -10,10 +10,13 @@ import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 
 import java.net.MalformedURLException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.folio.rest.utils.TestEntities;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -58,7 +61,7 @@ public class EntitiesCrudTest extends TestBase {
    * @return stream of ordered entities list
    */
   static Stream<TestEntities> createDuplicateRecords() {
-    return Stream.of(BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR);
+    return Stream.of(BUDGET, GROUP, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR);
   }
 
   @ParameterizedTest
@@ -100,8 +103,11 @@ public class EntitiesCrudTest extends TestBase {
     response.then()
       .log()
       .all()
-      .statusCode(400).assertThat().body(Matchers.containsString("already exists"));
+      .statusCode(400);
 
+    Pattern pattern = Pattern.compile("(already exists|uniqueFieldConstraintError)");
+    Matcher matcher = pattern.matcher(response.getBody().asString());
+    Assert.assertTrue(matcher.find());
   }
 
   @ParameterizedTest

@@ -1,4 +1,4 @@
-package org.folio.rest.utils;
+package org.folio.rest.util;
 
 import org.folio.rest.jaxrs.model.Error;
 
