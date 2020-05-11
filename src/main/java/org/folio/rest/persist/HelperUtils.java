@@ -7,6 +7,7 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
 
 import java.lang.reflect.Method;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -135,7 +136,9 @@ public final class HelperUtils {
 
   public static Error buildFieldConstraintError(String fieldName) {
     final String FIELD_NAME = "field";
-    Error error = UNIQUE_FIELD_CONSTRAINT_ERROR.toError();
+    String description = MessageFormat.format(UNIQUE_FIELD_CONSTRAINT_ERROR.getDescription(), fieldName);
+    Error error =new Error().withCode(UNIQUE_FIELD_CONSTRAINT_ERROR.getCode()).withMessage(description);
+    error.setMessage(MessageFormat.format(error.getMessage(), fieldName));
     error.getParameters().add(new Parameter().withKey(FIELD_NAME).withValue(fieldName));
     return error;
   }
