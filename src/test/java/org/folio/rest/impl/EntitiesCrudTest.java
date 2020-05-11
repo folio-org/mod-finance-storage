@@ -105,7 +105,7 @@ public class EntitiesCrudTest extends TestBase {
       .all()
       .statusCode(400);
 
-    Pattern pattern = Pattern.compile("(already exists|uniqueFieldConstraintError)");
+    Pattern pattern = Pattern.compile("(already exists|uniqueField)");
     Matcher matcher = pattern.matcher(response.getBody().asString());
     Assert.assertTrue(matcher.find());
   }
