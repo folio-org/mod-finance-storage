@@ -3,16 +3,13 @@ package org.folio.rest.service;
 import static org.folio.rest.jaxrs.resource.FinanceStorageGroups.PostFinanceStorageGroupsResponse.headersFor201;
 import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
 import static org.folio.rest.utils.ErrorCodes.GENERIC_ERROR_CODE;
-import static org.folio.rest.utils.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
-import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Group;
-import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgExceptionUtil;
@@ -40,18 +37,16 @@ public class GroupService {
   }
 
   public void createGroup(Group entity, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
-    vertxContext.runOnContext(v -> {
-      createGroup(entity)
-        .onSuccess(group -> {
-          logger.debug("Group wit id {} created", entity.getId());
-          asyncResultHandler.handle(Future.succeededFuture(
-              FinanceStorageGroups.PostFinanceStorageGroupsResponse.respond201WithApplicationJson(group, headersFor201())));
-        })
-        .onFailure(throwable -> {
-          logger.error("Group creation with id {} failed", throwable, entity.getId());
-          asyncResultHandler.handle(buildErrorResponse(throwable));
-        });
-    });
+    vertxContext.runOnContext(v -> createGroup(entity)
+      .onSuccess(group -> {
+        logger.debug("Group wit id {} created", entity.getId());
+        asyncResultHandler.handle(Future.succeededFuture(
+            FinanceStorageGroups.PostFinanceStorageGroupsResponse.respond201WithApplicationJson(group, headersFor201())));
+      })
+      .onFailure(throwable -> {
+        logger.error("Group creation with id {} failed", throwable, entity.getId());
+        asyncResultHandler.handle(buildErrorResponse(throwable));
+      }));
   }
 
   public Future<Group> createGroup(Group group) {

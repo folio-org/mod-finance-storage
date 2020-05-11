@@ -126,8 +126,9 @@ public final class HelperUtils {
     if (!StringUtils.isEmpty(errorMessage)) {
       Pattern pattern = Pattern.compile("(unique constraint)\\s+\"(?<constraint>.*?)\"");
       Matcher matcher = pattern.matcher(errorMessage);
-      matcher.find();
-      return matcher.group("constraint");
+      if (matcher.find()) {
+        return matcher.group("constraint");
+      }
     }
     return StringUtils.EMPTY;
   }

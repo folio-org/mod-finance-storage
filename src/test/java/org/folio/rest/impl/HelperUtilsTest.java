@@ -8,12 +8,15 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.folio.HttpStatus;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroupBudgets;
 import org.folio.rest.persist.EntitiesMetadataHolder;
+import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLQueryValidationException;
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
@@ -84,6 +87,18 @@ public class HelperUtilsTest extends TestBase {
       }
     };
     get(storageUrl(GROUP_BUDGET_ENDPOINT)).statusCode(HttpStatus.HTTP_INTERNAL_SERVER_ERROR.toInt()).contentType(TEXT_PLAIN);
+  }
+
+  @Test
+  public void testSQLUniqueConstraintFound() throws Exception {
+    String constraintName = HelperUtils.getSQLUniqueConstraintName("unique constraint \"idx_name_code\"");
+    Assert.assertEquals("idx_name_code", constraintName);
+  }
+
+  @Test
+  public void testSQLUniqueConstraintNotFound() throws Exception {
+    String constraintName = HelperUtils.getSQLUniqueConstraintName("error \"error\"");
+    Assert.assertEquals(StringUtils.EMPTY, constraintName);
   }
 
   private ValidatableResponse get(URL endpoint) {
