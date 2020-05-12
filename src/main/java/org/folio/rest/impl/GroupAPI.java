@@ -65,7 +65,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   @Validate
   public void putFinanceStorageGroupsById(String id, String lang, Group entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.put(GROUPS_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageGroupsByIdResponse.class, asyncResultHandler);
+    groupService.updateGroup( entity, id, vertxContext, asyncResultHandler);
   }
 
   @Override

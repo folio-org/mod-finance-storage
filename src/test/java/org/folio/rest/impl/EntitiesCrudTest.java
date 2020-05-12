@@ -15,7 +15,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.folio.rest.utils.TestEntities;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -138,7 +137,6 @@ public class EntitiesCrudTest extends TestBase {
     catJSON.put("id", testEntity.getId());
     catJSON.put(testEntity.getUpdatedFieldName(), testEntity.getUpdatedFieldValue());
     testEntityEdit(testEntity.getEndpointWithId(), catJSON.toString(), testEntity.getId());
-
   }
 
   @ParameterizedTest

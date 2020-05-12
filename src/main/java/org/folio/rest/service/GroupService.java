@@ -49,22 +49,52 @@ public class GroupService {
       }));
   }
 
-  public Future<Group> createGroup(Group group) {
+  public void updateGroup(Group entity, String id, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+    vertxContext.runOnContext(v -> updateGroup(entity, id)
+      .onSuccess(group -> {
+        logger.debug("Group wit id {} updated", entity.getId());
+        asyncResultHandler.handle(Future.succeededFuture(
+          FinanceStorageGroups.PutFinanceStorageGroupsByIdResponse.respond204()));
+      })
+      .onFailure(throwable -> {
+        logger.error("Group update with id {} failed", throwable, entity.getId());
+        asyncResultHandler.handle(buildErrorResponse(throwable));
+      }));
+  }
+
+  private Future<Group> createGroup(Group group) {
     Promise<Group> promise = Promise.promise();
     if (group.getId() == null) {
       group.setId(UUID.randomUUID().toString());
     }
     pgClient.save(GROUPS_TABLE, group.getId(), group, reply -> {
       if (reply.failed()) {
-        promise.fail(createException(reply));
-      } else {
+        promise.fail(buildException(reply));
+      }
+      else {
         promise.complete(group);
       }
     });
     return promise.future();
   }
 
-  private HttpStatusException createException(AsyncResult<String> reply) {
+  private Future<Group> updateGroup(Group group, String id) {
+    Promise<Group> promise = Promise.promise();
+    pgClient.update(GROUPS_TABLE, group, id, reply -> {
+      if (reply.failed()) {
+        promise.fail(buildException(reply));
+      }
+      else if(reply.result().getUpdated() == 0) {
+        promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
+      }
+      else {
+        promise.complete(group);
+      }
+    });
+    return promise.future();
+  }
+
+  private <T> HttpStatusException buildException(AsyncResult<T> reply) {
     String msg = PgExceptionUtil.badRequestMessage(reply.cause());
     String error = Optional.ofNullable(msg).map(this::buildFieldConstraintError).orElse(GENERIC_ERROR_CODE.getCode());
     return new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), error);
