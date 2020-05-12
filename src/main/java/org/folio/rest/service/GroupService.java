@@ -39,7 +39,7 @@ public class GroupService {
   public void createGroup(Group entity, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
     vertxContext.runOnContext(v -> createGroup(entity)
       .onSuccess(group -> {
-        logger.debug("Group wit id {} created", entity.getId());
+        logger.debug("Group with id {} created", entity.getId());
         asyncResultHandler.handle(Future.succeededFuture(
             FinanceStorageGroups.PostFinanceStorageGroupsResponse.respond201WithApplicationJson(group, headersFor201())));
       })
@@ -52,7 +52,7 @@ public class GroupService {
   public void updateGroup(Group entity, String id, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
     vertxContext.runOnContext(v -> updateGroup(entity, id)
       .onSuccess(group -> {
-        logger.debug("Group wit id {} updated", entity.getId());
+        logger.debug("Group with id {} updated", entity.getId());
         asyncResultHandler.handle(Future.succeededFuture(
           FinanceStorageGroups.PutFinanceStorageGroupsByIdResponse.respond204()));
       })
