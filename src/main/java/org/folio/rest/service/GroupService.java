@@ -97,6 +97,9 @@ public class GroupService {
   private <T> HttpStatusException buildException(AsyncResult<T> reply) {
     String msg = PgExceptionUtil.badRequestMessage(reply.cause());
     String error = Optional.ofNullable(msg).map(this::buildFieldConstraintError).orElse(GENERIC_ERROR_CODE.getCode());
+    if (GENERIC_ERROR_CODE.getCode().equals(error)) {
+      return new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), error);
+    }
     return new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), error);
   }
 
