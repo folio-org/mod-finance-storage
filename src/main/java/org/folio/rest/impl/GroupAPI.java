@@ -12,15 +12,23 @@ import org.folio.rest.jaxrs.model.GroupFundFiscalYearCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.persist.PgUtil;
+import org.folio.rest.service.GroupService;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFiscalYears {
 
   private static final String GROUPS_TABLE = "groups";
   private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
+
+  private GroupService groupService;
+
+  public GroupAPI(Vertx vertx, String tenantId) {
+    groupService = new GroupService(vertx, tenantId);
+  }
 
   @Override
   @Validate
@@ -34,7 +42,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   @Validate
   public void postFinanceStorageGroups(String lang, Group entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.post(GROUPS_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageGroupsResponse.class, asyncResultHandler);
+    groupService.createGroup( entity, vertxContext, asyncResultHandler);
   }
 
   @Override
@@ -57,7 +65,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   @Validate
   public void putFinanceStorageGroupsById(String id, String lang, Group entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.put(GROUPS_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageGroupsByIdResponse.class, asyncResultHandler);
+    groupService.updateGroup( entity, id, vertxContext, asyncResultHandler);
   }
 
   @Override

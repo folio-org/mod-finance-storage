@@ -10,10 +10,12 @@ import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 
 import java.net.MalformedURLException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.folio.rest.utils.TestEntities;
-import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -100,8 +102,11 @@ public class EntitiesCrudTest extends TestBase {
     response.then()
       .log()
       .all()
-      .statusCode(400).assertThat().body(Matchers.containsString("already exists"));
+      .statusCode(400);
 
+    Pattern pattern = Pattern.compile("(already exists|uniqueField)");
+    Matcher matcher = pattern.matcher(response.getBody().asString());
+    Assert.assertTrue(matcher.find());
   }
 
   @ParameterizedTest
@@ -132,7 +137,6 @@ public class EntitiesCrudTest extends TestBase {
     catJSON.put("id", testEntity.getId());
     catJSON.put(testEntity.getUpdatedFieldName(), testEntity.getUpdatedFieldValue());
     testEntityEdit(testEntity.getEndpointWithId(), catJSON.toString(), testEntity.getId());
-
   }
 
   @ParameterizedTest
