@@ -1,7 +1,7 @@
 package org.folio.rest.service;
 
 import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
-import static org.folio.rest.transaction.AllOrNothingHandler.TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION;
+import static org.folio.rest.service.AllOrNothingTransactionService.TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.List;
@@ -41,6 +41,20 @@ public class TransactionSummaryService {
   public TransactionSummaryService(Context context, Map<String, String> okapiHeaders) {
     this.pgClient = PostgresClient.getInstance(context.owner(),
         TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT)));
+  }
+
+
+  public Future<JsonObject> getAndCheckTransactionSummary(Transaction transaction) {
+    logger.debug("Get summary={}", getSummaryId(transaction));
+    String summaryId = getSummaryId(transaction);
+    return transactionSummaryService.getSummaryById(summaryId, summaryTable)
+      .map(summary -> {
+        if ((isProcessed(summary, transaction))) {
+          log.debug("Expected number of transactions for summary with id={} already processed", summary.getString(ID_FIELD_NAME));
+          throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED);
+        }
+        return summary;
+      });
   }
 
   public Future<JsonObject> getSummaryById(String summaryId, String summaryTable) {

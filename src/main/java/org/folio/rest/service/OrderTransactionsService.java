@@ -1,4 +1,4 @@
-package org.folio.rest.transaction;
+package org.folio.rest.service;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -31,6 +31,7 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.collections4.keyvalue.MultiKey;
 import org.apache.commons.collections4.map.MultiKeyMap;
+import org.folio.rest.dao.TemporaryTransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Error;
@@ -53,7 +54,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 
-public class OrderTransactionsHandler extends AllOrNothingHandler {
+public class OrderTransactionsService extends AllOrNothingTransactionService {
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
 
@@ -76,8 +77,8 @@ public class OrderTransactionsHandler extends AllOrNothingHandler {
     + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text)), "
     + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'status'::text))) DO UPDATE SET id = excluded.id RETURNING id;";
 
-  public OrderTransactionsHandler(Map<String, String> okapiHeaders, Context ctx, Handler<AsyncResult<Response>> asyncResultHandler) {
-    super(TEMPORARY_ORDER_TRANSACTIONS, ORDER_TRANSACTION_SUMMARIES, okapiHeaders, ctx, asyncResultHandler);
+  public OrderTransactionsService(TemporaryTransactionDAO temporaryTransactionDAO) {
+    super(temporaryTransactionDAO);
   }
 
   @Override

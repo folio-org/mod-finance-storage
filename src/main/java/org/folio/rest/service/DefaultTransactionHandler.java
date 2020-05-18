@@ -1,4 +1,4 @@
-package org.folio.rest.transaction;
+package org.folio.rest.service;
 
 import java.util.Map;
 
@@ -12,7 +12,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 
-public class DefaultTransactionHandler extends AbstractTransactionHandler {
+public class DefaultTransactionHandler extends AbstractTransactionService {
 
   public DefaultTransactionHandler(Map<String, String> okapiHeaders, Context vertxContext,
       Handler<AsyncResult<Response>> asyncResultHandler) {
