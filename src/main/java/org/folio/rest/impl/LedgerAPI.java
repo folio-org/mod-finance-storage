@@ -27,10 +27,10 @@ import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.persist.CriterionBuilder;
+import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
@@ -66,24 +66,24 @@ public class LedgerAPI implements FinanceStorageLedgers {
   @Override
   @Validate
   public void postFinanceStorageLedgers(String lang, Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Tx<Ledger> tx = new Tx<>(entity, pgClient);
+    DBClient client = new DBClient(vertxContext, okapiHeaders);
     vertxContext.runOnContext(event ->
-      tx.startTx()
-        .compose(this::saveLedger)
-        .compose(this::createLedgerFiscalYearRecords)
-        .compose(Tx::endTx)
+     client.startTx()
+        .compose(tx1 -> saveLedger(entity, client))
+        .compose(ledger -> createLedgerFiscalYearRecords(ledger,client))
+        .compose(t ->client.endTx())
         .onComplete(result -> {
           if (result.failed()) {
             HttpStatusException cause = (HttpStatusException) result.cause();
-            log.error("New ledger record creation has failed: {}", cause, tx.getEntity());
+            log.error("New ledger record creation has failed: {}", cause, entity);
 
             // The result of rollback operation is not so important, main failure cause is used to build the response
-            tx.rollbackTransaction().onComplete(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
+           client.rollbackTransaction().onComplete(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
           } else {
-            log.info("New ledger record {} and associated data were successfully created", tx.getEntity());
+            log.info("New ledger record {} and associated data were successfully created", entity);
             asyncResultHandler.handle(succeededFuture(PostFinanceStorageLedgersResponse
-              .respond201WithApplicationJson(result.result().getEntity(), PostFinanceStorageLedgersResponse.headersFor201()
-                .withLocation(HelperUtils.getEndpoint(FinanceStorageLedgers.class) + result.result().getEntity().getId()))));
+              .respond201WithApplicationJson(entity, PostFinanceStorageLedgersResponse.headersFor201()
+                .withLocation(HelperUtils.getEndpoint(FinanceStorageLedgers.class) + entity.getId()))));
           }
         })
     );
@@ -98,15 +98,15 @@ public class LedgerAPI implements FinanceStorageLedgers {
   @Override
   @Validate
   public void deleteFinanceStorageLedgersById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Tx<String> tx = new Tx<>(id, pgClient);
+    DBClient client = new DBClient(vertxContext, okapiHeaders);
     CriterionBuilder criterionBuilder = new CriterionBuilder().with("ledgerId", id);
     vertxContext.runOnContext(event ->
-      tx.startTx()
-      .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(tx,
+     client.startTx()
+      .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(client,
         criterionBuilder.build()))
-      .compose(ok -> HelperUtils.deleteRecordById(tx, LEDGER_TABLE))
-      .compose(Tx::endTx)
-      .onComplete(handleNoContentResponse(asyncResultHandler, tx, "Ledger {} {} deleted"))
+      .compose(ok -> HelperUtils.deleteRecordById(id, client, LEDGER_TABLE))
+      .compose(v -> client.endTx())
+      .onComplete(handleNoContentResponse(asyncResultHandler, id, client, "Ledger {} {} deleted"))
     );
   }
 
@@ -133,20 +133,19 @@ public class LedgerAPI implements FinanceStorageLedgers {
   }
 
   private void handleLedgerStatusUpdate(Ledger ledger, Handler<AsyncResult<Response>> asyncResultHandler) {
-    Tx<Ledger> tx = new Tx<>(ledger, pgClient);
-    tx.startTx()
-      .compose(this::updateLedger)
-      .compose(this::updateRelatedFunds)
-      .compose(fundIds -> updateRelatedBudgets(tx, fundIds))
-      .compose(Tx::endTx)
-      .onComplete(handleNoContentResponse(asyncResultHandler, tx, "Ledger {} {} updated"));
+    DBClient client = new DBClient(Vertx.vertx(), tenantId);
+   client.startTx()
+      .compose(v -> updateLedger(ledger, client))
+      .compose(v -> updateRelatedFunds(ledger,client))
+      .compose(fundIds -> updateRelatedBudgets(fundIds, ledger,client))
+      .compose(v ->client.endTx())
+      .onComplete(handleNoContentResponse(asyncResultHandler, ledger.getId(),client, "Ledger {} {} updated"));
   }
 
-  private Future<Tx<Ledger>> updateRelatedBudgets(Tx<Ledger> tx, List<String> fundIds) {
-    Promise<Tx<Ledger>> promise = Promise.promise();
-    Ledger ledger = tx.getEntity();
+  private Future<Void> updateRelatedBudgets(List<String> fundIds, Ledger ledger,  DBClient client) {
+    Promise<Void> promise = Promise.promise();
     if (CollectionUtils.isEmpty(fundIds)) {
-      promise.complete(tx);
+      promise.complete();
     } else {
       String fullBudgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
       String fullFYTableName = getFullTableName(tenantId, FISCAL_YEAR_TABLE);
@@ -160,12 +159,12 @@ public class LedgerAPI implements FinanceStorageLedgers {
         " AND (fiscalYearId IN " +
         "(SELECT id FROM " + fullFYTableName + " WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
         "AND (jsonb->>'periodEnd')::timestamp)));";
-      tx.getPgClient().execute(tx.getConnection(), sql, params, event -> {
+     client.getPgClient().execute(client.getConnection(), sql, params, event -> {
         if (event.failed()) {
           handleFailure(promise, event);
         } else {
           log.info("{} budget records are updated", event.result().getUpdated());
-          promise.complete(tx);
+          promise.complete();
         }
       });
     }
@@ -188,23 +187,23 @@ public class LedgerAPI implements FinanceStorageLedgers {
     return promise.future();
   }
 
-  private Future<Tx<Ledger>> updateLedger(Tx<Ledger> tx) {
-    Promise<Tx<Ledger>> promise = Promise.promise();
-    Ledger ledger = tx.getEntity();
-    tx.getPgClient().update(tx.getConnection(), LEDGER_TABLE, ledger, "jsonb", " WHERE id='" + ledger.getId() + "'", false, event -> {
+  private Future<Void> updateLedger(Ledger ledger, DBClient client) {
+    Promise<Void> promise = Promise.promise();
+
+   client.getPgClient().update(client.getConnection(), LEDGER_TABLE, ledger, "jsonb", " WHERE id='" + ledger.getId() + "'", false, event -> {
         if (event.failed()) {
         handleFailure(promise, event);
       } else {
-        log.info("Ledger record {} was successfully updated", tx.getEntity());
-        promise.complete(tx);
+        log.info("Ledger record {} was successfully updated", ledger);
+        promise.complete();
       }
     });
     return promise.future();
   }
 
-  private Future<List<String>> updateRelatedFunds(Tx<Ledger> tx) {
+  private Future<List<String>> updateRelatedFunds(Ledger ledger, DBClient client) {
     Promise<List<String>> promise = Promise.promise();
-    Ledger ledger = tx.getEntity();
+
     String fullFundTableName = getFullTableName(tenantId, FUND_TABLE);
     String sql = "UPDATE " + fullFundTableName + "  SET jsonb = jsonb_set(jsonb,'{fundStatus}', ?::jsonb) " +
       "WHERE (ledgerId = ?) AND (jsonb->>'fundStatus' <> ?) RETURNING id";
@@ -213,11 +212,11 @@ public class LedgerAPI implements FinanceStorageLedgers {
     params.add(ledger.getId());
     params.add(ledger.getLedgerStatus().value());
 
-    tx.getPgClient().select(tx.getConnection(), sql, params, event -> {
+   client.getPgClient().select(client.getConnection(), sql, params, event -> {
       if (event.failed()) {
         handleFailure(promise, event);
       } else {
-        log.info("All fund records related to ledger with id={} has been successfully updated", tx.getEntity().getId());
+        log.info("All fund records related to ledger with id={} has been successfully updated", ledger.getId());
         List<String> ids = event.result().getResults().stream().flatMap(JsonArray::stream).map(Object::toString).collect(Collectors.toList());
         promise.complete(ids);
       }
@@ -225,36 +224,35 @@ public class LedgerAPI implements FinanceStorageLedgers {
         return promise.future();
   }
 
-  private Future<Tx<Ledger>> saveLedger(Tx<Ledger> tx) {
-    Promise<Tx<Ledger>> promise = Promise.promise();
+  private Future<Ledger> saveLedger(Ledger ledger, DBClient client) {
+    Promise<Ledger> promise = Promise.promise();
 
-    Ledger ledger = tx.getEntity();
     if (ledger.getId() == null) {
       ledger.setId(UUID.randomUUID().toString());
     }
 
     log.debug("Creating new ledger record with id={}", ledger.getId());
 
-    tx.getPgClient().save(tx.getConnection(), LEDGER_TABLE, ledger.getId(), ledger, reply -> {
+   client.getPgClient().save(client.getConnection(), LEDGER_TABLE, ledger.getId(), ledger, reply -> {
       if (reply.failed()) {
         handleFailure(promise, reply);
       } else {
-        promise.complete(tx);
+        promise.complete(ledger);
       }
     });
     return promise.future();
   }
 
-  private Future<Tx<Ledger>> createLedgerFiscalYearRecords(Tx<Ledger> tx) {
-    Promise<Tx<Ledger>> promise = Promise.promise();
-    getFiscalYears(tx)
-      .map(fiscalYears -> buildLedgerFiscalYearRecords(tx.getEntity(), fiscalYears))
-      .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(tx, ledgerFYs))
+  private Future<Ledger> createLedgerFiscalYearRecords(Ledger ledger, DBClient client) {
+    Promise<Ledger> promise = Promise.promise();
+    getFiscalYears(ledger, client)
+      .map(fiscalYears -> buildLedgerFiscalYearRecords(ledger, fiscalYears))
+      .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(client, ledgerFYs))
       .onComplete(result -> {
         if (result.failed()) {
           handleFailure(promise, result);
         } else {
-          promise.complete(tx);
+          promise.complete(ledger);
         }
       });
     return promise.future();
@@ -271,15 +269,15 @@ public class LedgerAPI implements FinanceStorageLedgers {
       .collect(Collectors.toList());
   }
 
-  private Future<List<FiscalYear>> getFiscalYears(Tx<Ledger> tx) {
+  private Future<List<FiscalYear>> getFiscalYears(Ledger ledger, DBClient client) {
     Promise<List<FiscalYear>> promise = Promise.promise();
-    tx.getPgClient().get(tx.getConnection(), FiscalYearAPI.FISCAL_YEAR_TABLE, FiscalYear.class, new Criterion(), true, false, reply -> {
+   client.getPgClient().get(client.getConnection(), FiscalYearAPI.FISCAL_YEAR_TABLE, FiscalYear.class, new Criterion(), true, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to find fiscal years");
         handleFailure(promise, reply);
       } else {
         List<FiscalYear> allFiscalYears = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
-        List<FiscalYear> fiscalYearsWithSeries = getFiscalYearsWithSeries(allFiscalYears, getFiscalYearSeries(allFiscalYears, tx.getEntity().getFiscalYearOneId()));
+        List<FiscalYear> fiscalYearsWithSeries = getFiscalYearsWithSeries(allFiscalYears, getFiscalYearSeries(allFiscalYears, ledger.getFiscalYearOneId()));
         log.info("{} fiscal years have been found", fiscalYearsWithSeries.size());
         promise.complete(fiscalYearsWithSeries);
       }

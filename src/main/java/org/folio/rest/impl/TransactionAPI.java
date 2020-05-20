@@ -1,6 +1,10 @@
 package org.folio.rest.impl;
 
-import static org.folio.rest.service.AbstractTransactionService.TRANSACTION_TABLE;
+import static io.vertx.core.Future.succeededFuture;
+import static org.folio.rest.service.transactions.AbstractTransactionService.TRANSACTION_TABLE;
+import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
+import static org.folio.rest.util.ResponseUtils.buildNoContentResponse;
+import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
 
 import java.util.Map;
 
@@ -11,16 +15,18 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.service.DefaultTransactionHandler;
-import org.folio.rest.service.PaymentCreditAllOrNothingService;
-import org.folio.rest.service.OrderTransactionsService;
-import org.folio.rest.service.TransactionService;
+import org.folio.rest.service.transactions.DefaultTransactionService;
+import org.folio.rest.service.transactions.EncumbranceAllOrNothingService;
+import org.folio.rest.service.transactions.PaymentCreditAllOrNothingService;
+import org.folio.rest.service.transactions.TransactionService;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 
 public class TransactionAPI implements FinanceStorageTransactions {
+
+  public static final String OKAPI_URL = "X-Okapi-Url";
 
   @Override
   @Validate
@@ -33,7 +39,15 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Override
   @Validate
   public void postFinanceStorageTransactions(String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    getCreateTransactionHandler(transaction, okapiHeaders, vertxContext, asyncResultHandler).createTransaction(transaction, vertxContext, okapiHeaders);
+    getCreateTransactionHandler(transaction).createTransaction(transaction, vertxContext, okapiHeaders)
+      .onComplete(event -> {
+        if (event.succeeded()) {
+          asyncResultHandler.handle(succeededFuture(buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/transactions", event.result())));
+        } else {
+          asyncResultHandler.handle(buildErrorResponse(event.cause()));
+        }
+      });
+
   }
 
   @Override
@@ -53,24 +67,31 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Validate
   public void putFinanceStorageTransactionsById(String id, String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     transaction.setId(id);
-    getUpdateTransactionHandler(transaction, okapiHeaders, vertxContext, asyncResultHandler).updateTransaction(transaction, vertxContext, okapiHeaders);
+    getUpdateTransactionHandler(transaction).updateTransaction(id, transaction, vertxContext, okapiHeaders)
+    .onComplete(event -> {
+      if (event.succeeded()) {
+        asyncResultHandler.handle(buildNoContentResponse());
+      } else {
+        asyncResultHandler.handle(buildErrorResponse(event.cause()));
+      }
+    });
   }
 
-  private TransactionService getCreateTransactionHandler(Transaction transaction, Map<String, String> okapiHeaders, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+  private TransactionService getCreateTransactionHandler(Transaction transaction) {
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return new OrderTransactionsService(okapiHeaders, vertxContext, asyncResultHandler);
+      return new EncumbranceAllOrNothingService();
     } else if (transaction.getTransactionType() == Transaction.TransactionType.PAYMENT
         || transaction.getTransactionType() == Transaction.TransactionType.CREDIT) {
-      return new PaymentCreditAllOrNothingService(okapiHeaders, vertxContext, asyncResultHandler);
+      return new PaymentCreditAllOrNothingService();
     }
-    return new DefaultTransactionHandler(okapiHeaders, vertxContext, asyncResultHandler);
+    return new DefaultTransactionService();
   }
 
-  private TransactionService getUpdateTransactionHandler(Transaction transaction, Map<String, String> okapiHeaders, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+  private TransactionService getUpdateTransactionHandler(Transaction transaction) {
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return new PaymentCreditAllOrNothingService(okapiHeaders, vertxContext, asyncResultHandler);
+      return new PaymentCreditAllOrNothingService();
     }
-    return new DefaultTransactionHandler(okapiHeaders, vertxContext, asyncResultHandler);
+    return new DefaultTransactionService();
   }
 
 }

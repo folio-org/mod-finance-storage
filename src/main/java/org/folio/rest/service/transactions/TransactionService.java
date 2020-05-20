@@ -1,4 +1,4 @@
-package org.folio.rest.service;
+package org.folio.rest.service.transactions;
 
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -10,5 +10,6 @@ public interface TransactionService {
 
   Future<Transaction> createTransaction(Transaction transaction, Context context, Map<String, String> headers);
 
-  Future<Void> updateTransaction(Transaction transaction, Context context, Map<String, String> headers);
+  Future<Void> updateTransaction(String id, Transaction transaction, Context context, Map<String, String> headers);
+
 }

@@ -12,7 +12,7 @@ import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.LedgerFYCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgerFiscalYears;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.Tx;
+import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
@@ -32,18 +32,18 @@ public class FinanceStorageAPI implements FinanceStorageLedgerFiscalYears {
 
   }
 
-  <T> Future<Void> saveLedgerFiscalYearRecords(Tx<T> tx, List<LedgerFY> ledgerFYs) {
+  Future<Void> saveLedgerFiscalYearRecords(DBClient client, List<LedgerFY> ledgerFYs) {
     if (ledgerFYs.isEmpty()) {
       return succeededFuture();
     }
     Promise<Void> promise = Promise.promise();
-    tx.getPgClient().saveBatch(tx.getConnection(), LEDGERFY_TABLE, ledgerFYs, reply -> handleAsyncResult(promise, reply));
+    client.getPgClient().saveBatch(client.getConnection(), LEDGERFY_TABLE, ledgerFYs, reply -> handleAsyncResult(promise, reply));
     return promise.future();
   }
 
-  <T> Future<Void> deleteLedgerFiscalYearRecords(Tx<T> tx, Criterion criterion) {
+ Future<Void> deleteLedgerFiscalYearRecords(DBClient client, Criterion criterion) {
     Promise<Void> promise = Promise.promise();
-    tx.getPgClient().delete(tx.getConnection(), LEDGERFY_TABLE, criterion, reply -> handleAsyncResult(promise, reply));
+    client.getPgClient().delete(client.getConnection(), LEDGERFY_TABLE, criterion, reply -> handleAsyncResult(promise, reply));
     return promise.future();
   }
 

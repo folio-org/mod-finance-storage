@@ -13,11 +13,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Parameter;
@@ -40,16 +42,16 @@ public final class HelperUtils {
     return clazz.getAnnotation(Path.class).value();
   }
 
-  public static Future<Tx<String>> deleteRecordById(Tx<String> tx, String table) {
-    Promise<Tx<String>> promise = Promise.promise();
+  public static Future<Void> deleteRecordById(String id, DBClient client, String table) {
+    Promise<Void> promise = Promise.promise();
 
-    tx.getPgClient().delete(tx.getConnection(), table, tx.getEntity(), reply -> {
+    client.getPgClient().delete(client.getConnection(), table, id, reply -> {
       if(reply.failed()) {
         handleFailure(promise, reply);
       } else if (reply.result().getUpdated() == 0) {
         promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
       } else {
-        promise.complete(tx);
+        promise.complete();
       }
     });
     return promise.future();
@@ -143,5 +145,9 @@ public final class HelperUtils {
     error.getParameters().add(new Parameter().withKey(FIELD_NAME).withValue(fieldName));
     error.getParameters().add(new Parameter().withKey(ENTITY_NAME).withValue(entityName));
     return error;
+  }
+
+  public static String getQueryValues(List<JsonObject> entities) {
+    return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));
   }
 }

@@ -19,7 +19,7 @@ import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.Tx;
+import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
@@ -39,9 +39,11 @@ public class FundAPI implements FinanceStorageFunds {
   private static final Logger log = LoggerFactory.getLogger(FundAPI.class);
   private PostgresClient pgClient;
   private String tenantId;
+  private Vertx vertx;
 
   public FundAPI(Vertx vertx, String tenantId) {
     this.tenantId = tenantId;
+    this.vertx = vertx;
     pgClient = PostgresClient.getInstance(vertx, tenantId);
   }
 
@@ -93,13 +95,13 @@ public class FundAPI implements FinanceStorageFunds {
   }
 
   private void handleFundStatusUpdate(Fund fund, Handler<AsyncResult<Response>> asyncResultHandler) {
-    Tx<Fund> tx = new Tx<>(fund, pgClient);
+    DBClient client = new DBClient(vertx, tenantId);
 
-    tx.startTx()
-      .compose(this::updateRelatedCurrentFYBudgets)
-      .compose(this::updateFund)
-      .compose(Tx::endTx)
-      .onComplete(handleNoContentResponse(asyncResultHandler, tx, "Fund {} {} updated"));
+   client.startTx()
+      .compose(t -> updateRelatedCurrentFYBudgets(fund, client))
+      .compose(v -> updateFund(fund, client))
+      .compose(v -> client.endTx())
+      .onComplete(handleNoContentResponse(asyncResultHandler, fund.getId(), "Fund {} {} updated"));
   }
 
   private Future<Boolean> isFundStatusChanged(Fund fund) {
@@ -118,28 +120,26 @@ public class FundAPI implements FinanceStorageFunds {
     return promise.future();
   }
 
-  private Future<Tx<Fund>> updateFund(Tx<Fund> tx) {
-    Promise<Tx<Fund>> promise = Promise.promise();
-    Fund fund = tx.getEntity();
+  private Future<Void> updateFund(Fund fund, DBClient client) {
+    Promise<Void> promise = Promise.promise();
 
     Criterion criterion = new CriterionBuilder()
       .with("id", fund.getId()).build();
 
-    tx.getPgClient().update(tx.getConnection(), FUND_TABLE, fund, "jsonb", criterion.toString(), false, event -> {
+   client.getPgClient().update(client.getConnection(), FUND_TABLE, fund, "jsonb", criterion.toString(), false, event -> {
       if (event.failed()) {
         handleFailure(promise, event);
       } else {
-        log.info("Fund record {} was successfully updated", tx.getEntity());
-        promise.complete(tx);
+        log.info("Fund record {} was successfully updated", fund);
+        promise.complete();
       }
     });
     return promise.future();
   }
 
-  private Future<Tx<Fund>> updateRelatedCurrentFYBudgets(Tx<Fund> fundTx) {
-    Promise<Tx<Fund>> promise = Promise.promise();
+  private Future<Void> updateRelatedCurrentFYBudgets(Fund fund, DBClient client) {
+    Promise<Void> promise = Promise.promise();
 
-    Fund fund = fundTx.getEntity();
     String fullBudgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
     String fullFYTableName = getFullTableName(tenantId, FISCAL_YEAR_TABLE);
 
@@ -152,11 +152,11 @@ public class FundAPI implements FinanceStorageFunds {
       "(SELECT id FROM " + fullFYTableName + " WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
       "AND (jsonb->>'periodEnd')::timestamp)));";
 
-    fundTx.getPgClient().execute(fundTx.getConnection(), sql, queryParams, event -> {
+   client.getPgClient().execute(client.getConnection(), sql, queryParams, event -> {
       if (event.failed()) {
         handleFailure(promise, event);
       } else {
-        promise.complete(fundTx);
+        promise.complete();
       }
     });
     return promise.future();

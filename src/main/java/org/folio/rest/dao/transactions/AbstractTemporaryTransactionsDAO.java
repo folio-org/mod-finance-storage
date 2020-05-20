@@ -1,23 +1,23 @@
-package org.folio.rest.dao;
+package org.folio.rest.dao.transactions;
+
+import static org.folio.rest.persist.PostgresClient.pojo2json;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
+
+import java.util.List;
+import java.util.UUID;
+
+import javax.ws.rs.core.Response;
+
+import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
-import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.PostgresClient;
-
-import javax.ws.rs.core.Response;
-import java.util.List;
-import java.util.UUID;
-
-import static org.folio.rest.persist.PostgresClient.pojo2json;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 public abstract class AbstractTemporaryTransactionsDAO implements TemporaryTransactionDAO {
 
@@ -30,7 +30,7 @@ public abstract class AbstractTemporaryTransactionsDAO implements TemporaryTrans
   }
 
   @Override
-  public Future<Transaction> createTempTransaction(Transaction transaction, String summaryId, Vertx vertx, String tenantId) {
+  public Future<Transaction> createTempTransaction(Transaction transaction, String summaryId, DBClient client) {
     Promise<Transaction> promise = Promise.promise();
 
     if (transaction.getId() == null) {
@@ -44,7 +44,7 @@ public abstract class AbstractTemporaryTransactionsDAO implements TemporaryTrans
       params.add(transaction.getId());
       params.add(pojo2json(transaction));
 
-      PostgresClient.getInstance(vertx, tenantId).execute(createTempTransactionQuery(tenantId), params, reply -> {
+      client.getPgClient().execute(createTempTransactionQuery(client.getTenantId()), params, reply -> {
         if (reply.succeeded()) {
           logger.debug("New transaction with id={} successfully created", transaction.getId());
           promise.complete(transaction);
@@ -62,12 +62,12 @@ public abstract class AbstractTemporaryTransactionsDAO implements TemporaryTrans
 
 
   @Override
-  public Future<List<Transaction>> getTempTransactionsBySummaryId(String summaryId, Vertx vertx, String tenantId) {
+  public Future<List<Transaction>> getTempTransactionsBySummaryId(String summaryId, DBClient client) {
     Promise<List<Transaction>> promise = Promise.promise();
 
     Criterion criterion = getSummaryIdCriteria(summaryId);
 
-    PostgresClient.getInstance(vertx, tenantId).get(tableName, Transaction.class, criterion, false, false, reply -> {
+    client.getPgClient().get(tableName, Transaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
         logger.error("Failed to extract temporary transaction by summary id={}", reply.cause(), summaryId);
         handleFailure(promise, reply);
@@ -76,6 +76,22 @@ public abstract class AbstractTemporaryTransactionsDAO implements TemporaryTrans
         promise.complete(transactions);
       }
     });
+    return promise.future();
+  }
+
+
+  public Future<Integer> deleteTempTransactions(String summaryId, DBClient client) {
+    Promise<Integer> promise = Promise.promise();
+    Criterion criterion = getSummaryIdCriteria(summaryId);
+
+    client.getPgClient()
+      .delete(client.getConnection(), getTableName(), criterion, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete(reply.result().getUpdated());
+        }
+      });
     return promise.future();
   }
 

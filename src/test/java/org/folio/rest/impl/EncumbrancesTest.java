@@ -6,10 +6,10 @@ import static org.folio.rest.impl.TransactionTest.LEDGER_FYS_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
-import static org.folio.rest.service.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
-import static org.folio.rest.service.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
-import static org.folio.rest.dao.BudgetDAO.BUDGET_NOT_FOUND_FOR_TRANSACTION;
-import static org.folio.rest.service.AllOrNothingTransactionService.FUND_CANNOT_BE_PAID;
+import static org.folio.rest.service.BudgetService.BUDGET_NOT_FOUND_FOR_TRANSACTION;
+import static org.folio.rest.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
+import static org.folio.rest.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
+import static org.folio.rest.service.transactions.AllOrNothingTransactionService.FUND_CANNOT_BE_PAID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.BUDGET;
@@ -264,7 +264,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   protected void createInvoiceSummary(String invoiceId, int numEncumbrances) throws MalformedURLException {
-    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(2).withNumEncumbrances(numEncumbrances);
+    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numEncumbrances).withNumPendingPayments(numEncumbrances);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
