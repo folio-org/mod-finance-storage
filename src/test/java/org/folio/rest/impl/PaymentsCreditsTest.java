@@ -461,7 +461,7 @@ class PaymentsCreditsTest extends TestBase {
   }
 
   protected void createInvoiceSummary(String invoiceId, int numPaymentsCredits) throws MalformedURLException {
-    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numPaymentsCredits).withNumPendingPayments(numPaymentsCredits);
+    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numPaymentsCredits).withNumEncumbrances(0);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }

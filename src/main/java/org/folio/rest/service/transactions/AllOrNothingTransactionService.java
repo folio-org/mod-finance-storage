@@ -79,7 +79,7 @@ public abstract class AllOrNothingTransactionService<T extends Entity> extends A
         .compose(summary -> collectTempTransactions(transaction, context, headers)
           .compose(transactions -> {
             if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
-              return getTransactionFuture(context, headers, summary, transactions)
+              return applyTransactions(context, headers, summary, transactions)
                 .map(transaction);
             } else {
               return Future.succeededFuture(transaction);
@@ -89,7 +89,7 @@ public abstract class AllOrNothingTransactionService<T extends Entity> extends A
       );
   }
 
-  private Future<Void> getTransactionFuture(Context context, Map<String, String> headers, T summary, List<Transaction> transactions) {
+  private Future<Void> applyTransactions(Context context, Map<String, String> headers, T summary, List<Transaction> transactions) {
     DBClient client = new DBClient(context, headers);
     return client.startTx()
     .compose(t -> processTemporaryToPermanentTransactions(transactions, client))

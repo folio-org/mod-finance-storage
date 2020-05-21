@@ -264,7 +264,7 @@ class EncumbrancesTest extends TestBase {
   }
 
   protected void createInvoiceSummary(String invoiceId, int numEncumbrances) throws MalformedURLException {
-    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numEncumbrances).withNumPendingPayments(numEncumbrances);
+    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(2).withNumEncumbrances(numEncumbrances);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
