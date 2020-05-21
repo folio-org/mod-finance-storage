@@ -28,7 +28,6 @@ import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class BudgetService {
 
-  private static final String BUDGET_TABLE = "budget";
   private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
   private static final String TRANSACTIONS_TABLE = "transaction";
   public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";

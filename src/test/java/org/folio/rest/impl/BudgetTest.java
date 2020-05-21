@@ -20,7 +20,6 @@ import java.net.MalformedURLException;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
-import org.folio.rest.jaxrs.model.GroupFundFiscalYearCollection;
 import org.folio.rest.utils.TestEntities;
 import org.hamcrest.beans.HasProperty;
 import org.hamcrest.beans.HasPropertyWithValue;

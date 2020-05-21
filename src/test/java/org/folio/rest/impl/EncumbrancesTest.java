@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Test;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.UpdateResult;
 
-public class EncumbrancesTest extends TestBase {
+class EncumbrancesTest extends TestBase {
 
   public static final String ENCUMBRANCE_SAMPLE = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
 

@@ -9,18 +9,14 @@ import static org.folio.rest.utils.TenantApiTestUtil.postToTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenantBody;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
-import static org.folio.rest.utils.TestEntities.TRANSACTION;
 
 import java.net.MalformedURLException;
 
-import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
-import io.restassured.response.Response;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
