@@ -93,7 +93,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
         .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(client, criterion))
         .compose(ok -> HelperUtils.deleteRecordById(id,client, FISCAL_YEAR_TABLE))
         .compose(v -> client.endTx())
-        .onComplete(handleNoContentResponse(asyncResultHandler, id, "Fiscal year {} {} deleted"))
+        .onComplete(handleNoContentResponse(asyncResultHandler, id,  client,"Fiscal year {} {} deleted"))
     );
   }
 

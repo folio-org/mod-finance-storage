@@ -298,6 +298,7 @@ public abstract class AllOrNothingTransactionService<T extends Entity> extends A
             });
         } catch (Exception e) {
           releaseLock(lock, lockName);
+          promise.fail(e);
         }
       } else {
         promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), lockResult.cause().getMessage()));
