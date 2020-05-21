@@ -1,13 +1,15 @@
 package org.folio.rest.util;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.HttpHeaders.LOCATION;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 import javax.ws.rs.core.Response;
 
 import org.folio.rest.persist.PgExceptionUtil;
-import org.folio.rest.persist.Tx;
+import org.folio.rest.persist.DBClient;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -17,6 +19,9 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public class ResponseUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(ResponseUtils.class);
@@ -24,23 +29,23 @@ public class ResponseUtils {
   private ResponseUtils() {
   }
 
-  public static <T> Handler<AsyncResult<Tx<T>>> handleNoContentResponse(Handler<AsyncResult<Response>> asyncResultHandler, Tx<T> tx,
+  public static Handler<AsyncResult<Void>> handleNoContentResponse(Handler<AsyncResult<Response>> asyncResultHandler, String id, DBClient client,
                                                                         String logMessage) {
     return result -> {
       if (result.failed()) {
         HttpStatusException cause = (HttpStatusException) result.cause();
-        logger.error(logMessage, cause, tx.getEntity(), "or associated data failed to be");
+        logger.error(logMessage, cause, id, "or associated data failed to be");
 
         // The result of rollback operation is not so important, main failure cause is used to build the response
-        tx.rollbackTransaction().onComplete(res -> asyncResultHandler.handle(buildErrorResponse(cause)));
+        client.rollbackTransaction().onComplete(res -> asyncResultHandler.handle(buildErrorResponse(cause)));
       } else {
-        logger.info(logMessage, tx.getEntity(), "and associated data were successfully");
+        logger.info(logMessage, id, "and associated data were successfully");
         asyncResultHandler.handle(buildNoContentResponse());
       }
     };
   }
 
-  public static <T> Handler<AsyncResult<Tx<T>>> handleNoContentResponse(Handler<AsyncResult<Response>> asyncResultHandler, String id,
+  public static Handler<AsyncResult<Void>> handleNoContentResponse(Handler<AsyncResult<Response>> asyncResultHandler, String id,
                                                                         String logMessage) {
     return result -> {
       if (result.failed()) {
@@ -85,9 +90,24 @@ public class ResponseUtils {
 
   private static Response buildErrorResponse(int code, String message) {
     return Response.status(code)
-      .header(CONTENT_TYPE, TEXT_PLAIN)
+      .header(CONTENT_TYPE, code == 422 ? APPLICATION_JSON: TEXT_PLAIN)
       .entity(message)
       .build();
+  }
+
+  public static Response buildResponseWithLocation(String okapi, String endpoint, Object body) {
+    try {
+      return Response.created(new URI(okapi + endpoint))
+        .header(CONTENT_TYPE, APPLICATION_JSON)
+        .entity(body)
+        .build();
+    } catch (URISyntaxException e) {
+      return Response.created(URI.create(endpoint))
+        .header(CONTENT_TYPE, APPLICATION_JSON)
+        .header(LOCATION, endpoint)
+        .entity(body)
+        .build();
+    }
   }
 
 }

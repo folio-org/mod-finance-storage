@@ -14,15 +14,14 @@ import org.folio.rest.service.BudgetService;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 
 public class BudgetAPI implements FinanceStorageBudgets {
   public static final String BUDGET_TABLE = "budget";
 
   private BudgetService budgetService;
 
-  public BudgetAPI(Vertx vertx, String tenantId) {
-    budgetService = new BudgetService(vertx, tenantId);
+  public BudgetAPI() {
+    budgetService = new BudgetService();
   }
 
   @Override
@@ -47,7 +46,7 @@ public class BudgetAPI implements FinanceStorageBudgets {
   @Override
   @Validate
   public void deleteFinanceStorageBudgetsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    budgetService.deleteById(id, vertxContext, asyncResultHandler);
+    budgetService.deleteById(id, vertxContext, okapiHeaders, asyncResultHandler);
   }
 
   @Override

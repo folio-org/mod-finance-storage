@@ -1,24 +1,35 @@
 package org.folio.rest.persist;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.ext.sql.SQLConnection;
+import org.folio.rest.tools.utils.TenantTool;
 
-public class Tx<T> {
+import java.util.Map;
 
-  private T entity;
+public class DBClient {
+
   private PostgresClient pgClient;
   private AsyncResult<SQLConnection> sqlConnection;
+  private String tenantId;
+  private Vertx vertx;
 
-  public Tx(T entity, PostgresClient pgClient) {
-    this.entity = entity;
-    this.pgClient = pgClient;
+
+  public DBClient(Context context, Map<String, String> headers) {
+    this.pgClient = PgUtil.postgresClient(context, headers);
+    this.vertx = context.owner();
+    this.tenantId = TenantTool.tenantId(headers);
   }
 
-  public T getEntity() {
-    return entity;
+  public DBClient(Vertx vertx, String tenantId) {
+    this.pgClient = PostgresClient.getInstance(vertx, tenantId);
+    this.vertx = vertx;
+    this.tenantId = tenantId;
   }
+
 
   public PostgresClient getPgClient() {
     return pgClient;
@@ -32,13 +43,13 @@ public class Tx<T> {
     this.sqlConnection = sqlConnection;
   }
 
-  public Tx<T> withConnection(AsyncResult<SQLConnection> sqlConnection) {
+  public DBClient withConnection(AsyncResult<SQLConnection> sqlConnection) {
     this.sqlConnection = sqlConnection;
     return this;
   }
 
-  public Future<Tx<T>> startTx() {
-    Promise<Tx<T>> promise = Promise.promise();
+  public Future<DBClient> startTx() {
+    Promise<DBClient> promise = Promise.promise();
 
     pgClient.startTx(connectionAsyncResult -> {
       this.sqlConnection = connectionAsyncResult;
@@ -48,9 +59,9 @@ public class Tx<T> {
     return promise.future();
   }
 
-  public Future<Tx<T>> endTx() {
-    Promise<Tx<T>> promise = Promise.promise();
-    pgClient.endTx(sqlConnection, asyncResult -> promise.complete(this));
+  public Future<Void> endTx() {
+    Promise<Void> promise = Promise.promise();
+    pgClient.endTx(sqlConnection, asyncResult -> promise.complete());
     return promise.future();
   }
 
@@ -62,5 +73,13 @@ public class Tx<T> {
       pgClient.rollbackTx(sqlConnection, promise);
     }
     return promise.future();
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public Vertx getVertx() {
+    return vertx;
   }
 }

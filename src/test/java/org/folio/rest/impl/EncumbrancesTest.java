@@ -6,10 +6,10 @@ import static org.folio.rest.impl.TransactionTest.LEDGER_FYS_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
-import static org.folio.rest.transaction.AllOrNothingHandler.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
-import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_IS_INACTIVE;
-import static org.folio.rest.transaction.AllOrNothingHandler.BUDGET_NOT_FOUND_FOR_TRANSACTION;
-import static org.folio.rest.transaction.AllOrNothingHandler.FUND_CANNOT_BE_PAID;
+import static org.folio.rest.service.BudgetService.BUDGET_NOT_FOUND_FOR_TRANSACTION;
+import static org.folio.rest.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
+import static org.folio.rest.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
+import static org.folio.rest.service.transactions.AllOrNothingTransactionService.FUND_CANNOT_BE_PAID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.BUDGET;
@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Test;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.UpdateResult;
 
-public class EncumbrancesTest extends TestBase {
+class EncumbrancesTest extends TestBase {
 
   public static final String ENCUMBRANCE_SAMPLE = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
 

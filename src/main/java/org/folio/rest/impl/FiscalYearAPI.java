@@ -20,10 +20,9 @@ import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.persist.CriterionBuilder;
+import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.Tx;
 import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
@@ -31,7 +30,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
@@ -40,11 +38,6 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
   static final String FISCAL_YEAR_TABLE = "fiscal_year";
 
   private static final Logger log = LoggerFactory.getLogger(FiscalYearAPI.class);
-  private PostgresClient pgClient;
-
-  public FiscalYearAPI(Vertx vertx, String tenantId) {
-    pgClient = PostgresClient.getInstance(vertx, tenantId);
-  }
 
   @Override
   @Validate
@@ -57,24 +50,24 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
   @Override
   @Validate
   public void postFinanceStorageFiscalYears(String lang, FiscalYear entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Tx<FiscalYear> tx = new Tx<>(entity, pgClient);
+    DBClient client = new DBClient(vertxContext, okapiHeaders);
     vertxContext.runOnContext(event ->
-      tx.startTx()
-        .compose(this::saveFiscalYear)
-        .compose(this::createLedgerFiscalYearRecords)
-        .compose(Tx::endTx)
+     client.startTx()
+        .compose(v -> saveFiscalYear(entity, client))
+        .compose(fiscalYear -> createLedgerFiscalYearRecords(fiscalYear, client))
+        .compose(v -> client.endTx())
         .onComplete(result -> {
           if (result.failed()) {
             HttpStatusException cause = (HttpStatusException) result.cause();
-            log.error("New fiscal year record creation has failed: {}", cause, tx.getEntity());
+            log.error("New fiscal year record creation has failed: {}", cause, entity);
 
             // The result of rollback operation is not so important, main failure cause is used to build the response
-            tx.rollbackTransaction().onComplete(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
+           client.rollbackTransaction().onComplete(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
           } else {
-            log.info("New fiscal year record {} and associated data were successfully created", tx.getEntity());
+            log.info("New fiscal year record {} and associated data were successfully created", entity);
             asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageFiscalYearsResponse
-              .respond201WithApplicationJson(result.result().getEntity(), PostFinanceStorageFiscalYearsResponse.headersFor201()
-                .withLocation(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class) + result.result().getEntity().getId()))));
+              .respond201WithApplicationJson(entity, PostFinanceStorageFiscalYearsResponse.headersFor201()
+                .withLocation(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class) + entity.getId()))));
           }
         })
     );
@@ -89,16 +82,16 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
   @Override
   @Validate
   public void deleteFinanceStorageFiscalYearsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Tx<String> tx = new Tx<>(id, pgClient);
+    DBClient client = new DBClient(vertxContext, okapiHeaders);
     Criterion criterion = new CriterionBuilder()
       .with("fiscalYearId", id).build();
 
     vertxContext.runOnContext(event ->
-      tx.startTx()
-        .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(tx, criterion))
-        .compose(ok -> HelperUtils.deleteRecordById(tx, FISCAL_YEAR_TABLE))
-        .compose(Tx::endTx)
-        .onComplete(handleNoContentResponse(asyncResultHandler, tx, "Fiscal year {} {} deleted"))
+     client.startTx()
+        .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(client, criterion))
+        .compose(ok -> HelperUtils.deleteRecordById(id,client, FISCAL_YEAR_TABLE))
+        .compose(v -> client.endTx())
+        .onComplete(handleNoContentResponse(asyncResultHandler, id,  client,"Fiscal year {} {} deleted"))
     );
   }
 
@@ -108,45 +101,42 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
     PgUtil.put(FISCAL_YEAR_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageFiscalYearsByIdResponse.class, asyncResultHandler);
   }
 
-  private Future<Tx<FiscalYear>> saveFiscalYear(Tx<FiscalYear> tx) {
-    Promise<Tx<FiscalYear>> future = Promise.promise();
+  private Future<FiscalYear> saveFiscalYear(FiscalYear fiscalYear, DBClient client) {
+    Promise<FiscalYear> future = Promise.promise();
 
-    FiscalYear fiscalYear = tx.getEntity();
     if (fiscalYear.getId() == null) {
       fiscalYear.setId(UUID.randomUUID().toString());
     }
 
     log.debug("Creating new fiscal year record with id={}", fiscalYear.getId());
 
-    tx.getPgClient().save(tx.getConnection(), FISCAL_YEAR_TABLE, fiscalYear.getId(), fiscalYear, reply -> {
+   client.getPgClient().save(client.getConnection(), FISCAL_YEAR_TABLE, fiscalYear.getId(), fiscalYear, reply -> {
       if (reply.failed()) {
         handleFailure(future, reply);
       } else {
         log.info("New fiscal year record with id={} has been successfully created", fiscalYear.getId());
-        future.complete(tx);
+        future.complete(fiscalYear);
       }
     });
     return future.future();
   }
 
-  private Future<Tx<FiscalYear>> createLedgerFiscalYearRecords(Tx<FiscalYear> tx) {
-    FiscalYear fiscalYear = tx.getEntity();
-
+  private Future<Void> createLedgerFiscalYearRecords(FiscalYear fiscalYear, DBClient client) {
     // In case no currency, do not create any related records
     if (StringUtils.isEmpty(fiscalYear.getCurrency())) {
-      return Future.succeededFuture(tx);
+      return Future.succeededFuture();
     }
 
-    Promise<Tx<FiscalYear>> promise = Promise.promise();
-    getFiscalYearIdsForSeries(tx, fiscalYear.getSeries())
-      .compose(fiscalYearIds -> getLedgers(tx, fiscalYearIds)
+    Promise<Void> promise = Promise.promise();
+    getFiscalYearIdsForSeries(client, fiscalYear.getSeries())
+      .compose(fiscalYearIds -> getLedgers(client, fiscalYearIds)
         .map(ledgers -> buildLedgerFiscalYearRecords(fiscalYear, ledgers))
-        .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(tx, ledgerFYs))
+        .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(client, ledgerFYs))
         .onComplete(result -> {
           if (result.failed()) {
             handleFailure(promise, result);
           } else {
-            promise.complete(tx);
+            promise.complete();
           }
         })
     );
@@ -163,9 +153,9 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
       .collect(Collectors.toList());
   }
 
-  private Future<List<Ledger>> getLedgers(Tx<FiscalYear> tx, List<String> fiscalYearIds) {
+  private Future<List<Ledger>> getLedgers(DBClient client, List<String> fiscalYearIds) {
     Promise<List<Ledger>> promise = Promise.promise();
-    tx.getPgClient().get(tx.getConnection(), LedgerAPI.LEDGER_TABLE, Ledger.class, new Criterion(), true, false, reply -> {
+   client.getPgClient().get(client.getConnection(), LedgerAPI.LEDGER_TABLE, Ledger.class, new Criterion(), true, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to find ledgers");
         handleFailure(promise, reply);
@@ -181,11 +171,11 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
     return promise.future();
   }
 
-  private Future<List<String>> getFiscalYearIdsForSeries(Tx<FiscalYear> tx, String series) {
+  private Future<List<String>> getFiscalYearIdsForSeries(DBClient client, String series) {
     Promise<List<String>> promise = Promise.promise();
     CriterionBuilder criterionBuilder = new CriterionBuilder();
     Criterion criterion = criterionBuilder.withJson("series", "=", series).build();
-    tx.getPgClient().get(tx.getConnection(), FISCAL_YEAR_TABLE, FiscalYear.class, criterion, true, false, reply ->{
+   client.getPgClient().get(client.getConnection(), FISCAL_YEAR_TABLE, FiscalYear.class, criterion, true, false, reply ->{
       if (reply.failed()) {
         log.error("Failed to find fiscal year Ids");
         handleFailure(promise, reply);
