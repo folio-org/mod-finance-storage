@@ -22,7 +22,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
 
-public class TenantSampleDataTest extends TestBase {
+class TenantSampleDataTest extends TestBase {
 
   private final Logger logger = LoggerFactory.getLogger(TenantSampleDataTest.class);
 
@@ -32,7 +32,7 @@ public class TenantSampleDataTest extends TestBase {
 
 
   @Test
-  public void isTenantCreated() throws MalformedURLException {
+  void isTenantCreated() throws MalformedURLException {
     getData(TENANT_ENDPOINT)
       .then()
       .assertThat()
@@ -40,7 +40,7 @@ public class TenantSampleDataTest extends TestBase {
   }
 
   @Test
-  public void sampleDataTests() throws MalformedURLException {
+  void sampleDataTests() throws MalformedURLException {
     try {
       logger.info("-- create a tenant with no sample data --");
       prepareTenant(ANOTHER_TENANT_HEADER, false,false);
@@ -54,7 +54,7 @@ public class TenantSampleDataTest extends TestBase {
   }
 
   @Test
-  public void failIfNoUrlToHeader() throws MalformedURLException {
+  void failIfNoUrlToHeader() throws MalformedURLException {
     given()
       .header(new Header(OKAPI_HEADER_TENANT, "noURL"))
       .contentType(ContentType.JSON)
@@ -66,7 +66,7 @@ public class TenantSampleDataTest extends TestBase {
   }
 
   @Test
-  public void testLoadSampleDataWithoutUpgrade() throws MalformedURLException {
+  void testLoadSampleDataWithoutUpgrade() throws MalformedURLException {
     logger.info("load sample data");
     try {
       postToTenant(ANOTHER_TENANT_HEADER_WITHOUT_UPGRADE, prepareTenantBody())
@@ -83,7 +83,7 @@ public class TenantSampleDataTest extends TestBase {
 
 
   @Test
-  public void testLoadReferenceData() throws MalformedURLException {
+  void testLoadReferenceData() throws MalformedURLException {
     logger.info("load only Reference Data");
     try {
       JsonObject jsonBody = prepareTenantBody(false, true);
