@@ -19,13 +19,13 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
-public abstract class AbstractTemporaryTransactionsDAO implements TemporaryTransactionDAO {
+public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransactionDAO {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final String tableName;
 
-  protected AbstractTemporaryTransactionsDAO(String tableName) {
+  protected BaseTemporaryTransactionsDAO(String tableName) {
     this.tableName = tableName;
   }
 

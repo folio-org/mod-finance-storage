@@ -5,7 +5,7 @@ import org.folio.rest.persist.CriterionBuilder;
 
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
-public class TemporaryOrderTransactionPostgresDAO extends AbstractTemporaryTransactionsDAO implements TemporaryTransactionDAO {
+public class TemporaryOrderTransactionPostgresDAO extends BaseTemporaryTransactionsDAO implements TemporaryTransactionDAO {
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
 

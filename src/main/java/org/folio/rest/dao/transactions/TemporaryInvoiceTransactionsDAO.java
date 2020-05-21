@@ -5,7 +5,7 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.Criteria.Criterion;
 
-public class TemporaryInvoiceTransactionsDAO extends AbstractTemporaryTransactionsDAO implements TemporaryTransactionDAO {
+public class TemporaryInvoiceTransactionsDAO extends BaseTemporaryTransactionsDAO implements TemporaryTransactionDAO {
 
   public static final String TEMPORARY_INVOICE_TRANSACTIONS = "temporary_invoice_transactions";
 
