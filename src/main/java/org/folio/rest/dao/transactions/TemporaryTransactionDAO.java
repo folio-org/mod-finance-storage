@@ -10,7 +10,9 @@ import io.vertx.core.Future;
 public interface TemporaryTransactionDAO {
 
   Future<Transaction> createTempTransaction(Transaction transaction, String summaryId, DBClient client);
+
   Future<List<Transaction>> getTempTransactionsBySummaryId(String summaryId, DBClient client);
+
   Future<Integer> deleteTempTransactions(String summaryId, DBClient client);
 
 }

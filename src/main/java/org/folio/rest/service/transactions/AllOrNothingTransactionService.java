@@ -269,7 +269,7 @@ public abstract class AllOrNothingTransactionService<T extends Entity> extends A
 
   protected Future<Void> moveFromTempToPermanentTable(T summary, DBClient client) {
     return temporaryTransactionDAO.deleteTempTransactions(summary.getId(), client)
-      .compose(tr -> transactionSummaryService.setTransactionsSummariesProcessed(summary, client)) ;
+      .compose(tr -> transactionSummaryService.setTransactionsSummariesProcessed(summary, client));
   }
 
 

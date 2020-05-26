@@ -8,6 +8,8 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.StringUtils;
+import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -18,6 +20,7 @@ import org.folio.rest.jaxrs.resource.FinanceStorage;
 import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.TenantTool;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -34,6 +37,8 @@ public class TransactionSummaryAPI implements FinanceStorage {
   public static final String ORDER_TRANSACTION_SUMMARIES_LOCATION_PREFIX = "/finance-storage/order-transaction-summaries/";
   public static final String INVOICE_TRANSACTION_SUMMARIES = "invoice_transaction_summaries";
   public static final String INVOICE_TRANSACTION_SUMMARIES_LOCATION_PREFIX = "/finance-storage/invoice-transaction-summaries/";
+
+  private static final String MISMATCH_ERROR_MESSAGE = "Transaction summary id mismatch";
 
   private static final Logger log = LoggerFactory.getLogger(TransactionSummaryAPI.class);
 
@@ -113,6 +118,54 @@ public class TransactionSummaryAPI implements FinanceStorage {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(ORDER_TRANSACTION_SUMMARIES, OrderTransactionSummary.class, id, okapiHeaders, vertxContext,
         GetFinanceStorageOrderTransactionSummariesByIdResponse.class, asyncResultHandler);
+  }
+
+  @Override
+  @Validate
+  public void putFinanceStorageOrderTransactionSummariesById(String id, String lang, OrderTransactionSummary entity,
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    vertxContext.runOnContext(v -> {
+      if (!StringUtils.equals(entity.getId(), id)) {
+        asyncResultHandler.handle(io.vertx.core.Future
+          .succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond400WithTextPlain(MISMATCH_ERROR_MESSAGE)));
+        return;
+      }
+      try {
+        if (entity.getId() == null) {
+          entity.setId(id);
+        }
+        PostgresClient.getInstance(vertxContext.owner(), TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT)))
+          .update(ORDER_TRANSACTION_SUMMARIES, entity, id, reply -> {
+            try {
+              if (reply.succeeded()) {
+                if (reply.result()
+                  .getUpdated() == 0) {
+                  asyncResultHandler
+                    .handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse
+                      .respond404WithTextPlain(Response.Status.NOT_FOUND.getReasonPhrase())));
+                } else {
+                  asyncResultHandler.handle(
+                      io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond204()));
+                }
+              } else {
+                log.error(reply.cause()
+                  .getMessage());
+                asyncResultHandler
+                  .handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse
+                    .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR)));
+              }
+            } catch (Exception e) {
+              log.error(e.getMessage(), e);
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse
+                .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR)));
+            }
+          });
+      } catch (Exception e) {
+        log.error(e.getMessage(), e);
+        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+            PutFinanceStorageOrderTransactionSummariesByIdResponse.respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR)));
+      }
+    });
   }
 
   @Override

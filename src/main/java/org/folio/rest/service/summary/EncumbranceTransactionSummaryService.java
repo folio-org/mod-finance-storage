@@ -22,7 +22,7 @@ public class EncumbranceTransactionSummaryService extends AbstractTransactionSum
 
   @Override
   protected void setTransactionsSummariesProcessed(OrderTransactionSummary summary) {
-    summary.setNumTransactions(-summary.getNumTransactions());
+    summary.setNumTransactions(-Math.abs(summary.getNumTransactions()));
   }
 
   @Override

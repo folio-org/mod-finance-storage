@@ -6,6 +6,7 @@ import static org.folio.rest.impl.TransactionTest.LEDGER_FYS_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
+import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID;
 import static org.folio.rest.service.BudgetService.BUDGET_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.rest.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
 import static org.folio.rest.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
@@ -263,6 +264,16 @@ class EncumbrancesTest extends TestBase {
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
 
+  protected void updateOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
+    OrderTransactionSummary summary = getDataById(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, orderId, TRANSACTION_TENANT_HEADER)
+      .as(OrderTransactionSummary.class);
+    summary.setNumTransactions(encumbranceNumber);
+    putData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, orderId, JsonObject.mapFrom(summary).encodePrettily(), TRANSACTION_TENANT_HEADER)
+      .then()
+        .statusCode(204);
+
+  }
+
   protected void createInvoiceSummary(String invoiceId, int numEncumbrances) throws MalformedURLException {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(2).withNumEncumbrances(numEncumbrances);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
@@ -441,6 +452,7 @@ class EncumbrancesTest extends TestBase {
     encumbrance2.getEncumbrance().setStatus(Encumbrance.Status.UNRELEASED);
     encumbrance2.getEncumbrance().setAmountAwaitingPayment(sumValues(encumbrance2.getEncumbrance().getAmountAwaitingPayment(), 5.5));
 
+    updateOrderSummary(orderId, 2);
     // First encumbrance update, save to temp table, changes won't get to transaction table
     putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
     Transaction transaction1FromStorage = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
@@ -535,18 +547,69 @@ class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testUpdateEncumbranceNotFound() throws MalformedURLException {
+  void testCreateOrUpdateEncumbranceIfNotFound() throws MalformedURLException {
+    String fiscalYearId = createFiscalYear();
+    String ledgerId = createLedger(fiscalYearId, true);
+    String fundId = createFund(ledgerId);
 
-    String invoiceId = UUID.randomUUID().toString();
-    createInvoiceSummary(invoiceId, 2);
+    Budget budget = buildBudget(fiscalYearId, fundId);
+    Budget budgetBefore = postData(BUDGET.getEndpoint(), JsonObject.mapFrom(budget).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201).extract().as(Budget.class);
 
-    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
-    jsonTx.remove("id");
+    // prepare ledgerFY query
+    String fromLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, ledgerId, fiscalYearId);
+    LedgerFY ledgerFYBefore = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
+    ledgerFYBefore.withAllocated(budgetBefore.getAllocated())
+      .withAvailable(budgetBefore.getAvailable())
+      .withUnavailable(budgetBefore.getUnavailable());
+
+    updateLedgerFy(ledgerFYBefore);
+
+    String orderId = UUID.randomUUID().toString();
+    createOrderSummary(orderId, 1);
+
+    JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
+
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
-    encumbrance.setSourceInvoiceId(invoiceId);
+    encumbrance.setId(UUID.randomUUID().toString());
+    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
     // Try to update non-existent transaction
-    putData(TRANSACTION.getEndpointWithId(), UUID.randomUUID().toString(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(404);
+    putData(TRANSACTION.getEndpointWithId(), encumbrance.getId(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
+
+    Transaction savedTransaction = getDataById(TRANSACTION.getEndpointWithId(), encumbrance.getId(), TRANSACTION_TENANT_HEADER)
+      .then()
+      .statusCode(200)
+      .extract()
+      .as(Transaction.class);
+
+    Budget budgetAfter = getDataById(BUDGET.getEndpointWithId(), budgetBefore.getId(), TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
+    LedgerFY ledgerFYAfter = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
+
+    final double amount = encumbrance.getAmount();
+    double expectedBudgetsAvailable;
+    double expectedBudgetsUnavailable;
+    double expectedBudgetsEncumbered;
+
+    double expectedLedgersAvailable;
+    double expectedLedgersUnavailable;
+
+    expectedBudgetsEncumbered = sumValues(budgetBefore.getEncumbered(), amount);
+    expectedBudgetsAvailable = subtractValues(budgetBefore.getAvailable(), amount);
+    expectedBudgetsUnavailable = sumValues(budgetBefore.getUnavailable(), amount);
+
+    expectedLedgersAvailable = subtractValues(ledgerFYBefore.getAvailable(), amount);
+    expectedLedgersUnavailable = sumValues(ledgerFYBefore.getUnavailable(), amount);
+
+    assertEquals(expectedBudgetsEncumbered, budgetAfter.getEncumbered());
+    assertEquals(expectedBudgetsAvailable , budgetAfter.getAvailable());
+    assertEquals(expectedBudgetsUnavailable, budgetAfter.getUnavailable());
+    verifyBudgetTotalsAfter(budgetAfter);
+
+    assertEquals(expectedLedgersAvailable, ledgerFYAfter.getAvailable());
+    assertEquals(expectedLedgersUnavailable , ledgerFYAfter.getUnavailable());
+    verifyLedgerFYAfterCreateEncumbrance(ledgerFYBefore, ledgerFYAfter,
+      Collections.singletonList(budgetBefore), Collections.singletonList(budgetAfter));
 
   }
 

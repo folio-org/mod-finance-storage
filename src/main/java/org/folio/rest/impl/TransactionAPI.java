@@ -89,7 +89,7 @@ public class TransactionAPI implements FinanceStorageTransactions {
 
   private TransactionService getUpdateTransactionHandler(Transaction transaction) {
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return new PaymentCreditAllOrNothingService();
+      return new EncumbranceAllOrNothingService();
     }
     return new DefaultTransactionService();
   }

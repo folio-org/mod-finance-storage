@@ -22,7 +22,7 @@ public class PendingPaymentsTransactionSummaryService extends AbstractTransactio
 
   @Override
   protected void setTransactionsSummariesProcessed(InvoiceTransactionSummary summary) {
-    summary.setNumEncumbrances(-summary.getNumEncumbrances());
+    summary.setNumEncumbrances(-Math.abs(summary.getNumEncumbrances()));
   }
 
   @Override

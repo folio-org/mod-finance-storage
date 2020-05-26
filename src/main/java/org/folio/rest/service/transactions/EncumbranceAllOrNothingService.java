@@ -8,6 +8,7 @@ import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.impl.FinanceStorageAPI.LEDGERFY_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
+import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
@@ -38,11 +39,13 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.service.summary.EncumbranceTransactionSummaryService;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
 
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
@@ -280,6 +283,156 @@ public class EncumbranceAllOrNothingService extends AllOrNothingTransactionServi
   public String getLedgerFYsQuery(String tenantId) {
     return String.format(GROUP_FUND_ID_BY_LEDGERFY, getFullTableName(tenantId, LEDGERFY_TABLE),
         getFullTableName(tenantId, FUND_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS));
+  }
+
+  @Override
+  public Future<Void> updateTransaction(String id, Transaction transaction, Context context, Map<String, String> okapiHeaders) {
+    DBClient client = new DBClient(context, okapiHeaders);
+    return isTransactionExists(id, client).compose(transactionExists -> {
+      if (transactionExists) {
+        return updateEncumbrance(transaction, context, okapiHeaders);
+      } else {
+        return createTransaction(transaction, context, okapiHeaders).mapEmpty();
+      }
+    });
+  }
+
+  public Future<Void> updateEncumbrance(Transaction transaction, Context context, Map<String, String> okapiHeaders) {
+    try {
+      handleValidationError(transaction);
+    } catch (HttpStatusException e) {
+      return Future.failedFuture(e);
+    }
+    DBClient client = new DBClient(context, okapiHeaders);
+
+    return transactionSummaryService.getTransactionSummary(transaction, context, okapiHeaders)
+      .compose(summary -> collectTempTransactions(transaction, context, okapiHeaders).compose(transactions -> {
+        if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
+          return client.startTx()
+            .compose(c -> processTransactionsUponUpdate(transactions, client))
+            .compose(vVoid -> moveFromTempToPermanentTable(summary, client))
+            .compose(vVoid -> client.endTx())
+            .onComplete(result -> {
+              if (result.failed()) {
+                log.error("Transactions or associated data failed to be processed", result.cause());
+                client.rollbackTransaction();
+              } else {
+                log.info("Transactions and associated data were successfully processed");
+              }
+            });
+
+        } else {
+          return Future.succeededFuture();
+        }
+      }));
+  }
+
+
+    private Future<Boolean> isTransactionExists(String transactionId, DBClient client) {
+    Promise<Boolean> promise = Promise.promise();
+    client.getPgClient().getById(TRANSACTION_TABLE, transactionId, reply -> {
+      if (reply.failed()) {
+        handleFailure(promise, reply);
+      } else {
+        promise.complete(reply.result() != null);
+      }
+    });
+    return promise.future();
+  }
+
+  private Future<Void> processTransactionsUponUpdate(List<Transaction> newTransactions, DBClient client) {
+    CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
+    newTransactions.stream()
+      .map(Transaction::getId)
+      .forEach(id -> criterionBuilder.with("id", id));
+    return transactionsDAO.getTransactions(criterionBuilder.build(), client)
+      .compose(existingTransactions -> updateBudgetsTotals(existingTransactions, newTransactions, client)
+        .map(listTx -> excludeReleasedEncumbrances(newTransactions, existingTransactions)))
+      .compose(transactions -> transactionsDAO.updatePermanentTransactions(transactions, client));
+  }
+
+  private List<Transaction> excludeReleasedEncumbrances(List<Transaction> newTransactions, List<Transaction> existingTransactions) {
+    Map<String, Transaction> groupedTransactions = existingTransactions.stream().collect(toMap(Transaction::getId, identity()));
+    return newTransactions.stream()
+      .filter(transaction -> groupedTransactions.get(transaction.getId()).getEncumbrance().getStatus() != Encumbrance.Status.RELEASED)
+      .collect(Collectors.toList());
+  }
+
+  private Future<Integer> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> newTransactions, DBClient client) {
+    JsonArray params = new JsonArray();
+    params.add(getSummaryId(newTransactions.get(0)));
+    return budgetDAO.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
+      .map(budgets -> updateBudgetsTotals(existingTransactions, newTransactions, budgets))
+      .compose(budgets -> {
+        List<JsonObject> jsonBudgets = budgets.stream().map(JsonObject::mapFrom).collect(toList());
+        String sql = buildUpdateBudgetsQuery(jsonBudgets, client.getTenantId());
+        return budgetDAO.updateBatchBudgets(sql, client);
+      });
+  }
+
+  private List<Budget> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> tempTransactions, List<Budget> budgets) {
+    Map<String, Transaction> existingGrouped = existingTransactions.stream().collect(toMap(Transaction::getId, identity()));
+    Map<Budget, List<Transaction>> tempGrouped = groupTransactionsByBudget(tempTransactions, budgets);
+    return tempGrouped.entrySet().stream()
+      .map(listEntry -> updateBudgetTotals(listEntry, existingGrouped))
+      .collect(Collectors.toList());
+  }
+
+  private Budget updateBudgetTotals(Map.Entry<Budget, List<Transaction>> entry, Map<String, Transaction> existingGrouped) {
+    Budget budget = entry.getKey();
+
+    if (isNotEmpty(entry.getValue())) {
+      CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
+      entry.getValue()
+        .forEach(tmpTransaction -> {
+          Transaction existingTransaction = existingGrouped.get(tmpTransaction.getId());
+          if (!isEncumbranceReleased(existingTransaction)) {
+            processBudget(budget, currency, tmpTransaction, existingTransaction);
+            if (isEncumbranceReleased(tmpTransaction)) {
+              releaseEncumbrance(budget, currency, tmpTransaction);
+            }
+          }
+        });
+    }
+    return budget;
+  }
+
+  private void releaseEncumbrance(Budget budget, CurrencyUnit currency, Transaction tmpTransaction) {
+    //encumbered decreases by the amount being released
+    budget.setEncumbered(subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
+
+    // available increases by the amount being released
+    budget.setAvailable(sumMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency));
+
+    // unavailable decreases by the amount being released (min 0)
+    double newUnavailable = subtractMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
+    budget.setUnavailable(newUnavailable < 0 ? 0 : newUnavailable);
+
+    // transaction.amount becomes 0 (save the original value for updating the budget)
+    tmpTransaction.setAmount(0d);
+  }
+
+  private void processBudget(Budget budget, CurrencyUnit currency, Transaction tmpTransaction, Transaction existingTransaction) {
+    // encumbered decreases by the difference between provided and previous transaction.encumbrance.amountAwaitingPayment values
+    double newEncumbered = subtractMoney(budget.getEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    newEncumbered = sumMoney(newEncumbered, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    budget.setEncumbered(newEncumbered);
+
+    // awaitingPayment increases by the same amount
+    double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    newAwaitingPayment = subtractMoneyNonNegative(newAwaitingPayment, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    budget.setAwaitingPayment(newAwaitingPayment);
+
+    // encumbrance transaction.amount is updated to (initial encumbrance - awaiting payment - expended)
+    double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+    newAmount = subtractMoney(newAmount, tmpTransaction.getEncumbrance().getAmountExpended(), currency);
+    tmpTransaction.setAmount(newAmount);
+  }
+
+
+  private boolean isEncumbranceReleased(Transaction transaction) {
+    return transaction.getEncumbrance()
+      .getStatus() == Encumbrance.Status.RELEASED;
   }
 
 }

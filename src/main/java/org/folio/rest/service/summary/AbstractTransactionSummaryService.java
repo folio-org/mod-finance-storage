@@ -21,7 +21,7 @@ public abstract class AbstractTransactionSummaryService<T extends Entity> implem
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  private TransactionSummaryDao<T> transactionSummaryDao;
+  private final TransactionSummaryDao<T> transactionSummaryDao;
 
   AbstractTransactionSummaryService(TransactionSummaryDao<T> transactionSummaryDao) {
     this.transactionSummaryDao = transactionSummaryDao;
@@ -29,17 +29,23 @@ public abstract class AbstractTransactionSummaryService<T extends Entity> implem
 
   @Override
   public Future<T> getAndCheckTransactionSummary(Transaction transaction, Context context, Map<String, String> okapiHeaders) {
-    logger.debug("Get summary={}", getSummaryId(transaction));
-    String summaryId = getSummaryId(transaction);
-    DBClient client = new DBClient(context, okapiHeaders);
-    return transactionSummaryDao.getSummaryById(summaryId, client)
+    return this.getTransactionSummary(transaction, context, okapiHeaders)
       .map(summary -> {
         if ((isProcessed(summary))) {
           logger.debug("Expected number of transactions for summary with id={} already processed", summary.getId());
           throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED);
+        } else {
+          return summary;
         }
-        return summary;
       });
+  }
+
+  @Override
+  public Future<T> getTransactionSummary(Transaction transaction, Context context, Map<String, String> okapiHeaders) {
+    logger.debug("Get summary={}", getSummaryId(transaction));
+    String summaryId = getSummaryId(transaction);
+    DBClient client = new DBClient(context, okapiHeaders);
+    return transactionSummaryDao.getSummaryById(summaryId, client);
   }
 
   @Override
