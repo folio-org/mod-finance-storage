@@ -44,7 +44,7 @@
   "tables": [
     {
       "tableName": "fiscal_year",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "fromModuleVersion": "mod-finance-storage-4.3.0",
       "withMetadata": true,
       "index": [
         {
@@ -68,6 +68,12 @@
         {
           "fieldName": "code",
           "tOps": "DELETE"
+        },
+        {
+          "fieldName": "series",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
         }
       ],
       "uniqueIndex": [
@@ -79,12 +85,18 @@
     },
     {
       "tableName": "ledger",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "fromModuleVersion": "mod-finance-storage-4.3.0",
       "withMetadata": true,
       "foreignKeys": [
         {
           "fieldName": "fiscalYearOneId",
           "targetTable": "fiscal_year",
+          "tOps": "ADD"
+        }
+      ],
+      "index": [
+        {
+          "fieldName": "ledgerStatus",
           "tOps": "ADD"
         }
       ],
