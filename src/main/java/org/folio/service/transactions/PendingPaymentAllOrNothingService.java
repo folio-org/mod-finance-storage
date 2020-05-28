@@ -270,32 +270,6 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
     return getSelectBudgetsQuery(SELECT_BUDGETS_BY_INVOICE_ID, tenantId, TEMPORARY_INVOICE_TRANSACTIONS);
   }
 
-  /**
-   * Calculates remaining amount for payment
-   * [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable + available)) - (awaitingPayment + expended + encumbered)
-   *
-   * @param budget     processed budget
-   * @param currency   processed transaction currency
-   * @return remaining amount for payment
-   */
-  @Override
-  protected Money getBudgetRemainingAmount(Budget budget, String currency) {
-    Money allocated = Money.of(budget.getAllocated(), currency);
-    // get allowableExpenditure from percentage value
-    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
-    Money unavailable = Money.of(budget.getUnavailable(), currency);
-    Money available = Money.of(budget.getAvailable(), currency);
-    Money expenditure = Money.of(budget.getExpenditures(), currency);
-    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
-    Money encumbered = Money.of(budget.getEncumbered(), currency);
-
-    Money result = allocated.multiply(allowableExpenditure);
-    result = result.subtract(allocated.subtract(unavailable.add(available)));
-    result = result.subtract(expenditure.add(awaitingPayment).add(encumbered));
-
-    return result;
-  }
-
   @Override
   protected boolean isTransactionOverspendRestricted(Ledger ledger, Budget budget) {
     return ledger.getRestrictExpenditures() && budget.getAllowableExpenditure() != null;

@@ -116,14 +116,6 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
     });
   }
 
-  abstract Future<Void> processTemporaryToPermanentTransactions(List<Transaction> transactions, DBClient client);
-
-  abstract String getSummaryId(Transaction transaction);
-
-  abstract Void handleValidationError(Transaction transaction);
-
-  protected abstract String getSelectBudgetsQuery(String tenantId);
-
   String getSelectBudgetsQuery(String sql, String tenantId, String tempTransactionTable) {
     return String.format(sql, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, tempTransactionTable));
   }
@@ -180,10 +172,6 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
     }
     return null;
   }
-
-  protected abstract Money getBudgetRemainingAmount(Budget budget, String currency);
-
-  protected abstract boolean isTransactionOverspendRestricted(Ledger ledger, Budget budget);
 
   Future<Void> finishAllOrNothing(T summary, DBClient client) {
     return temporaryTransactionDAO.deleteTempTransactions(summary.getId(), client)
@@ -317,5 +305,40 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
       .withAvailable(newAvailable)
       .withUnavailable(newUnavailable);
   }
+
+  /**
+   * Calculates remaining amount for payment and pending payments
+   * [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable + available)) - (awaitingPayment + expended + encumbered)
+   *
+   * @param budget     processed budget
+   * @param currency   processed transaction currency
+   * @return remaining amount for payment
+   */
+  protected Money getBudgetRemainingAmount(Budget budget, String currency) {
+    Money allocated = Money.of(budget.getAllocated(), currency);
+    // get allowableExpenditure from percentage value
+    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
+    Money unavailable = Money.of(budget.getUnavailable(), currency);
+    Money available = Money.of(budget.getAvailable(), currency);
+    Money expenditure = Money.of(budget.getExpenditures(), currency);
+    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
+    Money encumbered = Money.of(budget.getEncumbered(), currency);
+
+    Money result = allocated.multiply(allowableExpenditure);
+    result = result.subtract(allocated.subtract(unavailable.add(available)));
+    result = result.subtract(expenditure.add(awaitingPayment).add(encumbered));
+
+    return result;
+  }
+
+  abstract Future<Void> processTemporaryToPermanentTransactions(List<Transaction> transactions, DBClient client);
+
+  abstract String getSummaryId(Transaction transaction);
+
+  abstract Void handleValidationError(Transaction transaction);
+
+  protected abstract String getSelectBudgetsQuery(String tenantId);
+
+  protected abstract boolean isTransactionOverspendRestricted(Ledger ledger, Budget budget);
 
 }
