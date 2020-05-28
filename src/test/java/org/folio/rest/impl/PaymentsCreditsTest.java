@@ -1,6 +1,5 @@
 package org.folio.rest.impl;
 
-import static java.lang.Math.max;
 import static org.folio.rest.impl.EncumbrancesTest.ENCUMBRANCE_SAMPLE;
 import static org.folio.rest.impl.TransactionTest.BUDGETS;
 import static org.folio.rest.impl.TransactionTest.BUDGETS_QUERY;
@@ -9,12 +8,12 @@ import static org.folio.rest.impl.TransactionTest.TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
-import static org.folio.rest.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
-import static org.folio.rest.service.transactions.AllOrNothingTransactionService.FUND_CANNOT_BE_PAID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
+import static org.folio.service.transactions.BaseAllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
+import static org.folio.service.transactions.BaseAllOrNothingTransactionService.FUND_CANNOT_BE_PAID;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -170,15 +169,10 @@ class PaymentsCreditsTest extends TestBase {
     assertEquals(ledgerFYBefore, ledgerFYAfter);
 
     // Encumbrance Changes for payment
-    assertEquals(-payment.getAmount(), subtractValues(paymentEncumbranceAfter.getEncumbrance()
-      .getAmountAwaitingPayment(),
-        paymentEncumbranceBefore.getEncumbrance()
-          .getAmountAwaitingPayment()));
     assertEquals(payment.getAmount(), subtractValues(paymentEncumbranceAfter.getEncumbrance()
       .getAmountExpended(),
         paymentEncumbranceBefore.getEncumbrance()
           .getAmountExpended()));
-    assertEquals(-payment.getAmount(), subtractValues(paymentEncumbranceAfter.getAmount(), paymentEncumbranceBefore.getAmount()));
 
     // Encumbrance Changes for credit
     assertEquals(-credit.getAmount(), subtractValues(creditEncumbranceAfter.getEncumbrance()
@@ -190,8 +184,7 @@ class PaymentsCreditsTest extends TestBase {
 
     // awaiting payment must decreases by payment amount
     assertEquals(0d, subtractValues(budgetAfter.getAwaitingPayment(), budgetBefore.getAwaitingPayment()));
-    // encumbered must increase by credit amount
-    assertEquals(credit.getAmount(), subtractValues(budgetAfter.getEncumbered(), budgetBefore.getEncumbered()));
+
     // expenditures must increase by payment amt and decrease by credit amount
     assertEquals(subtractValues(payment.getAmount(), credit.getAmount()),
         subtractValues(budgetAfter.getExpenditures(), budgetBefore.getExpenditures()));
@@ -286,27 +279,27 @@ class PaymentsCreditsTest extends TestBase {
     LedgerFY creditLedgerFYAfter = getLedgerFYAndValidate(creditLedgerFYEndpointWithQueryParams);
     LedgerFY paymentLedgerFYAfter = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
 
-    // awaiting payment, encumbered must remain the same
-    assertEquals(0d, subtractValues(paymentBudgetAfter.getAwaitingPayment(), paymentBudgetBefore.getAwaitingPayment()));
-    assertEquals(0d, subtractValues(paymentBudgetAfter.getEncumbered(), paymentBudgetBefore.getEncumbered()));
-    assertEquals(payment.getAmount(), subtractValues(paymentBudgetAfter.getExpenditures(), paymentBudgetBefore.getExpenditures()));
+    // payment changes  awaiting payment must decreases, expenditures increase
+    assertEquals(paymentBudgetAfter.getAwaitingPayment(), subtractValues(paymentBudgetBefore.getAwaitingPayment(), payment.getAmount()));
+    assertEquals(paymentBudgetAfter.getExpenditures(), sumValues(paymentBudgetBefore.getExpenditures(), payment.getAmount()));
 
-    // payment changes, available must decrease and unavailable increases
-    assertEquals(-payment.getAmount(), subtractValues(paymentBudgetAfter.getAvailable(), paymentBudgetBefore.getAvailable()));
-    assertEquals(payment.getAmount(), subtractValues(paymentBudgetAfter.getUnavailable(), paymentBudgetBefore.getUnavailable()));
+    // available, unavailable, encumbrances  must remain the same
+    assertEquals(paymentBudgetAfter.getAvailable(), paymentBudgetBefore.getAvailable());
+    assertEquals(paymentBudgetAfter.getUnavailable(), paymentBudgetBefore.getUnavailable());
+    assertEquals(paymentBudgetAfter.getEncumbered(), paymentBudgetBefore.getEncumbered());
+    assertEquals(creditBudgetAfter.getAvailable(), creditBudgetBefore.getAvailable());
+    assertEquals(creditBudgetAfter.getUnavailable(), creditBudgetBefore.getUnavailable());
 
-    Double expectedBudgetAvailable = sumValues(sumValues(creditBudgetBefore.getAvailable(), credit.getAmount()), credit.getAmount());
-    Double expectedBudgetUnavailable = subtractValues(subtractValues(creditBudgetBefore.getUnavailable(), credit.getAmount()), credit.getAmount());
-    // credit changes, available must increase and unavailable decreases
-    assertEquals(expectedBudgetAvailable, creditBudgetAfter.getAvailable());
-    assertEquals(expectedBudgetUnavailable, creditBudgetAfter.getUnavailable());
-    assertEquals(max(0d, -credit.getAmount()), subtractValues(creditBudgetAfter.getExpenditures(), creditBudgetBefore.getExpenditures()));
 
-    assertEquals(paymentLedgerFYAfter.getAvailable(), subtractValues(paymentLedgerFYBefore.getAvailable(), payment.getAmount()));
-    assertEquals(paymentLedgerFYAfter.getUnavailable(), sumValues(paymentLedgerFYBefore.getUnavailable(), payment.getAmount()));
+    // credit changes  awaiting payment must increase, expenditures decreases
+    assertEquals(creditBudgetAfter.getAwaitingPayment(), sumValues(creditBudgetBefore.getAwaitingPayment(), credit.getAmount(), credit.getAmount()));
+    assertEquals(creditBudgetAfter.getExpenditures(), subtractValues(creditBudgetBefore.getExpenditures(), credit.getAmount(), credit.getAmount()));
 
-    assertEquals(creditLedgerFYAfter.getAvailable(),  sumValues(sumValues(creditLedgerFYBefore.getAvailable(), credit.getAmount()), credit.getAmount()));
-    assertEquals(creditLedgerFYAfter.getUnavailable(), max(subtractValues(subtractValues(creditLedgerFYBefore.getUnavailable(), credit.getAmount()), credit.getAmount()), 0));
+    assertEquals(paymentLedgerFYAfter.getAvailable(), paymentLedgerFYBefore.getAvailable());
+    assertEquals(paymentLedgerFYAfter.getUnavailable(), paymentLedgerFYBefore.getUnavailable());
+
+    assertEquals(creditLedgerFYAfter.getAvailable(),  creditLedgerFYBefore.getAvailable());
+    assertEquals(creditLedgerFYAfter.getUnavailable(), creditLedgerFYBefore.getUnavailable());
 
   }
 
@@ -461,7 +454,7 @@ class PaymentsCreditsTest extends TestBase {
   }
 
   protected void createInvoiceSummary(String invoiceId, int numPaymentsCredits) throws MalformedURLException {
-    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numPaymentsCredits).withNumEncumbrances(0);
+    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numPaymentsCredits).withNumPendingPayments(numPaymentsCredits);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }

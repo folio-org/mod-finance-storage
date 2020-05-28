@@ -1,5 +1,6 @@
 package org.folio.rest.impl;
 
+import static org.folio.dao.ledger.LedgerPostgresDAO.LEDGER_TABLE;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
@@ -12,8 +13,11 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.Vertx;
 import org.apache.commons.lang.StringUtils;
 import org.folio.rest.annotations.Validate;
+import org.folio.dao.ledgerfy.LedgerFiscalYearDAO;
+import org.folio.dao.ledgerfy.LedgerFiscalYearPostgresDAO;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.FiscalYearCollection;
 import org.folio.rest.jaxrs.model.Ledger;
@@ -33,11 +37,20 @@ import io.vertx.core.Promise;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import org.folio.spring.SpringContextUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class FiscalYearAPI implements FinanceStorageFiscalYears {
   static final String FISCAL_YEAR_TABLE = "fiscal_year";
 
   private static final Logger log = LoggerFactory.getLogger(FiscalYearAPI.class);
+
+  @Autowired
+  private LedgerFiscalYearDAO ledgerFiscalYearDAO;
+
+  public FiscalYearAPI() {
+    SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
+  }
 
   @Override
   @Validate
@@ -88,8 +101,8 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
 
     vertxContext.runOnContext(event ->
      client.startTx()
-        .compose(ok -> new FinanceStorageAPI().deleteLedgerFiscalYearRecords(client, criterion))
-        .compose(ok -> HelperUtils.deleteRecordById(id,client, FISCAL_YEAR_TABLE))
+        .compose(ok -> ledgerFiscalYearDAO.deleteLedgerFiscalYearRecords(criterion, client))
+        .compose(ok -> HelperUtils.deleteRecordById(id, client, FISCAL_YEAR_TABLE))
         .compose(v -> client.endTx())
         .onComplete(handleNoContentResponse(asyncResultHandler, id,  client,"Fiscal year {} {} deleted"))
     );
@@ -131,7 +144,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
     getFiscalYearIdsForSeries(client, fiscalYear.getSeries())
       .compose(fiscalYearIds -> getLedgers(client, fiscalYearIds)
         .map(ledgers -> buildLedgerFiscalYearRecords(fiscalYear, ledgers))
-        .compose(ledgerFYs -> new FinanceStorageAPI().saveLedgerFiscalYearRecords(client, ledgerFYs))
+        .compose(ledgerFYs -> ledgerFiscalYearDAO.saveLedgerFiscalYearRecords(ledgerFYs, client))
         .onComplete(result -> {
           if (result.failed()) {
             handleFailure(promise, result);
@@ -155,7 +168,7 @@ public class FiscalYearAPI implements FinanceStorageFiscalYears {
 
   private Future<List<Ledger>> getLedgers(DBClient client, List<String> fiscalYearIds) {
     Promise<List<Ledger>> promise = Promise.promise();
-   client.getPgClient().get(client.getConnection(), LedgerAPI.LEDGER_TABLE, Ledger.class, new Criterion(), true, false, reply -> {
+   client.getPgClient().get(client.getConnection(), LEDGER_TABLE, Ledger.class, new Criterion(), true, false, reply -> {
       if (reply.failed()) {
         log.error("Failed to find ledgers");
         handleFailure(promise, reply);

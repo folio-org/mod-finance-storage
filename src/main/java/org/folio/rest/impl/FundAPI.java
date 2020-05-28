@@ -16,10 +16,9 @@ import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
 import org.folio.rest.persist.CriterionBuilder;
+import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
@@ -27,7 +26,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -37,15 +35,6 @@ public class FundAPI implements FinanceStorageFunds {
   public static final String FUND_TABLE = "fund";
 
   private static final Logger log = LoggerFactory.getLogger(FundAPI.class);
-  private PostgresClient pgClient;
-  private String tenantId;
-  private Vertx vertx;
-
-  public FundAPI(Vertx vertx, String tenantId) {
-    this.tenantId = tenantId;
-    this.vertx = vertx;
-    pgClient = PostgresClient.getInstance(vertx, tenantId);
-  }
 
   @Override
   @Validate
@@ -76,8 +65,9 @@ public class FundAPI implements FinanceStorageFunds {
   @Validate
   public void putFinanceStorageFundsById(String id, String lang, Fund fund, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     fund.setId(id);
+    DBClient client = new DBClient(vertxContext, okapiHeaders);
     vertxContext.runOnContext(event ->
-      isFundStatusChanged(fund)
+      isFundStatusChanged(fund, client)
         .onComplete(result -> {
           if (result.failed()) {
             HttpStatusException cause = (HttpStatusException) result.cause();
@@ -86,7 +76,7 @@ public class FundAPI implements FinanceStorageFunds {
           } else if (result.result() == null) {
             asyncResultHandler.handle(succeededFuture(FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.respond404WithTextPlain("Not found")));
           } else if (Boolean.TRUE.equals(result.result())) {
-            handleFundStatusUpdate(fund, asyncResultHandler);
+            handleFundStatusUpdate(fund, client, asyncResultHandler);
           } else {
             PgUtil.put(FUND_TABLE, fund, id, okapiHeaders, vertxContext, FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.class, asyncResultHandler);
           }
@@ -94,19 +84,17 @@ public class FundAPI implements FinanceStorageFunds {
     );
   }
 
-  private void handleFundStatusUpdate(Fund fund, Handler<AsyncResult<Response>> asyncResultHandler) {
-    DBClient client = new DBClient(vertx, tenantId);
-
-   client.startTx()
+  private void handleFundStatusUpdate(Fund fund, DBClient client, Handler<AsyncResult<Response>> asyncResultHandler) {
+     client.startTx()
       .compose(t -> updateRelatedCurrentFYBudgets(fund, client))
       .compose(v -> updateFund(fund, client))
       .compose(v -> client.endTx())
       .onComplete(handleNoContentResponse(asyncResultHandler, fund.getId(), "Fund {} {} updated"));
   }
 
-  private Future<Boolean> isFundStatusChanged(Fund fund) {
+  private Future<Boolean> isFundStatusChanged(Fund fund, DBClient client) {
     Promise<Boolean> promise = Promise.promise();
-    pgClient.getById(FUND_TABLE, fund.getId(), Fund.class, event -> {
+    client.getPgClient().getById(FUND_TABLE, fund.getId(), Fund.class, event -> {
       if (event.failed()) {
         handleFailure(promise, event);
       } else {
@@ -140,8 +128,8 @@ public class FundAPI implements FinanceStorageFunds {
   private Future<Void> updateRelatedCurrentFYBudgets(Fund fund, DBClient client) {
     Promise<Void> promise = Promise.promise();
 
-    String fullBudgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
-    String fullFYTableName = getFullTableName(tenantId, FISCAL_YEAR_TABLE);
+    String fullBudgetTableName = getFullTableName(client.getTenantId(), BUDGET_TABLE);
+    String fullFYTableName = getFullTableName(client.getTenantId(), FISCAL_YEAR_TABLE);
 
     JsonArray queryParams = new JsonArray();
     queryParams.add("\"" + fund.getFundStatus() + "\"");
