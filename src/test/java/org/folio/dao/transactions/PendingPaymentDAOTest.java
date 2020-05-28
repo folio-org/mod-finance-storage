@@ -1,6 +1,7 @@
 package org.folio.dao.transactions;
 
 import io.restassured.http.Header;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.folio.rest.impl.TestBase;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
@@ -122,26 +123,19 @@ public class PendingPaymentDAOTest extends TestBase {
   }
 
   @Test
-  void testSaveTransactionsToPermanentTableOnluPendingPayments(Vertx vertx, VertxTestContext testContext) {
+  void testSaveTransactionsToPermanentTableOnlyPendingPayments(Vertx vertx, VertxTestContext testContext) {
     String summaryId = UUID.randomUUID().toString();
     Transaction tmpTransaction = new Transaction()
       .withId(UUID.randomUUID().toString())
       .withTransactionType(PENDING_PAYMENT)
       .withSourceInvoiceId(summaryId);
 
-
     final DBClient client = new DBClient(vertx, TEST_TENANT);
-    Promise<String> promise1 = Promise.promise();
-    client.getPgClient().save(INVOICE_TRANSACTION_SUMMARIES, summaryId, new InvoiceTransactionSummary().withNumPendingPayments(1).withId(summaryId), event -> {
-      promise1.complete(event.result());
-    });
-    Promise<String> promise2 = Promise.promise();
-    client.getPgClient().save(TEMPORARY_INVOICE_TRANSACTIONS, tmpTransaction.getId(), tmpTransaction, event -> promise2.complete(event.result()));
 
     testContext.assertComplete(
-      promise1.future()
-        .compose(s -> promise2.future())
-        .compose(s -> client.startTx())
+      client.startTx()
+        .compose(client1 -> createSummary(summaryId, client))
+        .compose(s -> createTmpTransaction(tmpTransaction, client))
         .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, client))
         .compose(aVoid -> client.endTx())
         .compose(o -> pendingPaymentDAO.getTransactions(new Criterion(), new DBClient(vertx, TEST_TENANT))))
@@ -154,6 +148,20 @@ public class PendingPaymentDAOTest extends TestBase {
         });
         testContext.completeNow();
       });
+  }
+
+  private Future<String> createTmpTransaction(Transaction tmpTransaction, DBClient client) {
+    Promise<String> promise = Promise.promise();
+    client.getPgClient().save(client.getConnection(), TEMPORARY_INVOICE_TRANSACTIONS, tmpTransaction.getId(), tmpTransaction, event -> promise.complete(event.result()));
+    return promise.future();
+  }
+
+  private Future<String> createSummary(String summaryId, DBClient client) {
+    Promise<String> promise = Promise.promise();
+    client.getPgClient().save(client.getConnection(), INVOICE_TRANSACTION_SUMMARIES, summaryId, new InvoiceTransactionSummary().withNumPendingPayments(1).withId(summaryId), event -> {
+      promise.complete(event.result());
+    });
+    return promise.future();
   }
 
 
