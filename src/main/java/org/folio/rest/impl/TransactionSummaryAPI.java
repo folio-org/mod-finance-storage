@@ -126,8 +126,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     vertxContext.runOnContext(v -> {
       if (!StringUtils.equals(entity.getId(), id)) {
-        asyncResultHandler.handle(io.vertx.core.Future
-          .succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond400WithTextPlain(MISMATCH_ERROR_MESSAGE)));
+        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond400WithTextPlain(MISMATCH_ERROR_MESSAGE)));
         return;
       }
       try {
@@ -138,32 +137,23 @@ public class TransactionSummaryAPI implements FinanceStorage {
           .update(ORDER_TRANSACTION_SUMMARIES, entity, id, reply -> {
             try {
               if (reply.succeeded()) {
-                if (reply.result()
-                  .getUpdated() == 0) {
-                  asyncResultHandler
-                    .handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse
-                      .respond404WithTextPlain(Response.Status.NOT_FOUND.getReasonPhrase())));
+                if (reply.result().getUpdated() == 0) {
+                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond404WithTextPlain(Response.Status.NOT_FOUND.getReasonPhrase())));
                 } else {
-                  asyncResultHandler.handle(
-                      io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond204()));
+                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond204()));
                 }
               } else {
-                log.error(reply.cause()
-                  .getMessage());
-                asyncResultHandler
-                  .handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse
-                    .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR)));
+                log.error(reply.cause().getMessage());
+                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR)));
               }
             } catch (Exception e) {
               log.error(e.getMessage(), e);
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse
-                .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR)));
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR)));
             }
           });
       } catch (Exception e) {
         log.error(e.getMessage(), e);
-        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-            PutFinanceStorageOrderTransactionSummariesByIdResponse.respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR)));
+        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutFinanceStorageOrderTransactionSummariesByIdResponse.respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR)));
       }
     });
   }
