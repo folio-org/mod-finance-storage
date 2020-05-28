@@ -2,13 +2,11 @@ package org.folio.rest.impl;
 
 import static org.folio.rest.impl.TestBase.TENANT_HEADER;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -17,10 +15,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.folio.dao.transactions.PendingPaymentDAOTest;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
-import org.folio.rest.jaxrs.model.Parameter;
-import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.service.transactions.PendingPaymentAllOrNothingServiceTest;
 import org.junit.jupiter.api.AfterAll;
@@ -70,12 +66,12 @@ public class StorageTestSuite {
 
     DeploymentOptions options = new DeploymentOptions();
 
-    options.setConfig(new JsonObject().put("http.port", port));
+    options.setConfig(new JsonObject().put("http.port", port).put(HttpClientMock2.MOCK_MODE, "true"));
     options.setWorker(true);
 
     startVerticle(options);
 
-    //prepareTenant(TENANT_HEADER, false, false);
+    prepareTenant(TENANT_HEADER, false, false);
   }
 
   @AfterAll
@@ -104,27 +100,17 @@ public class StorageTestSuite {
     logger.info("Start verticle");
 
     CompletableFuture<String> deploymentComplete = new CompletableFuture<>();
-    TenantClient tenantClient = new TenantClient(URL_TO_HEADER.getValue(), "diku", "dummy-token");
+
     vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
-        try {
-          tenantClient.postTenant(new TenantAttributes()
-            .withModuleTo("1.0")
-            .withParameters(Arrays.asList(
-              new Parameter()
-                .withKey("loadSample")
-                .withValue("fasle"),
-              new Parameter()
-                .withKey("loadReference")
-                .withValue("fasle"))), res2 -> {
-            deploymentComplete.complete(res.result());
-          });
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
+      if (res.succeeded()) {
+        deploymentComplete.complete(res.result());
+      } else {
+        deploymentComplete.completeExceptionally(res.cause());
+      }
     });
 
     deploymentComplete.get(60, TimeUnit.SECONDS);
-    assertThat(deploymentComplete.isCompletedExceptionally(), is(false));
+
   }
 
   @Nested
