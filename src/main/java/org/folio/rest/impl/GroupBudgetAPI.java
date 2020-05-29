@@ -19,7 +19,6 @@ public class GroupBudgetAPI implements FinanceStorageGroupBudgets {
 
   public static final String GROUP_BUDGET_VIEW = "group_budgets_view";
 
-
   @Override
   public void getFinanceStorageGroupBudgets(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 

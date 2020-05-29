@@ -9,19 +9,23 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.service.BudgetService;
+import org.folio.service.budget.BudgetService;
+import org.folio.spring.SpringContextUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 public class BudgetAPI implements FinanceStorageBudgets {
   public static final String BUDGET_TABLE = "budget";
 
+  @Autowired
   private BudgetService budgetService;
 
   public BudgetAPI() {
-    budgetService = new BudgetService();
+    SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
   }
 
   @Override

@@ -1,10 +1,10 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
-import static org.folio.rest.service.transactions.AbstractTransactionService.TRANSACTION_TABLE;
 import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
 import static org.folio.rest.util.ResponseUtils.buildNoContentResponse;
 import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
+import static org.folio.service.transactions.AbstractTransactionService.TRANSACTION_TABLE;
 
 import java.util.Map;
 
@@ -15,18 +15,32 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.service.transactions.DefaultTransactionService;
-import org.folio.rest.service.transactions.EncumbranceAllOrNothingService;
-import org.folio.rest.service.transactions.PaymentCreditAllOrNothingService;
-import org.folio.rest.service.transactions.TransactionService;
+import org.folio.service.transactions.TransactionService;
+import org.folio.spring.SpringContextUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 public class TransactionAPI implements FinanceStorageTransactions {
 
   public static final String OKAPI_URL = "X-Okapi-Url";
+
+  @Autowired
+  private TransactionService encumbranceService;
+  @Autowired
+  private TransactionService paymentCreditService;
+  @Autowired
+  private TransactionService pendingPaymentService;
+  @Autowired
+  private TransactionService defaultTransactionService;
+
+
+  public TransactionAPI() {
+    SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
+  }
 
   @Override
   @Validate
@@ -60,7 +74,6 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Validate
   public void deleteFinanceStorageTransactionsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(TRANSACTION_TABLE, id, okapiHeaders, vertxContext, DeleteFinanceStorageTransactionsByIdResponse.class, asyncResultHandler);
-
   }
 
   @Override
@@ -79,19 +92,21 @@ public class TransactionAPI implements FinanceStorageTransactions {
 
   private TransactionService getCreateTransactionHandler(Transaction transaction) {
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return new EncumbranceAllOrNothingService();
+      return encumbranceService;
     } else if (transaction.getTransactionType() == Transaction.TransactionType.PAYMENT
         || transaction.getTransactionType() == Transaction.TransactionType.CREDIT) {
-      return new PaymentCreditAllOrNothingService();
+      return paymentCreditService;
+    } else if (transaction.getTransactionType() == Transaction.TransactionType.PENDING_PAYMENT) {
+      return pendingPaymentService;
     }
-    return new DefaultTransactionService();
+    return defaultTransactionService;
   }
 
   private TransactionService getUpdateTransactionHandler(Transaction transaction) {
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return new PaymentCreditAllOrNothingService();
+      return paymentCreditService;
     }
-    return new DefaultTransactionService();
+    return defaultTransactionService;
   }
 
 }

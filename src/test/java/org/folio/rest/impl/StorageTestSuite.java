@@ -13,10 +13,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.folio.dao.transactions.PendingPaymentDAOTest;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
+import org.folio.service.transactions.PendingPaymentAllOrNothingServiceTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -108,6 +111,7 @@ public class StorageTestSuite {
     });
 
     deploymentComplete.get(60, TimeUnit.SECONDS);
+
   }
 
   @Nested
@@ -158,4 +162,13 @@ public class StorageTestSuite {
   class EncumbrancesTestNested extends EncumbrancesTest {
   }
 
+  @Nested
+  class PendingPaymentAllOrNothingServiceTestNested extends PendingPaymentAllOrNothingServiceTest {
+  }
+
+  @Nested
+  class PendingPaymentDAOTestNested extends PendingPaymentDAOTest {}
+
+  @Nested
+  class PendingPaymentTransactionSummaryServiceTestNested extends PendingPaymentTransactionSummaryServiceTest {}
 }

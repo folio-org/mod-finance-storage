@@ -12,7 +12,7 @@ import org.folio.rest.jaxrs.model.GroupFundFiscalYearCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.service.GroupService;
+import org.folio.service.group.GroupService;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;

@@ -1,9 +1,7 @@
 package org.folio.rest.impl;
 
-import static io.vertx.core.Future.succeededFuture;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
+import static org.folio.dao.ledgerfy.LedgerFiscalYearPostgresDAO.LEDGERFY_TABLE;
 
-import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
@@ -12,17 +10,12 @@ import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.LedgerFYCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgerFiscalYears;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 
 public class FinanceStorageAPI implements FinanceStorageLedgerFiscalYears {
-  public static final String LEDGERFY_TABLE = "ledgerFY";
 
   @Override
   public void getFinanceStorageLedgerFiscalYears(int offset, int limit, String query, String lang, Map<String, String> okapiHeaders,
@@ -32,26 +25,4 @@ public class FinanceStorageAPI implements FinanceStorageLedgerFiscalYears {
 
   }
 
-  Future<Void> saveLedgerFiscalYearRecords(DBClient client, List<LedgerFY> ledgerFYs) {
-    if (ledgerFYs.isEmpty()) {
-      return succeededFuture();
-    }
-    Promise<Void> promise = Promise.promise();
-    client.getPgClient().saveBatch(client.getConnection(), LEDGERFY_TABLE, ledgerFYs, reply -> handleAsyncResult(promise, reply));
-    return promise.future();
-  }
-
- Future<Void> deleteLedgerFiscalYearRecords(DBClient client, Criterion criterion) {
-    Promise<Void> promise = Promise.promise();
-    client.getPgClient().delete(client.getConnection(), LEDGERFY_TABLE, criterion, reply -> handleAsyncResult(promise, reply));
-    return promise.future();
-  }
-
-  private <T> void handleAsyncResult(Promise<Void> promise, AsyncResult<T> reply) {
-    if(reply.failed()) {
-      handleFailure(promise, reply);
-    } else {
-      promise.complete();
-    }
-  }
 }

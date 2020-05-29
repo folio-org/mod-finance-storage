@@ -110,4 +110,11 @@ public class ResponseUtils {
     }
   }
 
+  public static  <T> void handleVoidAsyncResult(Promise<Void> promise, AsyncResult<T> reply) {
+    if(reply.failed()) {
+      handleFailure(promise, reply);
+    } else {
+      promise.complete();
+    }
+  }
 }
