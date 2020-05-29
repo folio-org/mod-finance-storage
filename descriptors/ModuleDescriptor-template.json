@@ -277,7 +277,7 @@
     },
     {
       "id": "finance-storage.invoice-transaction-summaries",
-      "version": "1.0",
+      "version": "2.0",
       "handlers": [
         {
           "methods": ["POST"],

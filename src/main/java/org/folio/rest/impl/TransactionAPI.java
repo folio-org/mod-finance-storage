@@ -10,26 +10,37 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
-import org.folio.config.ApplicationConfig;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
-import org.folio.service.transactions.DefaultTransactionService;
 import org.folio.service.transactions.TransactionService;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.folio.spring.SpringContextUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 public class TransactionAPI implements FinanceStorageTransactions {
 
   public static final String OKAPI_URL = "X-Okapi-Url";
 
+  @Autowired
+  private TransactionService encumbranceService;
+  @Autowired
+  private TransactionService paymentCreditService;
+  @Autowired
+  private TransactionService pendingPaymentService;
+  @Autowired
+  private TransactionService defaultTransactionService;
 
+
+  public TransactionAPI() {
+    SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
+  }
 
   @Override
   @Validate
@@ -80,24 +91,22 @@ public class TransactionAPI implements FinanceStorageTransactions {
   }
 
   private TransactionService getCreateTransactionHandler(Transaction transaction) {
-    ApplicationContext ctx = new AnnotationConfigApplicationContext(ApplicationConfig.class);
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return ctx.getBean("encumbranceService", TransactionService.class);
+      return encumbranceService;
     } else if (transaction.getTransactionType() == Transaction.TransactionType.PAYMENT
         || transaction.getTransactionType() == Transaction.TransactionType.CREDIT) {
-      return ctx.getBean("paymentCreditService", TransactionService.class);
+      return paymentCreditService;
     } else if (transaction.getTransactionType() == Transaction.TransactionType.PENDING_PAYMENT) {
-      return ctx.getBean("pendingPaymentService", TransactionService.class);
+      return pendingPaymentService;
     }
-    return new DefaultTransactionService();
+    return defaultTransactionService;
   }
 
   private TransactionService getUpdateTransactionHandler(Transaction transaction) {
-    ApplicationContext ctx = new AnnotationConfigApplicationContext(ApplicationConfig.class);
     if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return ctx.getBean("encumbranceService", TransactionService.class);
+      return paymentCreditService;
     }
-    return ctx.getBean("defaultTransactionService", TransactionService.class);
+    return defaultTransactionService;
   }
 
 }

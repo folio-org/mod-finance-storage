@@ -72,7 +72,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
     vertxContext.runOnContext(event ->
      client.startTx()
         .compose(tx1 -> saveLedger(entity, client))
-        .compose(ledger -> createLedgerFiscalYearRecords(ledger,client))
+        .compose(ledger -> createLedgerFiscalYearRecords(ledger, client))
         .compose(t ->client.endTx())
         .onComplete(result -> {
           if (result.failed()) {
@@ -273,14 +273,18 @@ public class LedgerAPI implements FinanceStorageLedgers {
   private Future<List<FiscalYear>> getFiscalYears(Ledger ledger, DBClient client) {
     Promise<List<FiscalYear>> promise = Promise.promise();
    client.getPgClient().get(client.getConnection(), FiscalYearAPI.FISCAL_YEAR_TABLE, FiscalYear.class, new Criterion(), true, false, reply -> {
-      if (reply.failed()) {
-        log.error("Failed to find fiscal years");
-        handleFailure(promise, reply);
-      } else {
-        List<FiscalYear> allFiscalYears = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
-        List<FiscalYear> fiscalYearsWithSeries = getFiscalYearsWithSeries(allFiscalYears, getFiscalYearSeries(allFiscalYears, ledger.getFiscalYearOneId()));
-        log.info("{} fiscal years have been found", fiscalYearsWithSeries.size());
-        promise.complete(fiscalYearsWithSeries);
+      try {
+        if (reply.failed()) {
+          log.error("Failed to find fiscal years");
+          handleFailure(promise, reply);
+        } else {
+          List<FiscalYear> allFiscalYears = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
+          List<FiscalYear> fiscalYearsWithSeries = getFiscalYearsWithSeries(allFiscalYears, getFiscalYearSeries(allFiscalYears, ledger.getFiscalYearOneId()));
+          log.info("{} fiscal years have been found", fiscalYearsWithSeries.size());
+          promise.complete(fiscalYearsWithSeries);
+        }
+      } catch (Exception e) {
+        promise.fail(e);
       }
     });
     return promise.future();

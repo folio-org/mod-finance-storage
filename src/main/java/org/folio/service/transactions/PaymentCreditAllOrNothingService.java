@@ -142,7 +142,7 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
 
   private Future<Integer> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> newTransactions, DBClient client) {
     JsonArray params = new JsonArray();
-    params.add(getSummaryId(newTransactions.get(0)));
+    params.add(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId() );
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
       .map(budgets -> updateBudgetsTotals(existingTransactions, newTransactions, budgets))
       .compose(budgets -> budgetService.updateBatchBudgets(budgets, client));
