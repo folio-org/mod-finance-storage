@@ -61,17 +61,18 @@ public class PendingPaymentDAOTest extends TestBase {
     String id = UUID.randomUUID().toString();
     Transaction transaction = new Transaction().withId(id);
     Promise<Void> promise1 = Promise.promise();
-    new DBClient(vertx, TEST_TENANT).getPgClient().save(TRANSACTION_TABLE, id, transaction, event -> {
+    final DBClient client = new DBClient(vertx, TEST_TENANT);
+    client.getPgClient().save(TRANSACTION_TABLE, id, transaction, event -> {
       promise1.complete();
     });
     Promise<Void> promise2 = Promise.promise();
-    new DBClient(vertx, TEST_TENANT).getPgClient().save(TRANSACTION_TABLE, transaction, event -> {
+    client.getPgClient().save(TRANSACTION_TABLE, transaction, event -> {
       promise2.complete();
     });
     Criterion criterion = new Criterion().addCriterion(new Criteria().addField("id").setOperation("=").setVal(id).setJSONB(false));
     testContext.assertComplete(promise1.future()
       .compose(aVoid -> promise2.future())
-      .compose(o -> pendingPaymentDAO.getTransactions(criterion, new DBClient(vertx, TEST_TENANT))))
+      .compose(o -> pendingPaymentDAO.getTransactions(criterion, client)))
       .onComplete(event -> {
         List<Transaction> transactions = event.result();
         testContext.verify(() -> {

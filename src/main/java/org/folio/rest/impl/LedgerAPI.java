@@ -19,12 +19,10 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.Vertx;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.folio.rest.annotations.Validate;
 import org.folio.dao.ledgerfy.LedgerFiscalYearDAO;
-import org.folio.dao.ledgerfy.LedgerFiscalYearPostgresDAO;
+import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
@@ -35,18 +33,19 @@ import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.spring.SpringContextUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
-import org.folio.spring.SpringContextUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public class LedgerAPI implements FinanceStorageLedgers {
 

@@ -4,6 +4,7 @@ import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
+import static org.folio.rest.util.ResponseUtils.handleVoidAsyncResult;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
@@ -140,13 +141,7 @@ public class FundAPI implements FinanceStorageFunds {
       "(SELECT id FROM " + fullFYTableName + " WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
       "AND (jsonb->>'periodEnd')::timestamp)));";
 
-   client.getPgClient().execute(client.getConnection(), sql, queryParams, event -> {
-      if (event.failed()) {
-        handleFailure(promise, event);
-      } else {
-        promise.complete();
-      }
-    });
+   client.getPgClient().execute(client.getConnection(), sql, queryParams, event -> handleVoidAsyncResult(promise, event));
     return promise.future();
   }
 }

@@ -151,11 +151,4 @@ public final class HelperUtils {
     return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));
   }
 
-  public static  <T> void handleAsyncResult(Promise<Void> promise, AsyncResult<T> reply) {
-    if(reply.failed()) {
-      handleFailure(promise, reply);
-    } else {
-      promise.complete();
-    }
-  }
 }

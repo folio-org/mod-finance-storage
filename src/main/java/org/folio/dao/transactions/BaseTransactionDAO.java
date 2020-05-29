@@ -1,6 +1,7 @@
 package org.folio.dao.transactions;
 
 import static org.folio.dao.transactions.EncumbranceDAO.TRANSACTIONS_TABLE;
+import static org.folio.rest.util.ResponseUtils.handleVoidAsyncResult;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.List;
@@ -71,14 +72,15 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
       List<JsonObject> jsonTransactions = transactions.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
       String sql = buildUpdatePermanentTransactionQuery(jsonTransactions, client.getTenantId());
       client.getPgClient()
-        .execute(client.getConnection(), sql, reply -> {
-          if (reply.failed()) {
-            handleFailure(promise, reply);
-          } else {
-            promise.complete();
-          }
-        });
+        .execute(client.getConnection(), sql, reply -> handleVoidAsyncResult(promise, reply));
     }
+    return promise.future();
+  }
+
+  @Override
+  public Future<Void> deleteTransactions(Criterion criterion, DBClient client) {
+    Promise<Void> promise = Promise.promise();
+    client.getPgClient().delete(client.getConnection(), TRANSACTIONS_TABLE, criterion, event -> handleVoidAsyncResult(promise, event));
     return promise.future();
   }
 

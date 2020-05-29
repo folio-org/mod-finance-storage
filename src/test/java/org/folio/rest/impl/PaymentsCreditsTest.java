@@ -8,6 +8,7 @@ import static org.folio.rest.impl.TransactionTest.TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.FUND;
@@ -23,6 +24,7 @@ import java.net.MalformedURLException;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import org.folio.rest.jaxrs.model.AwaitingPayment;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.Fund;
@@ -99,9 +101,6 @@ class PaymentsCreditsTest extends TestBase {
         .as(Transaction.class)
         .getId();
 
-    Budget budgetBefore = getBudgetAndValidate(budgetEndpointWithQueryParams);
-    LedgerFY ledgerFYBefore = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
-
     JsonObject paymentJsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
     paymentJsonTx.remove("id");
 
@@ -110,6 +109,48 @@ class PaymentsCreditsTest extends TestBase {
     payment.setFiscalYearId(fY);
     payment.setFromFundId(fromFundId);
     payment.setPaymentEncumbranceId(paymentEncumbranceId);
+
+    Transaction pendingPaymentForPayment = new Transaction()
+      .withFromFundId(payment.getFromFundId())
+      .withAmount(payment.getAmount())
+      .withCurrency(payment.getCurrency())
+      .withFiscalYearId(fY)
+      .withSource(Transaction.Source.INVOICE)
+      .withSourceInvoiceId(invoiceId)
+      .withTransactionType(PENDING_PAYMENT)
+      .withAwaitingPayment(new AwaitingPayment()
+        .withReleaseEncumbrance(false)
+        .withEncumbranceId(paymentEncumbranceId));
+
+
+    JsonObject creditJsonTx = new JsonObject(getFile(CREDIT_SAMPLE));
+    creditJsonTx.remove("id");
+
+    Transaction credit = creditJsonTx.mapTo(Transaction.class);
+    credit.setSourceInvoiceId(invoiceId);
+    credit.setFiscalYearId(fY);
+    credit.setToFundId(fromFundId);
+    credit.setPaymentEncumbranceId(creditEncumbranceId);
+
+    Transaction pendingPaymentForCredit = new Transaction()
+      .withFromFundId(credit.getToFundId())
+      .withAmount(-credit.getAmount())
+      .withCurrency(credit.getCurrency())
+      .withFiscalYearId(fY)
+      .withSource(Transaction.Source.INVOICE)
+      .withSourceInvoiceId(invoiceId)
+      .withTransactionType(PENDING_PAYMENT)
+      .withAwaitingPayment(new AwaitingPayment()
+        .withReleaseEncumbrance(false)
+        .withEncumbranceId(creditEncumbranceId));
+
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(pendingPaymentForPayment).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201);
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(pendingPaymentForCredit).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201);
+
+    Budget budgetBefore = getBudgetAndValidate(budgetEndpointWithQueryParams);
+    LedgerFY ledgerFYBefore = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
 
     String paymentId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
       .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
@@ -121,15 +162,6 @@ class PaymentsCreditsTest extends TestBase {
     // payment does not appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(404);
-
-    JsonObject creditJsonTx = new JsonObject(getFile(CREDIT_SAMPLE));
-    creditJsonTx.remove("id");
-
-    Transaction credit = creditJsonTx.mapTo(Transaction.class);
-    credit.setSourceInvoiceId(invoiceId);
-    credit.setFiscalYearId(fY);
-    credit.setToFundId(fromFundId);
-    credit.setPaymentEncumbranceId(creditEncumbranceId);
 
     String creditId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit)
       .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
@@ -167,6 +199,14 @@ class PaymentsCreditsTest extends TestBase {
     LedgerFY ledgerFYAfter = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
 
     assertEquals(ledgerFYBefore, ledgerFYAfter);
+
+    // Check pending payments deleted
+    TransactionCollection transactionCollection = getData(String.format("%s?query=sourceInvoiceId==%s AND transactionType==%s", TRANSACTION_ENDPOINT, invoiceId, PENDING_PAYMENT.value()), TRANSACTION_TENANT_HEADER)
+      .then().statusCode(200)
+      .extract()
+      .as(TransactionCollection.class);
+
+    assertEquals(transactionCollection.getTotalRecords(), 0);
 
     // Encumbrance Changes for payment
     assertEquals(payment.getAmount(), subtractValues(paymentEncumbranceAfter.getEncumbrance()

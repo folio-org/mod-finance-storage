@@ -18,6 +18,7 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.PendingPaymentAllOrNothingServiceTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -167,4 +168,7 @@ public class StorageTestSuite {
 
   @Nested
   class PendingPaymentDAOTestNested extends PendingPaymentDAOTest {}
+
+  @Nested
+  class PendingPaymentTransactionSummaryServiceTestNested extends PendingPaymentTransactionSummaryServiceTest {}
 }

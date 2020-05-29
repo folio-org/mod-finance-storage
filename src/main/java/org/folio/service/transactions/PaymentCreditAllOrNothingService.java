@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
@@ -226,6 +227,7 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
    * budgets for payments/credits must be recalculated. To avoid partial transactions, all payments and credits will be done in a
    * database transaction
    *
+   * @param transactions to be processed
    * @param client
    */
   @Override
@@ -234,7 +236,14 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
     return updateEncumbranceTotals(transactions, client)
       .compose(dbc -> updateBudgetsTotals(transactions, client))
       .compose(dbc -> transactionsDAO.saveTransactionsToPermanentTable(summaryId, client))
-      .mapEmpty();
+      .compose(integer -> deletePendingPayments(summaryId, client));
+  }
+
+  private Future<Void> deletePendingPayments(String summaryId, DBClient client) {
+    CriterionBuilder criterionBuilder = new CriterionBuilder();
+    criterionBuilder.withJson("sourceInvoiceId", "=", summaryId)
+      .withJson("transactionType", "=", PENDING_PAYMENT.value());
+    return transactionsDAO.deleteTransactions(criterionBuilder.build(), client);
   }
 
   /**
