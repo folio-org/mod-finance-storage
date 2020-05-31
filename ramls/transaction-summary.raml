@@ -1,7 +1,7 @@
 #%RAML 1.0
 title: "mod-finance-storage"
 baseUri: https://github.com/folio-org/mod-finance-storage
-version: v1.1
+version: v1.2
 
 documentation:
   - title: mod-finance-storage (Transaction summaries)
@@ -23,6 +23,8 @@ traits:
 
 resourceTypes:
   get-delete: !include raml-util/rtypes/get-delete.raml
+  item-collection: !include raml-util/rtypes/item-collection.raml
+
 
 /finance-storage:
  /order-transaction-summaries:
@@ -67,7 +69,7 @@ resourceTypes:
         description: The UUID of an order transaction summary
         type: UUID
     type:
-      get-delete:
+      item-collection:
         exampleItem: !include acq-models/mod-finance/examples/order_transaction_summary.sample
         schema: order-transaction-summary
     is: [validate]

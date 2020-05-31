@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.MalformedURLException;
 
@@ -17,12 +18,14 @@ import io.vertx.core.json.JsonObject;
 class TransactionsSummariesTest extends TestBase {
 
   static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
-  private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
+  static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
   public static final String ORDERS_SUMMARY_SAMPLE = "data/order-transaction-summaries/order-306857_transaction-summary.json";
   public static final String INVOICE_SUMMARY_SAMPLE = "data/invoice-transaction-summaries/invoice-transaction-summary.json";
 
   static final String INVOICE_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/invoice-transaction-summaries";
   private static final String INVOICE_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = INVOICE_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
+  private static final int NUM_TRANSACTIONS = 123;
+
 
   @Test
   void testOrderTransactionSummaries() throws MalformedURLException {
@@ -33,7 +36,13 @@ class TransactionsSummariesTest extends TestBase {
     OrderTransactionSummary createdSummary = postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
       .encodePrettily(), TENANT_HEADER).as(OrderTransactionSummary.class);
 
+    createdSummary.setNumTransactions(NUM_TRANSACTIONS);
+    putData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, createdSummary.getId(), JsonObject.mapFrom(createdSummary)
+      .encodePrettily(), TENANT_HEADER).then()
+      .statusCode(204);
+
     testEntitySuccessfullyFetched(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, createdSummary.getId());
+    assertEquals(NUM_TRANSACTIONS, createdSummary.getNumTransactions());
 
     deleteDataSuccess(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, createdSummary.getId());
   }
