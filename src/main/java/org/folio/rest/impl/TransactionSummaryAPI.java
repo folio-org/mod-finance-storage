@@ -117,6 +117,14 @@ public class TransactionSummaryAPI implements FinanceStorage {
 
   @Override
   @Validate
+  public void putFinanceStorageOrderTransactionSummariesById(String id, String lang, OrderTransactionSummary entity,
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.put(ORDER_TRANSACTION_SUMMARIES, entity, id, okapiHeaders, vertxContext,
+        PutFinanceStorageOrderTransactionSummariesByIdResponse.class, asyncResultHandler);
+  }
+
+  @Override
+  @Validate
   public void deleteFinanceStorageOrderTransactionSummariesById(String id, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(ORDER_TRANSACTION_SUMMARIES, id, okapiHeaders, vertxContext,
