@@ -269,6 +269,11 @@
           "permissionsRequired": ["finance-storage.order-transaction-summaries.item.get"]
         },
         {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/order-transaction-summaries/{id}",
+          "permissionsRequired": ["finance-storage.order-transaction-summaries.item.put"]
+        },
+        {
           "methods": ["DELETE"],
           "pathPattern": "/finance-storage/order-transaction-summaries/{id}",
           "permissionsRequired": ["finance-storage.order-transaction-summaries.item.delete"]
@@ -618,7 +623,13 @@
       "permissionName" : "finance-storage.order-transaction-summaries.item.post",
       "displayName" : "Create a new order transaction summary record",
       "description" : "Create a new order transaction summary record"
-    },    {
+    },
+    {
+      "permissionName" : "finance-storage.order-transaction-summaries.item.put",
+      "displayName" : "Update order transaction summary record",
+      "description" : "Update order transaction summary record"
+    },
+    {
       "permissionName" : "finance-storage.order-transaction-summaries.item.delete",
       "displayName" : "Delete a new order transaction summary record",
       "description" : "Delete a new order transaction summary record"
@@ -630,6 +641,7 @@
       "subPermissions" : [
         "finance-storage.order-transaction-summaries.item.get",
         "finance-storage.order-transaction-summaries.item.post",
+        "finance-storage.order-transaction-summaries.item.put",
         "finance-storage.order-transaction-summaries.item.delete"
       ]
     },
