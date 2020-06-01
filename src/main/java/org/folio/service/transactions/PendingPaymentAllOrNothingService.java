@@ -80,9 +80,9 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
 
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
       .compose(oldBudgets -> processLinkedPendingPayments(linkedToEncumbrance, oldBudgets, client)
-      .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
-      .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)
-        .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, newBudgets, client))))
+        .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
+        .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)
+          .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, newBudgets, client))))
       .compose(aVoid -> transactionsDAO.saveTransactionsToPermanentTable(transactions.get(0).getSourceInvoiceId(), client))
       .mapEmpty();
   }

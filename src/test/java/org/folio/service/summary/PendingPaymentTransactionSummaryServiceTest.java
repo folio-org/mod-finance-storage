@@ -1,19 +1,20 @@
 package org.folio.service.summary;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.UUID;
+
 import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class PendingPaymentTransactionSummaryServiceTest {
 
-  private PendingPaymentTransactionSummaryService pendingPaymentSummaryService = new PendingPaymentTransactionSummaryService(new InvoiceTransactionSummaryDAO());
+  private final PendingPaymentTransactionSummaryService pendingPaymentSummaryService = new PendingPaymentTransactionSummaryService(new InvoiceTransactionSummaryDAO());
 
   @Test
   void testGetSummaryId() {
@@ -49,8 +50,8 @@ public class PendingPaymentTransactionSummaryServiceTest {
       .withNumPendingPayments(2)
       .withNumPaymentsCredits(2);
     pendingPaymentSummaryService.setTransactionsSummariesProcessed(summary);
-    assertEquals(summary.getNumPaymentsCredits(), 2);
-    assertEquals(summary.getNumPendingPayments(), -2);
+    assertEquals(2, summary.getNumPaymentsCredits());
+    assertEquals(-2, summary.getNumPendingPayments());
   }
 
   @Test
@@ -58,6 +59,6 @@ public class PendingPaymentTransactionSummaryServiceTest {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary()
       .withNumPendingPayments(-2)
       .withNumPaymentsCredits(2);
-    assertEquals(pendingPaymentSummaryService.getNumTransactions(summary), -2);
+    assertEquals(-2, pendingPaymentSummaryService.getNumTransactions(summary));
   }
 }
