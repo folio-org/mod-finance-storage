@@ -8,10 +8,11 @@ import static java.util.stream.Collectors.toMap;
 import static javax.money.Monetary.getDefaultRounding;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
-import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
+import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -21,8 +22,6 @@ import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
 
-import org.apache.commons.collections4.keyvalue.MultiKey;
-import org.apache.commons.collections4.map.MultiKeyMap;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
@@ -81,10 +80,19 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
       .compose(oldBudgets -> processLinkedPendingPayments(linkedToEncumbrance, oldBudgets, client)
       .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
-      .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)
-        .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, newBudgets, client))))
+        .map(this::makeAvailableUnavailableNonNegative)
+        .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)
+          .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, newBudgets, client))))
       .compose(aVoid -> transactionsDAO.saveTransactionsToPermanentTable(transactions.get(0).getSourceInvoiceId(), client))
       .mapEmpty();
+  }
+
+  private List<Budget> makeAvailableUnavailableNonNegative(List<Budget> budgets) {
+    budgets.forEach(budget -> {
+        budget.setAvailable(max(0, budget.getAvailable()));
+        budget.setUnavailable(max(0, budget.getUnavailable()));
+      });
+    return budgets;
   }
 
   private List<Budget> processNotLinkedPendingPayments(List<Transaction> pendingPayments, List<Budget> oldBudgets) {
@@ -102,12 +110,10 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
   }
 
   private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> existingTransactions, List<Budget> budgets) {
-    MultiKeyMap<String, Budget> groupedBudgets = new MultiKeyMap<>();
-    groupedBudgets.putAll(budgets.stream().collect(toMap(budget -> new MultiKey<>(budget.getFundId(), budget.getFiscalYearId()), identity())));
+    Map<String, List<Transaction>> groupedTransactions = existingTransactions.stream().collect(groupingBy(Transaction::getFromFundId));
 
-    return existingTransactions.stream()
-      .collect(groupingBy(
-        transaction -> groupedBudgets.get(transaction.getFromFundId(), transaction.getFiscalYearId())));
+    return budgets.stream()
+      .collect(toMap(identity(), budget ->  groupedTransactions.getOrDefault(budget.getFundId(), Collections.emptyList())));
 
   }
 
@@ -128,7 +134,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
   private void recalculateAvailableUnavailable(Budget budget, CurrencyUnit currency) {
     double newUnavailable = sumMoney(currency, budget.getEncumbered(), budget.getAwaitingPayment(), budget.getExpenditures(),
       -budget.getOverEncumbrance(), -budget.getOverExpended());
-    double newAvailable = subtractMoneyNonNegative(budget.getAllocated(), newUnavailable, currency);
+    double newAvailable = subtractMoney(budget.getAllocated(), newUnavailable, currency);
 
     budget.setAvailable(newAvailable);
     budget.setUnavailable(newUnavailable);
@@ -168,7 +174,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
     MonetaryAmount amount = Money.of(encumbrance.getAmount(), encumbrance.getCurrency()).subtract(transactions.stream()
       .map(transaction -> Money.of(transaction.getAmount(), transaction.getCurrency()))
       .reduce(Money::add).orElse(Money.zero(Monetary.getCurrency(encumbrance.getCurrency()))));
-    encumbrance.setAmount(amount.with(getDefaultRounding()).getNumber().doubleValue());
+    encumbrance.setAmount(max(amount.with(getDefaultRounding()).getNumber().doubleValue(), 0));
   }
 
   private List<Budget> updateBudgetsTotalsWithLinkedPendingPayments(List<Transaction> pendingPayments, List<Transaction> encumbrances, List<Budget> budgets) {
@@ -179,36 +185,10 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
       .filter(transaction -> transaction.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED)
       .collect(Collectors.toList());
 
-    List<Transaction> negativeEncumbrances = encumbrances.stream()
-      .filter(transaction -> transaction.getAmount() < 0)
-      .collect(Collectors.toList());
-
-    applyNegativeEncumbrances(negativeEncumbrances, fundIdBudgetMap);
     applyPendingPayments(pendingPayments, fundIdBudgetMap);
     applyEncumbrances(releasedEncumbrances, fundIdBudgetMap);
 
     return new ArrayList<>(fundIdBudgetMap.values());
-  }
-
-  private void applyNegativeEncumbrances(List<Transaction> negativeEncumbrances, Map<String, Budget> fundIdBudgetMap) {
-    if (isNotEmpty(negativeEncumbrances)) {
-      CurrencyUnit currency = Monetary.getCurrency(negativeEncumbrances.get(0).getCurrency());
-      negativeEncumbrances.forEach(transaction -> {
-        Budget budget = fundIdBudgetMap.get(transaction.getFromFundId());
-        MonetaryAmount amount = Money.of(transaction.getAmount(), currency).negate();
-
-        MonetaryAmount available = Money.of(budget.getAvailable(), currency);
-        MonetaryAmount unavailable = Money.of(budget.getUnavailable(), currency);
-
-        double newAvailable = max(available.subtract(amount).getNumber().doubleValue(), 0);
-        double newUnavailable = unavailable.add(amount).getNumber().doubleValue();
-
-        budget.setAvailable(newAvailable);
-        budget.setUnavailable(newUnavailable);
-
-        transaction.setAmount(0.00);
-      });
-    }
   }
 
   private void applyPendingPayments(List<Transaction> pendingPayments, Map<String, Budget> fundIdBudgetMap) {
@@ -223,6 +203,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
        double newAwaitingPayment = max(awaitingPayment.add(amount).getNumber().doubleValue(), 0);
        budget.setEncumbered(newEncumbered);
        budget.setAwaitingPayment(newAwaitingPayment);
+       recalculateAvailableUnavailable(budget, currency);
      });
   }
 
@@ -233,14 +214,9 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         Budget budget = fundIdBudgetMap.get(transaction.getFromFundId());
         MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
         MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);
-        MonetaryAmount available = Money.of(budget.getAvailable(), currency);
-        MonetaryAmount unavailable = Money.of(budget.getUnavailable(), currency);
-        double newEncumbered = max(encumbered.subtract(amount).getNumber().doubleValue(), 0);
-        double newAvailable = max(available.add(amount).getNumber().doubleValue(), 0);
-        double newUnavailable = max(unavailable.subtract(amount).getNumber().doubleValue(), 0);
+        double newEncumbered = encumbered.subtract(amount).getNumber().doubleValue();
         budget.setEncumbered(newEncumbered);
-        budget.setAvailable(newAvailable);
-        budget.setUnavailable(newUnavailable);
+        recalculateAvailableUnavailable(budget, currency);
         transaction.setAmount(0.00);
       });
     }
