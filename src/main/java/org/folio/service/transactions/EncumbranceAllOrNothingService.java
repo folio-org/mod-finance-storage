@@ -202,7 +202,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   public Future<Void> updateTransaction(String id, Transaction transaction, Context context, Map<String, String> okapiHeaders) {
     DBClient client = new DBClient(context, okapiHeaders);
     return isTransactionExists(id, client).compose(transactionExists -> {
-      if (transactionExists) {
+      if (Boolean.TRUE.equals(transactionExists)) {
         return updateEncumbrance(transaction, context, okapiHeaders);
       } else {
         return createTransaction(transaction, context, okapiHeaders).mapEmpty();
@@ -350,7 +350,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     newEncumbered = sumMoney(newEncumbered, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
     budget.setEncumbered(newEncumbered);
 
-    if (isEncumbrancePending(existingTransaction)) {
+    if (isEncumbrancePending(tmpTransaction)) {
       tmpTransaction.setAmount(0d);
       tmpTransaction.getEncumbrance().setInitialAmountEncumbered(0d);
 
