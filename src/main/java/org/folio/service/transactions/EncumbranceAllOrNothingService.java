@@ -55,10 +55,13 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
       + "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId "
       + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
 
-  public EncumbranceAllOrNothingService(BudgetService budgetService, TemporaryTransactionDAO temporaryTransactionDAO,
-      LedgerFiscalYearService ledgerFiscalYearService, FundService fundService,
-      TransactionSummaryService<OrderTransactionSummary> transactionSummaryService, TransactionDAO transactionsDAO,
-      LedgerService ledgerService) {
+  public EncumbranceAllOrNothingService(BudgetService budgetService,
+                                        TemporaryTransactionDAO temporaryTransactionDAO,
+                                        LedgerFiscalYearService ledgerFiscalYearService,
+                                        FundService fundService,
+                                        TransactionSummaryService<OrderTransactionSummary> transactionSummaryService,
+                                        TransactionDAO transactionsDAO,
+                                        LedgerService ledgerService) {
     super(budgetService, temporaryTransactionDAO, ledgerFiscalYearService, fundService, transactionSummaryService, transactionsDAO,
         ledgerService);
   }
@@ -205,7 +208,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
       if (Boolean.TRUE.equals(transactionExists)) {
         return updateEncumbrance(transaction, context, okapiHeaders);
       } else {
-        return createTransaction(transaction, context, okapiHeaders).mapEmpty();
+        throw new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Transaction not found");
       }
     });
   }
@@ -274,7 +277,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     return transactionsDAO.getTransactions(criterionBuilder.build(), client)
       .map(transactions -> {
         if (transactions.isEmpty()) {
-          throw new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Not found");
+          throw new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Transaction not found");
         }
         return null;
       });

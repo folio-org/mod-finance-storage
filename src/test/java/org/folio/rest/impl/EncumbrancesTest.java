@@ -548,14 +548,14 @@ class EncumbrancesTest extends TestBase {
 
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
-    // create 1st Encumbrance, expected number is 2
+    // create 1st Encumbrance, expected number is 1
     String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
 
     // encumbrance appears in transaction table
-    getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    encumbrance = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
 
     updateOrderSummary(orderId, 1);
@@ -574,69 +574,18 @@ class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testCreateOrUpdateEncumbranceIfNotFound() throws MalformedURLException {
-    String fiscalYearId = createFiscalYear();
-    String ledgerId = createLedger(fiscalYearId, true);
-    String fundId = createFund(ledgerId);
+  void testUpdateEncumbranceNotFound() throws MalformedURLException {
 
-    Budget budget = buildBudget(fiscalYearId, fundId);
-    Budget budgetBefore = postData(BUDGET.getEndpoint(), JsonObject.mapFrom(budget).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(201).extract().as(Budget.class);
+    String invoiceId = UUID.randomUUID().toString();
+    createInvoiceSummary(invoiceId, 2);
 
-    // prepare ledgerFY query
-    String fromLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, ledgerId, fiscalYearId);
-    LedgerFY ledgerFYBefore = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
-    ledgerFYBefore.withAllocated(budgetBefore.getAllocated())
-      .withAvailable(budgetBefore.getAvailable())
-      .withUnavailable(budgetBefore.getUnavailable());
-
-    updateLedgerFy(ledgerFYBefore);
-
-    String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
-
-    JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
-
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
+    jsonTx.remove("id");
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
-    encumbrance.setId(UUID.randomUUID().toString());
-    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance.setSourceInvoiceId(invoiceId);
 
     // Try to update non-existent transaction
-    putData(TRANSACTION.getEndpointWithId(), encumbrance.getId(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
-
-    Transaction savedTransaction = getDataById(TRANSACTION.getEndpointWithId(), encumbrance.getId(), TRANSACTION_TENANT_HEADER)
-      .then()
-      .statusCode(200)
-      .extract()
-      .as(Transaction.class);
-
-    Budget budgetAfter = getDataById(BUDGET.getEndpointWithId(), budgetBefore.getId(), TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
-    LedgerFY ledgerFYAfter = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
-
-    final double amount = encumbrance.getAmount();
-    double expectedBudgetsAvailable;
-    double expectedBudgetsUnavailable;
-    double expectedBudgetsEncumbered;
-
-    double expectedLedgersAvailable;
-    double expectedLedgersUnavailable;
-
-    expectedBudgetsEncumbered = sumValues(budgetBefore.getEncumbered(), amount);
-    expectedBudgetsAvailable = subtractValues(budgetBefore.getAvailable(), amount);
-    expectedBudgetsUnavailable = sumValues(budgetBefore.getUnavailable(), amount);
-
-    expectedLedgersAvailable = subtractValues(ledgerFYBefore.getAvailable(), amount);
-    expectedLedgersUnavailable = sumValues(ledgerFYBefore.getUnavailable(), amount);
-
-    assertEquals(expectedBudgetsEncumbered, budgetAfter.getEncumbered());
-    assertEquals(expectedBudgetsAvailable , budgetAfter.getAvailable());
-    assertEquals(expectedBudgetsUnavailable, budgetAfter.getUnavailable());
-    verifyBudgetTotalsAfter(budgetAfter);
-
-    assertEquals(expectedLedgersAvailable, ledgerFYAfter.getAvailable());
-    assertEquals(expectedLedgersUnavailable , ledgerFYAfter.getUnavailable());
-    verifyLedgerFYAfterCreateEncumbrance(ledgerFYBefore, ledgerFYAfter,
-      Collections.singletonList(budgetBefore), Collections.singletonList(budgetAfter));
+    putData(TRANSACTION.getEndpointWithId(), UUID.randomUUID().toString(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(404);
 
   }
 

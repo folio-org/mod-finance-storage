@@ -53,12 +53,12 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
   public static final String FUND_CANNOT_BE_PAID = "Fund cannot be paid due to restrictions";
 
   BudgetService budgetService;
-  private TemporaryTransactionDAO temporaryTransactionDAO;
-  private LedgerFiscalYearService ledgerFiscalYearService;
-  private FundService fundService;
+  private final TemporaryTransactionDAO temporaryTransactionDAO;
+  private final LedgerFiscalYearService ledgerFiscalYearService;
+  private final FundService fundService;
   TransactionSummaryService<T> transactionSummaryService;
   TransactionDAO transactionsDAO;
-  private LedgerService ledgerService;
+  private final LedgerService ledgerService;
 
 
   public BaseAllOrNothingTransactionService(BudgetService budgetService,
