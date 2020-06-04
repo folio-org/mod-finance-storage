@@ -125,16 +125,16 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         .forEach(tmpTransaction -> {
           double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getAmount(), currency);
           budget.setAwaitingPayment(newAwaitingPayment);
-          recalculateAvailableUnavailable(budget, currency);
+          recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
         });
     }
     return budget;
   }
 
-  private void recalculateAvailableUnavailable(Budget budget, CurrencyUnit currency) {
+  private void recalculateAvailableUnavailable(Budget budget, Double transactionAmount, CurrencyUnit currency) {
     double newUnavailable = sumMoney(currency, budget.getEncumbered(), budget.getAwaitingPayment(), budget.getExpenditures(),
       -budget.getOverEncumbrance(), -budget.getOverExpended());
-    double newAvailable = subtractMoney(budget.getAllocated(), newUnavailable, currency);
+    double newAvailable = subtractMoney(budget.getAvailable(), transactionAmount, currency);
 
     budget.setAvailable(newAvailable);
     budget.setUnavailable(newUnavailable);
@@ -185,10 +185,36 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
       .filter(transaction -> transaction.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED)
       .collect(Collectors.toList());
 
+    List<Transaction> negativeEncumbrances = encumbrances.stream()
+      .filter(transaction -> transaction.getAmount() < 0)
+      .collect(Collectors.toList());
+
+    applyNegativeEncumbrances(negativeEncumbrances, fundIdBudgetMap);
     applyPendingPayments(pendingPayments, fundIdBudgetMap);
     applyEncumbrances(releasedEncumbrances, fundIdBudgetMap);
 
     return new ArrayList<>(fundIdBudgetMap.values());
+  }
+
+  private void applyNegativeEncumbrances(List<Transaction> negativeEncumbrances, Map<String, Budget> fundIdBudgetMap) {
+    if (isNotEmpty(negativeEncumbrances)) {
+      CurrencyUnit currency = Monetary.getCurrency(negativeEncumbrances.get(0).getCurrency());
+      negativeEncumbrances.forEach(transaction -> {
+        Budget budget = fundIdBudgetMap.get(transaction.getFromFundId());
+        MonetaryAmount amount = Money.of(transaction.getAmount(), currency).negate();
+
+        MonetaryAmount available = Money.of(budget.getAvailable(), currency);
+        MonetaryAmount unavailable = Money.of(budget.getUnavailable(), currency);
+
+        double newAvailable = available.subtract(amount).getNumber().doubleValue();
+        double newUnavailable = unavailable.add(amount).getNumber().doubleValue();
+
+        budget.setAvailable(newAvailable);
+        budget.setUnavailable(newUnavailable);
+
+        transaction.setAmount(0.00);
+      });
+    }
   }
 
   private void applyPendingPayments(List<Transaction> pendingPayments, Map<String, Budget> fundIdBudgetMap) {
@@ -199,11 +225,10 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
        MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
        MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);
        MonetaryAmount awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
-       double newEncumbered = max(encumbered.subtract(amount).getNumber().doubleValue(), 0);
-       double newAwaitingPayment = max(awaitingPayment.add(amount).getNumber().doubleValue(), 0);
+       double newEncumbered = encumbered.subtract(amount).getNumber().doubleValue();
+       double newAwaitingPayment = awaitingPayment.add(amount).getNumber().doubleValue();
        budget.setEncumbered(newEncumbered);
        budget.setAwaitingPayment(newAwaitingPayment);
-       recalculateAvailableUnavailable(budget, currency);
      });
   }
 
@@ -216,7 +241,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);
         double newEncumbered = encumbered.subtract(amount).getNumber().doubleValue();
         budget.setEncumbered(newEncumbered);
-        recalculateAvailableUnavailable(budget, currency);
+        recalculateAvailableUnavailable(budget, transaction.getAmount(), currency);
         transaction.setAmount(0.00);
       });
     }
