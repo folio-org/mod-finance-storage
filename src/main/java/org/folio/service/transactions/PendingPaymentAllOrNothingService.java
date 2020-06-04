@@ -174,7 +174,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
     MonetaryAmount amount = Money.of(encumbrance.getAmount(), encumbrance.getCurrency()).subtract(transactions.stream()
       .map(transaction -> Money.of(transaction.getAmount(), transaction.getCurrency()))
       .reduce(Money::add).orElse(Money.zero(Monetary.getCurrency(encumbrance.getCurrency()))));
-    encumbrance.setAmount(max(amount.with(getDefaultRounding()).getNumber().doubleValue(), 0));
+    encumbrance.setAmount(amount.with(getDefaultRounding()).getNumber().doubleValue());
   }
 
   private List<Budget> updateBudgetsTotalsWithLinkedPendingPayments(List<Transaction> pendingPayments, List<Transaction> encumbrances, List<Budget> budgets) {
@@ -205,12 +205,14 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
 
         MonetaryAmount available = Money.of(budget.getAvailable(), currency);
         MonetaryAmount unavailable = Money.of(budget.getUnavailable(), currency);
+        MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);
 
         double newAvailable = available.subtract(amount).getNumber().doubleValue();
         double newUnavailable = unavailable.add(amount).getNumber().doubleValue();
 
         budget.setAvailable(newAvailable);
         budget.setUnavailable(newUnavailable);
+        budget.setEncumbered(encumbered.add(amount).getNumber().doubleValue());
 
         transaction.setAmount(0.00);
       });
@@ -241,7 +243,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);
         double newEncumbered = encumbered.subtract(amount).getNumber().doubleValue();
         budget.setEncumbered(newEncumbered);
-        recalculateAvailableUnavailable(budget, transaction.getAmount(), currency);
+        recalculateAvailableUnavailable(budget, -transaction.getAmount(), currency);
         transaction.setAmount(0.00);
       });
     }
