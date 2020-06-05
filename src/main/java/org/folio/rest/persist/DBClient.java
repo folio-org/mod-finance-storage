@@ -5,7 +5,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.ext.sql.SQLConnection;
 import org.folio.rest.tools.utils.TenantTool;
 
 import java.util.Map;

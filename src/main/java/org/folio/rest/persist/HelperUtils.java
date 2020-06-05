@@ -48,7 +48,7 @@ public final class HelperUtils {
     client.getPgClient().delete(client.getConnection(), table, id, reply -> {
       if(reply.failed()) {
         handleFailure(promise, reply);
-      } else if (reply.result().getUpdated() == 0) {
+      } else if (reply.result().rowCount() == 0) {
         promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
       } else {
         promise.complete();

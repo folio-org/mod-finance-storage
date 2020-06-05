@@ -12,10 +12,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 
+import io.vertx.sqlclient.Tuple;
 import org.apache.commons.collections4.keyvalue.MultiKey;
 import org.apache.commons.collections4.map.MultiKeyMap;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
@@ -144,9 +146,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   private Future<Void> updateBudgetsLedgersTotals(List<Transaction> transactions, DBClient client) {
     String sql = getSelectBudgetsQuery(client.getTenantId());
-    JsonArray params = new JsonArray();
-    params.add(getSummaryId(transactions.get(0)));
-    return budgetService.getBudgets(sql, params, client)
+    return budgetService.getBudgets(sql, Tuple.of(UUID.fromString(getSummaryId(transactions.get(0)))), client)
       .compose(oldBudgets -> {
         List<Budget> newBudgets = updateBudgetsTotals(transactions, oldBudgets);
         return budgetService.updateBatchBudgets(newBudgets, client)

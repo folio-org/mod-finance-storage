@@ -16,12 +16,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
 
+import io.vertx.sqlclient.Tuple;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
@@ -73,11 +75,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
 
     String summaryId = getSummaryId(transactions.get(0));
 
-    JsonArray params = new JsonArray();
-    params.add(summaryId);
-
-
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
+    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)
       .compose(oldBudgets -> processLinkedPendingPayments(linkedToEncumbrance, oldBudgets, client)
       .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
         .map(this::makeAvailableUnavailableNonNegative)

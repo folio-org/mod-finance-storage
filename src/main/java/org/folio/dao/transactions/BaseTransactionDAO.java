@@ -6,8 +6,10 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import io.vertx.sqlclient.Tuple;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -48,14 +50,12 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
   @Override
   public Future<Integer> saveTransactionsToPermanentTable(String summaryId, DBClient client) {
     Promise<Integer> promise = Promise.promise();
-    JsonArray param = new JsonArray();
-    param.add(summaryId);
     client.getPgClient()
-      .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId()), param, reply -> {
+      .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          promise.complete(reply.result().getUpdated());
+          promise.complete(reply.result().rowCount());
         }
       });
     return promise.future();

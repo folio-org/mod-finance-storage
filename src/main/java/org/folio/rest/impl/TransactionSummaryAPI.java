@@ -1,13 +1,15 @@
 package org.folio.rest.impl;
 
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.persist.PostgresClient.pojo2json;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.json.JsonObject;
+import io.vertx.sqlclient.Tuple;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -24,7 +26,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -66,13 +67,13 @@ public class TransactionSummaryAPI implements FinanceStorage {
       handleValidationError(summary.getNumTransactions(), asyncResultHandler);
     } else {
       String sql = "INSERT INTO " + getFullTableName(tenantId, ORDER_TRANSACTION_SUMMARIES)
-          + " (id, jsonb) VALUES (?, ?::JSON) ON CONFLICT (id) DO NOTHING";
+          + " (id, jsonb) VALUES ($1,$2) ON CONFLICT (id) DO NOTHING";
       try {
-        JsonArray params = new JsonArray();
-        params.add(summary.getId());
-        params.add(pojo2json(summary));
+//        JsonArray params = new JsonArray();
+//        params.add(summary.getId());
+//        params.add(pojo2json(summary));
 
-        pgClient.execute(sql, params, result -> {
+        pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), JsonObject.mapFrom(summary)), result -> {
           if (result.failed()) {
             String badRequestMessage = PgExceptionUtil.badRequestMessage(result.cause());
             if (badRequestMessage != null) {
@@ -141,11 +142,11 @@ public class TransactionSummaryAPI implements FinanceStorage {
       String sql = "INSERT INTO " + getFullTableName(tenantId, INVOICE_TRANSACTION_SUMMARIES)
           + " (id, jsonb) VALUES (?, ?::JSON) ON CONFLICT (id) DO NOTHING";
       try {
-        JsonArray params = new JsonArray();
-        params.add(summary.getId());
-        params.add(pojo2json(summary));
+//        JsonArray params = new JsonArray();
+//        params.add(summary.getId());
+//        params.add(pojo2json(summary));
 
-        pgClient.execute(sql, params, result -> {
+        pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), JsonObject.mapFrom(summary)), result -> {
           if (result.failed()) {
             String badRequestMessage = PgExceptionUtil.badRequestMessage(result.cause());
             if (badRequestMessage != null) {

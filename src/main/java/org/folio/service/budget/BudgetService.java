@@ -10,9 +10,11 @@ import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.sqlclient.Tuple;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -93,11 +95,11 @@ public class BudgetService {
   private Future<Void> unlinkGroupFundFiscalYears(String id, DBClient client) {
     Promise<Void> promise = Promise.promise();
 
-    JsonArray queryParams = new JsonArray();
-    queryParams.add(id);
-    String sql = "UPDATE "+ getFullTableName(client.getTenantId(), GROUP_FUND_FY_TABLE)  + " SET jsonb = jsonb - 'budgetId' WHERE budgetId=?;";
+//    JsonArray queryParams = new JsonArray();
+//    queryParams.add(id);
+    String sql = "UPDATE "+ getFullTableName(client.getTenantId(), GROUP_FUND_FY_TABLE)  + " SET jsonb = jsonb - 'budgetId' WHERE budgetId=$1;";
 
-    client.getPgClient().execute(client.getConnection(), sql, queryParams, reply -> {
+    client.getPgClient().execute(client.getConnection(), sql, Tuple.of(UUID.fromString(id)), reply -> {
       if (reply.failed()) {
         logger.error("Failed to update group_fund_fiscal_year by budgetId={}", reply.cause(), id);
         handleFailure(promise, reply);
@@ -143,7 +145,7 @@ public class BudgetService {
   }
 
 
-  public Future<List<Budget>> getBudgets(String sql, JsonArray params, DBClient client) {
+  public Future<List<Budget>> getBudgets(String sql, Tuple params, DBClient client) {
     return budgetDAO.getBudgets(sql, params, client);
   }
 }

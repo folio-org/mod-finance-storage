@@ -15,6 +15,7 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.ws.rs.core.Response;
 
+import io.vertx.sqlclient.Tuple;
 import org.apache.commons.collections4.keyvalue.MultiKey;
 import org.apache.commons.collections4.map.MultiKeyMap;
 import org.apache.commons.lang3.StringUtils;
@@ -141,9 +143,8 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
   }
 
   private Future<Integer> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> newTransactions, DBClient client) {
-    JsonArray params = new JsonArray();
-    params.add(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId() );
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
+    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()),
+      Tuple.of(UUID.fromString(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId())), client)
       .map(budgets -> updateBudgetsTotals(existingTransactions, newTransactions, budgets))
       .compose(budgets -> budgetService.updateBatchBudgets(budgets, client));
   }
@@ -277,10 +278,8 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
 
   private Future<Integer> updateBudgetsTotals(List<Transaction> transactions, DBClient client) {
     String summaryId = getSummaryId(transactions.get(0));
-    JsonArray params = new JsonArray();
-    params.add(summaryId);
     String sql = getSelectBudgetsQuery(client.getTenantId());
-    return budgetService.getBudgets(sql, params, client)
+    return budgetService.getBudgets(sql, Tuple.of(UUID.fromString(summaryId)), client)
       .map(budgets -> budgets.stream().collect(toMap(Budget::getFundId, Function.identity())))
       .map(groupedBudgets -> calculatePaymentBudgetsTotals(transactions, groupedBudgets))
       .map(grpBudgets -> calculateCreditBudgetsTotals(transactions, grpBudgets))
@@ -403,19 +402,17 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
   private Future<List<Transaction>> getAllEncumbrances(String summaryId, DBClient client) {
     Promise<List<Transaction>> promise = Promise.promise();
     String sql = buildGetPermanentEncumbrancesQuery(client.getTenantId());
-    JsonArray params = new JsonArray();
-    params.add(summaryId);
     client.getPgClient()
-      .select(client.getConnection(), sql, params, reply -> {
+      .select(client.getConnection(), sql, Tuple.of(UUID.fromString(summaryId)), reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          List<Transaction> encumbrances = reply.result()
-            .getResults()
-            .stream()
-            .flatMap(JsonArray::stream)
-            .map(o -> new JsonObject(o.toString()).mapTo(Transaction.class))
-            .collect(Collectors.toList());
+          List<Transaction> encumbrances = new ArrayList<>();//reply.result()
+//            .getResults()
+//            .stream()
+//            .flatMap(JsonArray::stream)
+//            .map(o -> new JsonObject(o.toString()).mapTo(Transaction.class))
+//            .collect(Collectors.toList());
           promise.complete(encumbrances);
         }
       });

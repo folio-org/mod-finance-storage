@@ -18,10 +18,10 @@
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
     <ramlfiles_acq_models_path>${ramlfiles_path}/acq-models</ramlfiles_acq_models_path>
-    <raml-module-builder.version>29.4.0</raml-module-builder.version>
+    <raml-module-builder.version>30.0.1</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jmockit.version>1.48</jmockit.version>
-    <vertx.version>3.9.0</vertx.version>
+    <vertx.version>3.9.1</vertx.version>
     <sonar.test.exclusions>**/*Test.java</sonar.test.exclusions>
     <argLine />
   </properties>

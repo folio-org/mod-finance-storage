@@ -9,7 +9,7 @@ public class TemporaryInvoiceTransactionDAO extends BaseTemporaryTransactionsDAO
 
   public static final String TEMPORARY_INVOICE_TRANSACTIONS = "temporary_invoice_transactions";
 
-  public static final String INSERT_TEMPORARY_TRANSACTIONS = "INSERT INTO %s (id, jsonb) VALUES (?, ?::JSON) "
+  public static final String INSERT_TEMPORARY_TRANSACTIONS = "INSERT INTO %s (id, jsonb) VALUES ($1, $2) "
     + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
     + "lower(f_unaccent(jsonb ->> 'sourceInvoiceId'::text)), "
     + "lower(f_unaccent(jsonb ->> 'sourceInvoiceLineId'::text)), "

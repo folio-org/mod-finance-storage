@@ -9,9 +9,12 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
 import java.util.Map;
+import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.json.JsonObject;
+import io.vertx.sqlclient.Tuple;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundCollection;
@@ -132,16 +135,18 @@ public class FundAPI implements FinanceStorageFunds {
     String fullBudgetTableName = getFullTableName(client.getTenantId(), BUDGET_TABLE);
     String fullFYTableName = getFullTableName(client.getTenantId(), FISCAL_YEAR_TABLE);
 
-    JsonArray queryParams = new JsonArray();
-    queryParams.add("\"" + fund.getFundStatus() + "\"");
-    queryParams.add(fund.getId());
-    String sql = "UPDATE "+ fullBudgetTableName +" SET jsonb = jsonb_set(jsonb,'{budgetStatus}', ?::jsonb) " +
-      "WHERE((fundId=?) " +
+//    JsonArray queryParams = new JsonArray();
+//    queryParams.add("\"" + fund.getFundStatus() + "\"");
+//    queryParams.add(fund.getId());
+    String sql = "UPDATE "+ fullBudgetTableName +" SET jsonb = jsonb_set(jsonb,'{budgetStatus}', $1) " +
+      "WHERE((fundId=$2) " +
       "AND (budget.fiscalYearId IN " +
       "(SELECT id FROM " + fullFYTableName + " WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
       "AND (jsonb->>'periodEnd')::timestamp)));";
 
-   client.getPgClient().execute(client.getConnection(), sql, queryParams, event -> handleVoidAsyncResult(promise, event));
+   client.getPgClient().execute(client.getConnection(), sql,
+     Tuple.of(JsonObject.mapFrom(fund.getFundStatus()), UUID.fromString(fund.getId())),
+     event -> handleVoidAsyncResult(promise, event));
     return promise.future();
   }
 }

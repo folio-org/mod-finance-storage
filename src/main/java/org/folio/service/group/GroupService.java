@@ -84,7 +84,7 @@ public class GroupService {
       if (reply.failed()) {
         promise.fail(buildException(reply));
       }
-      else if(reply.result().getUpdated() == 0) {
+      else if(reply.result().rowCount() == 0) {
         promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
       }
       else {

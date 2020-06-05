@@ -4,11 +4,13 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.sqlclient.Tuple;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -32,25 +34,26 @@ public class BudgetPostgresDAO implements BudgetDAO {
       if (reply.failed()) {
         handleFailure(promise, reply);
       } else {
-        promise.complete(reply.result().getUpdated());
+        promise.complete(reply.result().rowCount());
       }
     });
     return promise.future();
   }
 
-  public Future<List<Budget>> getBudgets(String sql, JsonArray params, DBClient client) {
+  public Future<List<Budget>> getBudgets(String sql, Tuple params, DBClient client) {
     Promise<List<Budget>> promise = Promise.promise();
     client.getPgClient()
       .select(client.getConnection(), sql, params, reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          List<Budget> budgets = reply.result()
-            .getResults()
-            .stream()
-            .flatMap(JsonArray::stream)
-            .map(o -> new JsonObject(o.toString()).mapTo(Budget.class))
-            .collect(Collectors.toList());
+          List<Budget> budgets = new ArrayList<>();//reply.result()
+//          List<Budget> budgets = reply.result()
+//            .getResults()
+//            .stream()
+//            .flatMap(JsonArray::stream)
+//            .map(o -> new JsonObject(o.toString()).mapTo(Budget.class))
+//            .collect(Collectors.toList());
           promise.complete(budgets);
         }
       });
@@ -96,7 +99,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
   public Future<DBClient> deleteBudget(String id, DBClient client) {
     Promise<DBClient> promise = Promise.promise();
     client.getPgClient().delete(client.getConnection(), BUDGET_TABLE, id, reply -> {
-      if (reply.result().getUpdated() == 0) {
+      if (reply.result().rowCount() == 0) {
         promise.fail(new HttpStatusException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase()));
       } else {
         promise.complete(client);
