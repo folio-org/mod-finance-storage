@@ -8,7 +8,6 @@ import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +41,6 @@ import org.javamoney.moneta.Money;
 
 import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
@@ -129,12 +127,13 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
    * To prevent partial encumbrance transactions for an order, all the encumbrances must be created following All or nothing
    */
   @Override
-  Future<Void> processTemporaryToPermanentTransactions(List<Transaction> transactions, DBClient client) {
-    String summaryId = getSummaryId(transactions.get(0));
+  Future<Void> processTemporaryToPermanentTransactions(List<Transaction> tmpTransactions, DBClient client) {
+    String summaryId = getSummaryId(tmpTransactions.get(0));
     return transactionsDAO.saveTransactionsToPermanentTable(summaryId, client)
       .compose(updated -> {
         if (updated > 0) {
-          return updateBudgetsLedgersTotals(transactions, client);
+          // create tr
+          return updateBudgetsLedgersTotalsOnCreate(tmpTransactions, client);
         }
         return Future.succeededFuture();
       });
@@ -147,19 +146,22 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
       .orElse(null);
   }
 
-  private Future<Void> updateBudgetsLedgersTotals(List<Transaction> transactions, DBClient client) {
+  private Future<Void> updateBudgetsLedgersTotalsOnCreate(List<Transaction> transactions, DBClient client) {
+    // create tr
     String sql = getSelectBudgetsQuery(client.getTenantId());
     JsonArray params = new JsonArray();
     params.add(getSummaryId(transactions.get(0)));
     return budgetService.getBudgets(sql, params, client)
       .compose(oldBudgets -> {
-        List<Budget> newBudgets = updateBudgetsTotals(transactions, oldBudgets);
+        List<Budget> newBudgets = updateBudgetsTotalsForCreatingTransactions(transactions, oldBudgets);
         return budgetService.updateBatchBudgets(newBudgets, client)
           .compose(listTx -> updateLedgerFYsWithTotals(oldBudgets, newBudgets, client));
       });
   }
 
-  private List<Budget> updateBudgetsTotals(List<Transaction> tempTransactions, List<Budget> budgets) {
+  private List<Budget> updateBudgetsTotalsForCreatingTransactions(List<Transaction> tempTransactions, List<Budget> budgets) {
+    // create tr
+
     Map<Budget, List<Transaction>> tempGrouped = groupTransactionsByBudget(tempTransactions, budgets);
     return tempGrouped.entrySet()
       .stream()
@@ -200,35 +202,35 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     budget.setUnavailable(newUnavailable);
   }
 
+  @Override
+  public Future<Transaction> createTransaction(Transaction transaction, Context context, Map<String, String> okapiHeaders) {
+    DBClient client = new DBClient(context, okapiHeaders);
+    return verifyBudgetHasEnoughMoney(transaction, context, okapiHeaders)
+      .compose(ok -> processEncumbrance(transaction, client).map(transaction));
+  }
 
   @Override
   public Future<Void> updateTransaction(String id, Transaction transaction, Context context, Map<String, String> okapiHeaders) {
     DBClient client = new DBClient(context, okapiHeaders);
-    return isTransactionExists(id, client).compose(transactionExists -> {
-      if (Boolean.TRUE.equals(transactionExists)) {
-        return updateEncumbrance(transaction, context, okapiHeaders);
-      } else {
-        throw new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Transaction not found");
-      }
-    });
+    return verifyTransactionExistence(id, client)
+      .compose(v -> processEncumbrance(transaction, client));
   }
 
-  public Future<Void> updateEncumbrance(Transaction transaction, Context context, Map<String, String> headers) {
+  public Future<Void> processEncumbrance(Transaction transaction, DBClient client) {
     try {
       handleValidationError(transaction);
     } catch (HttpStatusException e) {
       return  Future.failedFuture(e);
     }
-    DBClient client = new DBClient(context, headers);
-    return verifyTransactionExistence(transaction.getId(), client)
-      .compose(v -> transactionSummaryService.getAndCheckTransactionSummary(transaction, client)
+    return transactionSummaryService.getAndCheckTransactionSummary(transaction, client)
         .compose(summary -> collectTempTransactions(transaction, client)
           .compose(transactions -> {
             if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
               return client.startTx()
-                .compose(c -> handleTransactionUpdate(transactions, client))
-                .compose(vVoid -> finishAllOrNothing(summary, client))
-                .compose(vVoid -> client.endTx())
+                // handle create or update
+                .compose(dbClient -> handleCreateOrUpdateEncumbrances(transactions, client, summary.getId()))
+                .compose(ok -> finishAllOrNothing(summary, client))
+                .compose(ok -> client.endTx())
                 .onComplete(result -> {
                   if (result.failed()) {
                     log.error("Transactions or associated data failed to be processed", result.cause());
@@ -241,33 +243,39 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
             } else {
               return Future.succeededFuture();
             }
-          }))
+          })
       );
   }
 
 
-    private Future<Boolean> isTransactionExists(String transactionId, DBClient client) {
-    Promise<Boolean> promise = Promise.promise();
-    client.getPgClient().getById(TRANSACTION_TABLE, transactionId, reply -> {
-      if (reply.failed()) {
-        handleFailure(promise, reply);
-      } else {
-        promise.complete(reply.result() != null);
-      }
-    });
-    return promise.future();
+  private Future<Void> handleCreateOrUpdateEncumbrances(List<Transaction> tmpTransactions, DBClient client, String summaryId) {
+
+      // if transaction exists
+    return getTransactionsForUpdate(tmpTransactions, client)
+      .compose(transactionsForUpdate -> updateBudgetsTotals(transactionsForUpdate, tmpTransactions, client)
+        .map(v -> excludeReleasedEncumbrances(tmpTransactions, transactionsForUpdate)))
+      .compose(transactions -> transactionsDAO.updatePermanentTransactions(transactions, client))
+      .compose(ok -> transactionsDAO.saveTransactionsToPermanentTable(summaryId, client))
+      .mapEmpty();
   }
 
-  private Future<Void> handleTransactionUpdate(List<Transaction> newTransactions, DBClient client) {
+  private Future<List<Transaction>> getTransactionsForUpdate(List<Transaction> tmpTransactions, DBClient client) {
     CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
-    newTransactions.stream()
+
+    List<String> tmpTransactionIds = tmpTransactions.stream()
       .map(Transaction::getId)
-      .forEach(id -> criterionBuilder.with("id", id));
+      .collect(Collectors.toList());
+
+    tmpTransactionIds.forEach(id -> criterionBuilder.with("id", id));
 
     return transactionsDAO.getTransactions(criterionBuilder.build(), client)
-      .compose(existingTransactions -> updateBudgetsTotals(existingTransactions, newTransactions, client)
-        .map(v -> excludeReleasedEncumbrances(newTransactions, existingTransactions)))
-      .compose(transactions -> transactionsDAO.updatePermanentTransactions(transactions, client));
+      .map(trs -> filterExistingTransactions(tmpTransactionIds, trs));
+
+  }
+
+
+  private List<Transaction> filterExistingTransactions(List<String> tmpTransactionIds, List<Transaction> trs) {
+    return trs.stream().filter(tr -> tmpTransactionIds.contains(tr.getId())).collect(Collectors.toList());
   }
 
 
@@ -284,6 +292,10 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   }
 
   private List<Transaction> excludeReleasedEncumbrances(List<Transaction> newTransactions, List<Transaction> existingTransactions) {
+    // if nothing to update
+    if (existingTransactions.isEmpty()) {
+      return newTransactions;
+    }
     Map<String, Transaction> groupedTransactions = existingTransactions.stream().collect(toMap(Transaction::getId, identity()));
     return newTransactions.stream()
       .filter(transaction -> groupedTransactions.get(transaction.getId()).getEncumbrance().getStatus() != Encumbrance.Status.RELEASED)
@@ -291,12 +303,13 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   }
 
   private Future<Void> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> newTransactions,
-      DBClient client) {
+                                           DBClient client) {
     JsonArray params = new JsonArray();
     params.add(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId());
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
       .compose(oldBudgets -> {
-        List<Budget> newBudgets = getNewBudgetsTotals(existingTransactions, newTransactions, oldBudgets);
+        List<Budget> updatedBudgets = updateBudgetsTotalsForCreatingTransactions(newTransactions, oldBudgets);
+        List<Budget> newBudgets = updateBudgetsTotalsForUpdatingTransactions(existingTransactions, newTransactions, updatedBudgets);
 
         return budgetService.updateBatchBudgets(newBudgets, client)
           .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, newBudgets, client));
@@ -304,7 +317,11 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   }
 
 
-  private List<Budget> getNewBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> tempTransactions, List<Budget> budgets) {
+  private List<Budget> updateBudgetsTotalsForUpdatingTransactions(List<Transaction> existingTransactions, List<Transaction> tempTransactions, List<Budget> budgets) {
+    // if nothing to update
+    if (existingTransactions.isEmpty()) {
+      return budgets;
+    }
     Map<String, Transaction> existingGrouped = existingTransactions.stream().collect(toMap(Transaction::getId, identity()));
     Map<Budget, List<Transaction>> tempGrouped = groupTransactionsByBudget(tempTransactions, budgets);
     return tempGrouped.entrySet().stream()

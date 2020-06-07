@@ -101,9 +101,9 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
       );
   }
 
-  private Future<Void> handleTransactionsCreation(T summary, List<Transaction> transactions, DBClient client) {
+  private Future<Void> handleTransactionsCreation(T summary, List<Transaction> tmpTransactions, DBClient client) {
     return client.startTx()
-    .compose(t -> processTemporaryToPermanentTransactions(transactions, client))
+    .compose(t -> processTemporaryToPermanentTransactions(tmpTransactions, client))
     .compose(listTx -> finishAllOrNothing(summary, client))
     .compose(t -> client.endTx())
     .onComplete(result -> {
@@ -145,7 +145,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
     }
   }
 
-  private Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, Context context, Map<String, String> headers) {
+  Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, Context context, Map<String, String> headers) {
 
     String fundId = transaction.getTransactionType() == Transaction.TransactionType.CREDIT ? transaction.getToFundId() : transaction.getFromFundId();
 
