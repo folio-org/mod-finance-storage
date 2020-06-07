@@ -180,7 +180,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
           budget.setEncumbered(newEncumbered);
 
           recalculateOverEncumbered(budget, currency);
-          recalculateAvailableUnavailable(budget, currency);
+          recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
         });
     }
     return budget;
@@ -193,10 +193,10 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     budget.setOverEncumbrance(newOverEncumbrance);
   }
 
-  private void recalculateAvailableUnavailable(Budget budget, CurrencyUnit currency) {
+  private void recalculateAvailableUnavailable(Budget budget, Double transactionAmount, CurrencyUnit currency) {
     double newUnavailable = sumMoney(currency, budget.getEncumbered(), budget.getAwaitingPayment(), budget.getExpenditures(),
-        -budget.getOverEncumbrance(), -budget.getOverExpended());
-    double newAvailable = subtractMoneyNonNegative(budget.getAllocated(), newUnavailable, currency);
+      -budget.getOverEncumbrance(), -budget.getOverExpended());
+    double newAvailable = subtractMoneyNonNegative(budget.getAvailable(), transactionAmount, currency);
 
     budget.setAvailable(newAvailable);
     budget.setUnavailable(newUnavailable);
