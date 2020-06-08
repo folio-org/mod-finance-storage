@@ -87,33 +87,34 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
 
     DBClient client = new DBClient(context, headers);
     return verifyBudgetHasEnoughMoney(transaction, context, headers)
-      .compose(v -> transactionSummaryService.getAndCheckTransactionSummary(transaction, client)
-        .compose(summary -> collectTempTransactions(transaction, client)
-          .compose(transactions -> {
-            if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
-              return handleTransactionsCreation(summary, transactions, client)
-                .map(transaction);
-            } else {
-              return Future.succeededFuture(transaction);
-            }
-          })
-        )
-      );
+      .compose(v -> processTransactions(transaction, client))
+      .map(transaction);
   }
 
-  private Future<Void> handleTransactionsCreation(T summary, List<Transaction> tmpTransactions, DBClient client) {
-    return client.startTx()
-    .compose(t -> processTemporaryToPermanentTransactions(tmpTransactions, client))
-    .compose(listTx -> finishAllOrNothing(summary, client))
-    .compose(t -> client.endTx())
-    .onComplete(result -> {
-      if (result.failed()) {
-        log.error("Transactions or associated data failed to be processed", result.cause());
-       client.rollbackTransaction();
-      } else {
-        log.info("Transactions and associated data were successfully processed");
-      }
-    });
+  protected Future<Void> processTransactions(Transaction transaction, DBClient client) {
+    return transactionSummaryService.getAndCheckTransactionSummary(transaction, client)
+      .compose(summary -> collectTempTransactions(transaction, client)
+        .compose(transactions -> {
+          if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
+            return client.startTx()
+              // handle create or update
+              .compose(dbClient -> processTemporaryToPermanentTransactions(transactions, client))
+              .compose(ok -> finishAllOrNothing(summary, client))
+              .compose(ok -> client.endTx())
+              .onComplete(result -> {
+                if (result.failed()) {
+                  log.error("Transactions or associated data failed to be processed", result.cause());
+                  client.rollbackTransaction();
+                } else {
+                  log.info("Transactions and associated data were successfully processed");
+                }
+              });
+
+          } else {
+            return Future.succeededFuture();
+          }
+        })
+      );
   }
 
   String getSelectBudgetsQuery(String sql, String tenantId, String tempTransactionTable) {

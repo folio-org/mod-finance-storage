@@ -22,9 +22,6 @@ public class EncumbranceDAO extends BaseTransactionDAO implements TransactionDAO
   public static final String INSERT_PERMANENT_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s WHERE encumbrance_sourcePurchaseOrderId = ?) "
     + "ON CONFLICT DO NOTHING;";
 
-  public static final String INSERT_PERMANENT_ENCUMBRANCES_BY_IDS = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s WHERE id in (%s)) "
-    + "ON CONFLICT DO NOTHING;";
-
   @Override
   protected String buildUpdatePermanentTransactionQuery(List<JsonObject> transactions, String tenantId) {
     return String.format("UPDATE %s AS transactions " +
@@ -39,10 +36,10 @@ public class EncumbranceDAO extends BaseTransactionDAO implements TransactionDAO
 
   @Override
   protected String createPermanentTransactionsQuery(String tenantId, List<String> ids) {
-    String idsAsString =     ids.stream()
+    String idsAsString = ids.stream()
       .map(id -> StringUtils.wrap(id, "'"))
       .collect(Collectors.joining(","));
-    return String.format(INSERT_PERMANENT_ENCUMBRANCES_BY_IDS, getFullTableName(tenantId, TRANSACTIONS_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS), idsAsString);
+    return String.format(INSERT_PERMANENT_TRANSACTIONS_BY_IDS, getFullTableName(tenantId, TRANSACTIONS_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS), idsAsString);
   }
 
 }
