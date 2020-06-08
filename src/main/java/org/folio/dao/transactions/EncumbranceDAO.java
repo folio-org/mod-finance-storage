@@ -3,7 +3,9 @@ package org.folio.dao.transactions;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.persist.HelperUtils;
 
 import io.vertx.core.json.JsonObject;
@@ -20,6 +22,9 @@ public class EncumbranceDAO extends BaseTransactionDAO implements TransactionDAO
   public static final String INSERT_PERMANENT_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s WHERE encumbrance_sourcePurchaseOrderId = ?) "
     + "ON CONFLICT DO NOTHING;";
 
+  public static final String INSERT_PERMANENT_ENCUMBRANCES_BY_IDS = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s AS temp WHERE temp.id::uuid in (%s)) "
+    + "ON CONFLICT DO NOTHING;";
+
   @Override
   protected String buildUpdatePermanentTransactionQuery(List<JsonObject> transactions, String tenantId) {
     return String.format("UPDATE %s AS transactions " +
@@ -32,8 +37,12 @@ public class EncumbranceDAO extends BaseTransactionDAO implements TransactionDAO
     return String.format(INSERT_PERMANENT_ENCUMBRANCES, getFullTableName(tenantId, TRANSACTIONS_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS));
   }
 
+  @Override
   protected String createPermanentTransactionsQuery(String tenantId, List<String> ids) {
-    return String.format(INSERT_PERMANENT_ENCUMBRANCES, getFullTableName(tenantId, TRANSACTIONS_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS));
+    String idsAsString =     ids.stream()
+      .map(id -> StringUtils.wrap(id, "'"))
+      .collect(Collectors.joining(","));
+    return String.format(INSERT_PERMANENT_ENCUMBRANCES_BY_IDS, getFullTableName(tenantId, TRANSACTIONS_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS), idsAsString);
   }
 
 }

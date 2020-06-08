@@ -61,7 +61,26 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
     return promise.future();
   }
 
+  @Override
+  public Future<Integer> saveTransactionsToPermanentTable(List<String> ids, DBClient client) {
+    Promise<Integer> promise = Promise.promise();
+    JsonArray param = new JsonArray();
+    ids.forEach(param::add);
+
+    client.getPgClient()
+      .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId(), ids), reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete(reply.result().getUpdated());
+        }
+      });
+    return promise.future();
+  }
+
   protected abstract String createPermanentTransactionsQuery(String tenantId);
+
+  protected abstract String createPermanentTransactionsQuery(String tenantId, List<String> ids);
 
   @Override
   public Future<Void> updatePermanentTransactions(List<Transaction> transactions, DBClient client) {

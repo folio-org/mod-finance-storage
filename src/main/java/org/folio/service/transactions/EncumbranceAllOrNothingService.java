@@ -10,9 +10,11 @@ import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.money.CurrencyUnit;
@@ -52,6 +54,8 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   public static final String SELECT_BUDGETS_BY_ORDER_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
       + "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId "
       + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
+  public static final String FOR_UPDATE = "FOR_UPDATE";
+  public static final String FOR_CREATE = "FOR_CREATE";
 
   public EncumbranceAllOrNothingService(BudgetService budgetService,
                                         TemporaryTransactionDAO temporaryTransactionDAO,
@@ -204,6 +208,11 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   @Override
   public Future<Transaction> createTransaction(Transaction transaction, Context context, Map<String, String> okapiHeaders) {
+    try {
+      handleValidationError(transaction);
+    } catch (HttpStatusException e) {
+      return  Future.failedFuture(e);
+    }
     DBClient client = new DBClient(context, okapiHeaders);
     return verifyBudgetHasEnoughMoney(transaction, context, okapiHeaders)
       .compose(ok -> processEncumbrance(transaction, client).map(transaction));
@@ -211,24 +220,25 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   @Override
   public Future<Void> updateTransaction(String id, Transaction transaction, Context context, Map<String, String> okapiHeaders) {
+    try {
+      handleValidationError(transaction);
+    } catch (HttpStatusException e) {
+      return  Future.failedFuture(e);
+    }
     DBClient client = new DBClient(context, okapiHeaders);
     return verifyTransactionExistence(id, client)
       .compose(v -> processEncumbrance(transaction, client));
   }
 
   public Future<Void> processEncumbrance(Transaction transaction, DBClient client) {
-    try {
-      handleValidationError(transaction);
-    } catch (HttpStatusException e) {
-      return  Future.failedFuture(e);
-    }
+
     return transactionSummaryService.getAndCheckTransactionSummary(transaction, client)
         .compose(summary -> collectTempTransactions(transaction, client)
           .compose(transactions -> {
             if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
               return client.startTx()
                 // handle create or update
-                .compose(dbClient -> handleCreateOrUpdateEncumbrances(transactions, client, summary.getId()))
+                .compose(dbClient -> handleCreateOrUpdateEncumbrances(transactions, client))
                 .compose(ok -> finishAllOrNothing(summary, client))
                 .compose(ok -> client.endTx())
                 .onComplete(result -> {
@@ -248,34 +258,48 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   }
 
 
-  private Future<Void> handleCreateOrUpdateEncumbrances(List<Transaction> tmpTransactions, DBClient client, String summaryId) {
-
-      // if transaction exists
-    return getTransactionsForUpdate(tmpTransactions, client)
-      .compose(transactionsForUpdate -> updateBudgetsTotals(transactionsForUpdate, tmpTransactions, client)
-        .map(v -> excludeReleasedEncumbrances(tmpTransactions, transactionsForUpdate)))
-      .compose(transactions -> transactionsDAO.updatePermanentTransactions(transactions, client))
-      .compose(ok -> transactionsDAO.saveTransactionsToPermanentTable(summaryId, client))
+  private Future<Void> handleCreateOrUpdateEncumbrances(List<Transaction> tmpTransactions, DBClient client) {
+    return getTransactionsForCreateAndUpdate(tmpTransactions, client)
+      .compose(transactionsForUpdate -> updateBudgetsTotals(transactionsForUpdate.get(FOR_UPDATE), tmpTransactions, client)
+        .map(v -> excludeReleasedEncumbrances(tmpTransactions, transactionsForUpdate.get(FOR_UPDATE)))
+        .compose(transactions -> transactionsDAO.updatePermanentTransactions(transactions, client))
+        .compose(ok -> {
+          if (!transactionsForUpdate.get(FOR_CREATE).isEmpty()) {
+            List<String> ids = transactionsForUpdate.get(FOR_CREATE)
+              .stream()
+              .map(Transaction::getId)
+              .collect(toList());
+            return transactionsDAO.saveTransactionsToPermanentTable(ids, client);
+          } else {
+            return Future.succeededFuture();
+          }
+        }))
       .mapEmpty();
   }
 
-  private Future<List<Transaction>> getTransactionsForUpdate(List<Transaction> tmpTransactions, DBClient client) {
+  private Future<Map<String, List<Transaction>>> getTransactionsForCreateAndUpdate(List<Transaction> tmpTransactions, DBClient client) {
     CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
 
-    List<String> tmpTransactionIds = tmpTransactions.stream()
+    tmpTransactions.stream()
       .map(Transaction::getId)
-      .collect(Collectors.toList());
+      .forEach(id -> criterionBuilder.with("id", id));
 
-    tmpTransactionIds.forEach(id -> criterionBuilder.with("id", id));
+
 
     return transactionsDAO.getTransactions(criterionBuilder.build(), client)
-      .map(trs -> filterExistingTransactions(tmpTransactionIds, trs));
+      .map(trs -> groupTransactionForCreateAndUpdate(tmpTransactions, trs));
 
   }
 
+  private Map<String, List<Transaction>> groupTransactionForCreateAndUpdate(List<Transaction> tmpTransactions, List<Transaction> permanentTransactions) {
+    Map<String, List<Transaction>> groupedTransactions = new HashMap<>();
+    Set<String> ids = permanentTransactions.stream()
+      .map(Transaction::getId)
+      .collect(Collectors.toSet());
 
-  private List<Transaction> filterExistingTransactions(List<String> tmpTransactionIds, List<Transaction> trs) {
-    return trs.stream().filter(tr -> tmpTransactionIds.contains(tr.getId())).collect(Collectors.toList());
+    groupedTransactions.put(FOR_UPDATE, tmpTransactions.stream().filter(tr -> ids.contains(tr.getId())).collect(Collectors.toList()));
+    groupedTransactions.put(FOR_CREATE, tmpTransactions.stream().filter(tr -> !ids.contains(tr.getId())).collect(Collectors.toList()));
+    return groupedTransactions;
   }
 
 

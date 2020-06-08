@@ -22,6 +22,11 @@ public class PaymentCreditDAO extends BaseTransactionDAO implements TransactionD
   }
 
   @Override
+  protected String createPermanentTransactionsQuery(String tenantId, List<String> ids) {
+    return null;
+  }
+
+  @Override
   protected String buildUpdatePermanentTransactionQuery(List<JsonObject> transactions, String tenantId) {
     return String.format("UPDATE %s AS transactions " +
       "SET jsonb = t.jsonb FROM (VALUES  %s) AS t (id, jsonb) " +
