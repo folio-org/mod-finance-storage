@@ -151,7 +151,6 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   }
 
   private Future<Void> updateBudgetsLedgersTotalsOnCreate(List<Transaction> transactions, DBClient client) {
-    // create tr
     String sql = getSelectBudgetsQuery(client.getTenantId());
     JsonArray params = new JsonArray();
     params.add(getSummaryId(transactions.get(0)));
@@ -165,7 +164,6 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   private List<Budget> updateBudgetsTotalsForCreatingTransactions(List<Transaction> tempTransactions, List<Budget> budgets) {
     // create tr
-
     Map<Budget, List<Transaction>> tempGrouped = groupTransactionsByBudget(tempTransactions, budgets);
     return tempGrouped.entrySet()
       .stream()
@@ -260,12 +258,12 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   private Future<Void> handleCreateOrUpdateEncumbrances(List<Transaction> tmpTransactions, DBClient client) {
     return getTransactionsForCreateAndUpdate(tmpTransactions, client)
-      .compose(transactionsForUpdate -> updateBudgetsTotals(transactionsForUpdate.get(FOR_UPDATE), tmpTransactions, client)
-        .map(v -> excludeReleasedEncumbrances(tmpTransactions, transactionsForUpdate.get(FOR_UPDATE)))
+      .compose(transactionsForCreateAndUpdate -> updateBudgetsTotals(transactionsForCreateAndUpdate.get(FOR_UPDATE), tmpTransactions, client)
+        .map(v -> excludeReleasedEncumbrances(tmpTransactions, transactionsForCreateAndUpdate.get(FOR_UPDATE)))
         .compose(transactions -> transactionsDAO.updatePermanentTransactions(transactions, client))
         .compose(ok -> {
-          if (!transactionsForUpdate.get(FOR_CREATE).isEmpty()) {
-            List<String> ids = transactionsForUpdate.get(FOR_CREATE)
+          if (!transactionsForCreateAndUpdate.get(FOR_CREATE).isEmpty()) {
+            List<String> ids = transactionsForCreateAndUpdate.get(FOR_CREATE)
               .stream()
               .map(Transaction::getId)
               .collect(toList());
@@ -315,13 +313,16 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
       });
   }
 
-  private List<Transaction> excludeReleasedEncumbrances(List<Transaction> newTransactions, List<Transaction> existingTransactions) {
+  private List<Transaction> excludeReleasedEncumbrances(List<Transaction> tmpTransactions, List<Transaction> existingTransactions) {
     // if nothing to update
     if (existingTransactions.isEmpty()) {
-      return newTransactions;
+      return new ArrayList<>();
     }
     Map<String, Transaction> groupedTransactions = existingTransactions.stream().collect(toMap(Transaction::getId, identity()));
-    return newTransactions.stream()
+
+    return tmpTransactions.stream()
+      // filter transactions for update
+      .filter(transaction -> groupedTransactions.containsKey(transaction.getId()))
       .filter(transaction -> groupedTransactions.get(transaction.getId()).getEncumbrance().getStatus() != Encumbrance.Status.RELEASED)
       .collect(Collectors.toList());
   }
