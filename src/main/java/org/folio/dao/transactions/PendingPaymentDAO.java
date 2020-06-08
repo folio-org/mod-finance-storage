@@ -11,7 +11,7 @@ import io.vertx.core.json.JsonObject;
 
 public class PendingPaymentDAO extends BaseTransactionDAO {
 
-  public static final String INSERT_PERMANENT_PAYMENTS_CREDITS = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s AS transactions WHERE sourceInvoiceId = ? " +
+  public static final String INSERT_PERMANENT_PAYMENTS_CREDITS = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s AS transactions WHERE sourceInvoiceId = $1 " +
     "AND transactions.jsonb ->> 'transactionType' = 'Pending payment') ON CONFLICT DO NOTHING;";
 
   private static final String TEMPORARY_INVOICE_TRANSACTIONS = "temporary_invoice_transactions";

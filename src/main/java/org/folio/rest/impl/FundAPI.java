@@ -145,7 +145,7 @@ public class FundAPI implements FinanceStorageFunds {
       "AND (jsonb->>'periodEnd')::timestamp)));";
 
    client.getPgClient().execute(client.getConnection(), sql,
-     Tuple.of(JsonObject.mapFrom(fund.getFundStatus()), UUID.fromString(fund.getId())),
+     Tuple.of(fund.getFundStatus().value(), UUID.fromString(fund.getId())),
      event -> handleVoidAsyncResult(promise, event));
     return promise.future();
   }

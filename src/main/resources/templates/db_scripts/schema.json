@@ -385,19 +385,19 @@
       ]
     },
     {
-      "tableName": "ledgerFY",
+      "tableName": "ledgerfy",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
           "targetTable": "ledger",
-          "tableAlias": "ledgerFY",
+          "tableAlias": "ledgerfy",
           "targetTableAlias": "ledger"
         },
         {
           "fieldName": "fiscalYearId",
           "targetTable": "fiscal_year",
-          "tableAlias": "ledgerFY",
+          "tableAlias": "ledgerfy",
           "targetTableAlias": "fiscalYear"
         }
       ],

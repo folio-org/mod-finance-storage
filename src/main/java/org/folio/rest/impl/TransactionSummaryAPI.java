@@ -67,7 +67,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
       handleValidationError(summary.getNumTransactions(), asyncResultHandler);
     } else {
       String sql = "INSERT INTO " + getFullTableName(tenantId, ORDER_TRANSACTION_SUMMARIES)
-          + " (id, jsonb) VALUES ($1,$2) ON CONFLICT (id) DO NOTHING";
+          + " (id, jsonb) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING";
       try {
 //        JsonArray params = new JsonArray();
 //        params.add(summary.getId());
@@ -140,12 +140,8 @@ public class TransactionSummaryAPI implements FinanceStorage {
       handleValidationError(summary.getNumPaymentsCredits(), asyncResultHandler);
     } else {
       String sql = "INSERT INTO " + getFullTableName(tenantId, INVOICE_TRANSACTION_SUMMARIES)
-          + " (id, jsonb) VALUES (?, ?::JSON) ON CONFLICT (id) DO NOTHING";
+          + " (id, jsonb) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING";
       try {
-//        JsonArray params = new JsonArray();
-//        params.add(summary.getId());
-//        params.add(pojo2json(summary));
-
         pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), JsonObject.mapFrom(summary)), result -> {
           if (result.failed()) {
             String badRequestMessage = PgExceptionUtil.badRequestMessage(result.cause());

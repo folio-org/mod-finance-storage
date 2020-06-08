@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.persist.DBClient;
@@ -47,6 +48,8 @@ public class BudgetPostgresDAO implements BudgetDAO {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
+          Row row = reply.result().iterator().next();
+          row.toString();
           List<Budget> budgets = new ArrayList<>();//reply.result()
 //          List<Budget> budgets = reply.result()
 //            .getResults()

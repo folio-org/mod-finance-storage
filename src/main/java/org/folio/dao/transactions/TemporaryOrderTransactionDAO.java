@@ -9,7 +9,7 @@ public class TemporaryOrderTransactionDAO extends BaseTemporaryTransactionsDAO i
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
 
-  public static final String INSERT_TEMPORARY_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) VALUES (?, ?::JSON) "
+  public static final String INSERT_TEMPORARY_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) VALUES ($1, $2) "
     + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
     + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text)), "
     + "lower(f_unaccent((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text)), "

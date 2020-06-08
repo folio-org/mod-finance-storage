@@ -47,7 +47,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
@@ -164,7 +163,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
 //      params.add("\"" + ledger.getLedgerStatus() + "\"");
 //      params.addAll(new JsonArray(fundIds));
       ArrayTuple params = new ArrayTuple(fundIds.size() + 1);
-      params.addValue(JsonObject.mapFrom(ledger.getLedgerStatus()));
+      params.addValue(ledger.getLedgerStatus().value());
       fundIds.forEach(fundId -> params.addValue(UUID.fromString(fundId)));
 
       String sql = "UPDATE " + fullBudgetTableName + " SET jsonb = jsonb_set(jsonb,'{budgetStatus}', $1) " +
@@ -226,16 +225,17 @@ public class LedgerAPI implements FinanceStorageLedgers {
 //    params.add(ledger.getLedgerStatus().value());
 
    client.getPgClient().select(client.getConnection(), sql,
-     Tuple.of(JsonObject.mapFrom(ledger.getLedgerStatus()), UUID.fromString(ledger.getId()), ledger.getLedgerStatus().value()), event -> {
+     Tuple.of(ledger.getLedgerStatus().value(), UUID.fromString(ledger.getId()), ledger.getLedgerStatus().value()), event -> {
       if (event.failed()) {
         handleFailure(promise, event);
       } else {
         log.info("All fund records related to ledger with id={} has been successfully updated", ledger.getId());
-        List<String> ids = new ArrayList<>();//event.result().getResults().stream().flatMap(JsonArray::stream).map(Object::toString).collect(Collectors.toList());
+        List<String> ids = new ArrayList<>();
+        event.result().spliterator().forEachRemaining(row -> ids.add(row.getUUID(0).toString()));
         promise.complete(ids);
       }
     });
-        return promise.future();
+    return promise.future();
   }
 
   private Future<Ledger> saveLedger(Ledger ledger, DBClient client) {
