@@ -56,6 +56,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
       + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
   public static final String FOR_UPDATE = "FOR_UPDATE";
   public static final String FOR_CREATE = "FOR_CREATE";
+  public static final String EXISTING = "EXISTING";
 
   public EncumbranceAllOrNothingService(BudgetService budgetService,
                                         TemporaryTransactionDAO temporaryTransactionDAO,
@@ -258,8 +259,8 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   private Future<Void> handleCreateOrUpdateEncumbrances(List<Transaction> tmpTransactions, DBClient client) {
     return getTransactionsForCreateAndUpdate(tmpTransactions, client)
-      .compose(transactionsForCreateAndUpdate -> updateBudgetsTotals(transactionsForCreateAndUpdate.get(FOR_UPDATE), tmpTransactions, client)
-        .map(v -> excludeReleasedEncumbrances(tmpTransactions, transactionsForCreateAndUpdate.get(FOR_UPDATE)))
+      .compose(transactionsForCreateAndUpdate -> updateBudgetsTotals(transactionsForCreateAndUpdate, tmpTransactions, client)
+        .map(v -> excludeReleasedEncumbrances(transactionsForCreateAndUpdate.get(FOR_UPDATE), transactionsForCreateAndUpdate.get(EXISTING)))
         .compose(transactions -> transactionsDAO.updatePermanentTransactions(transactions, client))
         .compose(ok -> {
           if (!transactionsForCreateAndUpdate.get(FOR_CREATE).isEmpty()) {
@@ -282,11 +283,8 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
       .map(Transaction::getId)
       .forEach(id -> criterionBuilder.with("id", id));
 
-
-
     return transactionsDAO.getTransactions(criterionBuilder.build(), client)
       .map(trs -> groupTransactionForCreateAndUpdate(tmpTransactions, trs));
-
   }
 
   private Map<String, List<Transaction>> groupTransactionForCreateAndUpdate(List<Transaction> tmpTransactions, List<Transaction> permanentTransactions) {
@@ -297,6 +295,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
     groupedTransactions.put(FOR_UPDATE, tmpTransactions.stream().filter(tr -> ids.contains(tr.getId())).collect(Collectors.toList()));
     groupedTransactions.put(FOR_CREATE, tmpTransactions.stream().filter(tr -> !ids.contains(tr.getId())).collect(Collectors.toList()));
+    groupedTransactions.put(EXISTING, permanentTransactions);
     return groupedTransactions;
   }
 
@@ -327,17 +326,26 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
       .collect(Collectors.toList());
   }
 
-  private Future<Void> updateBudgetsTotals(List<Transaction> existingTransactions, List<Transaction> newTransactions,
+  private Future<Void> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, List<Transaction> newTransactions,
                                            DBClient client) {
     JsonArray params = new JsonArray();
     params.add(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId());
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
       .compose(oldBudgets -> {
-        List<Budget> updatedBudgets = updateBudgetsTotalsForCreatingTransactions(newTransactions, oldBudgets);
-        List<Budget> newBudgets = updateBudgetsTotalsForUpdatingTransactions(existingTransactions, newTransactions, updatedBudgets);
+        List<Budget> updatedBudgets = new ArrayList<>();
 
-        return budgetService.updateBatchBudgets(newBudgets, client)
-          .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, newBudgets, client));
+        if (!groupedTransactions.get(FOR_CREATE).isEmpty()) {
+          updatedBudgets.addAll(updateBudgetsTotalsForCreatingTransactions(groupedTransactions.get(FOR_CREATE), oldBudgets));
+        } else {
+          updatedBudgets.addAll(oldBudgets);
+        }
+        if (!groupedTransactions.get(FOR_UPDATE).isEmpty()) {
+          updatedBudgets = updateBudgetsTotalsForUpdatingTransactions(groupedTransactions.get(EXISTING), groupedTransactions.get(FOR_UPDATE), updatedBudgets);
+        }
+
+        List<Budget> finalNewBudgets = updatedBudgets;
+        return budgetService.updateBatchBudgets(finalNewBudgets, client)
+          .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, finalNewBudgets, client));
       });
   }
 

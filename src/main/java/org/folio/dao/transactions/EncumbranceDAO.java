@@ -22,7 +22,7 @@ public class EncumbranceDAO extends BaseTransactionDAO implements TransactionDAO
   public static final String INSERT_PERMANENT_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s WHERE encumbrance_sourcePurchaseOrderId = ?) "
     + "ON CONFLICT DO NOTHING;";
 
-  public static final String INSERT_PERMANENT_ENCUMBRANCES_BY_IDS = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s AS temp WHERE temp.id::uuid in (%s)) "
+  public static final String INSERT_PERMANENT_ENCUMBRANCES_BY_IDS = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s WHERE id in (%s)) "
     + "ON CONFLICT DO NOTHING;";
 
   @Override
