@@ -264,62 +264,14 @@
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
         {
-          "fieldName": "amount",
+          "fieldName": "encumbrance_idx",
+          "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
         },
         {
-          "fieldName": "fromFundId",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
-        },
-        {
-          "fieldName": "encumbrance.sourcePurchaseOrderId",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
-        },
-        {
-          "fieldName": "encumbrance.sourcePoLineId",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
-        },
-        {
-          "fieldName": "encumbrance.initialAmountEncumbered",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
-        },
-        {
-          "fieldName": "encumbrance.status",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
-        },
-        {
-          "fieldName": "amount",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment'OR (jsonb->>'transactionType')::text = 'Credit'"
-        },
-        {
-          "fieldName": "fromFundId",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment'OR (jsonb->>'transactionType')::text = 'Credit'"
-        },
-        {
-          "fieldName": "sourceInvoiceId",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment'OR (jsonb->>'transactionType')::text = 'Credit'"
-        },
-        {
-          "fieldName": "sourceInvoiceLineId",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment'OR (jsonb->>'transactionType')::text = 'Credit'"
-        },
-        {
-          "fieldName": "toFundId",
-          "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment'OR (jsonb->>'transactionType')::text = 'Credit'"
-        },
-        {
-          "fieldName": "transactionType",
+          "fieldName": "credit_idx",
+          "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment'OR (jsonb->>'transactionType')::text = 'Credit'"
         }
@@ -488,27 +440,8 @@
       ],
       "uniqueIndex": [
         {
-          "fieldName": "amount",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fromFundId",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "encumbrance.sourcePurchaseOrderId",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "encumbrance.sourcePoLineId",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "encumbrance.initialAmountEncumbered",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "encumbrance.status",
+          "fieldName": "temp_order_idx",
+          "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
           "tOps": "ADD"
         }
       ]
@@ -522,27 +455,8 @@
       "fromModuleVersion": "mod-finance-storage-4.2.1",
       "uniqueIndex": [
         {
-          "fieldName": "amount",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fromFundId",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "sourceInvoiceId",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "sourceInvoiceLineId",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "toFundId",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "transactionType",
+          "fieldName": "temp_invoice_idx",
+          "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
           "tOps": "ADD"
         }
       ],

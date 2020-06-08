@@ -407,12 +407,8 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          List<Transaction> encumbrances = new ArrayList<>();//reply.result()
-//            .getResults()
-//            .stream()
-//            .flatMap(JsonArray::stream)
-//            .map(o -> new JsonObject(o.toString()).mapTo(Transaction.class))
-//            .collect(Collectors.toList());
+          List<Transaction> encumbrances = new ArrayList<>();
+          reply.result().spliterator().forEachRemaining(row -> encumbrances.add((Transaction) row.getValue(0)));
           promise.complete(encumbrances);
         }
       });

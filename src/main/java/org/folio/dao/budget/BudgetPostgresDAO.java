@@ -6,11 +6,9 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.persist.DBClient;
@@ -18,7 +16,6 @@ import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -48,15 +45,8 @@ public class BudgetPostgresDAO implements BudgetDAO {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          Row row = reply.result().iterator().next();
-          row.toString();
-          List<Budget> budgets = new ArrayList<>();//reply.result()
-//          List<Budget> budgets = reply.result()
-//            .getResults()
-//            .stream()
-//            .flatMap(JsonArray::stream)
-//            .map(o -> new JsonObject(o.toString()).mapTo(Budget.class))
-//            .collect(Collectors.toList());
+          List<Budget> budgets = new ArrayList<>();
+          reply.result().spliterator().forEachRemaining(row -> budgets.add((Budget) row.getValue(0)));
           promise.complete(budgets);
         }
       });
