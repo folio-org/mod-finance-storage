@@ -8,7 +8,11 @@ import io.vertx.core.Future;
 
 public interface TransactionSummaryService<T extends Entity> {
 
-  Future<T> getAndCheckTransactionSummary(Transaction transaction, DBClient client);
+  Future<T> getTransactionSummary(Transaction transaction, DBClient client);
+
   Future<Void> setTransactionsSummariesProcessed(T summary, DBClient client);
+
   Integer getNumTransactions(T summary);
+
+  Future<T> getAndCheckTransactionSummary(Transaction transaction, DBClient client);
 }
