@@ -316,11 +316,11 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     if (isEncumbranceReleased(tmpTransaction)) {
       newEncumbered = subtractMoney(newEncumbered, tmpTransaction.getAmount(), currency);
       tmpTransaction.setAmount(0d);
-    } else  if (isEncumbrancePending(tmpTransaction)) {
+    } else  if (isTransitionFromUnreleasedToPending(tmpTransaction, existingTransaction)) {
       tmpTransaction.setAmount(0d);
       tmpTransaction.getEncumbrance().setInitialAmountEncumbered(0d);
       newEncumbered = sumMoney(currency, newEncumbered, -existingTransaction.getAmount());
-    } else if (isEncumbranceUnreleased(tmpTransaction, existingTransaction)) {
+    } else if (isTransitionFromPendingToUnreleased(tmpTransaction, existingTransaction)) {
       double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
       newAmount = subtractMoney(newAmount, existingTransaction.getEncumbrance().getAmountExpended(), currency);
       tmpTransaction.setAmount(newAmount);
@@ -332,17 +332,20 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     recalculateAvailableUnavailable(budget, subtractMoney(tmpTransaction.getAmount(), existingTransaction.getAmount(), currency) , currency);
   }
 
-  private boolean isEncumbranceUnreleased(Transaction tmpTransaction, Transaction existingTransaction) {
-    return tmpTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED && existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.PENDING;
-  }
 
   private boolean isEncumbranceReleased(Transaction transaction) {
     return transaction.getEncumbrance()
       .getStatus() == Encumbrance.Status.RELEASED;
   }
 
-  private boolean isEncumbrancePending(Transaction transaction) {
-    return transaction.getEncumbrance().getStatus() == Encumbrance.Status.PENDING;
+  private boolean isTransitionFromUnreleasedToPending(Transaction newTransaction, Transaction existingTransaction) {
+    return existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED
+      && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.PENDING;
+  }
+
+  private boolean isTransitionFromPendingToUnreleased(Transaction newTransaction, Transaction existingTransaction) {
+    return existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.PENDING
+      && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
   }
 
 }
