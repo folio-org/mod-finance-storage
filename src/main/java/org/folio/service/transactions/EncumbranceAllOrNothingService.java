@@ -319,7 +319,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     } else  if (isTransitionFromUnreleasedToPending(tmpTransaction, existingTransaction)) {
       tmpTransaction.setAmount(0d);
       tmpTransaction.getEncumbrance().setInitialAmountEncumbered(0d);
-      newEncumbered = sumMoney(currency, newEncumbered, -existingTransaction.getAmount());
+      newEncumbered = subtractMoney(newEncumbered, existingTransaction.getAmount(), currency);
     } else if (isTransitionFromPendingToUnreleased(tmpTransaction, existingTransaction)) {
       double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
       newAmount = subtractMoney(newAmount, existingTransaction.getEncumbrance().getAmountExpended(), currency);
