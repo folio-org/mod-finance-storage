@@ -264,16 +264,16 @@
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
         {
-          "fieldName": "encumbrance_idx",
+          "fieldName": "encumbrance",
           "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
         },
         {
-          "fieldName": "credit_idx",
+          "fieldName": "payment_credit",
           "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
           "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment'OR (jsonb->>'transactionType')::text = 'Credit'"
+          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment' OR (jsonb->>'transactionType')::text = 'Credit'"
         }
       ],
       "foreignKeys": [
@@ -337,19 +337,19 @@
       ]
     },
     {
-      "tableName": "ledgerfy",
+      "tableName": "ledger_fy",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
           "targetTable": "ledger",
-          "tableAlias": "ledgerfy",
+          "tableAlias": "ledger_fy",
           "targetTableAlias": "ledger"
         },
         {
           "fieldName": "fiscalYearId",
           "targetTable": "fiscal_year",
-          "tableAlias": "ledgerfy",
+          "tableAlias": "ledger_fy",
           "targetTableAlias": "fiscalYear"
         }
       ],
@@ -440,7 +440,7 @@
       ],
       "uniqueIndex": [
         {
-          "fieldName": "temp_order_idx",
+          "fieldName": "temp_order_tx",
           "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
           "tOps": "ADD"
         }
@@ -455,7 +455,7 @@
       "fromModuleVersion": "mod-finance-storage-4.2.1",
       "uniqueIndex": [
         {
-          "fieldName": "temp_invoice_idx",
+          "fieldName": "temp_invoice_tx",
           "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
           "tOps": "ADD"
         }
