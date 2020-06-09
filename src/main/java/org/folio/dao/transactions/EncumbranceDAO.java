@@ -34,6 +34,7 @@ public class EncumbranceDAO extends BaseTransactionDAO implements TransactionDAO
     return String.format(INSERT_PERMANENT_ENCUMBRANCES, getFullTableName(tenantId, TRANSACTIONS_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS));
   }
 
+  @Override
   protected String createPermanentTransactionsQuery(String tenantId, List<String> ids) {
     String idsAsString = ids.stream()
       .map(id -> StringUtils.wrap(id, "'"))
