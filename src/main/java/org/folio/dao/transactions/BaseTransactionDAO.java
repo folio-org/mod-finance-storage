@@ -1,13 +1,14 @@
 package org.folio.dao.transactions;
 
 import static org.folio.dao.transactions.EncumbranceDAO.TRANSACTIONS_TABLE;
-import static org.folio.rest.util.ResponseUtils.handleVoidAsyncResult;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
+import static org.folio.rest.util.ResponseUtils.handleVoidAsyncResult;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.StringUtils;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -80,7 +81,9 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
 
   protected abstract String createPermanentTransactionsQuery(String tenantId);
 
-  protected abstract String createPermanentTransactionsQuery(String tenantId, List<String> ids);
+  protected String createPermanentTransactionsQuery(String tenantId, List<String> ids) {
+    return StringUtils.EMPTY;
+  }
 
   @Override
   public Future<Void> updatePermanentTransactions(List<Transaction> transactions, DBClient client) {
