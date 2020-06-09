@@ -10,6 +10,7 @@ import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,6 @@ import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.collections4.keyvalue.MultiKey;
-import org.apache.commons.collections4.map.MultiKeyMap;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
@@ -85,11 +84,8 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   }
 
   private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> existingTransactions, List<Budget> budgets) {
-    MultiKeyMap<String, Budget> groupedBudgets = new MultiKeyMap<>();
-    groupedBudgets.putAll(budgets.stream().collect(toMap(budget -> new MultiKey<>(budget.getFundId(), budget.getFiscalYearId()), identity())));
-
-    return existingTransactions.stream().collect(groupingBy(transaction -> groupedBudgets.get(transaction.getFromFundId(), transaction.getFiscalYearId())));
-
+    Map<String, List<Transaction>> groupedTransactions = existingTransactions.stream().collect(groupingBy(Transaction::getFromFundId));
+    return budgets.stream().collect(toMap(identity(), budget -> groupedTransactions.getOrDefault(budget.getFundId(), Collections.emptyList())));
   }
 
   @Override
@@ -308,57 +304,36 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
           Transaction existingTransaction = existingGrouped.get(tmpTransaction.getId());
           if (!isEncumbranceReleased(existingTransaction)) {
             processBudget(budget, currency, tmpTransaction, existingTransaction);
-            if (isEncumbranceReleased(tmpTransaction)) {
-              releaseEncumbrance(budget, currency, tmpTransaction);
-            }
           }
         });
     }
     return budget;
   }
 
-
-  private void releaseEncumbrance(Budget budget, CurrencyUnit currency, Transaction tmpTransaction) {
-    //encumbered decreases by the amount being released
-    budget.setEncumbered(subtractMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency));
-
-    // available increases by the amount being released
-    budget.setAvailable(sumMoney(budget.getAvailable(), tmpTransaction.getAmount(), currency));
-
-    // unavailable decreases by the amount being released (min 0)
-    double newUnavailable = subtractMoney(budget.getUnavailable(), tmpTransaction.getAmount(), currency);
-    budget.setUnavailable(newUnavailable < 0 ? 0 : newUnavailable);
-
-    // transaction.amount becomes 0 (save the original value for updating the budget)
-    tmpTransaction.setAmount(0d);
-    recalculateOverEncumbered(budget, currency);
-    recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
-  }
-
   private void processBudget(Budget budget, CurrencyUnit currency, Transaction tmpTransaction, Transaction existingTransaction) {
-    // encumbered decreases by the difference between provided and previous transaction.encumbrance.amountAwaitingPayment values
-    double newEncumbered = subtractMoney(budget.getEncumbered(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-    newEncumbered = sumMoney(newEncumbered, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-    budget.setEncumbered(newEncumbered);
 
-    if (isEncumbrancePending(tmpTransaction)) {
+    double newEncumbered = budget.getEncumbered();
+    if (isEncumbranceReleased(tmpTransaction)) {
+      newEncumbered = subtractMoney(newEncumbered, tmpTransaction.getAmount(), currency);
+      tmpTransaction.setAmount(0d);
+    } else  if (isEncumbrancePending(tmpTransaction)) {
       tmpTransaction.setAmount(0d);
       tmpTransaction.getEncumbrance().setInitialAmountEncumbered(0d);
-
-    } else {
-      // awaitingPayment increases by the same amount
-      double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-      newAwaitingPayment = subtractMoneyNonNegative(newAwaitingPayment, existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-      budget.setAwaitingPayment(newAwaitingPayment);
-
-      // encumbrance transaction.amount is updated to (initial encumbrance - awaiting payment - expended)
-      double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(),tmpTransaction.getEncumbrance().getAmountAwaitingPayment(),currency);
-      newAmount = subtractMoney(newAmount, tmpTransaction.getEncumbrance().getAmountExpended(), currency);
+      newEncumbered = sumMoney(currency, newEncumbered, -existingTransaction.getAmount());
+    } else if (isEncumbranceUnreleased(tmpTransaction, existingTransaction)) {
+      double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+      newAmount = subtractMoney(newAmount, existingTransaction.getEncumbrance().getAmountExpended(), currency);
       tmpTransaction.setAmount(newAmount);
+      newEncumbered = sumMoney(currency, newEncumbered, newAmount);
     }
 
+    budget.setEncumbered(newEncumbered);
     recalculateOverEncumbered(budget, currency);
+    recalculateAvailableUnavailable(budget, subtractMoney(tmpTransaction.getAmount(), existingTransaction.getAmount(), currency) , currency);
+  }
 
+  private boolean isEncumbranceUnreleased(Transaction tmpTransaction, Transaction existingTransaction) {
+    return tmpTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED && existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.PENDING;
   }
 
   private boolean isEncumbranceReleased(Transaction transaction) {
