@@ -17,7 +17,6 @@ import java.util.UUID;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 
-import io.vertx.sqlclient.Tuple;
 import org.apache.commons.collections4.keyvalue.MultiKey;
 import org.apache.commons.collections4.map.MultiKeyMap;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
@@ -38,9 +37,9 @@ import org.folio.service.summary.TransactionSummaryService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
 
 
 public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionService<OrderTransactionSummary> {
@@ -145,7 +144,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   }
 
   private Future<Void> updateBudgetsLedgersTotals(List<Transaction> transactions, DBClient client) {
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(getSummaryId(transactions.get(0)))), client)
+    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(getSummaryId(transactions.get(0))), client)
       .compose(oldBudgets -> {
         List<Budget> newBudgets = updateBudgetsTotals(transactions, oldBudgets);
         return budgetService.updateBatchBudgets(newBudgets, client)

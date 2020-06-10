@@ -13,7 +13,7 @@ public class TemporaryOrderTransactionDAO extends BaseTemporaryTransactionsDAO i
 //    + "ON CONFLICT ON CONSTRAINT temporary_order_transactions_temp_order_tx_idx_unique DO UPDATE SET id = excluded.id RETURNING id;";
 
   public static final String INSERT_TEMPORARY_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) VALUES ($1, $2) "
-    + "ON CONFLICT (lower(f_unaccent(concat_space_sql(VARIADIC ARRAY[(jsonb ->> 'amount'::text), (jsonb ->> 'fromFundId'::text), ((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text), ((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text), ((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text), ((jsonb -> 'encumbrance'::text) ->> 'status'::text)])))) DO UPDATE SET id = excluded.id RETURNING id;";
+    + "ON CONFLICT ((lower(f_unaccent(concat_space_sql(jsonb->>'amount', jsonb->>'fromFundId', jsonb->'encumbrance'->>'sourcePurchaseOrderId' , jsonb->'encumbrance'->>'sourcePoLineId' , jsonb->'encumbrance'->>'initialAmountEncumbered' , jsonb->'encumbrance'->>'status'))))) DO UPDATE SET id = excluded.id RETURNING id;";
 
 //  public static final String INSERT_TEMPORARY_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) VALUES ($1, $2) "
 //    + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "

@@ -46,7 +46,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
           handleFailure(promise, reply);
         } else {
           List<Budget> budgets = new ArrayList<>();
-          reply.result().spliterator().forEachRemaining(row -> budgets.add((Budget) row.getValue(0)));
+          reply.result().spliterator().forEachRemaining(row -> budgets.add(row.get(JsonObject.class, 0).mapTo(Budget.class)));
           promise.complete(budgets);
         }
       });

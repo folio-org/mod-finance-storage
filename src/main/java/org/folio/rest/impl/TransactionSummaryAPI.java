@@ -1,6 +1,7 @@
 package org.folio.rest.impl;
 
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
+import static org.folio.rest.persist.PostgresClient.pojo2JsonObject;
 
 import java.util.Collections;
 import java.util.Map;
@@ -73,7 +74,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
 //        params.add(summary.getId());
 //        params.add(pojo2json(summary));
 
-        pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), JsonObject.mapFrom(summary)), result -> {
+        pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), pojo2JsonObject(summary)), result -> {
           if (result.failed()) {
             String badRequestMessage = PgExceptionUtil.badRequestMessage(result.cause());
             if (badRequestMessage != null) {
@@ -142,7 +143,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
       String sql = "INSERT INTO " + getFullTableName(tenantId, INVOICE_TRANSACTION_SUMMARIES)
           + " (id, jsonb) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING";
       try {
-        pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), JsonObject.mapFrom(summary)), result -> {
+        pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), pojo2JsonObject(summary)), result -> {
           if (result.failed()) {
             String badRequestMessage = PgExceptionUtil.badRequestMessage(result.cause());
             if (badRequestMessage != null) {
