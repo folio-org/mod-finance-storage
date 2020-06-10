@@ -456,7 +456,7 @@
       "uniqueIndex": [
         {
           "fieldName": "temp_invoice_tx",
-          "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
+          "sqlExpression": "concat_space_sql(lower(f_unaccent(jsonb->>'amount')) , lower(f_unaccent(jsonb->>'fromFundId')) , lower(f_unaccent(jsonb->>'sourceInvoiceId')) , lower(f_unaccent(jsonb->>'sourceInvoiceLineId')) , lower(f_unaccent(jsonb->>'toFundId')) , lower(f_unaccent(jsonb->>'transactionType')))",
           "tOps": "ADD"
         }
       ],

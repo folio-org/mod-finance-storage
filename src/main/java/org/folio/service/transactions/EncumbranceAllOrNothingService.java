@@ -49,7 +49,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   public static final String SELECT_BUDGETS_BY_ORDER_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId "
-    + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
+    + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = $1";
 
   public EncumbranceAllOrNothingService(BudgetService budgetService,
                                           TemporaryTransactionDAO temporaryTransactionDAO,
@@ -145,8 +145,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
   }
 
   private Future<Void> updateBudgetsLedgersTotals(List<Transaction> transactions, DBClient client) {
-    String sql = getSelectBudgetsQuery(client.getTenantId());
-    return budgetService.getBudgets(sql, Tuple.of(UUID.fromString(getSummaryId(transactions.get(0)))), client)
+    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(getSummaryId(transactions.get(0)))), client)
       .compose(oldBudgets -> {
         List<Budget> newBudgets = updateBudgetsTotals(transactions, oldBudgets);
         return budgetService.updateBatchBudgets(newBudgets, client)
