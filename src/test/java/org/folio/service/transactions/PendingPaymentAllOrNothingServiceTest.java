@@ -170,6 +170,7 @@ public class PendingPaymentAllOrNothingServiceTest {
     verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
     Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
     assertThat(updatedEncumbrance.getAmount(), is(encumbered.subtract(linkedAmount).doubleValue()));
+    assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(BigDecimal.ZERO.add(linkedAmount).doubleValue()));
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
@@ -205,9 +206,9 @@ public class PendingPaymentAllOrNothingServiceTest {
 
     List<Transaction> transactions = Collections.singletonList(linkedTransaction);
 
-    BigDecimal awaitingPayment = BigDecimal.ZERO;
+    BigDecimal awaitingPayment = BigDecimal.ONE;
     BigDecimal available = BigDecimal.valueOf(90d);
-    BigDecimal encumbered = BigDecimal.valueOf(10d);
+    BigDecimal encumbered = BigDecimal.valueOf(9d);
     BigDecimal unavailable = BigDecimal.valueOf(10d);
     budget.withAwaitingPayment(awaitingPayment.doubleValue())
       .withAvailable(available.doubleValue())
@@ -219,6 +220,7 @@ public class PendingPaymentAllOrNothingServiceTest {
     when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     encumbrance.withAmount(encumbered.doubleValue());
+    encumbrance.getEncumbrance().setAmountAwaitingPayment(awaitingPayment.doubleValue());
     List<Transaction> encumbrances = Collections.singletonList(encumbrance);
 
     when(transactionsDAO.getTransactions(any(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
@@ -244,6 +246,7 @@ public class PendingPaymentAllOrNothingServiceTest {
     verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
     Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
     assertThat(updatedEncumbrance.getAmount(), is(0.0));
+    assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(10.1));
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
@@ -318,6 +321,7 @@ public class PendingPaymentAllOrNothingServiceTest {
     verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
     Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
     assertThat(updatedEncumbrance.getAmount(), is(0.0));
+    assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(linkedAmount.doubleValue()));
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 

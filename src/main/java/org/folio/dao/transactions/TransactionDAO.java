@@ -14,6 +14,8 @@ public interface TransactionDAO {
 
   Future<Integer> saveTransactionsToPermanentTable(String summaryId, DBClient client);
 
+  Future<Integer> saveTransactionsToPermanentTable(List<String> ids, DBClient client);
+
   Future<Void> updatePermanentTransactions(List<Transaction> transactions, DBClient client);
 
   Future<Void> deleteTransactions(Criterion build, DBClient client);

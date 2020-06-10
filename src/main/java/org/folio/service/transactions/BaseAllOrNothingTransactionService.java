@@ -53,12 +53,12 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
   public static final String FUND_CANNOT_BE_PAID = "Fund cannot be paid due to restrictions";
 
   BudgetService budgetService;
-  private TemporaryTransactionDAO temporaryTransactionDAO;
-  private LedgerFiscalYearService ledgerFiscalYearService;
-  private FundService fundService;
+  private final TemporaryTransactionDAO temporaryTransactionDAO;
+  private final LedgerFiscalYearService ledgerFiscalYearService;
+  private final FundService fundService;
   TransactionSummaryService<T> transactionSummaryService;
   TransactionDAO transactionsDAO;
-  private LedgerService ledgerService;
+  private final LedgerService ledgerService;
 
 
   public BaseAllOrNothingTransactionService(BudgetService budgetService,
@@ -87,33 +87,34 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
 
     DBClient client = new DBClient(context, headers);
     return verifyBudgetHasEnoughMoney(transaction, context, headers)
-      .compose(v -> transactionSummaryService.getAndCheckTransactionSummary(transaction, client)
-        .compose(summary -> collectTempTransactions(transaction, client)
-          .compose(transactions -> {
-            if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
-              return handleTransactionsCreation(summary, transactions, client)
-                .map(transaction);
-            } else {
-              return Future.succeededFuture(transaction);
-            }
-          })
-        )
-      );
+      .compose(v -> processTransactions(transaction, client))
+      .map(transaction);
   }
 
-  private Future<Void> handleTransactionsCreation(T summary, List<Transaction> transactions, DBClient client) {
-    return client.startTx()
-    .compose(t -> processTemporaryToPermanentTransactions(transactions, client))
-    .compose(listTx -> finishAllOrNothing(summary, client))
-    .compose(t -> client.endTx())
-    .onComplete(result -> {
-      if (result.failed()) {
-        log.error("Transactions or associated data failed to be processed", result.cause());
-       client.rollbackTransaction();
-      } else {
-        log.info("Transactions and associated data were successfully processed");
-      }
-    });
+  protected Future<Void> processTransactions(Transaction transaction, DBClient client) {
+    return transactionSummaryService.getAndCheckTransactionSummary(transaction, client)
+      .compose(summary -> collectTempTransactions(transaction, client)
+        .compose(transactions -> {
+          if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
+            return client.startTx()
+              // handle create or update
+              .compose(dbClient -> processTemporaryToPermanentTransactions(transactions, client))
+              .compose(ok -> finishAllOrNothing(summary, client))
+              .compose(ok -> client.endTx())
+              .onComplete(result -> {
+                if (result.failed()) {
+                  log.error("Transactions or associated data failed to be processed", result.cause());
+                  client.rollbackTransaction();
+                } else {
+                  log.info("Transactions and associated data were successfully processed");
+                }
+              });
+
+          } else {
+            return Future.succeededFuture();
+          }
+        })
+      );
   }
 
   String getSelectBudgetsQuery(String sql, String tenantId, String tempTransactionTable) {
@@ -145,7 +146,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
     }
   }
 
-  private Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, Context context, Map<String, String> headers) {
+  Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, Context context, Map<String, String> headers) {
 
     String fundId = transaction.getTransactionType() == Transaction.TransactionType.CREDIT ? transaction.getToFundId() : transaction.getFromFundId();
 

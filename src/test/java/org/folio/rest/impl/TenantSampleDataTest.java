@@ -10,8 +10,22 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenantBody;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 
+import freemarker.template.TemplateException;
+import io.vertx.core.json.JsonArray;
+import org.apache.commons.io.IOUtils;
+import org.folio.rest.persist.PgUtil;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.ddlgen.Schema;
+import org.folio.rest.persist.ddlgen.SchemaMaker;
+import org.folio.rest.persist.ddlgen.TenantOperation;
+import org.folio.rest.tools.PomReader;
+import org.folio.rest.tools.utils.ObjectMapperTool;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 
@@ -108,7 +122,7 @@ class TenantSampleDataTest extends TestBase {
 
     logger.info("upgrading Module with sample");
 
-    postToTenant(ANOTHER_TENANT_HEADER, prepareTenantBody())
+    postToTenant(ANOTHER_TENANT_HEADER, prepareUpgradeTenantBody())
       .assertThat()
       .statusCode(201);
     for (TestEntities entity : TestEntities.values()) {
@@ -121,9 +135,26 @@ class TenantSampleDataTest extends TestBase {
 
     logger.info("upgrading Module without sample data");
 
-    JsonObject jsonBody = prepareTenantBody(false, false);
+    JsonObject jsonBody = prepareUpgradeTenantBody(false, false);
     postToTenant(ANOTHER_TENANT_HEADER, jsonBody)
       .assertThat()
       .statusCode(200);
+  }
+
+  private JsonObject prepareUpgradeTenantBody() {
+    return prepareUpgradeTenantBody(true, true);
+  }
+
+  private JsonObject prepareUpgradeTenantBody(boolean isLoadSampleData, boolean isLoadReferenceData) {
+    String moduleId = String.format("%s-%s", PomReader.INSTANCE.getModuleName(), PomReader.INSTANCE.getVersion());
+
+    JsonArray parameterArray = new JsonArray();
+    parameterArray.add(new JsonObject().put("key", "loadReference").put("value", isLoadReferenceData));
+    parameterArray.add(new JsonObject().put("key", "loadSample").put("value", isLoadSampleData));
+    JsonObject jsonBody = new JsonObject();
+    jsonBody.put("module_to", moduleId);
+    jsonBody.put("module_from", String.format("%s-%s", PomReader.INSTANCE.getModuleName(), "5.0.0"));
+    jsonBody.put("parameters", parameterArray);
+    return jsonBody;
   }
 }

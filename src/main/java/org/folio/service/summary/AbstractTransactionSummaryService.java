@@ -26,16 +26,23 @@ public abstract class AbstractTransactionSummaryService<T extends Entity> implem
 
   @Override
   public Future<T> getAndCheckTransactionSummary(Transaction transaction, DBClient client) {
-    logger.debug("Get summary={}", getSummaryId(transaction));
-    String summaryId = getSummaryId(transaction);
-    return transactionSummaryDao.getSummaryById(summaryId, client)
+    return this.getTransactionSummary(transaction, client)
       .map(summary -> {
         if ((isProcessed(summary))) {
           logger.debug("Expected number of transactions for summary with id={} already processed", summary.getId());
           throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED);
+        } else {
+          return summary;
         }
-        return summary;
       });
+  }
+
+  @Override
+  public Future<T> getTransactionSummary(Transaction transaction, DBClient client) {
+    logger.debug("Get summary={}", getSummaryId(transaction));
+    String summaryId = getSummaryId(transaction);
+
+    return transactionSummaryDao.getSummaryById(summaryId, client);
   }
 
   @Override
