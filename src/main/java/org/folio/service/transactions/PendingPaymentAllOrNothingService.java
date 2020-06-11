@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.money.CurrencyUnit;
@@ -41,15 +42,15 @@ import org.folio.service.summary.TransactionSummaryService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
 
 public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransactionService<InvoiceTransactionSummary> {
 
   public static final String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON (budgets.fundId = transactions.fromFundId  AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = ? AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
+    + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
 
   public PendingPaymentAllOrNothingService(BudgetService budgetService,
                                            TemporaryTransactionDAO temporaryTransactionDAO,
@@ -73,11 +74,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
 
     String summaryId = getSummaryId(transactions.get(0));
 
-    JsonArray params = new JsonArray();
-    params.add(summaryId);
-
-
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
+    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)
       .compose(oldBudgets -> processLinkedPendingPayments(linkedToEncumbrance, oldBudgets, client)
       .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
         .map(this::makeAvailableUnavailableNonNegative)

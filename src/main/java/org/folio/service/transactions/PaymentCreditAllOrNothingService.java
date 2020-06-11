@@ -12,6 +12,7 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -39,9 +40,9 @@ import org.folio.service.summary.TransactionSummaryService;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
 
 public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactionService<InvoiceTransactionSummary> {
 
@@ -49,10 +50,10 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
 
   public static final String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = ? AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
+    + "WHERE transactions.sourceInvoiceId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
 
   public static final String SELECT_PERMANENT_TRANSACTIONS = "SELECT DISTINCT ON (permtransactions.id) permtransactions.jsonb FROM %s AS permtransactions INNER JOIN %s AS transactions "
-    + "ON transactions.paymentEncumbranceId = permtransactions.id WHERE transactions.sourceInvoiceId = ? AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
+    + "ON transactions.paymentEncumbranceId = permtransactions.id WHERE transactions.sourceInvoiceId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
 
   Predicate<Transaction> hasEncumbrance = txn -> txn.getPaymentEncumbranceId() != null;
   Predicate<Transaction> isPaymentTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.PAYMENT);
@@ -125,10 +126,8 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
 
   private Future<Integer> updateBudgetsTotals(List<Transaction> transactions, DBClient client) {
     String summaryId = getSummaryId(transactions.get(0));
-    JsonArray params = new JsonArray();
-    params.add(summaryId);
     String sql = getSelectBudgetsQuery(client.getTenantId());
-    return budgetService.getBudgets(sql, params, client)
+    return budgetService.getBudgets(sql, Tuple.of(UUID.fromString(summaryId)), client)
       .map(budgets -> budgets.stream().collect(toMap(Budget::getFundId, Function.identity())))
       .map(groupedBudgets -> calculatePaymentBudgetsTotals(transactions, groupedBudgets))
       .map(grpBudgets -> calculateCreditBudgetsTotals(transactions, grpBudgets))
@@ -251,19 +250,13 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
   private Future<List<Transaction>> getAllEncumbrances(String summaryId, DBClient client) {
     Promise<List<Transaction>> promise = Promise.promise();
     String sql = buildGetPermanentEncumbrancesQuery(client.getTenantId());
-    JsonArray params = new JsonArray();
-    params.add(summaryId);
     client.getPgClient()
-      .select(client.getConnection(), sql, params, reply -> {
+      .select(client.getConnection(), sql, Tuple.of(UUID.fromString(summaryId)), reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          List<Transaction> encumbrances = reply.result()
-            .getResults()
-            .stream()
-            .flatMap(JsonArray::stream)
-            .map(o -> new JsonObject(o.toString()).mapTo(Transaction.class))
-            .collect(Collectors.toList());
+          List<Transaction> encumbrances = new ArrayList<>();
+          reply.result().spliterator().forEachRemaining(row -> encumbrances.add(row.get(JsonObject.class, 0).mapTo(Transaction.class)));
           promise.complete(encumbrances);
         }
       });

@@ -42,17 +42,17 @@ import org.javamoney.moneta.Money;
 
 import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
 
 public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionService<OrderTransactionSummary> {
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
 
   public static final String SELECT_BUDGETS_BY_ORDER_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
-      + "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId "
-      + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = ?";
+    + "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId "
+    + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = $1";
   public static final String FOR_UPDATE = "FOR_UPDATE";
   public static final String FOR_CREATE = "FOR_CREATE";
   public static final String EXISTING = "EXISTING";
@@ -260,9 +260,8 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   private Future<Void> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, List<Transaction> newTransactions,
                                            DBClient client) {
-    JsonArray params = new JsonArray();
-    params.add(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId());
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
+
+    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId()), client)
       .compose(oldBudgets -> {
         List<Budget> updatedBudgets = new ArrayList<>();
 

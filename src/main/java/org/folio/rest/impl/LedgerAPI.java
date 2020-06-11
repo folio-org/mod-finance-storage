@@ -10,12 +10,14 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.ws.rs.core.Response;
 
@@ -42,10 +44,11 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
+import io.vertx.sqlclient.impl.ArrayTuple;
 
 public class LedgerAPI implements FinanceStorageLedgers {
 
@@ -150,12 +153,17 @@ public class LedgerAPI implements FinanceStorageLedgers {
     } else {
       String fullBudgetTableName = getFullTableName(client.getTenantId(), BUDGET_TABLE);
       String fullFYTableName = getFullTableName(client.getTenantId(), FISCAL_YEAR_TABLE);
-      String queryPlaceHolders = fundIds.stream().map(s -> "?").collect(Collectors.joining(", ", "", ""));
-      JsonArray params = new JsonArray();
-      params.add("\"" + ledger.getLedgerStatus() + "\"");
-      params.addAll(new JsonArray(fundIds));
 
-      String sql = "UPDATE " + fullBudgetTableName + " SET jsonb = jsonb_set(jsonb,'{budgetStatus}', ?::jsonb) " +
+      String queryPlaceHolders = IntStream.range(0, fundIds.size())
+        .map(i -> i + 2)
+        .mapToObj(i -> "$" + i)
+        .collect(Collectors.joining(","));
+
+      ArrayTuple params = new ArrayTuple(fundIds.size() + 1);
+      params.addValue(ledger.getLedgerStatus().value());
+      fundIds.forEach(fundId -> params.addValue(UUID.fromString(fundId)));
+
+      String sql = "UPDATE " + fullBudgetTableName + " SET jsonb = jsonb_set(jsonb,'{budgetStatus}', $1) " +
         "WHERE ((fundId IN (" + queryPlaceHolders + "))" +
         " AND (fiscalYearId IN " +
         "(SELECT id FROM " + fullFYTableName + " WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
@@ -164,7 +172,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
         if (event.failed()) {
           handleFailure(promise, event);
         } else {
-          log.info("{} budget records are updated", event.result().getUpdated());
+          log.info("{} budget records are updated", event.result().rowCount());
           promise.complete();
         }
       });
@@ -206,23 +214,21 @@ public class LedgerAPI implements FinanceStorageLedgers {
     Promise<List<String>> promise = Promise.promise();
 
     String fullFundTableName = getFullTableName(client.getTenantId(), FUND_TABLE);
-    String sql = "UPDATE " + fullFundTableName + "  SET jsonb = jsonb_set(jsonb,'{fundStatus}', ?::jsonb) " +
-      "WHERE (ledgerId = ?) AND (jsonb->>'fundStatus' <> ?) RETURNING id";
-    JsonArray params = new JsonArray();
-    params.add("\"" + ledger.getLedgerStatus() + "\"");
-    params.add(ledger.getId());
-    params.add(ledger.getLedgerStatus().value());
+    String sql = "UPDATE " + fullFundTableName + "  SET jsonb = jsonb_set(jsonb,'{fundStatus}', $1) " +
+      "WHERE (ledgerId = $2) AND (jsonb->>'fundStatus' <> $3) RETURNING id";
 
-   client.getPgClient().select(client.getConnection(), sql, params, event -> {
+   client.getPgClient().select(client.getConnection(), sql,
+     Tuple.of(ledger.getLedgerStatus().value(), UUID.fromString(ledger.getId()), ledger.getLedgerStatus().value()), event -> {
       if (event.failed()) {
         handleFailure(promise, event);
       } else {
         log.info("All fund records related to ledger with id={} has been successfully updated", ledger.getId());
-        List<String> ids = event.result().getResults().stream().flatMap(JsonArray::stream).map(Object::toString).collect(Collectors.toList());
+        List<String> ids = new ArrayList<>();
+        event.result().spliterator().forEachRemaining(row -> ids.add(row.getUUID(0).toString()));
         promise.complete(ids);
       }
     });
-        return promise.future();
+    return promise.future();
   }
 
   private Future<Ledger> saveLedger(Ledger ledger, DBClient client) {

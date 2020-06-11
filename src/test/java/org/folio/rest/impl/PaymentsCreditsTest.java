@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.net.MalformedURLException;
 import java.util.UUID;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.folio.rest.jaxrs.model.AwaitingPayment;
 import org.folio.rest.jaxrs.model.Budget;
@@ -292,7 +292,7 @@ class PaymentsCreditsTest extends TestBase {
         .as(Transaction.class)
         .getId();
 
-    String creditId1 = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit)
+    String creditId1 = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit.withSourceInvoiceLineId(UUID.randomUUID().toString()))
       .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201)
       .extract()
@@ -465,14 +465,18 @@ class PaymentsCreditsTest extends TestBase {
     payment.setSourceInvoiceId(invoiceId);
     payment.setPaymentEncumbranceId(null);
     payment.setAmount(1d);
-
-    IntStream.range(0, numberOfPayments)
+    Stream.generate(() -> paymentJsonTx.mapTo(Transaction.class)
+                            .withSourceInvoiceId(invoiceId)
+                            .withPaymentEncumbranceId(null)
+                            .withSourceInvoiceLineId(UUID.randomUUID().toString())
+                            .withAmount(1d))
+      .limit(numberOfPayments)
       .parallel()
-      .forEach(i -> {
+      .forEach(transaction -> {
         try {
-          postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
+          postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(transaction)
             .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-              .statusCode(201);
+            .statusCode(201);
         } catch (MalformedURLException e) {
           logger.error(e.getMessage());
         }

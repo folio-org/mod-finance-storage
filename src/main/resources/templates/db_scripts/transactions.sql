@@ -56,9 +56,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
 
 
           -- Update LedgerFY identified by the transaction's fiscal year (fiscalYearId) and the source fund (fromFundId)
-          SELECT INTO fromLedgerFY (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledgerFY AS ledgerFY
-          WHERE (ledgerFY.ledgerId = (SELECT fund.ledgerId FROM ${myuniversity}_${mymodule}.fund AS fund WHERE (fund.id::text = fromBudget->>'fundId')))
-          AND ledgerFY.fiscalYearId::text = fromBudget->>'fiscalYearId';
+          SELECT INTO fromLedgerFY (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledger_fy AS ledger_fy
+          WHERE (ledger_fy.ledgerId = (SELECT fund.ledgerId FROM ${myuniversity}_${mymodule}.fund AS fund WHERE (fund.id::text = fromBudget->>'fundId')))
+          AND ledger_fy.fiscalYearId::text = fromBudget->>'fiscalYearId';
 
           IF (fromLedgerFY IS NULL) THEN
             RAISE EXCEPTION 'Ledger fiscal year for source ledger not found';
@@ -74,12 +74,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
             newLedgerFYValues = '{available, ' || fromLedgerFYAvailable ||'}';
           END IF;
 
-          UPDATE ${myuniversity}_${mymodule}.ledgerFY SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
+          UPDATE ${myuniversity}_${mymodule}.ledger_fy SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
           WHERE (ledgerId::text = fromLedgerFY->>'ledgerId') AND (fiscalYearId::text = fromLedgerFY->>'fiscalYearId');
 
         END IF;
 
-        -- update destination budget and ledgerFY only for operations: Allocation / Transfer
+        -- update destination budget and ledger_fy only for operations: Allocation / Transfer
         IF (transactionType = 'Allocation' OR transactionType = 'Transfer') THEN
           -- Update Budget identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
             SELECT INTO toBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'toFundId');
@@ -99,9 +99,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
             WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'toFundId');
 
           -- Update LedgerFY identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
-            SELECT INTO toLedgerFY (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledgerFY AS ledgerFY
-             WHERE (ledgerFY.ledgerId = (SELECT ledgerId FROM ${myuniversity}_${mymodule}.fund WHERE (id::text = toBudget->>'fundId')))
-             AND ledgerFY.fiscalYearId::text = toBudget->>'fiscalYearId';
+            SELECT INTO toLedgerFY (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledger_fy AS ledger_fy
+             WHERE (ledger_fy.ledgerId = (SELECT ledgerId FROM ${myuniversity}_${mymodule}.fund WHERE (id::text = toBudget->>'fundId')))
+             AND ledger_fy.fiscalYearId::text = toBudget->>'fiscalYearId';
 
             IF (toLedgerFY IS NULL) THEN
               RAISE EXCEPTION 'Ledger fiscal year for destination ledger not found';
@@ -115,7 +115,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
               newLedgerFYValues = '{available, ' || toLedgerFYAvailable ||'}';
             END IF;
 
-            UPDATE ${myuniversity}_${mymodule}.ledgerFY SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
+            UPDATE ${myuniversity}_${mymodule}.ledger_fy SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
             WHERE (ledgerId::text = toLedgerFY->>'ledgerId') AND (fiscalYearId::text = toLedgerFY->>'fiscalYearId');
 
         END IF;

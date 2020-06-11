@@ -80,11 +80,11 @@ public class GroupService {
 
   private Future<Group> updateGroup(Group group, String id) {
     Promise<Group> promise = Promise.promise();
-    pgClient.update(GROUPS_TABLE, group, id, reply -> {
+    pgClient.update(GROUPS_TABLE, JsonObject.mapFrom(group), id, reply -> {
       if (reply.failed()) {
         promise.fail(buildException(reply));
       }
-      else if(reply.result().getUpdated() == 0) {
+      else if(reply.result().rowCount() == 0) {
         promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
       }
       else {

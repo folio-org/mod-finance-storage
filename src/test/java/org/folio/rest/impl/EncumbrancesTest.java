@@ -33,6 +33,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Errors;
@@ -50,7 +52,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.sql.UpdateResult;
 
 class EncumbrancesTest extends TestBase {
 
@@ -748,7 +749,7 @@ class EncumbrancesTest extends TestBase {
 
   private void updateLedgerFy(LedgerFY ledgerFYBefore) {
     try {
-      CompletableFuture<UpdateResult> updated = new CompletableFuture<>();
+      CompletableFuture<RowSet<Row>> updated = new CompletableFuture<>();
       PostgresClient.getInstance(StorageTestSuite.getVertx(), TRANSACTION_TENANT_HEADER.getValue()).update(LEDGERFY_TABLE, ledgerFYBefore, ledgerFYBefore.getId(), res -> {
         if (res.succeeded()) {
           updated.complete(res.result());

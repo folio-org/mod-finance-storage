@@ -8,6 +8,7 @@ import static org.folio.rest.util.ResponseUtils.handleVoidAsyncResult;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -20,8 +21,8 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.sqlclient.Tuple;
 
 public abstract class BaseTransactionDAO implements TransactionDAO {
 
@@ -54,14 +55,12 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
   @Override
   public Future<Integer> saveTransactionsToPermanentTable(String summaryId, DBClient client) {
     Promise<Integer> promise = Promise.promise();
-    JsonArray param = new JsonArray();
-    param.add(summaryId);
     client.getPgClient()
-      .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId()), param, reply -> {
+      .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          promise.complete(reply.result().getUpdated());
+          promise.complete(reply.result().rowCount());
         }
       });
     return promise.future();
@@ -70,15 +69,12 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
   @Override
   public Future<Integer> saveTransactionsToPermanentTable(List<String> ids, DBClient client) {
     Promise<Integer> promise = Promise.promise();
-    JsonArray param = new JsonArray();
-    ids.forEach(param::add);
-
     client.getPgClient()
       .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId(), ids), reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          promise.complete(reply.result().getUpdated());
+          promise.complete(reply.result().rowCount());
         }
       });
     return promise.future();

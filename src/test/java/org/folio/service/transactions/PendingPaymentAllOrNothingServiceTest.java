@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import javax.money.MonetaryAmount;
 
+import io.vertx.sqlclient.Tuple;
 import org.folio.dao.transactions.EncumbranceDAO;
 import org.folio.rest.jaxrs.model.AwaitingPayment;
 import org.folio.rest.jaxrs.model.Budget;
@@ -140,7 +141,7 @@ public class PendingPaymentAllOrNothingServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(JsonArray.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
     when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     encumbrance.withAmount(encumbered.doubleValue());
@@ -177,11 +178,11 @@ public class PendingPaymentAllOrNothingServiceTest {
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
-    final ArgumentCaptor<JsonArray> paramsArgumentCapture = ArgumentCaptor.forClass(JsonArray.class);
+    final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
 
-    JsonArray params = paramsArgumentCapture.getValue();
-    assertThat(params.getString(0), is(summaryId));
+    Tuple params = paramsArgumentCapture.getValue();
+    assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
     verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
@@ -215,7 +216,7 @@ public class PendingPaymentAllOrNothingServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(JsonArray.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
     when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     encumbrance.withAmount(encumbered.doubleValue());
@@ -253,11 +254,11 @@ public class PendingPaymentAllOrNothingServiceTest {
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
-    final ArgumentCaptor<JsonArray> paramsArgumentCapture = ArgumentCaptor.forClass(JsonArray.class);
+    final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
 
-    JsonArray params = paramsArgumentCapture.getValue();
-    assertThat(params.getString(0), is(summaryId));
+    Tuple params = paramsArgumentCapture.getValue();
+    assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
     verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
@@ -291,7 +292,7 @@ public class PendingPaymentAllOrNothingServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(JsonArray.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
     when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     encumbrance.withAmount(encumbered.doubleValue());
@@ -328,11 +329,11 @@ public class PendingPaymentAllOrNothingServiceTest {
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
-    final ArgumentCaptor<JsonArray> paramsArgumentCapture = ArgumentCaptor.forClass(JsonArray.class);
+    final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
 
-    JsonArray params = paramsArgumentCapture.getValue();
-    assertThat(params.getString(0), is(summaryId));
+    Tuple params = paramsArgumentCapture.getValue();
+    assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
     verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
@@ -365,7 +366,7 @@ public class PendingPaymentAllOrNothingServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(JsonArray.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
     when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     PendingPaymentAllOrNothingService spyService = Mockito.spy(pendingPaymentService);
@@ -387,11 +388,11 @@ public class PendingPaymentAllOrNothingServiceTest {
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
-    final ArgumentCaptor<JsonArray> paramsArgumentCapture = ArgumentCaptor.forClass(JsonArray.class);
+    final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
 
-    JsonArray params = paramsArgumentCapture.getValue();
-    assertThat(params.getString(0), is(summaryId));
+    Tuple params = paramsArgumentCapture.getValue();
+    assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
     verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));

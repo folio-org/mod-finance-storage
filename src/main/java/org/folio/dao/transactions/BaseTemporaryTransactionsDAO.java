@@ -1,6 +1,6 @@
 package org.folio.dao.transactions;
 
-import static org.folio.rest.persist.PostgresClient.pojo2json;
+import static org.folio.rest.persist.PostgresClient.pojo2JsonObject;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.List;
@@ -14,10 +14,10 @@ import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
 
 public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransactionDAO {
 
@@ -40,11 +40,8 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
     logger.debug("Creating new transaction with id={}", transaction.getId());
 
     try {
-      JsonArray params = new JsonArray();
-      params.add(transaction.getId());
-      params.add(pojo2json(transaction));
-
-      client.getPgClient().execute(createTempTransactionQuery(client.getTenantId()), params, reply -> {
+      client.getPgClient().execute(createTempTransactionQuery(client.getTenantId()),
+        Tuple.of(UUID.fromString(transaction.getId()), pojo2JsonObject(transaction)), reply -> {
         if (reply.succeeded()) {
           logger.debug("New transaction with id={} successfully created", transaction.getId());
           promise.complete(transaction);
@@ -89,7 +86,7 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
-          promise.complete(reply.result().getUpdated());
+          promise.complete(reply.result().rowCount());
         }
       });
     return promise.future();
