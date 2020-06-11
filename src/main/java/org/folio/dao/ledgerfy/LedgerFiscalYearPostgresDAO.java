@@ -19,7 +19,7 @@ import io.vertx.core.json.JsonObject;
 import org.folio.rest.util.ResponseUtils;
 
 public class LedgerFiscalYearPostgresDAO implements LedgerFiscalYearDAO {
-  public static final String LEDGERFY_TABLE = "ledger_fy";
+  public static final String LEDGERFY_TABLE = "ledgerFy";
 
   public Future<List<LedgerFY>> getLedgerFiscalYears(Criterion criterion, DBClient client) {
     Promise<List<LedgerFY>> promise = Promise.promise();

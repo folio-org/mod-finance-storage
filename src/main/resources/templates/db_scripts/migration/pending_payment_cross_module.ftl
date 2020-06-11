@@ -63,7 +63,7 @@ UPDATE ${myuniversity}_${mymodule}.budget
   WHERE id=sub.budget_id;
 
 -- update ledger fiscal year records
-UPDATE ${myuniversity}_${mymodule}.ledger_fy as ledger_fy
+UPDATE ${myuniversity}_${mymodule}.ledgerFy as ledger_fy
   SET
     jsonb = jsonb || jsonb_build_object('available', (jsonb->>'available')::decimal - sub.total,
                                         'unavailable', (jsonb->>'unavailable')::decimal + sub.total)

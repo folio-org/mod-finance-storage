@@ -1,11 +1,6 @@
 {
   "scripts": [
     {
-      "run": "before",
-      "snippetPath": "migration/rename_ledger_fy_table.ftl",
-      "fromModuleVersion": "mod-finance-storage-5.0.0"
-    },
-    {
       "run": "after",
       "snippetPath": "group_budget_view.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0"
@@ -54,7 +49,7 @@
   "tables": [
     {
       "tableName": "fiscal_year",
-      "fromModuleVersion": "mod-finance-storage-4.3.0",
+      "fromModuleVersion": "mod-finance-storage-5.0.0",
       "withMetadata": true,
       "index": [
         {
@@ -95,7 +90,7 @@
     },
     {
       "tableName": "ledger",
-      "fromModuleVersion": "mod-finance-storage-4.3.0",
+      "fromModuleVersion": "mod-finance-storage-5.0.0",
       "withMetadata": true,
       "foreignKeys": [
         {
@@ -353,19 +348,19 @@
       ]
     },
     {
-      "tableName": "ledger_fy",
-      "fromModuleVersion": "mod-finance-storage-5.0.0",
+      "tableName": "ledgerfy",
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
           "targetTable": "ledger",
-          "tableAlias": "ledger_fy",
+          "tableAlias": "ledgerFy",
           "targetTableAlias": "ledger"
         },
         {
           "fieldName": "fiscalYearId",
           "targetTable": "fiscal_year",
-          "tableAlias": "ledger_fy",
+          "tableAlias": "ledgerFy",
           "targetTableAlias": "fiscalYear"
         }
       ],
