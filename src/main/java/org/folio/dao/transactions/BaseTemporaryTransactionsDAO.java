@@ -40,10 +40,6 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
     logger.debug("Creating new transaction with id={}", transaction.getId());
 
     try {
-//      JsonArray params = new JsonArray();
-//      params.add(transaction.getId());
-//      params.add(pojo2json(transaction));
-
       client.getPgClient().execute(createTempTransactionQuery(client.getTenantId()),
         Tuple.of(UUID.fromString(transaction.getId()), pojo2JsonObject(transaction)), reply -> {
         if (reply.succeeded()) {

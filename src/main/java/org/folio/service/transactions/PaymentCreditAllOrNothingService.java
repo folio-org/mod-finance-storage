@@ -40,7 +40,6 @@ import org.folio.service.summary.TransactionSummaryService;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
@@ -257,7 +256,7 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
           handleFailure(promise, reply);
         } else {
           List<Transaction> encumbrances = new ArrayList<>();
-          reply.result().spliterator().forEachRemaining(row -> encumbrances.add((Transaction) row.getValue(0)));
+          reply.result().spliterator().forEachRemaining(row -> encumbrances.add(row.get(JsonObject.class, 0).mapTo(Transaction.class)));
           promise.complete(encumbrances);
         }
       });

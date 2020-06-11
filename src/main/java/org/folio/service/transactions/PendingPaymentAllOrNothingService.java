@@ -23,7 +23,6 @@ import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
 
-import io.vertx.sqlclient.Tuple;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
@@ -43,15 +42,15 @@ import org.folio.service.summary.TransactionSummaryService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
 
 public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransactionService<InvoiceTransactionSummary> {
 
   public static final String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON (budgets.fundId = transactions.fromFundId  AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = ? AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
+    + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
 
   public PendingPaymentAllOrNothingService(BudgetService budgetService,
                                            TemporaryTransactionDAO temporaryTransactionDAO,

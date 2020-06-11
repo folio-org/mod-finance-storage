@@ -10,14 +10,9 @@ public class TemporaryInvoiceTransactionDAO extends BaseTemporaryTransactionsDAO
   public static final String TEMPORARY_INVOICE_TRANSACTIONS = "temporary_invoice_transactions";
 
   public static final String INSERT_TEMPORARY_TRANSACTIONS = "INSERT INTO %s (id, jsonb) VALUES ($1, $2) "
-    + "ON CONFLICT (concat_space_sql(lower(f_unaccent(jsonb->>'amount')) , lower(f_unaccent(jsonb->>'fromFundId')) , lower(f_unaccent(jsonb->>'sourceInvoiceId')) , lower(f_unaccent(jsonb->>'sourceInvoiceLineId')) , lower(f_unaccent(jsonb->>'toFundId')) , lower(f_unaccent(jsonb->>'transactionType')))) DO UPDATE SET id = excluded.id RETURNING id;";
+    + "ON CONFLICT (concat_space_sql(lower(f_unaccent(jsonb->>'amount')), lower(f_unaccent(jsonb->>'fromFundId')), lower(f_unaccent(jsonb->>'sourceInvoiceId'))," +
+    " lower(f_unaccent(jsonb->>'sourceInvoiceLineId')), lower(f_unaccent(jsonb->>'toFundId')), lower(f_unaccent(jsonb->>'transactionType')))) DO UPDATE SET id = excluded.id RETURNING id;";
 
-//  public static final String INSERT_TEMPORARY_TRANSACTIONS = "INSERT INTO %s (id, jsonb) VALUES ($1, $2) "
-//    + "ON CONFLICT (lower(f_unaccent(jsonb ->> 'amount'::text)), lower(f_unaccent(jsonb ->> 'fromFundId'::text)), "
-//    + "lower(f_unaccent(jsonb ->> 'sourceInvoiceId'::text)), "
-//    + "lower(f_unaccent(jsonb ->> 'sourceInvoiceLineId'::text)), "
-//    + "lower(f_unaccent(jsonb ->> 'toFundId'::text)), "
-//    + "lower(f_unaccent(jsonb ->> 'transactionType'::text))) DO UPDATE SET id = excluded.id RETURNING id;";
 
   public TemporaryInvoiceTransactionDAO() {
     super(TEMPORARY_INVOICE_TRANSACTIONS);

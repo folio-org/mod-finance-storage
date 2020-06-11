@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -261,9 +260,8 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   private Future<Void> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, List<Transaction> newTransactions,
                                            DBClient client) {
-    JsonArray params = new JsonArray();
-    params.add(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId());
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), params, client)
+
+    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId()), client)
       .compose(oldBudgets -> {
         List<Budget> updatedBudgets = new ArrayList<>();
 

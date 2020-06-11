@@ -63,7 +63,7 @@ UPDATE ${myuniversity}_${mymodule}.budget
   WHERE id=sub.budget_id;
 
 -- update ledger fiscal year records
-UPDATE ${myuniversity}_${mymodule}.ledgerfy as ledgerfy
+UPDATE ${myuniversity}_${mymodule}.ledger_fy as ledger_fy
   SET
     jsonb = jsonb || jsonb_build_object('available', (jsonb->>'available')::decimal - sub.total,
                                         'unavailable', (jsonb->>'unavailable')::decimal + sub.total)
@@ -76,7 +76,7 @@ UPDATE ${myuniversity}_${mymodule}.ledgerfy as ledgerfy
           AND transactions.jsonb->>'transactionType'='Pending payment'
           AND NOT transactions.jsonb ? 'awaitingPayment'
         GROUP BY ledger.id, transactions.fiscalYearId) AS sub
-  WHERE ledgerfy.fiscalYearId=sub.fiscalYearId AND ledgerfy.ledgerId=sub.ledgerId;
+  WHERE ledger_fy.fiscalYearId=sub.fiscalYearId AND ledger_fy.ledgerId=sub.ledgerId;
 
 DROP EXTENSION "uuid-ossp";
 </#if>

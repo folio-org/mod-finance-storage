@@ -1,6 +1,11 @@
 {
   "scripts": [
     {
+      "run": "before",
+      "snippetPath": "migration/rename_ledger_fy_table.ftl",
+      "fromModuleVersion": "mod-finance-storage-5.0.0"
+    },
+    {
       "run": "after",
       "snippetPath": "group_budget_view.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0"
@@ -264,7 +269,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-4.2.1",
+      "fromModuleVersion": "mod-finance-storage-5.0.0",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
@@ -275,10 +280,16 @@
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
         },
         {
-          "fieldName": "payment_credit",
-          "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, toFundId, transactionType",
+          "fieldName": "payment",
+          "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType",
           "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment' OR (jsonb->>'transactionType')::text = 'Credit'"
+          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment' OR (jsonb->>'transactionType')::text = 'Pending payment'"
+        },
+        {
+          "fieldName": "credit",
+          "multiFieldNames": "amount, toFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType",
+          "tOps": "ADD",
+          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Credit'"
         }
       ],
       "foreignKeys": [
@@ -343,7 +354,7 @@
     },
     {
       "tableName": "ledger_fy",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "fromModuleVersion": "mod-finance-storage-5.0.0",
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
@@ -425,7 +436,7 @@
     },
     {
       "tableName": "temporary_order_transactions",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "fromModuleVersion": "mod-finance-storage-5.0.0",
       "foreignKeys": [
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
@@ -457,7 +468,7 @@
     },
     {
       "tableName": "temporary_invoice_transactions",
-      "fromModuleVersion": "mod-finance-storage-4.2.1",
+      "fromModuleVersion": "mod-finance-storage-5.0.0",
       "uniqueIndex": [
         {
           "fieldName": "temp_invoice_tx",

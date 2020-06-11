@@ -4,17 +4,15 @@ import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.util.ResponseUtils.handleVoidAsyncResult;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
+import static org.folio.rest.util.ResponseUtils.handleVoidAsyncResult;
 
 import java.util.Map;
 import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.json.JsonObject;
-import io.vertx.sqlclient.Tuple;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundCollection;
@@ -30,10 +28,10 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
 
 public class FundAPI implements FinanceStorageFunds {
   public static final String FUND_TABLE = "fund";
@@ -135,9 +133,7 @@ public class FundAPI implements FinanceStorageFunds {
     String fullBudgetTableName = getFullTableName(client.getTenantId(), BUDGET_TABLE);
     String fullFYTableName = getFullTableName(client.getTenantId(), FISCAL_YEAR_TABLE);
 
-//    JsonArray queryParams = new JsonArray();
-//    queryParams.add("\"" + fund.getFundStatus() + "\"");
-//    queryParams.add(fund.getId());
+
     String sql = "UPDATE "+ fullBudgetTableName +" SET jsonb = jsonb_set(jsonb,'{budgetStatus}', $1) " +
       "WHERE((fundId=$2) " +
       "AND (budget.fiscalYearId IN " +

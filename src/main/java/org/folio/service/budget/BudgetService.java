@@ -14,7 +14,6 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.sqlclient.Tuple;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -28,11 +27,11 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
 
 public class BudgetService {
 
@@ -95,8 +94,6 @@ public class BudgetService {
   private Future<Void> unlinkGroupFundFiscalYears(String id, DBClient client) {
     Promise<Void> promise = Promise.promise();
 
-//    JsonArray queryParams = new JsonArray();
-//    queryParams.add(id);
     String sql = "UPDATE "+ getFullTableName(client.getTenantId(), GROUP_FUND_FY_TABLE)  + " SET jsonb = jsonb - 'budgetId' WHERE budgetId=$1;";
 
     client.getPgClient().execute(client.getConnection(), sql, Tuple.of(UUID.fromString(id)), reply -> {

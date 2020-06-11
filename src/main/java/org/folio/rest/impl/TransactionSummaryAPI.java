@@ -9,8 +9,6 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.json.JsonObject;
-import io.vertx.sqlclient.Tuple;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -29,6 +27,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.sqlclient.Tuple;
 
 public class TransactionSummaryAPI implements FinanceStorage {
 
@@ -70,9 +69,6 @@ public class TransactionSummaryAPI implements FinanceStorage {
       String sql = "INSERT INTO " + getFullTableName(tenantId, ORDER_TRANSACTION_SUMMARIES)
           + " (id, jsonb) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING";
       try {
-//        JsonArray params = new JsonArray();
-//        params.add(summary.getId());
-//        params.add(pojo2json(summary));
 
         pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), pojo2JsonObject(summary)), result -> {
           if (result.failed()) {

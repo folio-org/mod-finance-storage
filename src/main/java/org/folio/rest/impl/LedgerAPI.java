@@ -21,9 +21,6 @@ import java.util.stream.IntStream;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.json.JsonObject;
-import io.vertx.sqlclient.Tuple;
-import io.vertx.sqlclient.impl.ArrayTuple;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.dao.ledgerfy.LedgerFiscalYearDAO;
@@ -50,6 +47,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.sqlclient.Tuple;
+import io.vertx.sqlclient.impl.ArrayTuple;
 
 public class LedgerAPI implements FinanceStorageLedgers {
 
@@ -154,14 +153,12 @@ public class LedgerAPI implements FinanceStorageLedgers {
     } else {
       String fullBudgetTableName = getFullTableName(client.getTenantId(), BUDGET_TABLE);
       String fullFYTableName = getFullTableName(client.getTenantId(), FISCAL_YEAR_TABLE);
-//      String queryPlaceHolders = fundIds.stream().map(s -> "?").collect(Collectors.joining(", ", "", ""));
+
       String queryPlaceHolders = IntStream.range(0, fundIds.size())
         .map(i -> i + 2)
         .mapToObj(i -> "$" + i)
         .collect(Collectors.joining(","));
-//      JsonArray params = new JsonArray();
-//      params.add("\"" + ledger.getLedgerStatus() + "\"");
-//      params.addAll(new JsonArray(fundIds));
+
       ArrayTuple params = new ArrayTuple(fundIds.size() + 1);
       params.addValue(ledger.getLedgerStatus().value());
       fundIds.forEach(fundId -> params.addValue(UUID.fromString(fundId)));
@@ -219,10 +216,6 @@ public class LedgerAPI implements FinanceStorageLedgers {
     String fullFundTableName = getFullTableName(client.getTenantId(), FUND_TABLE);
     String sql = "UPDATE " + fullFundTableName + "  SET jsonb = jsonb_set(jsonb,'{fundStatus}', $1) " +
       "WHERE (ledgerId = $2) AND (jsonb->>'fundStatus' <> $3) RETURNING id";
-//    JsonArray params = new JsonArray();
-//    params.add("\"" + ledger.getLedgerStatus() + "\"");
-//    params.add(ledger.getId());
-//    params.add(ledger.getLedgerStatus().value());
 
    client.getPgClient().select(client.getConnection(), sql,
      Tuple.of(ledger.getLedgerStatus().value(), UUID.fromString(ledger.getId()), ledger.getLedgerStatus().value()), event -> {
