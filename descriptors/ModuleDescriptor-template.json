@@ -40,7 +40,7 @@
     },
     {
       "id": "finance-storage.fiscal-years",
-      "version": "2.0",
+      "version": "2.1",
       "handlers": [
         {
           "methods": ["GET"],
@@ -133,7 +133,7 @@
     },
     {
       "id": "finance-storage.groups",
-      "version": "1.0",
+      "version": "1.1",
       "handlers": [
         {
           "methods": ["GET"],
@@ -189,7 +189,7 @@
     },
     {
       "id": "finance-storage.ledgers",
-      "version": "2.2",
+      "version": "2.3",
       "handlers": [
         {
           "methods": ["GET"],
