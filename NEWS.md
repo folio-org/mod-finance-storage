@@ -1,4 +1,34 @@
-## 4.3.0 - Unreleased
+## 5.1.0 - Unreleased
+
+## 5.0.0 - Released
+The primary focus of this release was to implement "all or nothing" mechanism for Pending payment transaction type 
+and update PUT transactions api to allow Unopen orders
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.2.2...v5.0.0)
+
+### Stories
+* [MODFISTO-111](https://issues.folio.org/browse/MODFISTO-111) Final verification migration scripts before release Q2 2020
+* [MODFISTO-110](https://issues.folio.org/browse/MODFISTO-110) mod-finance-storage: Update to RMB v30.0.2
+* [MODFISTO-109](https://issues.folio.org/browse/MODFISTO-109) Add ability update encumbrances and number of encumbrances based on order_transaction_summary
+* [MODFISTO-107](https://issues.folio.org/browse/MODFISTO-107) Cross-module data migration scripts for pending payments logic
+* [MODFISTO-106](https://issues.folio.org/browse/MODFISTO-106) Data migration scripts for schema changes
+* [MODFISTO-101](https://issues.folio.org/browse/MODFISTO-101) Return helpful and clear error code, when Group name already exist
+* [MODFISTO-90](https://issues.folio.org/browse/MODFISTO-90) Support all-or-nothing operations for pending payments by invoice
+* [MODFISTO-89](https://issues.folio.org/browse/MODFISTO-89) Transaction schema changes to support creation pending_payment upon invoice approval
+* [MODFISTO-85](https://issues.folio.org/browse/MODFISTO-85) Update the transaction 'source' enum
+* [MODFISTO-78](https://issues.folio.org/browse/MODFISTO-78) Add indexes for tables
+* [MODFISTO-75](https://issues.folio.org/browse/MODFISTO-75) LedgerFY records for past years
+
+### Bug Fixes
+* [MODFISTO-112](https://issues.folio.org/browse/MODFISTO-112) Available amount drops to 0 when encumbering money
+
+## 4.2.2 - Released
+The primary focus of this release was to fix critical issue with performing "all or nothing" mechanism
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.2.1...v4.2.2)
+
+### Bug Fixes
+* [MODFISTO-99](https://issues.folio.org/browse/MODFISTO-99) "All or nothing mechanism" performs two times
 
 ## 4.2.1 - Released
 The primary focus of this release was to restrict processing transactions after performing "all or nothing" mechanism.
