@@ -263,18 +263,11 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId()), client)
       .compose(oldBudgets -> {
-        List<Budget> updatedBudgets = new ArrayList<>();
 
-        if (!groupedTransactions.get(FOR_CREATE).isEmpty()) {
-          updatedBudgets.addAll(updateBudgetsTotalsForCreatingTransactions(groupedTransactions.get(FOR_CREATE), oldBudgets));
-        } else {
-          updatedBudgets.addAll(oldBudgets);
-        }
-        if (!groupedTransactions.get(FOR_UPDATE).isEmpty()) {
-          updatedBudgets = updateBudgetsTotalsForUpdatingTransactions(groupedTransactions.get(EXISTING), groupedTransactions.get(FOR_UPDATE), updatedBudgets);
-        }
+        List<Budget> updatedBudgets = updateBudgetsTotalsForCreatingTransactions(groupedTransactions.get(FOR_CREATE), oldBudgets);
+        List<Budget> finalNewBudgets = updateBudgetsTotalsForUpdatingTransactions(groupedTransactions.get(EXISTING),
+            groupedTransactions.get(FOR_UPDATE), updatedBudgets);
 
-        List<Budget> finalNewBudgets = updatedBudgets;
         return budgetService.updateBatchBudgets(finalNewBudgets, client)
           .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, finalNewBudgets, client));
       });
