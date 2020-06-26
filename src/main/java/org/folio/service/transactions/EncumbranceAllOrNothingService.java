@@ -317,6 +317,9 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
       newAmount = subtractMoney(newAmount, existingTransaction.getEncumbrance().getAmountExpended(), currency);
       tmpTransaction.setAmount(newAmount);
       newEncumbered = sumMoney(currency, newEncumbered, newAmount);
+    } else {
+      newEncumbered = sumMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency);
+      newEncumbered = subtractMoney(newEncumbered, existingTransaction.getAmount(), currency);
     }
 
     budget.setEncumbered(newEncumbered);

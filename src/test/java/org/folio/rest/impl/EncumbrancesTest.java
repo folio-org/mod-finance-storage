@@ -580,6 +580,63 @@ class EncumbrancesTest extends TestBase {
   }
 
   @Test
+  void testUpdateEncumbranceWithoutStatusChangeBudgetUpdated() throws MalformedURLException {
+
+    String fiscalYearId = createFiscalYear();
+    String ledgerId = createLedger(fiscalYearId, true);
+    String fundId = createFund(ledgerId);
+
+    Budget fromBudgetBefore = buildBudget(fiscalYearId, fundId);
+
+    String budgetId = postData(BUDGET.getEndpoint(), JsonObject.mapFrom(fromBudgetBefore).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201).extract().as(Budget.class).getId();
+
+    String orderId = UUID.randomUUID().toString();
+    String invoiceId = UUID.randomUUID().toString();
+    createOrderSummary(orderId, 1);
+
+    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
+    jsonTx.remove("id");
+    Transaction encumbrance = jsonTx.mapTo(Transaction.class);
+    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
+    encumbrance.getEncumbrance().setStatus(Encumbrance.Status.UNRELEASED);
+    encumbrance.setAmount(10d);
+    encumbrance.getEncumbrance().setAmountAwaitingPayment(10d);
+    encumbrance.getEncumbrance().setInitialAmountEncumbered(20d);
+    encumbrance.setSourceFiscalYearId(fiscalYearId);
+    encumbrance.setFiscalYearId(fiscalYearId);
+    encumbrance.setFromFundId(fundId);
+    encumbrance.setSourceInvoiceId(invoiceId);
+
+
+    String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
+
+    // create 1st Encumbrance, expected number is 1
+    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class).getId();
+
+    // encumbrance appears in transaction table
+    Budget fromBudgetBeforeUpdate = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
+    encumbrance = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+
+
+    updateOrderSummary(orderId, 1);
+
+    encumbrance.setAmount(30d);
+
+    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
+
+    Budget fromBudgetAfterUpdate = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
+
+    assertEquals(subtractValues(fromBudgetBeforeUpdate.getAvailable(), 20d), fromBudgetAfterUpdate.getAvailable());
+    assertEquals(sumValues(fromBudgetBeforeUpdate.getUnavailable(), 20d), fromBudgetAfterUpdate.getUnavailable());
+    assertEquals(sumValues(fromBudgetBeforeUpdate.getEncumbered(), 20d), fromBudgetAfterUpdate.getEncumbered());
+
+  }
+
+  @Test
   void testUpdateEncumbranceNotFound() throws MalformedURLException {
 
     String invoiceId = UUID.randomUUID().toString();
