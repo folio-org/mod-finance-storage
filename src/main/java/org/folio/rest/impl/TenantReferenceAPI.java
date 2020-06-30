@@ -10,6 +10,7 @@ import javax.ws.rs.core.Response;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
+import org.folio.rest.jaxrs.resource.FinanceStorageExpenseClasses;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageFundTypes;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
@@ -72,6 +73,7 @@ public class TenantReferenceAPI extends TenantAPI {
     if (isLoadReference(tenantAttributes)) {
       tl.withKey(PARAMETER_LOAD_REFERENCE)
         .withLead("data")
+        .add("expense-classes", getUriPath(FinanceStorageExpenseClasses.class))
         .add("fund-types", getUriPath(FinanceStorageFundTypes.class));
       loadData = true;
     }

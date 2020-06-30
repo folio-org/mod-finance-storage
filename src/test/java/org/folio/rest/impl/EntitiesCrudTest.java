@@ -1,6 +1,7 @@
 package org.folio.rest.impl;
 
 import static org.folio.rest.utils.TestEntities.BUDGET;
+import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
@@ -40,7 +41,7 @@ public class EntitiesCrudTest extends TestBase {
    *
    */
   static Stream<TestEntities> deleteOrder() {
-    return Stream.of(TRANSACTION, GROUP_FUND_FY, BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
+    return Stream.of(TRANSACTION, GROUP_FUND_FY, BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
   }
 
   static Stream<TestEntities> deleteFailOrder() {
@@ -60,7 +61,7 @@ public class EntitiesCrudTest extends TestBase {
    * @return stream of ordered entities list
    */
   static Stream<TestEntities> createDuplicateRecords() {
-    return Stream.of(BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP);
+    return Stream.of(BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
   }
 
   @ParameterizedTest
