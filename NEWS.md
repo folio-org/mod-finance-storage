@@ -1,7 +1,17 @@
 ## 5.1.0 - Unreleased
+## 5.0.1 - Released
+This is a bugfix release and contains fixes for budget, ledger, index creation.
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v5.0.0...v5.0.1)
+
+### Bug Fixes
+* [MODFISTO-118](https://issues.folio.org/browse/MODFISTO-118) Budget is not updated if encumbrance status has not been changed
+* [MODFISTO-117](https://issues.folio.org/browse/MODFISTO-117) Index not being created during migration from FameFlower-Goldenrod
+* [MODFISTO-114](https://issues.folio.org/browse/MODFISTO-114) Ledger FY totals not updated after encumbrance update
+
 
 ## 5.0.0 - Released
-The primary focus of this release was to implement "all or nothing" mechanism for Pending payment transaction type 
+The primary focus of this release was to implement "all or nothing" mechanism for Pending payment transaction type
 and update PUT transactions api to allow Unopen orders
 
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v4.2.2...v5.0.0)
