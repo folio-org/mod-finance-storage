@@ -348,25 +348,26 @@
       ]
     },
     {
-      "tableName": "ledgerfy",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "tableName": "ledgerFY",
+      "fromModuleVersion": "mod-finance-storage-5.0.1",
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
           "targetTable": "ledger",
-          "tableAlias": "ledgerFy",
+          "tableAlias": "ledgerFY",
           "targetTableAlias": "ledger"
         },
         {
           "fieldName": "fiscalYearId",
           "targetTable": "fiscal_year",
-          "tableAlias": "ledgerFy",
+          "tableAlias": "ledgerFY",
           "targetTableAlias": "fiscalYear"
         }
       ],
       "uniqueIndex": [
         {
-          "fieldName": "ledgerId, fiscalYearId",
+          "fieldName": "ledgerId_fiscalYearId",
+          "multiFieldNames": "ledgerId, fiscalYearId",
           "tOps": "ADD"
         }
       ]
