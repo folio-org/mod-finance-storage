@@ -39,6 +39,37 @@
       ]
     },
     {
+      "id": "finance-storage.expense-classes",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/expense-classes",
+          "permissionsRequired": ["finance-storage.expense-classes.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/expense-classes",
+          "permissionsRequired": ["finance-storage.expense-classes.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/expense-classes/{id}",
+          "permissionsRequired": ["finance-storage.expense-classes.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/expense-classes/{id}",
+          "permissionsRequired": ["finance-storage.expense-classes.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/expense-classes/{id}",
+          "permissionsRequired": ["finance-storage.expense-classes.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.fiscal-years",
       "version": "2.1",
       "handlers": [
@@ -355,6 +386,43 @@
         "finance-storage.budgets.item.put",
         "finance-storage.budgets.item.delete",
         "finance-storage.group-budgets.collection.get"
+      ]
+    },
+    {
+      "permissionName" : "finance-storage.expense-classes.collection.get",
+      "displayName" : "expense-class-collection get",
+      "description" : "Get a collection of expense-classes"
+    },
+    {
+      "permissionName" : "finance-storage.expense-classes.item.post",
+      "displayName" : "expense-class-item post",
+      "description" : "Create a new expense class"
+    },
+    {
+      "permissionName" : "finance-storage.expense-classes.item.get",
+      "displayName" : "expense-class-item get",
+      "description" : "Fetch an expense class"
+    },
+    {
+      "permissionName" : "finance-storage.expense-classes.item.put",
+      "displayName" : "expense-class-item put",
+      "description" : "Update an expense class"
+    },
+    {
+      "permissionName" : "finance-storage.expense-classes.item.delete",
+      "displayName" : "expense-class-item delete",
+      "description" : "Delete an expense class"
+    },
+    {
+      "permissionName" : "finance-storage.expense-classes.all",
+      "displayName" : "All expense class perms",
+      "description" : "All permissions for the expense class",
+      "subPermissions" : [
+        "finance-storage.expense-classes.collection.get",
+        "finance-storage.expense-classes.item.post",
+        "finance-storage.expense-classes.item.get",
+        "finance-storage.expense-classes.item.put",
+        "finance-storage.expense-classes.item.delete"
       ]
     },
     {
@@ -675,6 +743,7 @@
       "description" : "All permissions for the finance module",
       "subPermissions" : [
         "finance-storage.budgets.all",
+        "finance-storage.expense-classes.all",
         "finance-storage.fiscal-years.all",
         "finance-storage.funds.all",
         "finance-storage.groups.all",

@@ -48,6 +48,20 @@
   ],
   "tables": [
     {
+      "tableName": "expense_class",
+      "fromModuleVersion": "mod-finance-storage-5.1.0",
+      "uniqueIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "code",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
       "tableName": "fiscal_year",
       "fromModuleVersion": "mod-finance-storage-5.0.0",
       "withMetadata": true,
@@ -307,6 +321,10 @@
           "fieldName": "toFundId",
           "targetTable": "fund",
           "tOps": "ADD"
+        },
+        {
+          "fieldName": "expenseClassId",
+          "targetTable": "expense_class"
         }
       ],
       "ginIndex": [
@@ -448,6 +466,9 @@
           "fieldName": "fromFundId",
           "targetTable": "fund",
           "tOps": "ADD"
+        },        {
+          "fieldName": "expenseClassId",
+          "targetTable": "expense_class"
         }
       ],
       "uniqueIndex": [
@@ -497,6 +518,10 @@
           "fieldName": "fiscalYearId",
           "targetTable": "fiscal_year",
           "tOps": "ADD"
+        },
+        {
+          "fieldName": "expenseClassId",
+          "targetTable": "expense_class"
         }
        ]
     },

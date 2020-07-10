@@ -8,6 +8,7 @@ import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.postToTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenantBody;
+import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 
 import java.io.IOException;
@@ -105,9 +106,11 @@ class TenantSampleDataTest extends TestBase {
         .assertThat()
         .statusCode(201);
       verifyCollectionQuantity(FUND_TYPE.getEndpoint(), FUND_TYPE.getInitialQuantity(), PARTIAL_TENANT_HEADER);
+      verifyCollectionQuantity(EXPENSE_CLASS.getEndpoint(), EXPENSE_CLASS.getInitialQuantity(), PARTIAL_TENANT_HEADER);
+
       for (TestEntities entity : TestEntities.values()) {
         //category is the only reference data, which must be loaded
-        if (!entity.equals(TestEntities.FUND_TYPE)) {
+        if (!entity.equals(TestEntities.FUND_TYPE) && !entity.equals(TestEntities.EXPENSE_CLASS)) {
           logger.info("Test sample data not loaded for " + entity.name());
           verifyCollectionQuantity(entity.getEndpoint(), 0, PARTIAL_TENANT_HEADER);
         }
