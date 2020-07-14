@@ -70,6 +70,37 @@
       ]
     },
     {
+      "id": "finance-storage.budget-expense-classes",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/budget-expense-classes",
+          "permissionsRequired": ["finance-storage.budget-expense-classes.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/budget-expense-classes",
+          "permissionsRequired": ["finance-storage.budget-expense-classes.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/budget-expense-classes/{id}",
+          "permissionsRequired": ["finance-storage.budget-expense-classes.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/budget-expense-classes/{id}",
+          "permissionsRequired": ["finance-storage.budget-expense-classes.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/budget-expense-classes/{id}",
+          "permissionsRequired": ["finance-storage.budget-expense-classes.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.fiscal-years",
       "version": "2.1",
       "handlers": [
@@ -426,6 +457,43 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.budget-expense-classes.collection.get",
+      "displayName" : "budget-expense-class-collection get",
+      "description" : "Get a collection of budget-expense-class records"
+    },
+    {
+      "permissionName" : "finance-storage.budget-expense-classes.item.post",
+      "displayName" : "budget-expense-class-item post",
+      "description" : "Create a new budget-expense-class record"
+    },
+    {
+      "permissionName" : "finance-storage.budget-expense-classes.item.get",
+      "displayName" : "budget-expense-class-item get",
+      "description" : "Fetch a budget-expense-class record"
+    },
+    {
+      "permissionName" : "finance-storage.budget-expense-classes.item.put",
+      "displayName" : "budget-expense-class-item put",
+      "description" : "Update a budget-expense-class record"
+    },
+    {
+      "permissionName" : "finance-storage.budget-expense-classes.item.delete",
+      "displayName" : "budget-expense-class-item delete",
+      "description" : "Delete a budget-expense-class record"
+    },
+    {
+      "permissionName" : "finance-storage.budget-expense-classes.all",
+      "displayName" : "All budget-expense-class perms",
+      "description" : "All permissions for the budget expense class",
+      "subPermissions" : [
+        "finance-storage.budget-expense-classes.collection.get",
+        "finance-storage.budget-expense-classes.item.post",
+        "finance-storage.budget-expense-classes.item.get",
+        "finance-storage.budget-expense-classes.item.put",
+        "finance-storage.budget-expense-classes.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance-storage.fiscal-years.collection.get",
       "displayName" : "fiscal-year-collection get",
       "description" : "Get collection of fiscal year"
@@ -744,6 +812,7 @@
       "subPermissions" : [
         "finance-storage.budgets.all",
         "finance-storage.expense-classes.all",
+        "finance-storage.budget-expense-classes.all",
         "finance-storage.fiscal-years.all",
         "finance-storage.funds.all",
         "finance-storage.groups.all",

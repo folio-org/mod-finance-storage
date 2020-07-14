@@ -271,6 +271,33 @@
       ]
     },
     {
+      "tableName": "budget_expense_class",
+      "fromModuleVersion": "mod-finance-storage-5.1.0",
+      "uniqueIndex": [
+        {
+          "fieldName": "budgetId_expenseClassId",
+          "multiFieldNames": "budgetId, expenseClassId",
+          "tOps": "ADD"
+        }
+      ],
+      "foreignKeys": [
+        {
+          "fieldName": "budgetId",
+          "targetTable": "budget",
+          "tableAlias": "budgetExpenseClass",
+          "targetTableAlias": "budget",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "expenseClassId",
+          "targetTable": "expense_class",
+          "tableAlias": "budgetExpenseClass",
+          "targetTableAlias": "expenseClass",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
       "tableName": "fund_distribution",
       "fromModuleVersion": "mod-finance-storage-4.2.1",
       "mode": "delete",
