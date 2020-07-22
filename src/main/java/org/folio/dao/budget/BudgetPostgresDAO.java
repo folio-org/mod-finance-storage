@@ -93,7 +93,10 @@ public class BudgetPostgresDAO implements BudgetDAO {
   public Future<DBClient> deleteBudget(String id, DBClient client) {
     Promise<DBClient> promise = Promise.promise();
     client.getPgClient().delete(client.getConnection(), BUDGET_TABLE, id, reply -> {
-      if (reply.result().rowCount() == 0) {
+      if (reply.failed()) {
+        logger.error("Budget deletion with id={} failed", reply.cause(), id);
+        handleFailure(promise, reply);
+      } else if (reply.result().rowCount() == 0) {
         promise.fail(new HttpStatusException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase()));
       } else {
         promise.complete(client);
