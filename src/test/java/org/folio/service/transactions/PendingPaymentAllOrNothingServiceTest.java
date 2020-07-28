@@ -432,7 +432,7 @@ public class PendingPaymentAllOrNothingServiceTest {
   }
 
   @Test
-  void testGetBudgetRemainingAmount() {
+  void testGetBudgetRemainingAmountForEncumbrance() {
     budget.withExpenditures(90d)
       .withAllowableExpenditure(110d)
       .withAvailable(0d)
@@ -441,6 +441,18 @@ public class PendingPaymentAllOrNothingServiceTest {
     MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency, new Transaction().withTransactionType(
       TransactionType.ENCUMBRANCE));
     assertThat(amount.getNumber().doubleValue(), is(10d));
+  }
+
+  @Test
+  void testGetBudgetRemainingAmountForPendingPayment() {
+    budget.withExpenditures(90d)
+      .withAllowableExpenditure(110d)
+      .withAvailable(0d)
+      .withUnavailable(100d)
+      .withEncumbered(10d);
+    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency, new Transaction().withTransactionType(
+      TransactionType.PENDING_PAYMENT));
+    assertThat(amount.getNumber().doubleValue(), is(20d));
   }
 
   @Test
