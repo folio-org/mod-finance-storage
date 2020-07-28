@@ -37,6 +37,7 @@ import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -50,7 +51,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
@@ -438,7 +438,8 @@ public class PendingPaymentAllOrNothingServiceTest {
       .withAvailable(0d)
       .withUnavailable(100d)
       .withEncumbered(10d);
-    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency);
+    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency, new Transaction().withTransactionType(
+      TransactionType.ENCUMBRANCE));
     assertThat(amount.getNumber().doubleValue(), is(10d));
   }
 

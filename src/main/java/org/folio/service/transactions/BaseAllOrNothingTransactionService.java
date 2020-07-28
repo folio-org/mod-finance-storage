@@ -29,6 +29,7 @@ import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fund.FundService;
@@ -166,7 +167,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
 
   private Void checkTransactionAllowed(Transaction transaction, Budget budget, Ledger ledger) {
     if (isTransactionOverspendRestricted(ledger, budget)) {
-      Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction.getCurrency());
+      Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction.getCurrency(), transaction);
       if (Money.of(transaction.getAmount(), transaction.getCurrency()).isGreaterThan(budgetRemainingAmount)) {
         throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID);
       }
@@ -313,9 +314,10 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
    *
    * @param budget     processed budget
    * @param currency   processed transaction currency
+   * @param transaction
    * @return remaining amount for payment
    */
-  protected Money getBudgetRemainingAmount(Budget budget, String currency) {
+  protected Money getBudgetRemainingAmount(Budget budget, String currency, Transaction transaction) {
     Money allocated = Money.of(budget.getAllocated(), currency);
     // get allowableExpenditure from percentage value
     double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
@@ -327,7 +329,16 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
 
     Money result = allocated.multiply(allowableExpenditure);
     result = result.subtract(allocated.subtract(unavailable.add(available)));
-    result = result.subtract(expenditure.add(awaitingPayment).add(encumbered));
+
+    if (transaction.getTransactionType().equals(TransactionType.PENDING_PAYMENT)) {
+      result = result.subtract(expenditure.add(awaitingPayment));
+    }
+    else if(transaction.getTransactionType().equals(TransactionType.PAYMENT)) {
+      result = result.subtract(expenditure.add(encumbered));
+    }
+    else {
+      result = result.subtract(expenditure.add(awaitingPayment).add(encumbered));
+    }
 
     return result;
   }
