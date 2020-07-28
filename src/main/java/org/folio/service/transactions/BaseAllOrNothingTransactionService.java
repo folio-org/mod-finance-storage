@@ -167,7 +167,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
 
   private Void checkTransactionAllowed(Transaction transaction, Budget budget, Ledger ledger) {
     if (isTransactionOverspendRestricted(ledger, budget)) {
-      Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction.getCurrency(), transaction);
+      Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction);
       if (Money.of(transaction.getAmount(), transaction.getCurrency()).isGreaterThan(budgetRemainingAmount)) {
         throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID);
       }
@@ -313,19 +313,18 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
    * [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable + available)) - (awaitingPayment + expended + encumbered)
    *
    * @param budget     processed budget
-   * @param currency   processed transaction currency
    * @param transaction
    * @return remaining amount for payment
    */
-  protected Money getBudgetRemainingAmount(Budget budget, String currency, Transaction transaction) {
-    Money allocated = Money.of(budget.getAllocated(), currency);
+  protected Money getBudgetRemainingAmount(Budget budget, Transaction transaction) {
+    Money allocated = Money.of(budget.getAllocated(), transaction.getCurrency());
     // get allowableExpenditure from percentage value
-    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
-    Money unavailable = Money.of(budget.getUnavailable(), currency);
-    Money available = Money.of(budget.getAvailable(), currency);
-    Money expenditure = Money.of(budget.getExpenditures(), currency);
-    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
-    Money encumbered = Money.of(budget.getEncumbered(), currency);
+    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), transaction.getCurrency()).divide(100d).getNumber().doubleValue();
+    Money unavailable = Money.of(budget.getUnavailable(), transaction.getCurrency());
+    Money available = Money.of(budget.getAvailable(), transaction.getCurrency());
+    Money expenditure = Money.of(budget.getExpenditures(), transaction.getCurrency());
+    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), transaction.getCurrency());
+    Money encumbered = Money.of(budget.getEncumbered(), transaction.getCurrency());
 
     Money result = allocated.multiply(allowableExpenditure);
     result = result.subtract(allocated.subtract(unavailable.add(available)));

@@ -438,8 +438,8 @@ public class PendingPaymentAllOrNothingServiceTest {
       .withAvailable(0d)
       .withUnavailable(100d)
       .withEncumbered(10d);
-    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency, new Transaction().withTransactionType(
-      TransactionType.ENCUMBRANCE));
+    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, new Transaction().withTransactionType(
+      TransactionType.ENCUMBRANCE).withCurrency(currency));
     assertThat(amount.getNumber().doubleValue(), is(10d));
   }
 
@@ -450,8 +450,8 @@ public class PendingPaymentAllOrNothingServiceTest {
       .withAvailable(0d)
       .withUnavailable(100d)
       .withEncumbered(10d);
-    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency, new Transaction().withTransactionType(
-      TransactionType.PENDING_PAYMENT));
+    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, new Transaction().withTransactionType(
+      TransactionType.PENDING_PAYMENT).withCurrency(currency));
     assertThat(amount.getNumber().doubleValue(), is(20d));
   }
 
