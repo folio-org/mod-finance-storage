@@ -298,12 +298,12 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
     Money allocated = Money.of(budget.getAllocated(), currency);
     // get allowableExpenditure from percentage value
     double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
-    Money unavailable = Money.of(budget.getUnavailable(), currency);
     Money available = Money.of(budget.getAvailable(), currency);
     Money expenditure = Money.of(budget.getExpenditures(), currency);
     Money encumbered = Money.of(budget.getEncumbered(), currency);
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
     Money relatedEncumbered = relatedTransaction == null ? Money.of(0d, currency) : Money.of(relatedTransaction.getAmount(), currency);
+    Money unavailable = Money.of(budget.getUnavailable(), currency);
 
     Money result = allocated.multiply(allowableExpenditure);
     result = result.subtract(allocated.subtract(unavailable.add(available)));
