@@ -29,7 +29,6 @@ import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fund.FundService;
@@ -160,14 +159,19 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
         if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT || transaction.getAmount() <= 0) {
           return Future.succeededFuture();
         }
-        return ledgerService.getLedgerByTransaction(transaction, context,  headers)
-          .map(ledger -> checkTransactionAllowed(transaction, budget, ledger));
+        return getRelatedTransaction(transaction,context, headers)
+          .compose(relatedTransaction -> ledgerService.getLedgerByTransaction(transaction, context,  headers)
+            .map(ledger -> checkTransactionAllowed(transaction, relatedTransaction, budget, ledger)));
       });
   }
 
-  private Void checkTransactionAllowed(Transaction transaction, Budget budget, Ledger ledger) {
+  protected Future<Transaction> getRelatedTransaction(Transaction transaction, Context context, Map<String, String> headers) {
+    return Future.succeededFuture(null);
+  }
+
+  private Void checkTransactionAllowed(Transaction transaction, Transaction relatedTransaction, Budget budget, Ledger ledger) {
     if (isTransactionOverspendRestricted(ledger, budget)) {
-      Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction);
+      Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction.getCurrency(), relatedTransaction);
       if (Money.of(transaction.getAmount(), transaction.getCurrency()).isGreaterThan(budgetRemainingAmount)) {
         throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID);
       }
@@ -308,39 +312,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
       .withUnavailable(newUnavailable);
   }
 
-  /**
-   * Calculates remaining amount for payment and pending payments
-   * [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable + available)) - (awaitingPayment + expended + encumbered)
-   *
-   * @param budget     processed budget
-   * @param transaction
-   * @return remaining amount for payment
-   */
-  protected Money getBudgetRemainingAmount(Budget budget, Transaction transaction) {
-    Money allocated = Money.of(budget.getAllocated(), transaction.getCurrency());
-    // get allowableExpenditure from percentage value
-    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), transaction.getCurrency()).divide(100d).getNumber().doubleValue();
-    Money unavailable = Money.of(budget.getUnavailable(), transaction.getCurrency());
-    Money available = Money.of(budget.getAvailable(), transaction.getCurrency());
-    Money expenditure = Money.of(budget.getExpenditures(), transaction.getCurrency());
-    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), transaction.getCurrency());
-    Money encumbered = Money.of(budget.getEncumbered(), transaction.getCurrency());
-
-    Money result = allocated.multiply(allowableExpenditure);
-    result = result.subtract(allocated.subtract(unavailable.add(available)));
-
-    if (transaction.getTransactionType().equals(TransactionType.PENDING_PAYMENT)) {
-      result = result.subtract(expenditure.add(awaitingPayment));
-    }
-    else if(transaction.getTransactionType().equals(TransactionType.PAYMENT)) {
-      result = result.subtract(expenditure.add(encumbered));
-    }
-    else {
-      result = result.subtract(expenditure.add(awaitingPayment).add(encumbered));
-    }
-
-    return result;
-  }
+  abstract Money getBudgetRemainingAmount(Budget budget, String currency, Transaction relatedTransaction);
 
   abstract Future<Void> processTemporaryToPermanentTransactions(List<Transaction> transactions, DBClient client);
 

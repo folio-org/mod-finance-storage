@@ -103,19 +103,20 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
    * + available)) - (encumbered + awaitingPayment + expenditures)
    *
    * @param budget   processed budget
-   * @param transaction
+   * @param currency
+   * @param relatedTransaction
    * @return remaining amount for encumbrance
    */
   @Override
-  protected Money getBudgetRemainingAmount(Budget budget, Transaction transaction) {
-    Money allocated = Money.of(budget.getAllocated(), transaction.getCurrency());
+  protected Money getBudgetRemainingAmount(Budget budget, String currency, Transaction relatedTransaction) {
+    Money allocated = Money.of(budget.getAllocated(), currency);
     // get allowableEncumbered converted from percentage value
-    double allowableEncumbered = Money.of(budget.getAllowableEncumbrance(), transaction.getCurrency()).divide(100d).getNumber().doubleValue();
-    Money unavailable = Money.of(budget.getUnavailable(), transaction.getCurrency());
-    Money available = Money.of(budget.getAvailable(), transaction.getCurrency());
-    Money encumbered = Money.of(budget.getEncumbered(), transaction.getCurrency());
-    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), transaction.getCurrency());
-    Money expenditures = Money.of(budget.getExpenditures(), transaction.getCurrency());
+    double allowableEncumbered = Money.of(budget.getAllowableEncumbrance(), currency).divide(100d).getNumber().doubleValue();
+    Money unavailable = Money.of(budget.getUnavailable(), currency);
+    Money available = Money.of(budget.getAvailable(), currency);
+    Money encumbered = Money.of(budget.getEncumbered(), currency);
+    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
+    Money expenditures = Money.of(budget.getExpenditures(), currency);
 
     Money result = allocated.multiply(allowableEncumbered);
     result = result.subtract(allocated.subtract(unavailable.add(available)));

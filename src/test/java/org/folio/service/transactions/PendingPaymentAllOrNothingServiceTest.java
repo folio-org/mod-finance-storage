@@ -37,7 +37,6 @@ import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -438,21 +437,8 @@ public class PendingPaymentAllOrNothingServiceTest {
       .withAvailable(0d)
       .withUnavailable(100d)
       .withEncumbered(10d);
-    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, new Transaction().withTransactionType(
-      TransactionType.ENCUMBRANCE).withCurrency(currency));
+    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency, new Transaction().withAmount(0d));
     assertThat(amount.getNumber().doubleValue(), is(10d));
-  }
-
-  @Test
-  void testGetBudgetRemainingAmountForPendingPayment() {
-    budget.withExpenditures(90d)
-      .withAllowableExpenditure(110d)
-      .withAvailable(0d)
-      .withUnavailable(100d)
-      .withEncumbered(10d);
-    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, new Transaction().withTransactionType(
-      TransactionType.PENDING_PAYMENT).withCurrency(currency));
-    assertThat(amount.getNumber().doubleValue(), is(20d));
   }
 
   @Test
