@@ -103,11 +103,12 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
    * + available)) - (encumbered + awaitingPayment + expenditures)
    *
    * @param budget   processed budget
-   * @param currency processed transaction currency
+   * @param currency
+   * @param relatedTransaction
    * @return remaining amount for encumbrance
    */
   @Override
-  protected Money getBudgetRemainingAmount(Budget budget, String currency) {
+  protected Money getBudgetRemainingAmount(Budget budget, String currency, Transaction relatedTransaction) {
     Money allocated = Money.of(budget.getAllocated(), currency);
     // get allowableEncumbered converted from percentage value
     double allowableEncumbered = Money.of(budget.getAllowableEncumbrance(), currency).divide(100d).getNumber().doubleValue();

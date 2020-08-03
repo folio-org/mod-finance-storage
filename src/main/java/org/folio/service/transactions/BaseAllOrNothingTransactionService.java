@@ -159,14 +159,19 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
         if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT || transaction.getAmount() <= 0) {
           return Future.succeededFuture();
         }
-        return ledgerService.getLedgerByTransaction(transaction, context,  headers)
-          .map(ledger -> checkTransactionAllowed(transaction, budget, ledger));
+        return getRelatedTransaction(transaction,context, headers)
+          .compose(relatedTransaction -> ledgerService.getLedgerByTransaction(transaction, context,  headers)
+            .map(ledger -> checkTransactionAllowed(transaction, relatedTransaction, budget, ledger)));
       });
   }
 
-  private Void checkTransactionAllowed(Transaction transaction, Budget budget, Ledger ledger) {
+  protected Future<Transaction> getRelatedTransaction(Transaction transaction, Context context, Map<String, String> headers) {
+    return Future.succeededFuture(null);
+  }
+
+  private Void checkTransactionAllowed(Transaction transaction, Transaction relatedTransaction, Budget budget, Ledger ledger) {
     if (isTransactionOverspendRestricted(ledger, budget)) {
-      Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction.getCurrency());
+      Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction.getCurrency(), relatedTransaction);
       if (Money.of(transaction.getAmount(), transaction.getCurrency()).isGreaterThan(budgetRemainingAmount)) {
         throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID);
       }
@@ -307,30 +312,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
       .withUnavailable(newUnavailable);
   }
 
-  /**
-   * Calculates remaining amount for payment and pending payments
-   * [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable + available)) - (awaitingPayment + expended + encumbered)
-   *
-   * @param budget     processed budget
-   * @param currency   processed transaction currency
-   * @return remaining amount for payment
-   */
-  protected Money getBudgetRemainingAmount(Budget budget, String currency) {
-    Money allocated = Money.of(budget.getAllocated(), currency);
-    // get allowableExpenditure from percentage value
-    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
-    Money unavailable = Money.of(budget.getUnavailable(), currency);
-    Money available = Money.of(budget.getAvailable(), currency);
-    Money expenditure = Money.of(budget.getExpenditures(), currency);
-    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
-    Money encumbered = Money.of(budget.getEncumbered(), currency);
-
-    Money result = allocated.multiply(allowableExpenditure);
-    result = result.subtract(allocated.subtract(unavailable.add(available)));
-    result = result.subtract(expenditure.add(awaitingPayment).add(encumbered));
-
-    return result;
-  }
+  abstract Money getBudgetRemainingAmount(Budget budget, String currency, Transaction relatedTransaction);
 
   abstract Future<Void> processTemporaryToPermanentTransactions(List<Transaction> transactions, DBClient client);
 
