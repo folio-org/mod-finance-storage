@@ -9,6 +9,7 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAY
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
+import io.vertx.core.Context;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
+import org.javamoney.moneta.Money;
 
 public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactionService<InvoiceTransactionSummary> {
 
@@ -302,4 +304,58 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
       && budget.getAllowableExpenditure() != null;
   }
 
+  /**
+   * Calculates remaining amount for payment [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable +
+   * available)) - (expenditure + encumbered + awaitingPayment - relatedAwaitingPayment)
+   *
+   * @param budget             processed budget
+   * @param currency
+   * @param relatedTransaction
+   * @return remaining amount for payment
+   */
+  @Override
+  protected Money getBudgetRemainingAmount(Budget budget, String currency, Transaction relatedTransaction) {
+    Money allocated = Money.of(budget.getAllocated(), currency);
+    // get allowableExpenditure from percentage value
+    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
+    Money unavailable = Money.of(budget.getUnavailable(), currency);
+    Money available = Money.of(budget.getAvailable(), currency);
+    Money expenditure = Money.of(budget.getExpenditures(), currency);
+    Money relatedAwaitingPayment = relatedTransaction == null ? Money.of(0d, currency) : Money.of(relatedTransaction.getAmount(), currency);
+    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
+    Money encumbered = Money.of(budget.getEncumbered(), currency);
+
+    Money result = allocated.multiply(allowableExpenditure);
+    result = result.subtract(allocated.subtract(unavailable.add(available)));
+    result = result.subtract(expenditure.add(encumbered).add(awaitingPayment).subtract(relatedAwaitingPayment));
+
+    return result;
+  }
+
+  @Override
+  protected Future<Transaction> getRelatedTransaction(Transaction transaction, Context context,
+    Map<String, String> headers) {
+
+    DBClient client = new DBClient(context, headers);
+
+    CriterionBuilder criterionBuilder;
+    if (transaction.getSourceInvoiceLineId() != null) {
+      criterionBuilder = new CriterionBuilder()
+        .withJson("fromFundId","=", transaction.getFromFundId())
+        .withJson("sourceInvoiceId","=", transaction.getSourceInvoiceId())
+        .withJson("sourceInvoiceLineId","=", transaction.getSourceInvoiceLineId())
+        .withJson("transactionType","=", PENDING_PAYMENT.value())
+        .withOperation("AND");
+    } else {
+      criterionBuilder = new CriterionBuilder()
+        .withJson("fromFundId","=", transaction.getFromFundId())
+        .withJson("sourceInvoiceId","=", transaction.getSourceInvoiceId())
+        .withJson("sourceInvoiceLineId","IS NULL", null)
+        .withJson("transactionType","=", PENDING_PAYMENT.value())
+        .withOperation("AND");
+    }
+
+    return transactionsDAO.getTransactions(criterionBuilder.build(), client)
+      .map(transactions -> transactions.isEmpty() ? null : transactions.get(0));
+  }
 }

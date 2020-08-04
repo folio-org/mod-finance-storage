@@ -50,7 +50,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
@@ -432,13 +431,13 @@ public class PendingPaymentAllOrNothingServiceTest {
   }
 
   @Test
-  void testGetBudgetRemainingAmount() {
+  void testGetBudgetRemainingAmountForEncumbrance() {
     budget.withExpenditures(90d)
       .withAllowableExpenditure(110d)
       .withAvailable(0d)
       .withUnavailable(100d)
       .withEncumbered(10d);
-    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency);
+    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency, new Transaction().withAmount(0d));
     assertThat(amount.getNumber().doubleValue(), is(10d));
   }
 
