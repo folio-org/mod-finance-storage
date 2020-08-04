@@ -1,15 +1,16 @@
 {
   "id": "64a71a11-9143-4ebe-ac3a-b0ced57636ba",
-  "name": "STATE-SUBN-FY2018",
-  "budgetStatus": "Active",
+  "allocated": 450000.00,
   "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
-  "allocated": 450000.00,
-  "awaitingPayment": 14850.00,
   "available": 392400.00,
+  "awaitingPayment": 14850.00,
+  "budgetStatus": "Active",
   "encumbered": 18450.00,
   "expenditures": 24300.00,
-  "overEncumbrance": 0,
+  "fiscalYearId": "8da275b8-e099-49a1-9a31-b8241ff26ffc",
   "fundId": "e54b1f4d-7d05-4b1a-9368-3c36b75d8ac6",
-  "fiscalYearId": "8da275b8-e099-49a1-9a31-b8241ff26ffc"
+  "name": "STATE-SUBN-FY2018",
+  "netTransfers": 0,
+  "overEncumbrance": 0
 }
