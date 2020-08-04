@@ -1,10 +1,11 @@
 {
   "id": "de6761f6-1f64-4b5d-a5bc-98862c498c21",
-  "name": "ASIAHIST-FY2020",
-  "budgetStatus": "Active",
+  "allocated": 0.00,
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 0.00,
+  "budgetStatus": "Active",
+  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "fundId": "55f48dc6-efa7-4cfe-bc7c-4786efe493e3",
-  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
+  "name": "ASIAHIST-FY2020",
+  "netTransfers": 0
 }

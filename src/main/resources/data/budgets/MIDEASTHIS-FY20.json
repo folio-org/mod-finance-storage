@@ -1,10 +1,11 @@
 {
   "id": "4eadbf22-e6dc-4ea4-9453-c6e9de2cb5a8",
-  "name": "MIDEASTHIS-FY2020",
-  "budgetStatus": "Active",
+  "allocated": 0.00,
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "allocated": 0.00,
+  "budgetStatus": "Active",
+  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "fundId": "30fcc8e7-a019-43f4-b642-2edc389f4501",
-  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
+  "name": "MIDEASTHIS-FY2020",
+  "netTransfers": 0
 }
