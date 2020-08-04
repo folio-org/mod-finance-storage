@@ -1,10 +1,11 @@
 {
   "id": "400afc07-4aa6-4dbb-8f2c-40cf8e69b0e6",
-  "name": "GIFT-SUBN-FY2020",
-  "budgetStatus": "Active",
+  "allocated": 0,
   "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
-  "allocated": 0,
+  "budgetStatus": "Active",
+  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "fundId": "e9f9bc2f-bad5-4613-9d6c-f55efa5805e7",
-  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e"
+  "name": "GIFT-SUBN-FY2020",
+  "netTransfers": 0
 }

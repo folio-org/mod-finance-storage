@@ -1,15 +1,16 @@
 {
   "id": "0916fde2-7a7d-4ff0-9069-37ee1ec0c068",
-  "name": "STATE-MONOSER-FY2018",
-  "budgetStatus": "Active",
+  "allocated": 70000.00,
   "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
-  "allocated": 70000.00,
-  "awaitingPayment": 2310.00,
   "available": 61040.00,
+  "awaitingPayment": 2310.00,
+  "budgetStatus": "Active",
   "encumbered": 2870.00,
   "expenditures": 3780.00,
-  "overEncumbrance": 0,
+  "fiscalYearId": "8da275b8-e099-49a1-9a31-b8241ff26ffc",
   "fundId": "bbd4a5e1-c9f3-44b9-bfdf-d184e04f0ba0",
-  "fiscalYearId": "8da275b8-e099-49a1-9a31-b8241ff26ffc"
+  "name": "STATE-MONOSER-FY2018",
+  "netTransfers": 0,
+  "overEncumbrance": 0
 }
