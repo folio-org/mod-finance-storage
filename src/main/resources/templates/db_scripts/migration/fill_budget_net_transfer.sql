@@ -1,7 +1,7 @@
  -- Update budgets
 UPDATE ${myuniversity}_${mymodule}.budget
   SET
-    jsonb = jsonb || jsonb_build_object('netTransfer', totalNetTransfers.totalNetTransfer)
+    jsonb = jsonb || jsonb_build_object('netTransfers', totalNetTransfers.totalNetTransfer)
   FROM
 		 (SELECT  calc.budgetId AS budgetId, sum(calc.calculatedNetTransfer) AS totalNetTransfer FROM
 				(SELECT budget.id as budgetId, budget.fundId as budgetFundId, transactions.fromFundId as transactionsFromFundId, transactions.toFundId as transactionsToFundId, transactions.fiscalYearId,
