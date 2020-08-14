@@ -1,10 +1,8 @@
 package org.folio.service.group;
 
 import static org.folio.rest.jaxrs.resource.FinanceStorageGroups.PostFinanceStorageGroupsResponse.headersFor201;
-import static org.folio.rest.util.ErrorCodes.GENERIC_ERROR_CODE;
 import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.ws.rs.core.Response;
@@ -12,8 +10,6 @@ import javax.ws.rs.core.Response;
 import org.folio.builders.error.NameCodeConstraintErrorBuilder;
 import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
-import org.folio.rest.persist.HelperUtils;
-import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.PostgresClient;
 
 import io.vertx.core.AsyncResult;
