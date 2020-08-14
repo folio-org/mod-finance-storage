@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import org.folio.builders.error.NameCodeConstraintErrorBuilder;
 import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.persist.HelperUtils;
@@ -30,10 +31,13 @@ public class GroupService {
   private static final String GROUPS_TABLE = "groups";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
   private PostgresClient pgClient;
+  private final NameCodeConstraintErrorBuilder nameCodeConstraintErrorBuilder;
 
   public GroupService(Vertx vertx, String tenantId) {
     this.pgClient = PostgresClient.getInstance(vertx, tenantId);
+    this.nameCodeConstraintErrorBuilder = new NameCodeConstraintErrorBuilder();
   }
 
   public void createGroup(Group entity, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
@@ -69,7 +73,7 @@ public class GroupService {
     }
     pgClient.save(GROUPS_TABLE, group.getId(), group, reply -> {
       if (reply.failed()) {
-        promise.fail(buildException(reply));
+        promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, Group.class));
       }
       else {
         promise.complete(group);
@@ -82,7 +86,7 @@ public class GroupService {
     Promise<Group> promise = Promise.promise();
     pgClient.update(GROUPS_TABLE, JsonObject.mapFrom(group), id, reply -> {
       if (reply.failed()) {
-        promise.fail(buildException(reply));
+        promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, Group.class));
       }
       else if(reply.result().rowCount() == 0) {
         promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
@@ -92,27 +96,5 @@ public class GroupService {
       }
     });
     return promise.future();
-  }
-
-  private <T> HttpStatusException buildException(AsyncResult<T> reply) {
-    String msg = PgExceptionUtil.badRequestMessage(reply.cause());
-    String error = Optional.ofNullable(msg).map(this::buildFieldConstraintError).orElse(GENERIC_ERROR_CODE.getCode());
-    if (GENERIC_ERROR_CODE.getCode().equals(error)) {
-      return new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), error);
-    }
-    return new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), error);
-  }
-
-  private String buildFieldConstraintError(String msg) {
-    final String ENTITY_NAME = "Group";
-    final String FIELD_CODE = "Code";
-    final String FIELD_NAME = "Name";
-    String uniqueConstraintName = HelperUtils.getSQLUniqueConstraintName(msg);
-    if (uniqueConstraintName.contains(FIELD_CODE.toLowerCase())) {
-      return JsonObject.mapFrom(HelperUtils.buildFieldConstraintError(ENTITY_NAME, FIELD_CODE)).encode();
-    } else if (uniqueConstraintName.contains(FIELD_NAME.toLowerCase())) {
-      return JsonObject.mapFrom(HelperUtils.buildFieldConstraintError(ENTITY_NAME, FIELD_NAME)).encode();
-    }
-    return JsonObject.mapFrom(GENERIC_ERROR_CODE.toError()).encode();
   }
 }

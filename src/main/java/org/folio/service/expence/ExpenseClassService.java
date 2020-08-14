@@ -1,18 +1,15 @@
 package org.folio.service.expence;
 
 import static org.folio.rest.jaxrs.resource.FinanceStorageExpenseClasses.PostFinanceStorageExpenseClassesResponse.headersFor201;
-import static org.folio.rest.util.ErrorCodes.GENERIC_ERROR_CODE;
 import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import org.folio.builders.error.NameCodeConstraintErrorBuilder;
 import org.folio.rest.jaxrs.model.ExpenseClass;
 import org.folio.rest.jaxrs.resource.FinanceStorageExpenseClasses;
-import org.folio.rest.persist.HelperUtils;
-import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.PostgresClient;
 
 import io.vertx.core.AsyncResult;
@@ -30,10 +27,12 @@ public class ExpenseClassService {
   private static final String EXPENSE_CLASS_TABLE = "expense_class";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
-  private PostgresClient pgClient;
+  private final PostgresClient pgClient;
+  private final NameCodeConstraintErrorBuilder nameCodeConstraintErrorBuilder;
 
   public ExpenseClassService(Vertx vertx, String tenantId) {
     this.pgClient = PostgresClient.getInstance(vertx, tenantId);
+    this.nameCodeConstraintErrorBuilder = new NameCodeConstraintErrorBuilder();
   }
 
   public void createExpenseClass(ExpenseClass entity, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
@@ -69,7 +68,7 @@ public class ExpenseClassService {
     }
     pgClient.save(EXPENSE_CLASS_TABLE, group.getId(), group, reply -> {
       if (reply.failed()) {
-        promise.fail(buildException(reply));
+        promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, ExpenseClass.class));
       }
       else {
         promise.complete(group);
@@ -82,7 +81,7 @@ public class ExpenseClassService {
     Promise<ExpenseClass> promise = Promise.promise();
     pgClient.update(EXPENSE_CLASS_TABLE, JsonObject.mapFrom(group), id, reply -> {
       if (reply.failed()) {
-        promise.fail(buildException(reply));
+        promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, ExpenseClass.class));
       }
       else if(reply.result().rowCount() == 0) {
         promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
@@ -92,27 +91,5 @@ public class ExpenseClassService {
       }
     });
     return promise.future();
-  }
-
-  private <T> HttpStatusException buildException(AsyncResult<T> reply) {
-    String msg = PgExceptionUtil.badRequestMessage(reply.cause());
-    String error = Optional.ofNullable(msg).map(this::buildFieldConstraintError).orElse(GENERIC_ERROR_CODE.getCode());
-    if (GENERIC_ERROR_CODE.getCode().equals(error)) {
-      return new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), error);
-    }
-    return new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), error);
-  }
-
-  private String buildFieldConstraintError(String msg) {
-    final String ENTITY_NAME = "ExpenseClass";
-    final String FIELD_CODE = "Code";
-    final String FIELD_NAME = "Name";
-    String uniqueConstraintName = HelperUtils.getSQLUniqueConstraintName(msg);
-    if (uniqueConstraintName.contains(FIELD_CODE.toLowerCase())) {
-      return JsonObject.mapFrom(HelperUtils.buildFieldConstraintError(ENTITY_NAME, FIELD_CODE)).encode();
-    } else if (uniqueConstraintName.contains(FIELD_NAME.toLowerCase())) {
-      return JsonObject.mapFrom(HelperUtils.buildFieldConstraintError(ENTITY_NAME, FIELD_NAME)).encode();
-    }
-    return JsonObject.mapFrom(GENERIC_ERROR_CODE.toError()).encode();
   }
 }
