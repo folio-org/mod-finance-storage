@@ -12,13 +12,21 @@ import org.folio.rest.jaxrs.model.ExpenseClass;
 import org.folio.rest.jaxrs.model.ExpenseClassCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageExpenseClasses;
 import org.folio.rest.persist.PgUtil;
+import org.folio.service.expence.ExpenseClassService;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 public class ExpenseClassAPI implements FinanceStorageExpenseClasses {
   private static final String EXPENSE_CLASS_TABLE = "expense_class";
+
+  private ExpenseClassService expenseClassService;
+
+  public ExpenseClassAPI(Vertx vertx, String tenantId) {
+    expenseClassService = new ExpenseClassService(vertx, tenantId);
+  }
 
   @Override
   @Validate
@@ -33,8 +41,7 @@ public class ExpenseClassAPI implements FinanceStorageExpenseClasses {
   @Validate
   public void postFinanceStorageExpenseClasses(@Pattern(regexp = "[a-zA-Z]{2}") String lang, ExpenseClass entity,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.post(EXPENSE_CLASS_TABLE, entity, okapiHeaders, vertxContext,
-        FinanceStorageExpenseClasses.PostFinanceStorageExpenseClassesResponse.class, asyncResultHandler);
+    expenseClassService.createExpenseClass(entity, vertxContext, asyncResultHandler);
   }
 
   @Override
@@ -63,7 +70,6 @@ public class ExpenseClassAPI implements FinanceStorageExpenseClasses {
       @Pattern(regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$") String id,
       @Pattern(regexp = "[a-zA-Z]{2}") String lang, ExpenseClass entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.put(EXPENSE_CLASS_TABLE, entity, id, okapiHeaders, vertxContext,
-        FinanceStorageExpenseClasses.PutFinanceStorageExpenseClassesByIdResponse.class, asyncResultHandler);
+    expenseClassService.updateExpenseClass(id, entity, vertxContext, asyncResultHandler);
   }
 }
