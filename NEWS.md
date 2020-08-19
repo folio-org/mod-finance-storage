@@ -1,4 +1,12 @@
 ## 5.1.0 - Unreleased
+## 5.0.2 - Released
+This is a bugfix release and contains fix that user able to pay order and invoice if budget have enough money
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v5.0.1...v5.0.2)
+
+### Bug Fixes
+* [MODFISTO-125](https://issues.folio.org/browse/MODFISTO-125) MSU: cannot approve and pay an Amazon invoice
+
 ## 5.0.1 - Released
 This is a bugfix release and contains fixes for budget, ledger, index creation.
 Also module was migrated on RMB 30.2.0
