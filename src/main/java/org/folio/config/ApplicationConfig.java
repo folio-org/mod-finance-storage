@@ -22,6 +22,7 @@ import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.calculation.CalculationService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
 import org.folio.service.ledger.LedgerService;
@@ -37,6 +38,7 @@ import org.folio.service.transactions.EncumbranceAllOrNothingService;
 import org.folio.service.transactions.PaymentCreditAllOrNothingService;
 import org.folio.service.transactions.PendingPaymentAllOrNothingService;
 import org.folio.service.transactions.TransactionService;
+import org.folio.service.transactions.TransferService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -120,6 +122,11 @@ public class ApplicationConfig {
   }
 
   @Bean
+  public CalculationService calculationService(FundService fundService, LedgerFiscalYearService ledgerFiscalYearService) {
+    return new CalculationService(fundService, ledgerFiscalYearService);
+  }
+
+  @Bean
   public TransactionSummaryService<OrderTransactionSummary> encumbranceSummaryService(TransactionSummaryDao<OrderTransactionSummary> orderTransactionSummaryDao) {
     return new EncumbranceTransactionSummaryService(orderTransactionSummaryDao);
   }
@@ -137,45 +144,53 @@ public class ApplicationConfig {
   @Bean
   public TransactionService pendingPaymentService(BudgetService budgetService,
                                                   TemporaryTransactionDAO temporaryInvoiceTransactionDAO,
+                                                  CalculationService calculationService,
                                                   LedgerFiscalYearService ledgerFiscalYearService,
                                                   FundService fundService,
                                                   @Qualifier("pendingPaymentSummaryService")TransactionSummaryService<InvoiceTransactionSummary> summaryService,
                                                   TransactionDAO pendingPaymentDAO,
                                                   LedgerService ledgerService) {
 
-    return new PendingPaymentAllOrNothingService(budgetService, temporaryInvoiceTransactionDAO,
+    return new PendingPaymentAllOrNothingService(budgetService, temporaryInvoiceTransactionDAO, calculationService,
       ledgerFiscalYearService, fundService, summaryService, pendingPaymentDAO, ledgerService);
   }
 
   @Bean
   public TransactionService paymentCreditService(BudgetService budgetService,
                                                   TemporaryTransactionDAO temporaryInvoiceTransactionDAO,
+                                                  CalculationService calculationService,
                                                   LedgerFiscalYearService ledgerFiscalYearService,
                                                   FundService fundService,
                                                   @Qualifier("paymentCreditSummaryService") TransactionSummaryService<InvoiceTransactionSummary> summaryService,
                                                   TransactionDAO paymentCreditDAO,
                                                   LedgerService ledgerService) {
 
-    return new PaymentCreditAllOrNothingService(budgetService, temporaryInvoiceTransactionDAO,
+    return new PaymentCreditAllOrNothingService(budgetService, temporaryInvoiceTransactionDAO, calculationService,
       ledgerFiscalYearService, fundService, summaryService, paymentCreditDAO, ledgerService);
   }
 
   @Bean
   public TransactionService encumbranceService(BudgetService budgetService,
                                                  TemporaryTransactionDAO temporaryOrderTransactionDAO,
+                                                 CalculationService calculationService,
                                                  LedgerFiscalYearService ledgerFiscalYearService,
                                                  FundService fundService,
                                                  TransactionSummaryService<OrderTransactionSummary> encumbranceSummaryService,
                                                  TransactionDAO encumbranceDAO,
                                                  LedgerService ledgerService) {
 
-    return new EncumbranceAllOrNothingService(budgetService, temporaryOrderTransactionDAO,
+    return new EncumbranceAllOrNothingService(budgetService, temporaryOrderTransactionDAO, calculationService,
       ledgerFiscalYearService, fundService, encumbranceSummaryService, encumbranceDAO, ledgerService);
   }
 
   @Bean
   public TransactionService defaultTransactionService() {
     return new DefaultTransactionService();
+  }
+
+  @Bean
+  public TransferService transferService(BudgetService budgetService, CalculationService calculationService) {
+    return new TransferService(budgetService, calculationService);
   }
 
 }

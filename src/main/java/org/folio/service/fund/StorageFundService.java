@@ -32,10 +32,10 @@ public class StorageFundService implements FundService{
   }
 
   @Override
-  public Future<Fund> getFundById(String fundId, Context context, Map<String, String> headers) {
+  public Future<Fund> getFundById(String fundId, DBClient client) {
     CriterionBuilder criterionBuilder = new CriterionBuilder();
     criterionBuilder.with("id", fundId);
-    DBClient client = new DBClient(context, headers);
+
     return fundDAO.getFunds(criterionBuilder.build(), client)
       .map(funds -> {
         if (funds.isEmpty()) {

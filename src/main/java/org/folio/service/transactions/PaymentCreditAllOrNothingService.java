@@ -6,10 +6,10 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
+import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
-import io.vertx.core.Context;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,17 +34,18 @@ import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.MoneyUtils;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.calculation.CalculationService;
 import org.folio.service.fund.FundService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledgerfy.LedgerFiscalYearService;
 import org.folio.service.summary.TransactionSummaryService;
+import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
-import org.javamoney.moneta.Money;
 
 public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactionService<InvoiceTransactionSummary> {
 
@@ -56,6 +57,8 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
 
   public static final String SELECT_PERMANENT_TRANSACTIONS = "SELECT DISTINCT ON (permtransactions.id) permtransactions.jsonb FROM %s AS permtransactions INNER JOIN %s AS transactions "
     + "ON transactions.paymentEncumbranceId = permtransactions.id WHERE transactions.sourceInvoiceId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
+  public static final String TRANSACTION_TYPE = "transactionType";
+  public static final String SOURCE_INVOICE_ID = "sourceInvoiceId";
 
   Predicate<Transaction> hasEncumbrance = txn -> txn.getPaymentEncumbranceId() != null;
   Predicate<Transaction> isPaymentTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.PAYMENT);
@@ -63,12 +66,13 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
 
   public PaymentCreditAllOrNothingService(BudgetService budgetService,
                                            TemporaryTransactionDAO temporaryTransactionDAO,
+                                           CalculationService calculationService,
                                            LedgerFiscalYearService ledgerFiscalYearService,
                                            FundService fundService,
                                            TransactionSummaryService<InvoiceTransactionSummary> transactionSummaryService,
                                            TransactionDAO transactionsDAO,
                                            LedgerService ledgerService) {
-    super(budgetService, temporaryTransactionDAO, ledgerFiscalYearService, fundService, transactionSummaryService, transactionsDAO, ledgerService);
+    super(budgetService, temporaryTransactionDAO, calculationService, ledgerFiscalYearService, fundService, transactionSummaryService, transactionsDAO, ledgerService);
   }
 
 
@@ -92,8 +96,8 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
 
   private Future<Void> deletePendingPayments(String summaryId, DBClient client) {
     CriterionBuilder criterionBuilder = new CriterionBuilder();
-    criterionBuilder.withJson("sourceInvoiceId", "=", summaryId)
-      .withJson("transactionType", "=", PENDING_PAYMENT.value());
+    criterionBuilder.withJson(SOURCE_INVOICE_ID, "=", summaryId)
+      .withJson(TRANSACTION_TYPE, "=", PENDING_PAYMENT.value());
     return transactionsDAO.deleteTransactions(criterionBuilder.build(), client);
   }
 
@@ -276,9 +280,9 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
     List<Error> errors = new ArrayList<>();
 
     if (isCreditTransaction.test(transaction)) {
-      errors.addAll(buildNullValidationError(transaction.getToFundId(), "toFundId"));
+      errors.addAll(buildNullValidationError(transaction.getToFundId(), TO_FUND_ID));
     } else {
-      errors.addAll(buildNullValidationError(transaction.getFromFundId(), "fromFundId"));
+      errors.addAll(buildNullValidationError(transaction.getFromFundId(), FROM_FUND_ID));
     }
     if (isNotEmpty(errors)) {
       throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
@@ -324,8 +328,9 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
     Money relatedAwaitingPayment = relatedTransaction == null ? Money.of(0d, currency) : Money.of(relatedTransaction.getAmount(), currency);
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
     Money encumbered = Money.of(budget.getEncumbered(), currency);
+    Money netTransfers = Money.of(budget.getNetTransfers(), currency);
 
-    Money result = allocated.multiply(allowableExpenditure);
+    Money result = allocated.add(netTransfers).multiply(allowableExpenditure);
     result = result.subtract(allocated.subtract(unavailable.add(available)));
     result = result.subtract(expenditure.add(encumbered).add(awaitingPayment).subtract(relatedAwaitingPayment));
 
@@ -333,10 +338,7 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
   }
 
   @Override
-  protected Future<Transaction> getRelatedTransaction(Transaction transaction, Context context,
-    Map<String, String> headers) {
-
-    DBClient client = new DBClient(context, headers);
+  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient dbClient) {
 
     CriterionBuilder criterionBuilder;
     if (transaction.getSourceInvoiceLineId() != null) {
@@ -355,7 +357,7 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
         .withOperation("AND");
     }
 
-    return transactionsDAO.getTransactions(criterionBuilder.build(), client)
+    return transactionsDAO.getTransactions(criterionBuilder.build(), dbClient)
       .map(transactions -> transactions.isEmpty() ? null : transactions.get(0));
   }
 }

@@ -35,6 +35,8 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Autowired
   private TransactionService pendingPaymentService;
   @Autowired
+  private TransactionService transferService;
+  @Autowired
   private TransactionService defaultTransactionService;
 
 
@@ -91,15 +93,15 @@ public class TransactionAPI implements FinanceStorageTransactions {
   }
 
   private TransactionService getCreateTransactionHandler(Transaction transaction) {
-    if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return encumbranceService;
-    } else if (transaction.getTransactionType() == Transaction.TransactionType.PAYMENT
-        || transaction.getTransactionType() == Transaction.TransactionType.CREDIT) {
-      return paymentCreditService;
-    } else if (transaction.getTransactionType() == Transaction.TransactionType.PENDING_PAYMENT) {
-      return pendingPaymentService;
+    switch (transaction.getTransactionType()) {
+    case CREDIT:
+    case PAYMENT: return paymentCreditService;
+    case ENCUMBRANCE: return encumbranceService;
+    case TRANSFER: return transferService;
+    case PENDING_PAYMENT: return pendingPaymentService;
+    case ALLOCATION:
+    default: return defaultTransactionService;
     }
-    return defaultTransactionService;
   }
 
   private TransactionService getUpdateTransactionHandler(Transaction transaction) {
