@@ -9,10 +9,10 @@ import static javax.money.Monetary.getDefaultRounding;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang.StringUtils.EMPTY;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
+import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
 import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
-import io.vertx.core.Context;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +39,7 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.calculation.CalculationService;
 import org.folio.service.fund.FundService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledgerfy.LedgerFiscalYearService;
@@ -58,12 +59,13 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
 
   public PendingPaymentAllOrNothingService(BudgetService budgetService,
                                            TemporaryTransactionDAO temporaryTransactionDAO,
+                                           CalculationService calculationService,
                                            LedgerFiscalYearService ledgerFiscalYearService,
                                            FundService fundService,
                                            TransactionSummaryService<InvoiceTransactionSummary> transactionSummaryService,
                                            TransactionDAO transactionsDAO,
                                            LedgerService ledgerService) {
-    super(budgetService, temporaryTransactionDAO, ledgerFiscalYearService, fundService, transactionSummaryService, transactionsDAO, ledgerService);
+    super(budgetService, temporaryTransactionDAO, calculationService, ledgerFiscalYearService, fundService, transactionSummaryService, transactionsDAO, ledgerService);
   }
 
 
@@ -83,7 +85,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
       .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
         .map(this::makeAvailableUnavailableNonNegative)
         .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)
-          .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, newBudgets, client))))
+          .compose(integer -> calculationService.updateLedgerFYsWithTotals(oldBudgets, newBudgets, client))))
       .compose(aVoid -> transactionsDAO.saveTransactionsToPermanentTable(transactions.get(0).getSourceInvoiceId(), client))
       .mapEmpty();
   }
@@ -264,7 +266,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
   @Override
   Void handleValidationError(Transaction transaction) {
 
-    List<Error> errors = new ArrayList<>(buildNullValidationError(transaction.getFromFundId(), "fromFundId"));
+    List<Error> errors = new ArrayList<>(buildNullValidationError(transaction.getFromFundId(), FROM_FUND_ID));
 
     if (isNotEmpty(errors)) {
       throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
@@ -304,8 +306,9 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
     Money relatedEncumbered = relatedTransaction == null ? Money.of(0d, currency) : Money.of(relatedTransaction.getAmount(), currency);
     Money unavailable = Money.of(budget.getUnavailable(), currency);
+    Money netTransfers = Money.of(budget.getNetTransfers(), currency);
 
-    Money result = allocated.multiply(allowableExpenditure);
+    Money result = allocated.add(netTransfers).multiply(allowableExpenditure);
     result = result.subtract(allocated.subtract(unavailable.add(available)));
     result = result.subtract(encumbered.add(expenditure.add(awaitingPayment)).subtract(relatedEncumbered));
 
@@ -313,8 +316,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
   }
 
   @Override
-  protected Future<Transaction> getRelatedTransaction(Transaction transaction, Context context,
-    Map<String, String> headers) {
+  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient client) {
 
     String encumbranceId = Optional.ofNullable(transaction)
       .map(Transaction::getAwaitingPayment)
@@ -325,7 +327,6 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
       return Future.succeededFuture(null);
     }
 
-    DBClient client = new DBClient(context, headers);
     CriterionBuilder criterion = new CriterionBuilder()
       .with("id", encumbranceId);
 

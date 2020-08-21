@@ -1,42 +1,27 @@
 package org.folio.service.transactions;
 
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
-import javax.money.Monetary;
-import javax.money.MonetaryAmount;
 import javax.ws.rs.core.Response;
 
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Entity;
-import org.folio.rest.jaxrs.model.Error;
-import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.Ledger;
-import org.folio.rest.jaxrs.model.LedgerFY;
-import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.calculation.CalculationService;
 import org.folio.service.fund.FundService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledgerfy.LedgerFiscalYearService;
 import org.folio.service.summary.TransactionSummaryService;
 import org.javamoney.moneta.Money;
-import org.javamoney.moneta.function.MonetaryFunctions;
 
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -53,6 +38,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
   public static final String FUND_CANNOT_BE_PAID = "Fund cannot be paid due to restrictions";
 
   BudgetService budgetService;
+  CalculationService calculationService;
   private final TemporaryTransactionDAO temporaryTransactionDAO;
   private final LedgerFiscalYearService ledgerFiscalYearService;
   private final FundService fundService;
@@ -63,6 +49,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
 
   public BaseAllOrNothingTransactionService(BudgetService budgetService,
                                             TemporaryTransactionDAO temporaryTransactionDAO,
+                                            CalculationService calculationService,
                                             LedgerFiscalYearService ledgerFiscalYearService,
                                             FundService fundService,
                                             TransactionSummaryService<T> transactionSummaryService,
@@ -70,6 +57,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
                                             LedgerService ledgerService) {
     this.budgetService = budgetService;
     this.temporaryTransactionDAO = temporaryTransactionDAO;
+    this.calculationService = calculationService;
     this.ledgerFiscalYearService = ledgerFiscalYearService;
     this.fundService = fundService;
     this.transactionSummaryService = transactionSummaryService;
@@ -86,7 +74,7 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
     }
 
     DBClient client = new DBClient(context, headers);
-    return verifyBudgetHasEnoughMoney(transaction, context, headers)
+    return verifyBudgetHasEnoughMoney(transaction, client)
       .compose(v -> processTransactions(transaction, client))
       .map(transaction);
   }
@@ -146,11 +134,11 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
     }
   }
 
-  Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, Context context, Map<String, String> headers) {
+  Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, DBClient dbClient) {
 
     String fundId = transaction.getTransactionType() == Transaction.TransactionType.CREDIT ? transaction.getToFundId() : transaction.getFromFundId();
 
-    return budgetService.getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), fundId, context, headers)
+    return budgetService.getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), fundId, dbClient)
       .compose(budget -> {
         if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
           log.error(BUDGET_IS_INACTIVE, budget.getId());
@@ -159,13 +147,13 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
         if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT || transaction.getAmount() <= 0) {
           return Future.succeededFuture();
         }
-        return getRelatedTransaction(transaction,context, headers)
-          .compose(relatedTransaction -> ledgerService.getLedgerByTransaction(transaction, context,  headers)
+        return getRelatedTransaction(transaction, dbClient)
+          .compose(relatedTransaction -> ledgerService.getLedgerByTransaction(transaction, dbClient)
             .map(ledger -> checkTransactionAllowed(transaction, relatedTransaction, budget, ledger)));
       });
   }
 
-  protected Future<Transaction> getRelatedTransaction(Transaction transaction, Context context, Map<String, String> headers) {
+  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient dbClient) {
     return Future.succeededFuture(null);
   }
 
@@ -219,98 +207,11 @@ public abstract class BaseAllOrNothingTransactionService<T extends Entity> exten
     return promise.future();
   }
 
-  List<Error> buildNullValidationError(String value, String key) {
-    if (value == null) {
-      Parameter parameter = new Parameter().withKey(key)
-        .withValue("null");
-      Error error = new Error().withCode("-1")
-        .withMessage("may not be null")
-        .withParameters(Collections.singletonList(parameter));
-      return Collections.singletonList(error);
-    }
-    return Collections.emptyList();
-  }
-
   private void releaseLock(Lock lock, String lockName) {
     log.info("Released lock {}", lockName);
     lock.release();
   }
 
-  Future<Void> updateLedgerFYsWithTotals(List<Budget> oldBudgets, List<Budget> newBudgets, DBClient client) {
-    return getGroupedFundIdsByLedgerFy(newBudgets, client)
-      .map(fundIdsGroupedByLedgerFY -> calculateLedgerFyTotals(fundIdsGroupedByLedgerFY, oldBudgets, newBudgets))
-      .compose(ledgersFYears -> ledgerFiscalYearService.updateLedgerFiscalYears(ledgersFYears, client));
-  }
-
-  private List<LedgerFY> calculateLedgerFyTotals(Map<LedgerFY, Set<String>> fundIdsGroupedByLedgerFY, List<Budget> oldBudgets, List<Budget> newBudgets) {
-    String currency = fundIdsGroupedByLedgerFY.keySet().stream().limit(1).map(LedgerFY::getCurrency).findFirst().orElse("USD"); // there always must be at least one ledgerFY record
-    Map<String, MonetaryAmount> oldAvailableByFundId = oldBudgets.stream().collect(groupingBy(Budget::getFundId, sumAvailable(currency)));
-    Map<String, MonetaryAmount> oldUnavailableByFundId = oldBudgets.stream().collect(groupingBy(Budget::getFundId, sumUnavailable(currency)));
-
-    Map<String, MonetaryAmount> newAvailableByFundId = newBudgets.stream().collect(groupingBy(Budget::getFundId, sumAvailable(currency)));
-    Map<String, MonetaryAmount> newUnavailableByFundId = newBudgets.stream().collect(groupingBy(Budget::getFundId, sumUnavailable(currency)));
-
-    Map<String, MonetaryAmount> availableDifference = getAmountDifference(oldAvailableByFundId, newAvailableByFundId);
-
-    Map<String, MonetaryAmount> unavailableDifference = getAmountDifference(oldUnavailableByFundId, newUnavailableByFundId);
-    return calculateLedgerFyTotals(fundIdsGroupedByLedgerFY, availableDifference, unavailableDifference);
-  }
-
-  private Map<String, MonetaryAmount> getAmountDifference(Map<String, MonetaryAmount> oldAvailableByFundId, Map<String, MonetaryAmount> newAvailableByFundId) {
-    return oldAvailableByFundId.entrySet().stream()
-      .map(entry -> {
-        MonetaryAmount diff = entry.getValue().subtract(newAvailableByFundId.get(entry.getKey()));
-        entry.setValue(diff);
-        return entry;
-      })
-      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
-  private Collector<Budget, ?, MonetaryAmount> sumAvailable(String currency) {
-    return Collectors.mapping(budget -> Money.of(budget.getAvailable(), currency),
-      Collectors.reducing(Money.of(0, currency), MonetaryFunctions::sum));
-  }
-
-  private Collector<Budget, ?, MonetaryAmount> sumUnavailable(String currency) {
-    return Collectors.mapping(budget -> Money.of(budget.getUnavailable(), currency),
-      Collectors.reducing(Money.of(0, currency), MonetaryFunctions::sum));
-  }
-
-  private Future<Map<LedgerFY, Set<String>>> getGroupedFundIdsByLedgerFy(List<Budget> budgets, DBClient client) {
-    return fundService.getFundsByBudgets(budgets, client)
-      .compose(funds -> ledgerFiscalYearService.getLedgerFiscalYearsByBudgets(budgets, client)
-        .map(ledgerFYears -> groupFundIdsByLedgerFy(ledgerFYears, funds)));
-  }
-
-  private Map<LedgerFY, Set<String>> groupFundIdsByLedgerFy(List<LedgerFY> ledgerFYears, List<Fund> funds) {
-    Map<String, Set<String>> fundIdsGroupedByLedgerId = funds.stream()
-      .collect(groupingBy(Fund::getLedgerId, HashMap::new, Collectors.mapping(Fund::getId, Collectors.toSet())));
-    return ledgerFYears.stream()
-      .collect(toMap(identity(), ledgerFY -> fundIdsGroupedByLedgerId.get(ledgerFY.getLedgerId())));
-  }
-
-  private List<LedgerFY> calculateLedgerFyTotals(Map<LedgerFY, Set<String>> groupedLedgerFYs, Map<String, MonetaryAmount> availableDifference, Map<String, MonetaryAmount> unavailableDifference) {
-    return groupedLedgerFYs.entrySet().stream().map(ledgerFYListEntry -> updateLedgerFY(ledgerFYListEntry, availableDifference, unavailableDifference)).collect(toList());
-  }
-
-  private LedgerFY updateLedgerFY(Map.Entry<LedgerFY, Set<String>> ledgerFYListEntry, Map<String, MonetaryAmount> availableDifference, Map<String, MonetaryAmount> unavailableDifference) {
-    LedgerFY ledgerFY = ledgerFYListEntry.getKey();
-
-    MonetaryAmount availableAmount = ledgerFYListEntry.getValue().stream()
-      .map(availableDifference::get).reduce(MonetaryFunctions::sum)
-      .orElse(Money.zero(Monetary.getCurrency(ledgerFY.getCurrency())));
-
-    MonetaryAmount unavailableAmount = ledgerFYListEntry.getValue().stream()
-      .map(unavailableDifference::get).reduce(MonetaryFunctions::sum)
-      .orElse(Money.zero(Monetary.getCurrency(ledgerFY.getCurrency())));
-
-    double newAvailable = Math.max(Money.of(ledgerFY.getAvailable(), ledgerFY.getCurrency()).subtract(availableAmount).getNumber().doubleValue(), 0d);
-    double newUnavailable = Math.max(Money.of(ledgerFY.getUnavailable(), ledgerFY.getCurrency()).subtract(unavailableAmount).getNumber().doubleValue(), 0d);
-
-    return ledgerFY
-      .withAvailable(newAvailable)
-      .withUnavailable(newUnavailable);
-  }
 
   abstract Money getBudgetRemainingAmount(Budget budget, String currency, Transaction relatedTransaction);
 

@@ -14,5 +14,5 @@ public interface FundService {
 
   Future<List<Fund>> getFundsByBudgets(List<Budget> budgets, DBClient client);
 
-  Future<Fund> getFundById(String fundId, Context context, Map<String, String> headers);
+  Future<Fund> getFundById(String fundId, DBClient dbClient);
 }

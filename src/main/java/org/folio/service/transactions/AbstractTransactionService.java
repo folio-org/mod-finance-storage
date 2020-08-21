@@ -15,7 +15,9 @@ import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public abstract class AbstractTransactionService implements TransactionService {
   public static final String TRANSACTION_TABLE = "transaction";
-  static final String TRANSACTION_LOCATION_PREFIX = "/finance-storage/transactions/";
+
+  public static final String FROM_FUND_ID = "fromFundId";
+  public static final String TO_FUND_ID = "toFundId";
 
   protected final Logger log = LoggerFactory.getLogger(this.getClass());
 

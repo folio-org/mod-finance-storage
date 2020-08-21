@@ -7,7 +7,7 @@ import javax.money.CurrencyUnit;
 
 import org.javamoney.moneta.Money;
 
-public class MoneyUtils {
+public final class MoneyUtils {
 
   private MoneyUtils() {
   }
