@@ -41,6 +41,7 @@ import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.calculation.CalculationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -59,6 +60,9 @@ public class PendingPaymentAllOrNothingServiceTest {
 
   @InjectMocks
   private PendingPaymentAllOrNothingService pendingPaymentService;
+
+  @Mock
+  private CalculationService calculationService;
 
   @Mock
   private BudgetService budgetService;
@@ -151,7 +155,8 @@ public class PendingPaymentAllOrNothingServiceTest {
     when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     PendingPaymentAllOrNothingService spyService = Mockito.spy(pendingPaymentService);
-    doReturn(Future.succeededFuture()).when((BaseAllOrNothingTransactionService<InvoiceTransactionSummary>)spyService)
+
+    doReturn(Future.succeededFuture()).when(calculationService)
       .updateLedgerFYsWithTotals(anyList(), anyList(), eq(client));
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
@@ -193,7 +198,7 @@ public class PendingPaymentAllOrNothingServiceTest {
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(linkedAmount).add(notLinkedAmount).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.subtract(linkedAmount).doubleValue()));
 
-    verify(spyService).updateLedgerFYsWithTotals(eq(budgets), eq(updatedBudgets), eq(client));
+    verify(calculationService).updateLedgerFYsWithTotals(eq(budgets), eq(updatedBudgets), eq(client));
 
   }
 
@@ -227,7 +232,8 @@ public class PendingPaymentAllOrNothingServiceTest {
     when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     PendingPaymentAllOrNothingService spyService = Mockito.spy(pendingPaymentService);
-    doReturn(Future.succeededFuture()).when((BaseAllOrNothingTransactionService<InvoiceTransactionSummary>)spyService)
+
+    doReturn(Future.succeededFuture()).when(calculationService)
       .updateLedgerFYsWithTotals(anyList(), anyList(), eq(client));
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
@@ -269,7 +275,7 @@ public class PendingPaymentAllOrNothingServiceTest {
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(linkedAmount).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(0.0));
 
-    verify(spyService).updateLedgerFYsWithTotals(eq(budgets), eq(updatedBudgets), eq(client));
+    verify(calculationService).updateLedgerFYsWithTotals(eq(budgets), eq(updatedBudgets), eq(client));
 
   }
 
@@ -302,7 +308,8 @@ public class PendingPaymentAllOrNothingServiceTest {
     when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     PendingPaymentAllOrNothingService spyService = Mockito.spy(pendingPaymentService);
-    doReturn(Future.succeededFuture()).when((BaseAllOrNothingTransactionService<InvoiceTransactionSummary>)spyService)
+
+    doReturn(Future.succeededFuture()).when(calculationService)
       .updateLedgerFYsWithTotals(anyList(), anyList(), eq(client));
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
@@ -344,7 +351,7 @@ public class PendingPaymentAllOrNothingServiceTest {
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(linkedAmount).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(0d));
 
-    verify(spyService).updateLedgerFYsWithTotals(eq(budgets), eq(updatedBudgets), eq(client));
+    verify(calculationService).updateLedgerFYsWithTotals(eq(budgets), eq(updatedBudgets), eq(client));
 
   }
 
@@ -369,14 +376,14 @@ public class PendingPaymentAllOrNothingServiceTest {
     when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     PendingPaymentAllOrNothingService spyService = Mockito.spy(pendingPaymentService);
-    doReturn(Future.succeededFuture()).when((BaseAllOrNothingTransactionService<InvoiceTransactionSummary>)spyService)
-      .updateLedgerFYsWithTotals(anyList(), anyList(), eq(client));
+
+    doReturn(Future.succeededFuture()).when(calculationService).updateLedgerFYsWithTotals(anyList(), anyList(), eq(client));
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.processTemporaryToPermanentTransactions(transactions, client);
+    spyService.processTemporaryToPermanentTransactions(transactions, client)
+      .onComplete(res -> assertTrue(res.succeeded()));
 
-    assertTrue(result.succeeded());
 
     verify(transactionsDAO, never()).getTransactions(any(), any());
     verify(transactionsDAO, never()).updatePermanentTransactions(anyList(), any());
@@ -403,7 +410,7 @@ public class PendingPaymentAllOrNothingServiceTest {
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(notLinkedAmount).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.doubleValue()));
 
-    verify(spyService).updateLedgerFYsWithTotals(eq(budgets), eq(updatedBudgets), eq(client));
+    verify(calculationService).updateLedgerFYsWithTotals(eq(budgets), eq(updatedBudgets), eq(client));
 
   }
 

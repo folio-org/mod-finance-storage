@@ -107,15 +107,15 @@ public class BudgetService {
     return promise.future();
   }
 
-  public Future<Budget> getBudgetByFundIdAndFiscalYearId(String fiscalYearId, String fundId, Context context, Map<String, String> headers) {
+  public Future<Budget> getBudgetByFundIdAndFiscalYearId(String fiscalYearId, String fundId, DBClient dbClient) {
     Promise<Budget> promise = Promise.promise();
 
     Criterion criterion = new CriterionBuilder()
       .with("fundId", fundId)
       .with("fiscalYearId", fiscalYearId)
       .build();
-    DBClient client = new DBClient(context, headers);
-    budgetDAO.getBudgets(criterion, client)
+
+    budgetDAO.getBudgets(criterion, dbClient)
       .onComplete(reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);

@@ -5,8 +5,8 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
 import static org.folio.rest.persist.MoneyUtils.subtractMoney;
-import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
 import java.util.ArrayList;
@@ -34,6 +34,7 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.calculation.CalculationService;
 import org.folio.service.fund.FundService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledgerfy.LedgerFiscalYearService;
@@ -59,12 +60,13 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
   public EncumbranceAllOrNothingService(BudgetService budgetService,
                                         TemporaryTransactionDAO temporaryTransactionDAO,
+                                        CalculationService calculationService,
                                         LedgerFiscalYearService ledgerFiscalYearService,
                                         FundService fundService,
                                         TransactionSummaryService<OrderTransactionSummary> transactionSummaryService,
                                         TransactionDAO transactionsDAO,
                                         LedgerService ledgerService) {
-    super(budgetService, temporaryTransactionDAO, ledgerFiscalYearService, fundService, transactionSummaryService, transactionsDAO,
+    super(budgetService, temporaryTransactionDAO, calculationService, ledgerFiscalYearService, fundService, transactionSummaryService, transactionsDAO,
         ledgerService);
   }
 
@@ -117,8 +119,9 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     Money encumbered = Money.of(budget.getEncumbered(), currency);
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
     Money expenditures = Money.of(budget.getExpenditures(), currency);
+    Money netTransfers = Money.of(budget.getNetTransfers(), currency);
 
-    Money result = allocated.multiply(allowableEncumbered);
+    Money result = allocated.add(netTransfers).multiply(allowableEncumbered);
     result = result.subtract(allocated.subtract(unavailable.add(available)));
     result = result.subtract(encumbered.add(awaitingPayment).add(expenditures));
 
@@ -174,35 +177,21 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
           double newEncumbered = sumMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency);
           budget.setEncumbered(newEncumbered);
 
-          recalculateOverEncumbered(budget, currency);
-          recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
+          calculationService.recalculateOverEncumbered(budget, currency);
+          calculationService.recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
         });
     }
     return budget;
   }
 
-  private void recalculateOverEncumbered(Budget budget, CurrencyUnit currency) {
-    double a = subtractMoneyNonNegative(budget.getAllocated(), budget.getExpenditures(), currency);
-    a = subtractMoneyNonNegative(a, budget.getAwaitingPayment(), currency);
-    double newOverEncumbrance = subtractMoneyNonNegative(budget.getEncumbered(), a, currency);
-    budget.setOverEncumbrance(newOverEncumbrance);
-  }
 
-  private void recalculateAvailableUnavailable(Budget budget, Double transactionAmount, CurrencyUnit currency) {
-    double newUnavailable = sumMoney(currency, budget.getEncumbered(), budget.getAwaitingPayment(), budget.getExpenditures(),
-      -budget.getOverEncumbrance(), -budget.getOverExpended());
-    double newAvailable = subtractMoneyNonNegative(budget.getAvailable(), transactionAmount, currency);
-
-    budget.setAvailable(newAvailable);
-    budget.setUnavailable(newUnavailable);
-  }
 
   @Override
   public Future<Void> updateTransaction(String id, Transaction transaction, Context context, Map<String, String> okapiHeaders) {
     try {
       handleValidationError(transaction);
     } catch (HttpStatusException e) {
-      return  Future.failedFuture(e);
+      return Future.failedFuture(e);
     }
     DBClient client = new DBClient(context, okapiHeaders);
     return verifyTransactionExistence(id, client)
@@ -270,7 +259,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
             groupedTransactions.get(FOR_UPDATE), updatedBudgets);
 
         return budgetService.updateBatchBudgets(finalNewBudgets, client)
-          .compose(integer -> updateLedgerFYsWithTotals(oldBudgets, finalNewBudgets, client));
+          .compose(integer -> calculationService.updateLedgerFYsWithTotals(oldBudgets, finalNewBudgets, client));
       });
   }
 
@@ -324,8 +313,8 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     }
 
     budget.setEncumbered(newEncumbered);
-    recalculateOverEncumbered(budget, currency);
-    recalculateAvailableUnavailable(budget, subtractMoney(tmpTransaction.getAmount(), existingTransaction.getAmount(), currency) , currency);
+    calculationService.recalculateOverEncumbered(budget, currency);
+    calculationService. recalculateAvailableUnavailable(budget, subtractMoney(tmpTransaction.getAmount(), existingTransaction.getAmount(), currency) , currency);
   }
 
 

@@ -317,6 +317,15 @@ class TransactionTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
 
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation1_AFRICAHIST-FY20.json"));
+    jsonAllocation.remove("id");
+    String allocationSample = jsonAllocation.toString();
+
+    postData(TRANSACTION_ENDPOINT, allocationSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class);
+
     JsonObject jsonTx = new JsonObject(getFile("data/transactions/transfers/transfer.json"));
     jsonTx.remove("id");
     String transactionSample = jsonTx.toString();
@@ -343,7 +352,7 @@ class TransactionTest extends TestBase {
     LedgerFY fromLedgerFYBefore = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
     LedgerFY toLedgerFYBefore = getLedgerFYAndValidate(toLedgerFYEndpointWithQueryParams);
 
-    // create Allocation
+    // create Transfer
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(201)
       .extract()
@@ -359,7 +368,7 @@ class TransactionTest extends TestBase {
     double expectedBudgetsAvailable;
     double expectedLedgersAvailable;
 
-    if (StringUtils.isNotEmpty(jsonTx.getString("fromFundId"))){
+    if (StringUtils.isNotEmpty(jsonTx.getString("fromFundId"))) {
       expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
 
       expectedLedgersAvailable = subtractValues(fromLedgerFYBefore.getAvailable(), amount);

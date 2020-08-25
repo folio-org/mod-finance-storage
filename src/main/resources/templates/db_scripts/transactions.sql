@@ -30,8 +30,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
       amount = (NEW.jsonb->>'amount')::decimal;
       transactionType = NEW.jsonb->>'transactionType';
 
-      -- Recalculate Allocation / Transfer
-      IF (transactionType = 'Allocation' OR transactionType = 'Transfer') THEN
+      -- Recalculate Allocation
+      IF (transactionType = 'Allocation') THEN
         -- check if fromFundId exists
         IF (NEW.jsonb->'fromFundId' IS NOT NULL) THEN
           -- Update Budget identified by the transactions fiscal year (fiscalYearId) and source fund (fromFundId)
@@ -44,16 +44,11 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
           fromBudgetAvailable = (fromBudget->>'available')::decimal - amount;
           fromBudgetUnavailable = (fromBudget->>'unavailable')::decimal + amount;
 
-          IF (transactionType = 'Allocation') THEN
-            fromBudgetAllocated = (fromBudget->>'allocated')::decimal - amount;
-            newBudgetValues = '{allocated,' || fromBudgetAllocated || ', available, ' || fromBudgetAvailable ||'}';
-          ELSIF (transactionType = 'Transfer') THEN
-            newBudgetValues = '{available, ' || fromBudgetAvailable || '}';
-          END IF;
+         fromBudgetAllocated = (fromBudget->>'allocated')::decimal - amount;
+         newBudgetValues = '{allocated,' || fromBudgetAllocated || ', available, ' || fromBudgetAvailable ||'}';
 
-          UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb
-            WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'fromFundId');
-
+         UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb
+           WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'fromFundId');
 
           -- Update LedgerFY identified by the transaction's fiscal year (fiscalYearId) and the source fund (fromFundId)
           SELECT INTO fromLedgerFY (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledgerFy AS ledger_fy
@@ -67,20 +62,15 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
           fromLedgerFYAvailable = (fromLedgerFY->>'available')::decimal - amount;
           fromLedgerFYUnavailable = (fromLedgerFY->>'unavailable')::decimal + amount;
 
-          IF (transactionType = 'Allocation') THEN
-            fromLedgerFYAllocated = (fromLedgerFY->>'allocated')::decimal - amount;
-            newLedgerFYValues = '{allocated,' || fromLedgerFYAllocated || ', available, ' || fromLedgerFYAvailable || '}';
-          ELSEIF (transactionType = 'Transfer') THEN
-            newLedgerFYValues = '{available, ' || fromLedgerFYAvailable ||'}';
-          END IF;
+          fromLedgerFYAllocated = (fromLedgerFY->>'allocated')::decimal - amount;
+          newLedgerFYValues = '{allocated,' || fromLedgerFYAllocated || ', available, ' || fromLedgerFYAvailable || '}';
 
           UPDATE ${myuniversity}_${mymodule}.ledgerFy SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
           WHERE (ledgerId::text = fromLedgerFY->>'ledgerId') AND (fiscalYearId::text = fromLedgerFY->>'fiscalYearId');
 
         END IF;
 
-        -- update destination budget and ledgerFy only for operations: Allocation / Transfer
-        IF (transactionType = 'Allocation' OR transactionType = 'Transfer') THEN
+        -- update destination budget and ledgerFy only for operations: Allocation
           -- Update Budget identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
             SELECT INTO toBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'toFundId');
             IF (toBudget IS NULL) THEN
@@ -88,12 +78,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
             END IF;
 
             toBudgetAvailable = (toBudget->>'available')::decimal + amount;
-            IF (transactionType = 'Allocation') THEN
-              toBudgetAllocated = (toBudget->>'allocated')::decimal + amount;
-              newBudgetValues = '{allocated,' || toBudgetAllocated || ', available, ' || toBudgetAvailable ||'}';
-            ELSIF (transactionType = 'Transfer') THEN
-              newBudgetValues = '{available, ' || toBudgetAvailable ||'}';
-            END IF;
+            toBudgetAllocated = (toBudget->>'allocated')::decimal + amount;
+            newBudgetValues = '{allocated,' || toBudgetAllocated || ', available, ' || toBudgetAvailable ||'}';
 
             UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb
             WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'toFundId');
@@ -108,17 +94,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
             END IF;
 
             toLedgerFYAvailable = (toLedgerFY->>'available')::decimal + amount;
-            IF (transactionType = 'Allocation') THEN
-              toLedgerFYAllocated = (toLedgerFY->>'allocated')::decimal + amount;
-              newLedgerFYValues = '{allocated,' || toLedgerFYAllocated || ', available, ' || toLedgerFYAvailable ||'}';
-            ELSIF (transactionType = 'Transfer') THEN
-              newLedgerFYValues = '{available, ' || toLedgerFYAvailable ||'}';
-            END IF;
+            toLedgerFYAllocated = (toLedgerFY->>'allocated')::decimal + amount;
+            newLedgerFYValues = '{allocated,' || toLedgerFYAllocated || ', available, ' || toLedgerFYAvailable ||'}';
 
             UPDATE ${myuniversity}_${mymodule}.ledgerFy SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
             WHERE (ledgerId::text = toLedgerFY->>'ledgerId') AND (fiscalYearId::text = toLedgerFY->>'fiscalYearId');
 
-        END IF;
       END IF;
 
         RETURN NULL;

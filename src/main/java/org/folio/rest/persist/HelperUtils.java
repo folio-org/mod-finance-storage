@@ -3,11 +3,12 @@ package org.folio.rest.persist;
 import static io.vertx.core.Future.succeededFuture;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.folio.rest.persist.PgUtil.response;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +20,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Parameter;
@@ -31,6 +31,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public final class HelperUtils {
@@ -149,6 +150,18 @@ public final class HelperUtils {
 
   public static String getQueryValues(List<JsonObject> entities) {
     return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));
+  }
+
+  public static List<Error> buildNullValidationError(String value, String key) {
+    if (value == null) {
+      Parameter parameter = new Parameter().withKey(key)
+        .withValue("null");
+      Error error = new Error().withCode("-1")
+        .withMessage("may not be null")
+        .withParameters(Collections.singletonList(parameter));
+      return Collections.singletonList(error);
+    }
+    return Collections.emptyList();
   }
 
 }
