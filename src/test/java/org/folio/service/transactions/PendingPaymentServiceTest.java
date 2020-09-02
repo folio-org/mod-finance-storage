@@ -2,7 +2,7 @@ package org.folio.service.transactions;
 
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
-import static org.folio.service.transactions.PendingPaymentAllOrNothingService.SELECT_BUDGETS_BY_INVOICE_ID;
+import static org.folio.service.transactions.PendingPaymentService.SELECT_BUDGETS_BY_INVOICE_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -24,18 +24,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import javax.money.MonetaryAmount;
-
 import io.vertx.sqlclient.Tuple;
 import org.folio.dao.transactions.EncumbranceDAO;
 import org.folio.rest.jaxrs.model.AwaitingPayment;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
-import org.folio.rest.jaxrs.model.Error;
-import org.folio.rest.jaxrs.model.Errors;
-import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
-import org.folio.rest.jaxrs.model.Ledger;
-import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
@@ -51,15 +44,13 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 
-public class PendingPaymentAllOrNothingServiceTest {
+public class PendingPaymentServiceTest {
 
   private static final String TENANT_ID = "tenant";
 
   @InjectMocks
-  private PendingPaymentAllOrNothingService pendingPaymentService;
+  private PendingPaymentService pendingPaymentService;
 
   @Mock
   private CalculationService calculationService;
@@ -154,14 +145,14 @@ public class PendingPaymentAllOrNothingServiceTest {
 
     when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
-    PendingPaymentAllOrNothingService spyService = Mockito.spy(pendingPaymentService);
+    PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
     doReturn(Future.succeededFuture()).when(calculationService)
       .updateLedgerFYsWithTotals(anyList(), anyList(), eq(client));
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.processTemporaryToPermanentTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, client);
 
     assertTrue(result.succeeded());
 
@@ -231,14 +222,14 @@ public class PendingPaymentAllOrNothingServiceTest {
 
     when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
-    PendingPaymentAllOrNothingService spyService = Mockito.spy(pendingPaymentService);
+    PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
     doReturn(Future.succeededFuture()).when(calculationService)
       .updateLedgerFYsWithTotals(anyList(), anyList(), eq(client));
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.processTemporaryToPermanentTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, client);
 
     assertTrue(result.succeeded());
 
@@ -307,14 +298,14 @@ public class PendingPaymentAllOrNothingServiceTest {
 
     when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
-    PendingPaymentAllOrNothingService spyService = Mockito.spy(pendingPaymentService);
+    PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
     doReturn(Future.succeededFuture()).when(calculationService)
       .updateLedgerFYsWithTotals(anyList(), anyList(), eq(client));
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.processTemporaryToPermanentTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, client);
 
     assertTrue(result.succeeded());
 
@@ -375,13 +366,13 @@ public class PendingPaymentAllOrNothingServiceTest {
     when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
     when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
-    PendingPaymentAllOrNothingService spyService = Mockito.spy(pendingPaymentService);
+    PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
     doReturn(Future.succeededFuture()).when(calculationService).updateLedgerFYsWithTotals(anyList(), anyList(), eq(client));
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    spyService.processTemporaryToPermanentTransactions(transactions, client)
+    spyService.createTransactions(transactions, client)
       .onComplete(res -> assertTrue(res.succeeded()));
 
 
@@ -414,53 +405,6 @@ public class PendingPaymentAllOrNothingServiceTest {
 
   }
 
-  @Test
-  void TestHandleValidationErrorExceptionThrown() {
-    HttpStatusException thrown = assertThrows(
-      HttpStatusException.class,
-      () -> pendingPaymentService.handleValidationError(new Transaction()),
-      "Expected handleValidationError() to throw, but it didn't"
-    );
 
-    Parameter parameter = new Parameter().withKey("fromFundId")
-      .withValue("null");
-    Error error = new Error().withCode("-1")
-      .withMessage("may not be null")
-      .withParameters(Collections.singletonList(parameter));
-    Errors errors = new Errors().withErrors(Collections.singletonList(error)).withTotalRecords(1);
-    assertThat(thrown.getStatusCode(), is(422));
-    assertThat(thrown.getPayload(), is(JsonObject.mapFrom(errors).encode()));
-  }
-
-  @Test
-  void testHandleValidationErrorValidTransaction() {
-    assertNull(pendingPaymentService.handleValidationError(new Transaction().withFromFundId(fundId)));
-  }
-
-  @Test
-  void testGetBudgetRemainingAmountForEncumbrance() {
-    budget.withExpenditures(90d)
-      .withAllowableExpenditure(110d)
-      .withAvailable(0d)
-      .withUnavailable(100d)
-      .withEncumbered(10d);
-    MonetaryAmount amount = pendingPaymentService.getBudgetRemainingAmount(budget, currency, new Transaction().withAmount(0d));
-    assertThat(amount.getNumber().doubleValue(), is(10d));
-  }
-
-  @Test
-  void testIsTransactionOverspendRestrictedWithEmptyAllowableExpenditure() {
-    assertFalse(pendingPaymentService.isTransactionOverspendRestricted(new Ledger().withRestrictExpenditures(true), budget.withAllowableExpenditure(null)));
-  }
-
-  @Test
-  void testIsTransactionOverspendRestrictedWithRestrictExpendituresIsFalse() {
-    assertFalse(pendingPaymentService.isTransactionOverspendRestricted(new Ledger().withRestrictExpenditures(false), budget.withAllowableExpenditure(110d)));
-  }
-
-  @Test
-  void testIsTransactionOverspendRestrictedWithRestrictExpendituresIsTrueWithSpecifiedAllowableExpenditure() {
-    assertTrue(pendingPaymentService.isTransactionOverspendRestricted(new Ledger().withRestrictExpenditures(true), budget.withAllowableExpenditure(110d)));
-  }
 
 }

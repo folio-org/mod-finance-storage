@@ -2,7 +2,7 @@ package org.folio.rest.impl;
 
 import static io.restassured.RestAssured.given;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
-import static org.folio.rest.impl.StorageTestSuite.storageUrl;
+import static org.folio.StorageTestSuite.storageUrl;
 import static org.folio.rest.utils.TenantApiTestUtil.TENANT_ENDPOINT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.postToTenant;
@@ -11,22 +11,10 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenantBody;
 import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
 
-import freemarker.template.TemplateException;
 import io.vertx.core.json.JsonArray;
-import org.apache.commons.io.IOUtils;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.ddlgen.Schema;
-import org.folio.rest.persist.ddlgen.SchemaMaker;
-import org.folio.rest.persist.ddlgen.TenantOperation;
 import org.folio.rest.tools.PomReader;
-import org.folio.rest.tools.utils.ObjectMapperTool;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +25,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
 
-class TenantSampleDataTest extends TestBase {
+public class TenantSampleDataTest extends TestBase {
 
   private final Logger logger = LoggerFactory.getLogger(TenantSampleDataTest.class);
 

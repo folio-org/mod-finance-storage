@@ -11,10 +11,12 @@ import java.util.Map;
 import javax.ws.rs.core.Response;
 
 import org.folio.rest.annotations.Validate;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
+import org.folio.service.transactions.TransactionManagingStrategyFactory;
 import org.folio.service.transactions.TransactionService;
 import org.folio.spring.SpringContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,15 +31,7 @@ public class TransactionAPI implements FinanceStorageTransactions {
   public static final String OKAPI_URL = "X-Okapi-Url";
 
   @Autowired
-  private TransactionService encumbranceService;
-  @Autowired
-  private TransactionService paymentCreditService;
-  @Autowired
-  private TransactionService pendingPaymentService;
-  @Autowired
-  private TransactionService transferService;
-  @Autowired
-  private TransactionService defaultTransactionService;
+  private TransactionManagingStrategyFactory managingServiceFactory;
 
 
   public TransactionAPI() {
@@ -55,7 +49,7 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Override
   @Validate
   public void postFinanceStorageTransactions(String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    getCreateTransactionHandler(transaction).createTransaction(transaction, vertxContext, okapiHeaders)
+    getTransactionService(transaction).createTransaction(transaction, new RequestContext(vertxContext, okapiHeaders))
       .onComplete(event -> {
         if (event.succeeded()) {
           asyncResultHandler.handle(succeededFuture(buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/transactions", event.result())));
@@ -82,7 +76,7 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Validate
   public void putFinanceStorageTransactionsById(String id, String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     transaction.setId(id);
-    getUpdateTransactionHandler(transaction).updateTransaction(id, transaction, vertxContext, okapiHeaders)
+    getTransactionService(transaction).updateTransaction(transaction, new RequestContext(vertxContext, okapiHeaders))
     .onComplete(event -> {
       if (event.succeeded()) {
         asyncResultHandler.handle(buildNoContentResponse());
@@ -92,23 +86,9 @@ public class TransactionAPI implements FinanceStorageTransactions {
     });
   }
 
-  private TransactionService getCreateTransactionHandler(Transaction transaction) {
-    switch (transaction.getTransactionType()) {
-    case CREDIT:
-    case PAYMENT: return paymentCreditService;
-    case ENCUMBRANCE: return encumbranceService;
-    case TRANSFER: return transferService;
-    case PENDING_PAYMENT: return pendingPaymentService;
-    case ALLOCATION:
-    default: return defaultTransactionService;
-    }
+  private TransactionService getTransactionService(Transaction transaction) {
+    return managingServiceFactory.findStrategy(transaction.getTransactionType());
   }
 
-  private TransactionService getUpdateTransactionHandler(Transaction transaction) {
-    if (transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE) {
-      return encumbranceService;
-    }
-    return defaultTransactionService;
-  }
 
 }

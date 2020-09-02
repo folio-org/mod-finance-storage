@@ -1,16 +1,13 @@
 package org.folio.service.transactions;
 
-import java.util.Map;
-
-import org.folio.rest.jaxrs.model.Transaction;
-
-import io.vertx.core.Context;
 import io.vertx.core.Future;
+import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.jaxrs.model.Transaction;
 
 public interface TransactionService {
 
-  Future<Transaction> createTransaction(Transaction transaction, Context context, Map<String, String> headers);
+  Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext);
 
-  Future<Void> updateTransaction(String id, Transaction transaction, Context context, Map<String, String> headers);
+  Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext);
 
 }

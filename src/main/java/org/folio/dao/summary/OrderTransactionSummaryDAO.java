@@ -1,8 +1,6 @@
 package org.folio.dao.summary;
 
-import org.folio.rest.jaxrs.model.OrderTransactionSummary;
-
-public class OrderTransactionSummaryDAO extends BaseTransactionSummaryDAO<OrderTransactionSummary> implements TransactionSummaryDao<OrderTransactionSummary> {
+public class OrderTransactionSummaryDAO extends BaseTransactionSummaryDAO implements TransactionSummaryDao {
 
   public static final String ORDER_TRANSACTION_SUMMARIES = "order_transaction_summaries";
 
@@ -11,8 +9,4 @@ public class OrderTransactionSummaryDAO extends BaseTransactionSummaryDAO<OrderT
     return ORDER_TRANSACTION_SUMMARIES;
   }
 
-  @Override
-  protected Class<OrderTransactionSummary> getClazz() {
-    return OrderTransactionSummary.class;
-  }
 }

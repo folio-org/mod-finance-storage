@@ -1,16 +1,17 @@
 package org.folio.service.summary;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.UUID;
-
+import io.vertx.core.json.JsonObject;
 import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PendingPaymentTransactionSummaryServiceTest {
 
@@ -33,7 +34,7 @@ public class PendingPaymentTransactionSummaryServiceTest {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary()
       .withNumPendingPayments(-2)
       .withNumPaymentsCredits(2);
-    assertTrue(pendingPaymentSummaryService.isProcessed(summary));
+    assertTrue(pendingPaymentSummaryService.isProcessed(JsonObject.mapFrom(summary)));
   }
 
   @Test
@@ -41,7 +42,7 @@ public class PendingPaymentTransactionSummaryServiceTest {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary()
       .withNumPendingPayments(2)
       .withNumPaymentsCredits(-2);
-    assertFalse(pendingPaymentSummaryService.isProcessed(summary));
+    assertFalse(pendingPaymentSummaryService.isProcessed(JsonObject.mapFrom(summary)));
   }
 
   @Test
@@ -49,9 +50,11 @@ public class PendingPaymentTransactionSummaryServiceTest {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary()
       .withNumPendingPayments(2)
       .withNumPaymentsCredits(2);
-    pendingPaymentSummaryService.setTransactionsSummariesProcessed(summary);
-    assertEquals(2, summary.getNumPaymentsCredits());
-    assertEquals(-2, summary.getNumPendingPayments());
+    JsonObject jsonSummary = (JsonObject.mapFrom(summary));
+    pendingPaymentSummaryService.setTransactionsSummariesProcessed(jsonSummary);
+    InvoiceTransactionSummary updatedSummary = jsonSummary.mapTo(InvoiceTransactionSummary.class);
+    assertEquals(2, updatedSummary.getNumPaymentsCredits());
+    assertEquals(-2, updatedSummary.getNumPendingPayments());
   }
 
   @Test
@@ -59,6 +62,6 @@ public class PendingPaymentTransactionSummaryServiceTest {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary()
       .withNumPendingPayments(-2)
       .withNumPaymentsCredits(2);
-    assertEquals(-2, pendingPaymentSummaryService.getNumTransactions(summary));
+    assertEquals(-2, pendingPaymentSummaryService.getNumTransactions(JsonObject.mapFrom(summary)));
   }
 }

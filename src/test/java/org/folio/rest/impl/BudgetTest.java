@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
 
-class BudgetTest extends TestBase {
+public class BudgetTest extends TestBase {
 
   private static final String BUDGET_ENDPOINT = TestEntities.BUDGET.getEndpoint();
   private static final String BUDGET_TEST_TENANT = "budget_test_tenant";

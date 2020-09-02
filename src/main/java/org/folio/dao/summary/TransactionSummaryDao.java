@@ -1,12 +1,13 @@
 package org.folio.dao.summary;
 
+import io.vertx.core.json.JsonObject;
 import org.folio.rest.persist.DBClient;
 
 import io.vertx.core.Future;
 
-public interface TransactionSummaryDao<T>{
+public interface TransactionSummaryDao {
 
-  Future<T> getSummaryById(String summaryId, DBClient client);
+  Future<JsonObject> getSummaryById(String summaryId, DBClient client);
 
-  Future<Void> updateSummaryInTransaction(T summary, DBClient client);
+  Future<Void> updateSummaryInTransaction(JsonObject summary, DBClient client);
 }

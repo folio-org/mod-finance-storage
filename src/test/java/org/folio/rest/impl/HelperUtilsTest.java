@@ -1,7 +1,7 @@
 package org.folio.rest.impl;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
-import static org.folio.rest.impl.StorageTestSuite.storageUrl;
+import static org.folio.StorageTestSuite.storageUrl;
 import static org.folio.rest.persist.HelperUtils.getEndpoint;
 
 import java.lang.reflect.Method;

@@ -2,7 +2,7 @@ package org.folio.rest.impl;
 
 import static io.restassured.RestAssured.given;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
-import static org.folio.rest.impl.StorageTestSuite.storageUrl;
+import static org.folio.StorageTestSuite.storageUrl;
 import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
 import static org.folio.rest.persist.HelperUtils.getEndpoint;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
@@ -35,7 +35,7 @@ import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import io.vertx.core.json.JsonObject;
 
-class TransactionTest extends TestBase {
+public class TransactionTest extends TestBase {
   protected static final String TRANSACTION_ENDPOINT = TRANSACTION.getEndpoint();
   protected static final String TRANSACTION_TEST_TENANT = "transaction_test_tenant";
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
