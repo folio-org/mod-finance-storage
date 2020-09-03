@@ -176,6 +176,7 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
 
           double newEncumbered = sumMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency);
           budget.setEncumbered(newEncumbered);
+          budgetService.updateBudgetMetadata(budget, tmpTransaction);
 
           calculationService.recalculateOverEncumbered(budget, currency);
           calculationService.recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
@@ -313,6 +314,8 @@ public class EncumbranceAllOrNothingService extends BaseAllOrNothingTransactionS
     }
 
     budget.setEncumbered(newEncumbered);
+    budgetService.updateBudgetMetadata(budget, tmpTransaction);
+
     calculationService.recalculateOverEncumbered(budget, currency);
     calculationService. recalculateAvailableUnavailable(budget, subtractMoney(tmpTransaction.getAmount(), existingTransaction.getAmount(), currency) , currency);
   }
