@@ -1,32 +1,5 @@
 package org.folio.service.transactions;
 
-import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
-import io.vertx.sqlclient.Tuple;
-import org.folio.dao.transactions.EncumbranceDAO;
-import org.folio.rest.jaxrs.model.AwaitingPayment;
-import org.folio.rest.jaxrs.model.Budget;
-import org.folio.rest.jaxrs.model.Encumbrance;
-import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.HelperUtils;
-import org.folio.service.budget.BudgetService;
-import org.folio.service.calculation.CalculationService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.service.transactions.PendingPaymentService.SELECT_BUDGETS_BY_INVOICE_ID;
@@ -44,6 +17,34 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+import org.folio.dao.transactions.EncumbranceDAO;
+import org.folio.rest.jaxrs.model.AwaitingPayment;
+import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Encumbrance;
+import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.HelperUtils;
+import org.folio.service.budget.BudgetService;
+import org.folio.service.calculation.CalculationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
+import io.vertx.sqlclient.Tuple;
 
 public class PendingPaymentServiceTest {
 

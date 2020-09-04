@@ -1,29 +1,5 @@
 package org.folio.service.transactions;
 
-import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
-import io.vertx.sqlclient.Tuple;
-import org.folio.dao.transactions.TransactionDAO;
-import org.folio.rest.core.model.RequestContext;
-import org.folio.rest.jaxrs.model.Budget;
-import org.folio.rest.jaxrs.model.Encumbrance;
-import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.DBClient;
-import org.folio.service.budget.BudgetService;
-import org.folio.service.calculation.CalculationService;
-import org.javamoney.moneta.Money;
-
-import javax.money.CurrencyUnit;
-import javax.money.Monetary;
-import javax.money.MonetaryAmount;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import static java.lang.Math.max;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
@@ -37,6 +13,32 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAY
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.money.CurrencyUnit;
+import javax.money.Monetary;
+import javax.money.MonetaryAmount;
+
+import org.folio.dao.transactions.TransactionDAO;
+import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Encumbrance;
+import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.persist.DBClient;
+import org.folio.service.budget.BudgetService;
+import org.folio.service.calculation.CalculationService;
+import org.javamoney.moneta.Money;
+
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
+import io.vertx.sqlclient.Tuple;
 
 public class PendingPaymentService implements TransactionManagingStrategy {
 
