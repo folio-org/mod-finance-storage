@@ -145,4 +145,9 @@ public class BudgetService {
   public Future<List<Budget>> getBudgets(String sql, Tuple params, DBClient client) {
     return budgetDAO.getBudgets(sql, params, client);
   }
+
+  public void updateBudgetMetadata(Budget budget, Transaction transaction) {
+    budget.getMetadata().setUpdatedDate(transaction.getMetadata().getUpdatedDate());
+    budget.getMetadata().setUpdatedByUserId(transaction.getMetadata().getUpdatedByUserId());
+  }
 }

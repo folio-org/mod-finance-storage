@@ -128,6 +128,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         .forEach(tmpTransaction -> {
           double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getAmount(), currency);
           budget.setAwaitingPayment(newAwaitingPayment);
+          budgetService.updateBudgetMetadata(budget, tmpTransaction);
           recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
         });
     }
@@ -221,6 +222,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         budget.setAvailable(newAvailable);
         budget.setUnavailable(newUnavailable);
         budget.setEncumbered(encumbered.add(amount).getNumber().doubleValue());
+        budgetService.updateBudgetMetadata(budget, transaction);
 
         transaction.setAmount(0.00);
       });
@@ -239,6 +241,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
        double newAwaitingPayment = awaitingPayment.add(amount).getNumber().doubleValue();
        budget.setEncumbered(newEncumbered);
        budget.setAwaitingPayment(newAwaitingPayment);
+       budgetService.updateBudgetMetadata(budget, transaction);
      });
   }
 
@@ -253,6 +256,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         budget.setEncumbered(newEncumbered);
         recalculateAvailableUnavailable(budget, -transaction.getAmount(), currency);
         transaction.setAmount(0.00);
+        budgetService.updateBudgetMetadata(budget, transaction);
       });
     }
 

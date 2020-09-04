@@ -100,6 +100,7 @@ public class TransferService extends AbstractTransactionService {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo).mapTo(Budget.class);
         calculationService.recalculateBudgetTransfer(budgetToNew, transfer, -transfer.getAmount());
         calculationService.updateLedgerFYsWithTotals(Collections.singletonList(budgetTo), Collections.singletonList(budgetToNew), dbClient);
+        budgetService.updateBudgetMetadata(budgetToNew, transfer);
 
         return budgetToNew;
       })
