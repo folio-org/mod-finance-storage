@@ -81,7 +81,7 @@ public final class HelperUtils {
     }
   }
 
-  private static Method getRespond500(EntitiesMetadataHolder entitiesMetadataHolder, Handler<AsyncResult<Response>> asyncResultHandler) {
+  private static <T, E> Method getRespond500(EntitiesMetadataHolder<T, E> entitiesMetadataHolder, Handler<AsyncResult<Response>> asyncResultHandler) {
     try {
       return entitiesMetadataHolder.getRespond500WithTextPlainMethod();
     } catch (Exception e) {
@@ -91,7 +91,7 @@ public final class HelperUtils {
     }
   }
 
-  private static Method getRespond400(EntitiesMetadataHolder entitiesMetadataHolder, Handler<AsyncResult<Response>> asyncResultHandler) {
+  private static <T, E> Method getRespond400(EntitiesMetadataHolder<T, E> entitiesMetadataHolder, Handler<AsyncResult<Response>> asyncResultHandler) {
     try {
       return entitiesMetadataHolder.getRespond400WithTextPlainMethod();
     } catch (Exception e) {

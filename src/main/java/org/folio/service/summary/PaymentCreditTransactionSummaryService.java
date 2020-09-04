@@ -1,32 +1,33 @@
 package org.folio.service.summary;
 
+import io.vertx.core.json.JsonObject;
 import org.folio.dao.summary.TransactionSummaryDao;
-import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
 
-public class PaymentCreditTransactionSummaryService extends AbstractTransactionSummaryService<InvoiceTransactionSummary> {
+public class PaymentCreditTransactionSummaryService extends AbstractTransactionSummaryService {
 
-  public PaymentCreditTransactionSummaryService(TransactionSummaryDao<InvoiceTransactionSummary> transactionSummaryDao) {
+  public PaymentCreditTransactionSummaryService(TransactionSummaryDao transactionSummaryDao) {
     super(transactionSummaryDao);
   }
 
   @Override
-  protected String getSummaryId(Transaction transaction) {
+  public String getSummaryId(Transaction transaction) {
     return transaction.getSourceInvoiceId();
   }
 
   @Override
-  protected boolean isProcessed(InvoiceTransactionSummary summary) {
-    return summary.getNumPaymentsCredits() < 0;
+  protected boolean isProcessed(JsonObject summary) {
+    return getNumTransactions(summary) < 0;
   }
 
   @Override
-  protected void setTransactionsSummariesProcessed(InvoiceTransactionSummary summary) {
-    summary.setNumPaymentsCredits(-summary.getNumPaymentsCredits());
+  protected void setTransactionsSummariesProcessed(JsonObject summary) {
+    summary.put("numPaymentsCredits", -getNumTransactions(summary));
   }
 
   @Override
-  public Integer getNumTransactions(InvoiceTransactionSummary summary) {
-    return summary.getNumPaymentsCredits();
+  public Integer getNumTransactions(JsonObject summary) {
+    return summary.getInteger("numPaymentsCredits");
   }
+
 }

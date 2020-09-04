@@ -13,8 +13,8 @@ import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
-import static org.folio.service.transactions.BaseAllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
-import static org.folio.service.transactions.BaseAllOrNothingTransactionService.FUND_CANNOT_BE_PAID;
+import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
+import static org.folio.service.transactions.restriction.BaseTransactionRestrictionService.FUND_CANNOT_BE_PAID;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.core.json.JsonObject;
 
-class PaymentsCreditsTest extends TestBase {
+public class PaymentsCreditsTest extends TestBase {
   private static final String CREDIT_SAMPLE = "data/transactions/credits/credit_CANHIST_30121.json";
   private static final String PAYMENT_SAMPLE = "data/transactions/payments/payment_ENDOW-SUBN_30121.json";
   private static final String TRANSACTION_SAMPLE = "data/transactions/encumbrances/encumbrance_ENDOW-SUBN_S60402_80.json";

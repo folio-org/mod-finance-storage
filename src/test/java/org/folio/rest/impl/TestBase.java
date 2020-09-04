@@ -2,7 +2,7 @@ package org.folio.rest.impl;
 
 import static io.restassured.RestAssured.given;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
-import static org.folio.rest.impl.StorageTestSuite.storageUrl;
+import static org.folio.StorageTestSuite.storageUrl;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.folio.StorageTestSuite;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,7 +42,7 @@ public abstract class TestBase {
 
   static final String TENANT_NAME = "diku";
   static final String NON_EXISTED_ID = "bad500aa-aaaa-500a-aaaa-aaaaaaaaaaaa";
-  static final Header TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TENANT_NAME);
+  public static final Header TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TENANT_NAME);
 
   private static boolean invokeStorageTestSuiteAfter = false;
 

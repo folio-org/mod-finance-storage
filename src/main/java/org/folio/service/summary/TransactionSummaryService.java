@@ -1,18 +1,20 @@
 package org.folio.service.summary;
 
-import org.folio.rest.jaxrs.model.Entity;
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 
-import io.vertx.core.Future;
+public interface TransactionSummaryService {
 
-public interface TransactionSummaryService<T extends Entity> {
+  Future<JsonObject> getTransactionSummary(Transaction transaction, DBClient client);
 
-  Future<T> getTransactionSummary(Transaction transaction, DBClient client);
+  Future<Void> setTransactionsSummariesProcessed(JsonObject summary, DBClient client);
 
-  Future<Void> setTransactionsSummariesProcessed(T summary, DBClient client);
+  Future<JsonObject> getAndCheckTransactionSummary(Transaction transaction, DBClient client);
 
-  Integer getNumTransactions(T summary);
+  Integer getNumTransactions(JsonObject summary);
 
-  Future<T> getAndCheckTransactionSummary(Transaction transaction, DBClient client);
+  String getSummaryId(Transaction transaction);
+
 }

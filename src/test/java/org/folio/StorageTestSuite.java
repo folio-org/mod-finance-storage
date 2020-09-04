@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio;
 
 import static org.folio.rest.impl.TestBase.TENANT_HEADER;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
@@ -15,11 +15,24 @@ import java.util.concurrent.TimeoutException;
 
 import org.folio.dao.transactions.PendingPaymentDAOTest;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.impl.BudgetTest;
+import org.folio.rest.impl.EncumbrancesTest;
+import org.folio.rest.impl.EntitiesCrudTest;
+import org.folio.rest.impl.GroupBudgetTest;
+import org.folio.rest.impl.GroupFundFYTest;
+import org.folio.rest.impl.HelperUtilsTest;
+import org.folio.rest.impl.LedgerFYTest;
+import org.folio.rest.impl.LedgerFundBudgetStatusTest;
+import org.folio.rest.impl.PaymentsCreditsTest;
+import org.folio.rest.impl.TenantSampleDataTest;
+import org.folio.rest.impl.TransactionTest;
+import org.folio.rest.impl.TransactionsSummariesTest;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
-import org.folio.service.transactions.PendingPaymentAllOrNothingServiceTest;
+import org.folio.service.transactions.PendingPaymentServiceTest;
+import org.folio.service.transactions.restriction.PendingPaymentRestrictionServiceTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -163,7 +176,7 @@ public class StorageTestSuite {
   }
 
   @Nested
-  class PendingPaymentAllOrNothingServiceTestNested extends PendingPaymentAllOrNothingServiceTest {
+  class PendingPaymentServiceTestNested extends PendingPaymentServiceTest {
   }
 
   @Nested
@@ -171,4 +184,7 @@ public class StorageTestSuite {
 
   @Nested
   class PendingPaymentTransactionSummaryServiceTestNested extends PendingPaymentTransactionSummaryServiceTest {}
+
+  @Nested
+  class PendingPaymentRestrictionServiceTestNested extends PendingPaymentRestrictionServiceTest {}
 }

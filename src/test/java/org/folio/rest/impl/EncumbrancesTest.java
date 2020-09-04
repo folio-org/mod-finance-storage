@@ -16,9 +16,9 @@ import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 import static org.folio.service.budget.BudgetService.BUDGET_NOT_FOUND_FOR_TRANSACTION;
-import static org.folio.service.transactions.BaseAllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
-import static org.folio.service.transactions.BaseAllOrNothingTransactionService.BUDGET_IS_INACTIVE;
-import static org.folio.service.transactions.BaseAllOrNothingTransactionService.FUND_CANNOT_BE_PAID;
+import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
+import static org.folio.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
+import static org.folio.service.transactions.restriction.BaseTransactionRestrictionService.FUND_CANNOT_BE_PAID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
+import org.folio.StorageTestSuite;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Errors;
@@ -53,7 +54,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.core.json.JsonObject;
 
-class EncumbrancesTest extends TestBase {
+public class EncumbrancesTest extends TestBase {
 
   public static final String ENCUMBRANCE_SAMPLE = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
 

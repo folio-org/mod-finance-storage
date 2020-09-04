@@ -10,8 +10,8 @@ import org.folio.rest.tools.PomReader;
 import java.net.MalformedURLException;
 
 import static io.restassured.RestAssured.given;
-import static org.folio.rest.impl.StorageTestSuite.URL_TO_HEADER;
-import static org.folio.rest.impl.StorageTestSuite.storageUrl;
+import static org.folio.StorageTestSuite.URL_TO_HEADER;
+import static org.folio.StorageTestSuite.storageUrl;
 
 public class TenantApiTestUtil {
 

@@ -1,13 +1,10 @@
 package org.folio.service.transactions;
 
-import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -17,13 +14,14 @@ import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.calculation.CalculationService;
 
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-public class TransferService extends AbstractTransactionService {
+import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
+
+public class TransferService extends AbstractTransactionService implements TransactionManagingStrategy {
 
   private final BudgetService budgetService;
   private final CalculationService calculationService;
@@ -34,7 +32,7 @@ public class TransferService extends AbstractTransactionService {
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transfer, Context context, Map<String, String> okapiHeaders) {
+  public Future<Transaction> createTransaction(Transaction transfer, RequestContext requestContext) {
     Promise<Transaction> promise = Promise.promise();
 
     try {
@@ -42,8 +40,8 @@ public class TransferService extends AbstractTransactionService {
     } catch (HttpStatusException e) {
       return Future.failedFuture(e);
     }
+    DBClient client = new DBClient(requestContext);
 
-    DBClient client = new DBClient(context, okapiHeaders);
     client.startTx()
       .compose(v -> createTransfer(transfer, client)
         .compose(createdTransfer -> {
@@ -64,6 +62,11 @@ public class TransferService extends AbstractTransactionService {
           }
         }));
     return promise.future();
+  }
+
+  @Override
+  public Transaction.TransactionType getStrategyName() {
+    return Transaction.TransactionType.TRANSFER;
   }
 
   public Future<Transaction> createTransfer(Transaction transaction, DBClient dbClient) {

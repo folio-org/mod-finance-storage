@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.core.json.JsonObject;
 
-class TransactionsSummariesTest extends TestBase {
+public class TransactionsSummariesTest extends TestBase {
 
   static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
   static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
