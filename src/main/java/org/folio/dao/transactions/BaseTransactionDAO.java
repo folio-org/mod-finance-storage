@@ -6,6 +6,7 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleVoidAsyncResult;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.interfaces.Results;
@@ -39,6 +41,16 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
         .get(client.getConnection(), TRANSACTIONS_TABLE, Transaction.class, criterion, false, true, handleGet(promise));
     }
     return promise.future();
+  }
+
+  @Override
+  public Future<List<Transaction>> getTransactions(List<String> ids, DBClient client) {
+    if (ids.isEmpty()) {
+      return Future.succeededFuture(Collections.emptyList());
+    }
+    CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
+    ids.forEach(id -> criterionBuilder.with("id", id));
+    return getTransactions(criterionBuilder.build(), client);
   }
 
   private Handler<AsyncResult<Results<Transaction>>> handleGet(Promise<List<Transaction>> promise) {

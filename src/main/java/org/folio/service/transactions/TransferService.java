@@ -46,11 +46,11 @@ public class TransferService extends AbstractTransactionService implements Trans
       .compose(v -> createTransfer(transfer, client)
         .compose(createdTransfer -> {
         if (transfer.getFromFundId() != null) {
-          return updateBudgetsTransferFrom(client, transfer);
+          return updateBudgetsTransferFrom(transfer, client);
         }
         return Future.succeededFuture();
       })
-        .compose(toBudget -> updateBudgetsTransferTo(client, transfer))
+        .compose(toBudget -> updateBudgetsTransferTo(transfer, client))
         .compose(ok -> client.endTx())
         .onComplete(result -> {
           if (result.failed()) {
@@ -83,29 +83,28 @@ public class TransferService extends AbstractTransactionService implements Trans
     return promise.future();
   }
 
-  private Future<Void> updateBudgetsTransferFrom(DBClient dbClient, Transaction transfer) {
+  private Future<Void> updateBudgetsTransferFrom(Transaction transfer, DBClient dbClient) {
     return budgetService.getBudgetByFundIdAndFiscalYearId(transfer.getFiscalYearId(), transfer.getFromFundId(), dbClient)
-      .map(budgetFromOld -> {
+      .compose(budgetFromOld -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFromOld).mapTo(Budget.class);
 
         calculationService.recalculateBudgetTransfer(budgetFromNew, transfer, transfer.getAmount());
-        calculationService.updateLedgerFYsWithTotals(Collections.singletonList(budgetFromOld),
-            Collections.singletonList(budgetFromNew), dbClient);
-        return budgetFromNew;
+        return calculationService.updateLedgerFYsWithTotals(Collections.singletonList(budgetFromOld),
+            Collections.singletonList(budgetFromNew), dbClient)
+          .map(budgetFromNew);
       })
       .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), dbClient))
       .map(i -> null);
   }
 
-  private Future<Void> updateBudgetsTransferTo(DBClient dbClient, Transaction transfer) {
+  private Future<Void> updateBudgetsTransferTo(Transaction transfer, DBClient dbClient) {
     return budgetService.getBudgetByFundIdAndFiscalYearId(transfer.getFiscalYearId(), transfer.getToFundId(), dbClient)
-      .map(budgetTo -> {
+      .compose(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo).mapTo(Budget.class);
         calculationService.recalculateBudgetTransfer(budgetToNew, transfer, -transfer.getAmount());
-        calculationService.updateLedgerFYsWithTotals(Collections.singletonList(budgetTo), Collections.singletonList(budgetToNew), dbClient);
         budgetService.updateBudgetMetadata(budgetToNew, transfer);
-
-        return budgetToNew;
+        return calculationService.updateLedgerFYsWithTotals(Collections.singletonList(budgetTo), Collections.singletonList(budgetToNew), dbClient)
+          .map(budgetToNew);
       })
       .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), dbClient))
       .map(i -> null);

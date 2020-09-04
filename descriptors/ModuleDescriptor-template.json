@@ -357,6 +357,11 @@
           "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.get"]
         },
         {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/invoice-transaction-summaries/{id}",
+          "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.put"]
+        },
+        {
           "methods": ["DELETE"],
           "pathPattern": "/finance-storage/invoice-transaction-summaries/{id}",
           "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.delete"]
@@ -790,7 +795,13 @@
       "permissionName" : "finance-storage.invoice-transaction-summaries.item.post",
       "displayName" : "Create a new invoice transaction summary record",
       "description" : "Create a new invoice transaction summary record"
-    },    {
+    },
+    {
+      "permissionName" : "finance-storage.invoice-transaction-summaries.item.put",
+      "displayName" : "Update invoice transaction summary record",
+      "description" : "Update invoice transaction summary record"
+    },
+    {
       "permissionName" : "finance-storage.invoice-transaction-summaries.item.delete",
       "displayName" : "Delete an invoice transaction summary record",
       "description" : "Delete an  invoice transaction summary record"
@@ -802,6 +813,7 @@
       "subPermissions" : [
         "finance-storage.invoice-transaction-summaries.item.get",
         "finance-storage.invoice-transaction-summaries.item.post",
+        "finance-storage.invoice-transaction-summaries.item.put",
         "finance-storage.invoice-transaction-summaries.item.delete"
       ]
     },
