@@ -80,7 +80,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
 
   public Future<Void> createTransactions(List<Transaction> transactions, DBClient client) {
 
-    return processTransactions(transactions, client)
+    return processPendingPayments(transactions, client)
       .compose(aVoid -> transactionsDAO.saveTransactionsToPermanentTable(transactions.get(0).getSourceInvoiceId(), client))
       .mapEmpty();
   }
@@ -89,11 +89,11 @@ public class PendingPaymentService implements TransactionManagingStrategy {
 
     return getTransactions(tmpTransactions, client)
       .map(transactionsFromDB -> createDifferenceTransactions(tmpTransactions, transactionsFromDB))
-      .compose(transactions -> processTransactions(transactions, client))
+      .compose(transactions -> processPendingPayments(transactions, client))
       .compose(transactions -> transactionsDAO.updatePermanentTransactions(tmpTransactions, client));
   }
 
-  private Future<List<Transaction>> processTransactions(List<Transaction> transactions, DBClient client) {
+  private Future<List<Transaction>> processPendingPayments(List<Transaction> transactions, DBClient client) {
     List<Transaction> linkedToEncumbrance = transactions.stream()
       .filter(transaction -> Objects.nonNull(transaction.getAwaitingPayment()) && Objects.nonNull(transaction.getAwaitingPayment().getEncumbranceId()))
       .collect(Collectors.toList());
@@ -135,7 +135,6 @@ public class PendingPaymentService implements TransactionManagingStrategy {
 
     return transactionsDAO.getTransactions(ids, client);
   }
-
 
   private List<Budget> makeAvailableUnavailableNonNegative(List<Budget> budgets) {
     budgets.forEach(budget -> {
