@@ -124,6 +124,7 @@ public class EncumbranceService implements TransactionManagingStrategy {
 
           double newEncumbered = sumMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency);
           budget.setEncumbered(newEncumbered);
+          budgetService.updateBudgetMetadata(budget, tmpTransaction);
 
           calculationService.recalculateOverEncumbered(budget, currency);
           calculationService.recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
@@ -234,6 +235,8 @@ public class EncumbranceService implements TransactionManagingStrategy {
     }
 
     budget.setEncumbered(newEncumbered);
+    budgetService.updateBudgetMetadata(budget, tmpTransaction);
+
     calculationService.recalculateOverEncumbered(budget, currency);
     calculationService. recalculateAvailableUnavailable(budget, subtractMoney(tmpTransaction.getAmount(), existingTransaction.getAmount(), currency) , currency);
   }
