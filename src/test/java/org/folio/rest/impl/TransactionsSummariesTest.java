@@ -47,6 +47,7 @@ public class TransactionsSummariesTest extends TestBase {
     deleteDataSuccess(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, createdSummary.getId());
   }
 
+
   @Test
   void testOrderTransactionSummariesWithValidationError() throws MalformedURLException {
     OrderTransactionSummary sample = new JsonObject(getFile(ORDERS_SUMMARY_SAMPLE)).mapTo(OrderTransactionSummary.class);
@@ -68,6 +69,15 @@ public class TransactionsSummariesTest extends TestBase {
 
     testEntitySuccessfullyFetched(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, createdSummary.getId());
 
+    createdSummary.setNumPaymentsCredits(NUM_TRANSACTIONS);
+    putData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, createdSummary.getId(), JsonObject.mapFrom(createdSummary)
+      .encodePrettily(), TENANT_HEADER).then()
+      .statusCode(204);
+
+    testEntitySuccessfullyFetched(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, createdSummary.getId());
+    assertEquals(NUM_TRANSACTIONS, createdSummary.getNumPaymentsCredits());
+
+
     deleteDataSuccess(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, createdSummary.getId());
   }
 
@@ -81,5 +91,6 @@ public class TransactionsSummariesTest extends TestBase {
 
    assertThat(error.getParameters().get(0).getKey(), equalTo("numOfTransactions"));
     assertThat(error.getParameters().get(0).getValue(), equalTo("0"));
+
   }
 }
