@@ -1,32 +1,38 @@
 package org.folio.service.summary;
 
+import io.vertx.core.json.JsonObject;
 import org.folio.dao.summary.TransactionSummaryDao;
-import org.folio.rest.jaxrs.model.OrderTransactionSummary;
+import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 
-public class EncumbranceTransactionSummaryService extends AbstractTransactionSummaryService<OrderTransactionSummary> {
+import java.util.Optional;
 
-  public EncumbranceTransactionSummaryService(TransactionSummaryDao<OrderTransactionSummary> transactionSummaryDao) {
+public class EncumbranceTransactionSummaryService extends AbstractTransactionSummaryService {
+
+  public EncumbranceTransactionSummaryService(TransactionSummaryDao transactionSummaryDao) {
     super(transactionSummaryDao);
   }
 
   @Override
-  protected String getSummaryId(Transaction transaction) {
-    return transaction.getEncumbrance().getSourcePurchaseOrderId();
+  public String getSummaryId(Transaction transaction) {
+    return Optional.ofNullable(transaction.getEncumbrance())
+      .map(Encumbrance::getSourcePurchaseOrderId)
+      .orElse(null);
   }
 
   @Override
-  protected boolean isProcessed(OrderTransactionSummary summary) {
-    return summary.getNumTransactions() < 0;
+  protected boolean isProcessed(JsonObject summary) {
+    return getNumTransactions(summary) < 0;
   }
 
   @Override
-  protected void setTransactionsSummariesProcessed(OrderTransactionSummary summary) {
-    summary.setNumTransactions(-Math.abs(summary.getNumTransactions()));
+  protected void setTransactionsSummariesProcessed(JsonObject summary) {
+    summary.put("numTransactions", -Math.abs(getNumTransactions(summary)));
   }
 
   @Override
-  public Integer getNumTransactions(OrderTransactionSummary summary) {
-    return summary.getNumTransactions();
+  public Integer getNumTransactions(JsonObject summary) {
+    return summary.getInteger("numTransactions");
   }
+
 }

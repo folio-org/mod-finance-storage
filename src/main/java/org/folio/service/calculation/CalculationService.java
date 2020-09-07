@@ -4,6 +4,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
@@ -44,7 +45,6 @@ public class CalculationService {
   public void recalculateOverEncumbered(Budget budget, CurrencyUnit currency) {
     double a = subtractMoneyNonNegative(budget.getAllocated(), budget.getExpenditures(), currency);
     a = subtractMoneyNonNegative(a, budget.getAwaitingPayment(), currency);
-    a = sumMoney(a, budget.getNetTransfers(), currency);
     double newOverEncumbrance = subtractMoneyNonNegative(budget.getEncumbered(), a, currency);
     budget.setOverEncumbrance(newOverEncumbrance);
   }
@@ -137,7 +137,7 @@ public class CalculationService {
   public void recalculateBudgetTransfer(Budget budgetFromNew, Transaction transfer, Double netTransferAmount) {
     CurrencyUnit currency = Monetary.getCurrency(transfer.getCurrency());
 
-    double newNetTransfers = sumMoney(budgetFromNew.getNetTransfers(), netTransferAmount, currency);
+    double newNetTransfers = subtractMoney(budgetFromNew.getNetTransfers(), netTransferAmount, currency);
     budgetFromNew.setNetTransfers(newNetTransfers);
 
     recalculateOverEncumbered(budgetFromNew, currency);

@@ -113,10 +113,10 @@ resourceTypes:
   /{id}:
     uriParameters:
       id:
-        description: The UUID of an order transaction summary
+        description: The UUID of an invoice transaction summary
         type: UUID
     type:
-      get-delete:
+      item-collection:
         exampleItem: !include acq-models/mod-finance/examples/invoice_transaction_summary.sample
         schema: invoice-transaction-summary
     is: [validate]

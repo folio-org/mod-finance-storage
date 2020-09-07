@@ -1,15 +1,21 @@
 package org.folio.service.transactions;
 
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toMap;
-import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
-import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
-import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
-import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.sqlclient.Tuple;
+import org.apache.commons.lang3.StringUtils;
+import org.folio.dao.transactions.TransactionDAO;
+import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.persist.CriterionBuilder;
+import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.MoneyUtils;
+import org.folio.service.budget.BudgetService;
 
+import javax.money.CurrencyUnit;
+import javax.money.Monetary;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,36 +24,17 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.money.CurrencyUnit;
-import javax.money.Monetary;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toMap;
+import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
+import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
+import static org.folio.rest.persist.HelperUtils.getFullTableName;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
 
-import org.apache.commons.lang3.StringUtils;
-import org.folio.dao.transactions.TemporaryTransactionDAO;
-import org.folio.dao.transactions.TransactionDAO;
-import org.folio.rest.jaxrs.model.Budget;
-import org.folio.rest.jaxrs.model.Error;
-import org.folio.rest.jaxrs.model.Errors;
-import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
-import org.folio.rest.jaxrs.model.Ledger;
-import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.MoneyUtils;
-import org.folio.service.budget.BudgetService;
-import org.folio.service.calculation.CalculationService;
-import org.folio.service.fund.FundService;
-import org.folio.service.ledger.LedgerService;
-import org.folio.service.ledgerfy.LedgerFiscalYearService;
-import org.folio.service.summary.TransactionSummaryService;
-import org.javamoney.moneta.Money;
-
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
-import io.vertx.sqlclient.Tuple;
-
-public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactionService<InvoiceTransactionSummary> {
+public class PaymentCreditService extends AbstractTransactionService implements TransactionManagingStrategy {
 
   private static final String TRANSACTIONS_TABLE = "transaction";
 
@@ -64,18 +51,23 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
   Predicate<Transaction> isPaymentTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.PAYMENT);
   Predicate<Transaction> isCreditTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.CREDIT);
 
-  public PaymentCreditAllOrNothingService(BudgetService budgetService,
-                                           TemporaryTransactionDAO temporaryTransactionDAO,
-                                           CalculationService calculationService,
-                                           LedgerFiscalYearService ledgerFiscalYearService,
-                                           FundService fundService,
-                                           TransactionSummaryService<InvoiceTransactionSummary> transactionSummaryService,
-                                           TransactionDAO transactionsDAO,
-                                           LedgerService ledgerService) {
-    super(budgetService, temporaryTransactionDAO, calculationService, ledgerFiscalYearService, fundService, transactionSummaryService, transactionsDAO, ledgerService);
+  private final AllOrNothingTransactionService allOrNothingPaymentCreditService;
+  private final TransactionDAO transactionsDAO;
+  private final BudgetService budgetService;
+
+  public PaymentCreditService(AllOrNothingTransactionService allOrNothingPaymentCreditService,
+                              TransactionDAO transactionsDAO,
+                              BudgetService budgetService) {
+    this.allOrNothingPaymentCreditService = allOrNothingPaymentCreditService;
+    this.transactionsDAO = transactionsDAO;
+    this.budgetService = budgetService;
   }
 
-
+  @Override
+  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
+    DBClient client = new DBClient(requestContext);
+    return allOrNothingPaymentCreditService.createTransaction(transaction, client, this::createTransactions);
+  }
 
   /**
    * Before the temporary transaction can be moved to permanent transaction table, the corresponding fields in encumbrances and
@@ -85,8 +77,8 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
    * @param transactions to be processed
    * @param client
    */
-  @Override
-  public Future<Void> processTemporaryToPermanentTransactions(List<Transaction> transactions, DBClient client) {
+
+  public Future<Void> createTransactions(List<Transaction> transactions, DBClient client) {
     String summaryId = getSummaryId(transactions.get(0));
     return updateEncumbranceTotals(transactions, client)
       .compose(dbc -> updateBudgetsTotals(transactions, client))
@@ -179,6 +171,7 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
         budget.setExpenditures(MoneyUtils.sumMoney(budget.getExpenditures(), txn.getAmount(), currency));
         double newAwaitingPayment = MoneyUtils.subtractMoney(budget.getAwaitingPayment(), txn.getAmount(), currency);
         budget.setAwaitingPayment(newAwaitingPayment);
+        budgetService.updateBudgetMetadata(budget, txn);
       });
   }
 
@@ -191,6 +184,7 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
       .forEach(txn -> {
         budget.setExpenditures(MoneyUtils.subtractMoney(budget.getExpenditures(), txn.getAmount(), currency));
         budget.setAwaitingPayment(MoneyUtils.sumMoney(budget.getAwaitingPayment(), txn.getAmount(), currency));
+        budgetService.updateBudgetMetadata(budget, txn);
       });
   }
 
@@ -274,90 +268,16 @@ public class PaymentCreditAllOrNothingService extends BaseAllOrNothingTransactio
         getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
   }
 
-  @Override
-  Void handleValidationError(Transaction transaction) {
-
-    List<Error> errors = new ArrayList<>();
-
-    if (isCreditTransaction.test(transaction)) {
-      errors.addAll(buildNullValidationError(transaction.getToFundId(), TO_FUND_ID));
-    } else {
-      errors.addAll(buildNullValidationError(transaction.getFromFundId(), FROM_FUND_ID));
-    }
-    if (isNotEmpty(errors)) {
-      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
-        .withTotalRecords(errors.size()))
-        .encode());
-    }
-    return null;
+  private String getSelectBudgetsQuery(String tenantId){
+    return String.format(SELECT_BUDGETS_BY_INVOICE_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
   }
 
-  @Override
-  protected String getSelectBudgetsQuery(String tenantId){
-    return getSelectBudgetsQuery(SELECT_BUDGETS_BY_INVOICE_ID, tenantId, TEMPORARY_INVOICE_TRANSACTIONS);
+  public Transaction.TransactionType getStrategyName() {
+    return PAYMENT;
   }
 
-  @Override
-  String getSummaryId(Transaction transaction) {
+
+  public String getSummaryId(Transaction transaction) {
     return transaction.getSourceInvoiceId();
-  }
-
-  @Override
-  protected boolean isTransactionOverspendRestricted(Ledger ledger, Budget budget) {
-    return ledger.getRestrictExpenditures()
-      && budget.getAllowableExpenditure() != null;
-  }
-
-  /**
-   * Calculates remaining amount for payment [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable +
-   * available)) - (expenditure + encumbered + awaitingPayment - relatedAwaitingPayment)
-   *
-   * @param budget             processed budget
-   * @param currency
-   * @param relatedTransaction
-   * @return remaining amount for payment
-   */
-  @Override
-  protected Money getBudgetRemainingAmount(Budget budget, String currency, Transaction relatedTransaction) {
-    Money allocated = Money.of(budget.getAllocated(), currency);
-    // get allowableExpenditure from percentage value
-    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
-    Money unavailable = Money.of(budget.getUnavailable(), currency);
-    Money available = Money.of(budget.getAvailable(), currency);
-    Money expenditure = Money.of(budget.getExpenditures(), currency);
-    Money relatedAwaitingPayment = relatedTransaction == null ? Money.of(0d, currency) : Money.of(relatedTransaction.getAmount(), currency);
-    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
-    Money encumbered = Money.of(budget.getEncumbered(), currency);
-    Money netTransfers = Money.of(budget.getNetTransfers(), currency);
-
-    Money result = allocated.add(netTransfers).multiply(allowableExpenditure);
-    result = result.subtract(allocated.subtract(unavailable.add(available)));
-    result = result.subtract(expenditure.add(encumbered).add(awaitingPayment).subtract(relatedAwaitingPayment));
-
-    return result;
-  }
-
-  @Override
-  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient dbClient) {
-
-    CriterionBuilder criterionBuilder;
-    if (transaction.getSourceInvoiceLineId() != null) {
-      criterionBuilder = new CriterionBuilder()
-        .withJson("fromFundId","=", transaction.getFromFundId())
-        .withJson("sourceInvoiceId","=", transaction.getSourceInvoiceId())
-        .withJson("sourceInvoiceLineId","=", transaction.getSourceInvoiceLineId())
-        .withJson("transactionType","=", PENDING_PAYMENT.value())
-        .withOperation("AND");
-    } else {
-      criterionBuilder = new CriterionBuilder()
-        .withJson("fromFundId","=", transaction.getFromFundId())
-        .withJson("sourceInvoiceId","=", transaction.getSourceInvoiceId())
-        .withJson("sourceInvoiceLineId","IS NULL", null)
-        .withJson("transactionType","=", PENDING_PAYMENT.value())
-        .withOperation("AND");
-    }
-
-    return transactionsDAO.getTransactions(criterionBuilder.build(), dbClient)
-      .map(transactions -> transactions.isEmpty() ? null : transactions.get(0));
   }
 }

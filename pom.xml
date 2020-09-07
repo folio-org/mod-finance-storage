@@ -465,11 +465,11 @@
             @{argLine} -javaagent:${settings.localRepository}/org/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar
           </argLine>
           <excludes>
-            <exclude>org/folio/rest/impl/*Test.java</exclude>
+            <exclude>org/folio/**/**/*Test.java</exclude>
           </excludes>
           <includes>
-            <include>org/folio/rest/impl/StorageTestSuite.java</include>
-            <include>org/folio/rest/**</include>
+            <include>org/folio/StorageTestSuite.java</include>
+            <include>org/folio/**</include>
           </includes>
           <!-- TODO: update to version 3.0.0 and remove useSystemClassLoader
                https://issues.folio.org/browse/FOLIO-1609

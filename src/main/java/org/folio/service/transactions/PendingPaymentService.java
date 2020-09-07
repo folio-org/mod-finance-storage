@@ -7,9 +7,10 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static javax.money.Monetary.getDefaultRounding;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static org.apache.commons.lang.StringUtils.EMPTY;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
-import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
+import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
+import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.MoneyUtils.subtractMoney;
 import static org.folio.rest.persist.MoneyUtils.sumMoney;
 
@@ -18,7 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,51 +26,74 @@ import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
 
-import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
-import org.folio.rest.jaxrs.model.AwaitingPayment;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
-import org.folio.rest.jaxrs.model.Error;
-import org.folio.rest.jaxrs.model.Errors;
-import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
-import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.calculation.CalculationService;
-import org.folio.service.fund.FundService;
-import org.folio.service.ledger.LedgerService;
-import org.folio.service.ledgerfy.LedgerFiscalYearService;
-import org.folio.service.summary.TransactionSummaryService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
 
-public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransactionService<InvoiceTransactionSummary> {
+public class PendingPaymentService implements TransactionManagingStrategy {
 
   public static final String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON (budgets.fundId = transactions.fromFundId  AND transactions.fiscalYearId = budgets.fiscalYearId) "
     + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
 
-  public PendingPaymentAllOrNothingService(BudgetService budgetService,
-                                           TemporaryTransactionDAO temporaryTransactionDAO,
-                                           CalculationService calculationService,
-                                           LedgerFiscalYearService ledgerFiscalYearService,
-                                           FundService fundService,
-                                           TransactionSummaryService<InvoiceTransactionSummary> transactionSummaryService,
-                                           TransactionDAO transactionsDAO,
-                                           LedgerService ledgerService) {
-    super(budgetService, temporaryTransactionDAO, calculationService, ledgerFiscalYearService, fundService, transactionSummaryService, transactionsDAO, ledgerService);
+  private final AllOrNothingTransactionService allOrNothingPendingPaymentService;
+  private final TransactionDAO transactionsDAO;
+  private final BudgetService budgetService;
+  private final CalculationService calculationService;
+
+  public PendingPaymentService(AllOrNothingTransactionService allOrNothingPendingPaymentService,
+                               TransactionDAO transactionsDAO,
+                               BudgetService budgetService,
+                               CalculationService calculationService) {
+    this.allOrNothingPendingPaymentService = allOrNothingPendingPaymentService;
+    this.transactionsDAO = transactionsDAO;
+    this.budgetService = budgetService;
+    this.calculationService = calculationService;
   }
 
+  @Override
+  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
+    DBClient dbClient = new DBClient(requestContext);
+    return allOrNothingPendingPaymentService.createTransaction(transaction, dbClient, this::createTransactions);
+  }
 
   @Override
-  Future<Void> processTemporaryToPermanentTransactions(List<Transaction> transactions, DBClient client) {
+  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
+    DBClient dbClient = new DBClient(requestContext);
+    return allOrNothingPendingPaymentService.updateTransaction(transaction, dbClient, this::updateTransactions);
+  }
+
+  @Override
+  public Transaction.TransactionType getStrategyName() {
+    return PENDING_PAYMENT;
+  }
+
+  public Future<Void> createTransactions(List<Transaction> transactions, DBClient client) {
+
+    return processPendingPayments(transactions, client)
+      .compose(aVoid -> transactionsDAO.saveTransactionsToPermanentTable(transactions.get(0).getSourceInvoiceId(), client))
+      .mapEmpty();
+  }
+
+  public Future<Void> updateTransactions(List<Transaction> tmpTransactions, DBClient client) {
+
+    return getTransactions(tmpTransactions, client)
+      .map(transactionsFromDB -> createDifferenceTransactions(tmpTransactions, transactionsFromDB))
+      .compose(transactions -> processPendingPayments(transactions, client))
+      .compose(transactions -> transactionsDAO.updatePermanentTransactions(tmpTransactions, client));
+  }
+
+  private Future<List<Transaction>> processPendingPayments(List<Transaction> transactions, DBClient client) {
     List<Transaction> linkedToEncumbrance = transactions.stream()
       .filter(transaction -> Objects.nonNull(transaction.getAwaitingPayment()) && Objects.nonNull(transaction.getAwaitingPayment().getEncumbranceId()))
       .collect(Collectors.toList());
@@ -82,12 +105,35 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
 
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)
       .compose(oldBudgets -> processLinkedPendingPayments(linkedToEncumbrance, oldBudgets, client)
-      .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
+        .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
         .map(this::makeAvailableUnavailableNonNegative)
         .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)
           .compose(integer -> calculationService.updateLedgerFYsWithTotals(oldBudgets, newBudgets, client))))
-      .compose(aVoid -> transactionsDAO.saveTransactionsToPermanentTable(transactions.get(0).getSourceInvoiceId(), client))
-      .mapEmpty();
+      .map(transactions);
+  }
+
+  private List<Transaction> createDifferenceTransactions(List<Transaction> tmpTransactions, List<Transaction> transactionsFromDB) {
+    Map<String, Double> amountIdMap = tmpTransactions.stream().collect(toMap(Transaction::getId, Transaction::getAmount));
+    return transactionsFromDB.stream()
+      .map(transaction -> createDifferenceTransaction(transaction, amountIdMap.getOrDefault(transaction.getId(), 0d)))
+      .collect(Collectors.toList());
+  }
+
+  private Transaction createDifferenceTransaction(Transaction transaction, double newAmount) {
+    Transaction transactionDifference = JsonObject.mapFrom(transaction).mapTo(Transaction.class);
+    CurrencyUnit currency = Monetary.getCurrency(transaction.getCurrency());
+    double amountDifference = subtractMoney(newAmount, transaction.getAmount(), currency);
+    return transactionDifference.withAmount(amountDifference);
+  }
+
+
+  private Future<List<Transaction>> getTransactions(List<Transaction> tmpTransactions, DBClient client) {
+
+    List<String> ids = tmpTransactions.stream()
+      .map(Transaction::getId)
+      .collect(toList());
+
+    return transactionsDAO.getTransactions(ids, client);
   }
 
   private List<Budget> makeAvailableUnavailableNonNegative(List<Budget> budgets) {
@@ -128,6 +174,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         .forEach(tmpTransaction -> {
           double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getAmount(), currency);
           budget.setAwaitingPayment(newAwaitingPayment);
+          budgetService.updateBudgetMetadata(budget, tmpTransaction);
           recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
         });
     }
@@ -146,13 +193,11 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
 
   private Future<List<Budget>> processLinkedPendingPayments(List<Transaction> pendingPayments, List<Budget> oldBudgets, DBClient client) {
     if (isNotEmpty(pendingPayments)) {
-
-      CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
-      pendingPayments.stream()
+      List<String> ids = pendingPayments.stream()
         .map(transaction -> transaction.getAwaitingPayment().getEncumbranceId())
-        .forEach(id -> criterionBuilder.with("id", id));
+        .collect(toList());
 
-      return transactionsDAO.getTransactions(criterionBuilder.build(), client)
+      return transactionsDAO.getTransactions(ids, client)
         .map(encumbrances -> updateEncumbrancesTotals(encumbrances, pendingPayments))
         .compose(encumbrances -> {
           List<Budget> newBudgets = updateBudgetsTotalsWithLinkedPendingPayments(pendingPayments, encumbrances, oldBudgets);
@@ -221,6 +266,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         budget.setAvailable(newAvailable);
         budget.setUnavailable(newUnavailable);
         budget.setEncumbered(encumbered.add(amount).getNumber().doubleValue());
+        budgetService.updateBudgetMetadata(budget, transaction);
 
         transaction.setAmount(0.00);
       });
@@ -239,6 +285,7 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
        double newAwaitingPayment = awaitingPayment.add(amount).getNumber().doubleValue();
        budget.setEncumbered(newEncumbered);
        budget.setAwaitingPayment(newAwaitingPayment);
+       budgetService.updateBudgetMetadata(budget, transaction);
      });
   }
 
@@ -253,84 +300,18 @@ public class PendingPaymentAllOrNothingService extends BaseAllOrNothingTransacti
         budget.setEncumbered(newEncumbered);
         recalculateAvailableUnavailable(budget, -transaction.getAmount(), currency);
         transaction.setAmount(0.00);
+        budgetService.updateBudgetMetadata(budget, transaction);
       });
     }
 
   }
 
-  @Override
-  String getSummaryId(Transaction transaction) {
+  public String getSummaryId(Transaction transaction) {
     return transaction.getSourceInvoiceId();
   }
 
-  @Override
-  Void handleValidationError(Transaction transaction) {
-
-    List<Error> errors = new ArrayList<>(buildNullValidationError(transaction.getFromFundId(), FROM_FUND_ID));
-
-    if (isNotEmpty(errors)) {
-      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
-        .withTotalRecords(errors.size()))
-        .encode());
-    }
-    return null;
+  private String getSelectBudgetsQuery(String tenantId) {
+    return String.format(SELECT_BUDGETS_BY_INVOICE_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
   }
 
-  @Override
-  protected String getSelectBudgetsQuery(String tenantId) {
-    return getSelectBudgetsQuery(SELECT_BUDGETS_BY_INVOICE_ID, tenantId, TEMPORARY_INVOICE_TRANSACTIONS);
-  }
-
-  @Override
-  protected boolean isTransactionOverspendRestricted(Ledger ledger, Budget budget) {
-    return ledger.getRestrictExpenditures() && budget.getAllowableExpenditure() != null;
-  }
-
-  /**
-   * Calculates remaining amount for payment and pending payments [remaining amount] = (allocated * allowableExpenditure) - (allocated
-   * - (unavailable + available)) - (encumbered + expended + awaitingPayment - relatedEncumbered)
-   *
-   * @param budget             processed budget
-   * @param currency
-   * @param relatedTransaction
-   * @return remaining amount for payment
-   */
-  @Override
-  protected Money getBudgetRemainingAmount(Budget budget, String currency, Transaction relatedTransaction) {
-    Money allocated = Money.of(budget.getAllocated(), currency);
-    // get allowableExpenditure from percentage value
-    double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
-    Money available = Money.of(budget.getAvailable(), currency);
-    Money expenditure = Money.of(budget.getExpenditures(), currency);
-    Money encumbered = Money.of(budget.getEncumbered(), currency);
-    Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
-    Money relatedEncumbered = relatedTransaction == null ? Money.of(0d, currency) : Money.of(relatedTransaction.getAmount(), currency);
-    Money unavailable = Money.of(budget.getUnavailable(), currency);
-    Money netTransfers = Money.of(budget.getNetTransfers(), currency);
-
-    Money result = allocated.add(netTransfers).multiply(allowableExpenditure);
-    result = result.subtract(allocated.subtract(unavailable.add(available)));
-    result = result.subtract(encumbered.add(expenditure.add(awaitingPayment)).subtract(relatedEncumbered));
-
-    return result;
-  }
-
-  @Override
-  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient client) {
-
-    String encumbranceId = Optional.ofNullable(transaction)
-      .map(Transaction::getAwaitingPayment)
-      .map(AwaitingPayment::getEncumbranceId)
-      .orElse(EMPTY);
-
-    if (encumbranceId.isEmpty()) {
-      return Future.succeededFuture(null);
-    }
-
-    CriterionBuilder criterion = new CriterionBuilder()
-      .with("id", encumbranceId);
-
-    return transactionsDAO.getTransactions(criterion.build(), client)
-      .map(transactions -> transactions.isEmpty() ? null : transactions.get(0));
-  }
 }
