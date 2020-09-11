@@ -44,6 +44,7 @@ public class TransferService extends AbstractTransactionService implements Trans
     DBClient client = new DBClient(requestContext);
 
     client.startTx()
+      .compose(v -> budgetService.checkBudgetHaveMoneyForTransaction(transfer, client))
       .compose(v -> createTransfer(transfer, client)
         .compose(createdTransfer -> {
         if (transfer.getFromFundId() != null) {
@@ -61,7 +62,10 @@ public class TransferService extends AbstractTransactionService implements Trans
             promise.complete(transfer);
             log.info("Transactions and associated data were successfully processed");
           }
-        }));
+        })).onFailure(throwable -> {
+         client.rollbackTransaction();
+         promise.fail(throwable);
+    });
     return promise.future();
   }
 
