@@ -12,6 +12,7 @@ import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,6 +37,7 @@ import io.restassured.http.Header;
 import io.vertx.core.json.JsonObject;
 
 public class TransactionTest extends TestBase {
+
   protected static final String TRANSACTION_ENDPOINT = TRANSACTION.getEndpoint();
   protected static final String TRANSACTION_TEST_TENANT = "transaction_test_tenant";
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
@@ -44,6 +46,7 @@ public class TransactionTest extends TestBase {
   private static final String LEDGER_QUERY = "?query=fund.id==%s";
   private static final String LEDGER_FY_QUERY = "?query=ledgerId==%s AND fiscalYearId==%s";
   public static final String ALLOCATION_SAMPLE = "data/transactions/allocations/allocation_AFRICAHIST-FY20_ANZHIST-FY20.json";
+  public static final String TRANSFER_NOT_ENOUGH_MONEY_ERROR_TEXT = "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer";
 
   static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
   private static String LEDGERS_QUERY = LEDGER.getEndpoint() + LEDGER_QUERY;
@@ -386,6 +389,41 @@ public class TransactionTest extends TestBase {
 
     assertEquals(expectedBudgetsAvailable, toBudgetAfter.getAvailable());
     assertEquals(expectedLedgersAvailable, toLedgerFYAfter.getAvailable());
+
+  }
+
+
+  @Test
+  void testCreateTransferThatDoesNotHaveEnoughMoney() throws MalformedURLException {
+
+    givenTestData(TRANSACTION_TENANT_HEADER,
+      Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
+      Pair.of(FISCAL_YEAR, FISCAL_YEAR_18_SAMPLE_PATH),
+      Pair.of(LEDGER, LEDGER_MAIN_LIBRARY_SAMPLE_PATH),
+      Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
+      Pair.of(FUND, ALLOCATION_TO_FUND_SAMPLE_PATH),
+      Pair.of(FUND, FUND.getPathToSampleFile()),
+      Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
+      Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
+
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation1_AFRICAHIST-FY20.json"));
+    jsonAllocation.remove("id");
+    String allocationSample = jsonAllocation.toString();
+
+    postData(TRANSACTION_ENDPOINT, allocationSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class);
+
+    JsonObject jsonTx = new JsonObject(getFile("data/transactions/transfers/transfer.json"));
+    jsonTx.remove("id");
+    jsonTx.put("amount","21001");
+    String transactionSample = jsonTx.toString();
+
+    // create Transfer
+    postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(400)
+      .body(containsString(TRANSFER_NOT_ENOUGH_MONEY_ERROR_TEXT));
 
   }
 
