@@ -2,11 +2,13 @@ package org.folio.dao.budget;
 
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.util.ErrorCodes.BUDGET_EXPENSE_CLASS_REFERENCE_ERROR;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.Map;
 import javax.ws.rs.core.Response;
 
 import io.vertx.sqlclient.Tuple;
@@ -20,6 +22,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import org.folio.rest.persist.PgExceptionUtil;
 
 public class BudgetPostgresDAO implements BudgetDAO {
 
@@ -95,7 +98,12 @@ public class BudgetPostgresDAO implements BudgetDAO {
     client.getPgClient().delete(client.getConnection(), BUDGET_TABLE, id, reply -> {
       if (reply.failed()) {
         logger.error("Budget deletion with id={} failed", reply.cause(), id);
-        handleFailure(promise, reply);
+        if (checkForeignKeyViolationError(reply.cause())) {
+          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(),
+            buildErrorForBudgetExpenseClassReferenceError()));
+        } else {
+          handleFailure(promise, reply);
+        }
       } else if (reply.result().rowCount() == 0) {
         promise.fail(new HttpStatusException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase()));
       } else {
@@ -103,6 +111,18 @@ public class BudgetPostgresDAO implements BudgetDAO {
       }
     });
     return promise.future();
+  }
+  private boolean checkForeignKeyViolationError(Throwable cause) {
+    if ( PgExceptionUtil.isForeignKeyViolation(cause)) {
+      Map<Character,String> errorMessageMap = PgExceptionUtil.getBadRequestFields(cause);
+      String details = errorMessageMap.getOrDefault('D', "");
+      return details.contains("budget_expense_class");
+    }
+    return false;
+  }
+
+  private String buildErrorForBudgetExpenseClassReferenceError() {
+    return JsonObject.mapFrom(BUDGET_EXPENSE_CLASS_REFERENCE_ERROR.toError()).encodePrettily();
   }
 
 }
