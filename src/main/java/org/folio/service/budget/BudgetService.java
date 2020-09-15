@@ -39,6 +39,7 @@ public class BudgetService {
   private static final String TRANSACTIONS_TABLE = "transaction";
   public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
   public static final String BUDGET_NOT_FOUND_FOR_TRANSACTION = "Budget not found for pair fiscalYear-fundId";
+  public static final String NOT_ENOUGH_MONEY_FOR_TRANSFER = "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer.";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -149,5 +150,20 @@ public class BudgetService {
   public void updateBudgetMetadata(Budget budget, Transaction transaction) {
     budget.getMetadata().setUpdatedDate(transaction.getMetadata().getUpdatedDate());
     budget.getMetadata().setUpdatedByUserId(transaction.getMetadata().getUpdatedByUserId());
+  }
+
+  public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBClient client) {
+    if (transaction.getFromFundId() == null) {
+      return Future.succeededFuture();
+    }
+
+    return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), client)
+      .compose(budget -> {
+        if (budget.getAvailable() < transaction.getAmount()) {
+          logger.error(NOT_ENOUGH_MONEY_FOR_TRANSFER);
+          return Future.failedFuture(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), NOT_ENOUGH_MONEY_FOR_TRANSFER));
+        }
+        return Future.succeededFuture();
+      });
   }
 }
