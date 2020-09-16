@@ -216,18 +216,23 @@ public class PendingPaymentService implements TransactionManagingStrategy {
   }
 
   private void updateEncumbranceTotals(Transaction encumbrance, List<Transaction> transactions) {
-    if (transactions.stream().anyMatch(transaction -> transaction.getAwaitingPayment().getReleaseEncumbrance())) {
-      encumbrance.getEncumbrance().setStatus(Encumbrance.Status.RELEASED);
-    }
     MonetaryAmount ppAmountTotal = transactions.stream()
       .map(transaction -> Money.of(transaction.getAmount(), transaction.getCurrency()))
-      .reduce(Money::add).orElse(Money.zero(Monetary.getCurrency(encumbrance.getCurrency())));
+      .reduce(Money::add)
+      .orElse(Money.zero(Monetary.getCurrency(encumbrance.getCurrency())));
+
+    // set awaiting payment value
+    if (transactions.stream().anyMatch(transaction -> transaction.getAwaitingPayment().getReleaseEncumbrance())) {
+      encumbrance.getEncumbrance().setStatus(Encumbrance.Status.RELEASED);
+      encumbrance.getEncumbrance().setAmountAwaitingPayment(0d);
+    }
+    else {
+      MonetaryAmount awaitingPayment = Money.of(encumbrance.getEncumbrance().getAmountAwaitingPayment(), encumbrance.getCurrency()).add(ppAmountTotal);
+      encumbrance.getEncumbrance().setAmountAwaitingPayment(awaitingPayment.with(getDefaultRounding()).getNumber().doubleValue());
+    }
+
     MonetaryAmount amount = Money.of(encumbrance.getAmount(), encumbrance.getCurrency()).subtract(ppAmountTotal);
-
-    MonetaryAmount awaitingPayment = Money.of(encumbrance.getEncumbrance().getAmountAwaitingPayment(), encumbrance.getCurrency()).add(ppAmountTotal);
-
     encumbrance.setAmount(amount.with(getDefaultRounding()).getNumber().doubleValue());
-    encumbrance.getEncumbrance().setAmountAwaitingPayment(awaitingPayment.with(getDefaultRounding()).getNumber().doubleValue());
   }
 
   private List<Budget> updateBudgetsTotalsWithLinkedPendingPayments(List<Transaction> pendingPayments, List<Transaction> encumbrances, List<Budget> budgets) {
