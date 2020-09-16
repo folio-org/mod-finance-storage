@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toList;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.getQueryValues;
+import static org.folio.rest.util.ErrorCodes.NOT_ENOUGH_MONEY_FOR_TRANSFER;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
@@ -39,7 +40,6 @@ public class BudgetService {
   private static final String TRANSACTIONS_TABLE = "transaction";
   public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
   public static final String BUDGET_NOT_FOUND_FOR_TRANSACTION = "Budget not found for pair fiscalYear-fundId";
-  public static final String NOT_ENOUGH_MONEY_FOR_TRANSFER = "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer.";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -160,8 +160,9 @@ public class BudgetService {
     return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), client)
       .compose(budget -> {
         if (budget.getAvailable() < transaction.getAmount()) {
-          logger.error(NOT_ENOUGH_MONEY_FOR_TRANSFER);
-          return Future.failedFuture(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), NOT_ENOUGH_MONEY_FOR_TRANSFER));
+          logger.error(NOT_ENOUGH_MONEY_FOR_TRANSFER.getDescription());
+          return Future.failedFuture(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(),
+            JsonObject.mapFrom(NOT_ENOUGH_MONEY_FOR_TRANSFER.toError()).encodePrettily()));
         }
         return Future.succeededFuture();
       });
