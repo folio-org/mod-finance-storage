@@ -52,26 +52,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
   @Override
   @Validate
   public void postFinanceStorageLedgers(String lang, Ledger entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    DBClient client = new DBClient(vertxContext, okapiHeaders);
-    vertxContext.runOnContext(event ->
-     client.startTx()
-        .compose(tx1 -> saveLedger(entity, client))
-        .compose(t ->client.endTx())
-        .onComplete(result -> {
-          if (result.failed()) {
-            HttpStatusException cause = (HttpStatusException) result.cause();
-            log.error("New ledger record creation has failed: {}", cause, entity);
-
-            // The result of rollback operation is not so important, main failure cause is used to build the response
-           client.rollbackTransaction().onComplete(res -> HelperUtils.replyWithErrorResponse(asyncResultHandler, cause));
-          } else {
-            log.info("New ledger record {} and associated data were successfully created", entity);
-            asyncResultHandler.handle(succeededFuture(PostFinanceStorageLedgersResponse
-              .respond201WithApplicationJson(entity, PostFinanceStorageLedgersResponse.headersFor201()
-                .withLocation(HelperUtils.getEndpoint(FinanceStorageLedgers.class) + entity.getId()))));
-          }
-        })
-    );
+    PgUtil.post(LEDGER_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageLedgersResponse.class, asyncResultHandler);
   }
 
   @Override
@@ -83,14 +64,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
   @Override
   @Validate
   public void deleteFinanceStorageLedgersById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    DBClient client = new DBClient(vertxContext, okapiHeaders);
-
-    vertxContext.runOnContext(event ->
-     client.startTx()
-      .compose(ok -> HelperUtils.deleteRecordById(id, client, LEDGER_TABLE))
-      .compose(v -> client.endTx())
-      .onComplete(handleNoContentResponse(asyncResultHandler, id, client, "Ledger {} {} deleted"))
-    );
+    PgUtil.deleteById(LEDGER_TABLE, id, okapiHeaders, vertxContext, DeleteFinanceStorageLedgersByIdResponse.class, asyncResultHandler);
   }
 
   @Override
@@ -210,23 +184,5 @@ public class LedgerAPI implements FinanceStorageLedgers {
     return promise.future();
   }
 
-  private Future<Ledger> saveLedger(Ledger ledger, DBClient client) {
-    Promise<Ledger> promise = Promise.promise();
-
-    if (ledger.getId() == null) {
-      ledger.setId(UUID.randomUUID().toString());
-    }
-
-    log.debug("Creating new ledger record with id={}", ledger.getId());
-
-   client.getPgClient().save(client.getConnection(), LEDGER_TABLE, ledger.getId(), ledger, reply -> {
-      if (reply.failed()) {
-        handleFailure(promise, reply);
-      } else {
-        promise.complete(ledger);
-      }
-    });
-    return promise.future();
-  }
 
 }
