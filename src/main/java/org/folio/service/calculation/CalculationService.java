@@ -43,7 +43,7 @@ public class CalculationService {
   }
 
   public void recalculateOverEncumbered(Budget budget, CurrencyUnit currency) {
-    double a = subtractMoneyNonNegative(budget.getAllocated(), budget.getExpenditures(), currency);
+    double a = subtractMoneyNonNegative(sumMoney(budget.getAllocated(), budget.getNetTransfers(), currency), budget.getExpenditures(), currency);
     a = subtractMoneyNonNegative(a, budget.getAwaitingPayment(), currency);
     double newOverEncumbrance = subtractMoneyNonNegative(budget.getEncumbered(), a, currency);
     budget.setOverEncumbrance(newOverEncumbrance);
