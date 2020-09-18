@@ -1,7 +1,6 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.folio.dao.ledger.LedgerPostgresDAO.LEDGER_TABLE;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
@@ -11,10 +10,8 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,28 +19,19 @@ import java.util.stream.IntStream;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.folio.dao.ledgerfy.LedgerFiscalYearDAO;
 import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
-import org.folio.rest.jaxrs.model.LedgerFY;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
-import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.spring.SpringContextUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
@@ -53,13 +41,6 @@ import io.vertx.sqlclient.impl.ArrayTuple;
 public class LedgerAPI implements FinanceStorageLedgers {
 
   private static final Logger log = LoggerFactory.getLogger(LedgerAPI.class);
-
-  @Autowired
-  private LedgerFiscalYearDAO ledgerFiscalYearDAO;
-
-  public LedgerAPI() {
-    SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
-  }
 
   @Override
   @Validate
@@ -75,7 +56,6 @@ public class LedgerAPI implements FinanceStorageLedgers {
     vertxContext.runOnContext(event ->
      client.startTx()
         .compose(tx1 -> saveLedger(entity, client))
-        .compose(ledger -> createLedgerFiscalYearRecords(ledger, client))
         .compose(t ->client.endTx())
         .onComplete(result -> {
           if (result.failed()) {
@@ -104,10 +84,9 @@ public class LedgerAPI implements FinanceStorageLedgers {
   @Validate
   public void deleteFinanceStorageLedgersById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     DBClient client = new DBClient(vertxContext, okapiHeaders);
-    CriterionBuilder criterionBuilder = new CriterionBuilder().with("ledgerId", id);
+
     vertxContext.runOnContext(event ->
      client.startTx()
-      .compose(ok -> ledgerFiscalYearDAO.deleteLedgerFiscalYearRecords(criterionBuilder.build(), client))
       .compose(ok -> HelperUtils.deleteRecordById(id, client, LEDGER_TABLE))
       .compose(v -> client.endTx())
       .onComplete(handleNoContentResponse(asyncResultHandler, id, client, "Ledger {} {} deleted"))
@@ -250,62 +229,4 @@ public class LedgerAPI implements FinanceStorageLedgers {
     return promise.future();
   }
 
-  private Future<Ledger> createLedgerFiscalYearRecords(Ledger ledger, DBClient client) {
-    Promise<Ledger> promise = Promise.promise();
-    getFiscalYears(ledger, client)
-      .map(fiscalYears -> buildLedgerFiscalYearRecords(ledger, fiscalYears))
-      .compose(ledgerFYs -> ledgerFiscalYearDAO.saveLedgerFiscalYearRecords(ledgerFYs, client))
-      .onComplete(result -> {
-        if (result.failed()) {
-          handleFailure(promise, result);
-        } else {
-          promise.complete(ledger);
-        }
-      });
-    return promise.future();
-  }
-
-  private List<LedgerFY> buildLedgerFiscalYearRecords(Ledger ledger, List<FiscalYear> fiscalYears) {
-    return fiscalYears.stream()
-      .filter(fy -> StringUtils.isNotEmpty(fy.getCurrency()))
-      .map(fiscalYear -> new LedgerFY()
-        // No need to generate uuids here because PostgresClient.saveBatch(...) generates ids for each record
-        .withCurrency(fiscalYear.getCurrency())
-        .withLedgerId(ledger.getId())
-        .withFiscalYearId(fiscalYear.getId()))
-      .collect(Collectors.toList());
-  }
-
-  private Future<List<FiscalYear>> getFiscalYears(Ledger ledger, DBClient client) {
-    Promise<List<FiscalYear>> promise = Promise.promise();
-   client.getPgClient().get(client.getConnection(), FiscalYearAPI.FISCAL_YEAR_TABLE, FiscalYear.class, new Criterion(), true, false, reply -> {
-      try {
-        if (reply.failed()) {
-          log.error("Failed to find fiscal years");
-          handleFailure(promise, reply);
-        } else {
-          List<FiscalYear> allFiscalYears = Optional.ofNullable(reply.result().getResults()).orElse(Collections.emptyList());
-          List<FiscalYear> fiscalYearsWithSeries = getFiscalYearsWithSeries(allFiscalYears, getFiscalYearSeries(allFiscalYears, ledger.getFiscalYearOneId()));
-          log.info("{} fiscal years have been found", fiscalYearsWithSeries.size());
-          promise.complete(fiscalYearsWithSeries);
-        }
-      } catch (Exception e) {
-        promise.fail(e);
-      }
-    });
-    return promise.future();
-  }
-
-  private String getFiscalYearSeries(List<FiscalYear> fiscalYears, String fiscalYearId) {
-    return fiscalYears.stream()
-      .filter(fiscalYear -> fiscalYear.getId().equals(fiscalYearId))
-      .map(FiscalYear::getSeries)
-      .findFirst().orElse(EMPTY);
-  }
-
-  private List<FiscalYear> getFiscalYearsWithSeries(List<FiscalYear> fiscalYears, String series) {
-    return fiscalYears.stream()
-      .filter(fiscalYear -> fiscalYear.getSeries().equals(series))
-      .collect(Collectors.toList());
-  }
 }

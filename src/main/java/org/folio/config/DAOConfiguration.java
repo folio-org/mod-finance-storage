@@ -6,8 +6,6 @@ import org.folio.dao.fund.FundDAO;
 import org.folio.dao.fund.FundPostgresDAO;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.dao.ledger.LedgerPostgresDAO;
-import org.folio.dao.ledgerfy.LedgerFiscalYearDAO;
-import org.folio.dao.ledgerfy.LedgerFiscalYearPostgresDAO;
 import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
 import org.folio.dao.summary.OrderTransactionSummaryDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
@@ -34,11 +32,6 @@ public class DAOConfiguration {
   @Bean
   public LedgerDAO ledgerDAO() {
     return new LedgerPostgresDAO();
-  }
-
-  @Bean
-  public LedgerFiscalYearDAO ledgerFiscalYearDAO() {
-    return new LedgerFiscalYearPostgresDAO();
   }
 
   @Bean

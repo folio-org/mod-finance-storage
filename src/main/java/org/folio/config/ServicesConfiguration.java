@@ -1,9 +1,10 @@
 package org.folio.config;
 
+import java.util.Set;
+
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.fund.FundDAO;
 import org.folio.dao.ledger.LedgerDAO;
-import org.folio.dao.ledgerfy.LedgerFiscalYearDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
@@ -14,8 +15,6 @@ import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledger.StorageLedgerService;
-import org.folio.service.ledgerfy.LedgerFiscalYearService;
-import org.folio.service.ledgerfy.StorageLedgerFiscalYearService;
 import org.folio.service.summary.EncumbranceTransactionSummaryService;
 import org.folio.service.summary.PaymentCreditTransactionSummaryService;
 import org.folio.service.summary.PendingPaymentTransactionSummaryService;
@@ -35,8 +34,6 @@ import org.folio.service.transactions.restriction.PendingPaymentRestrictionServi
 import org.folio.service.transactions.restriction.TransactionRestrictionService;
 import org.springframework.context.annotation.Bean;
 
-import java.util.Set;
-
 public class ServicesConfiguration {
 
   @Bean
@@ -55,13 +52,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public LedgerFiscalYearService ledgerFiscalYearService(LedgerFiscalYearDAO ledgerFiscalYearDAO, FundService fundService) {
-    return new StorageLedgerFiscalYearService(ledgerFiscalYearDAO, fundService);
-  }
-
-  @Bean
-  public CalculationService calculationService(FundService fundService, LedgerFiscalYearService ledgerFiscalYearService) {
-    return new CalculationService(fundService, ledgerFiscalYearService);
+  public CalculationService calculationService() {
+    return new CalculationService();
   }
 
   @Bean
@@ -121,10 +113,9 @@ public class ServicesConfiguration {
   @Bean
   public TransactionService pendingPaymentService(AllOrNothingTransactionService allOrNothingPendingPaymentService,
                                                   TransactionDAO pendingPaymentDAO,
-                                                  BudgetService budgetService,
-                                                  CalculationService calculationService) {
+                                                  BudgetService budgetService) {
 
-    return new PendingPaymentService(allOrNothingPendingPaymentService, pendingPaymentDAO, budgetService, calculationService);
+    return new PendingPaymentService(allOrNothingPendingPaymentService, pendingPaymentDAO, budgetService);
   }
 
   @Bean
