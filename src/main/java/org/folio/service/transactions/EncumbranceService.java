@@ -170,7 +170,7 @@ public class EncumbranceService implements TransactionManagingStrategy {
       .collect(Collectors.toList());
   }
 
-  private Future<Void> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, List<Transaction> newTransactions,
+  private Future<Integer> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, List<Transaction> newTransactions,
                                            DBClient client) {
 
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId()), client)
@@ -180,8 +180,7 @@ public class EncumbranceService implements TransactionManagingStrategy {
         List<Budget> finalNewBudgets = updateBudgetsTotalsForUpdatingTransactions(groupedTransactions.get(EXISTING),
             groupedTransactions.get(FOR_UPDATE), updatedBudgets);
 
-        return budgetService.updateBatchBudgets(finalNewBudgets, client)
-          .compose(integer -> calculationService.updateLedgerFYsWithTotals(oldBudgets, finalNewBudgets, client));
+        return budgetService.updateBatchBudgets(finalNewBudgets, client);
       });
   }
 

@@ -399,28 +399,9 @@
     },
     {
       "tableName": "ledgerFY",
-      "fromModuleVersion": "mod-finance-storage-5.0.1",
-      "foreignKeys": [
-        {
-          "fieldName": "ledgerId",
-          "targetTable": "ledger",
-          "tableAlias": "ledgerFY",
-          "targetTableAlias": "ledger"
-        },
-        {
-          "fieldName": "fiscalYearId",
-          "targetTable": "fiscal_year",
-          "tableAlias": "ledgerFY",
-          "targetTableAlias": "fiscalYear"
-        }
-      ],
-      "uniqueIndex": [
-        {
-          "fieldName": "ledgerId_fiscalYearId",
-          "multiFieldNames": "ledgerId, fiscalYearId",
-          "tOps": "ADD"
-        }
-      ]
+      "fromModuleVersion": "mod-finance-storage-6.0.0",
+      "mode": "delete",
+      "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     },
     {
       "tableName": "group_fund_fiscal_year",
