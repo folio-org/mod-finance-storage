@@ -1,8 +1,6 @@
 package org.folio.rest.impl;
 
 import static java.lang.Math.max;
-import static org.folio.dao.ledgerfy.LedgerFiscalYearPostgresDAO.LEDGERFY_TABLE;
-import static org.folio.rest.impl.TransactionTest.LEDGER_FYS_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
@@ -24,18 +22,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.MalformedURLException;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import org.folio.StorageTestSuite;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Errors;
@@ -43,11 +33,8 @@ import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Ledger;
-import org.folio.rest.jaxrs.model.LedgerFY;
-import org.folio.rest.jaxrs.model.LedgerFYCollection;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.PostgresClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,14 +77,6 @@ public class EncumbrancesTest extends TestBase {
     encumbrance2.getEncumbrance().setSourcePurchaseOrderId(orderId);
     encumbrance2.getEncumbrance().setSourcePoLineId(UUID.randomUUID().toString());
 
-    // prepare ledgerFY query
-    String fromLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, ledgerId, fiscalYearId);
-    LedgerFY ledgerFYBefore = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
-    ledgerFYBefore.withAllocated(budgetBefore.getAllocated())
-      .withAvailable(budgetBefore.getAvailable())
-      .withUnavailable(budgetBefore.getUnavailable());
-
-    updateLedgerFy(ledgerFYBefore);
 
     // create 1st Encumbrance, expected number is 2
     String encumbrance1Id = postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
@@ -119,7 +98,6 @@ public class EncumbrancesTest extends TestBase {
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance2Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
     Budget budgetAfter = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
-    LedgerFY ledgerFYAfter = getLedgerFYAndValidate(fromLedgerFYEndpointWithQueryParams);
 
     // check source budget and ledger totals
     final double amount = sumValues(encumbrance1.getAmount(), encumbrance2.getAmount());
@@ -127,26 +105,15 @@ public class EncumbrancesTest extends TestBase {
     double expectedBudgetsUnavailable;
     double expectedBudgetsEncumbered;
 
-    double expectedLedgersAvailable;
-    double expectedLedgersUnavailable;
-
 
     expectedBudgetsEncumbered = sumValues(budgetBefore.getEncumbered(), amount);
     expectedBudgetsAvailable = subtractValues(budgetBefore.getAvailable(), amount);
     expectedBudgetsUnavailable = sumValues(budgetBefore.getUnavailable(), amount);
 
-    expectedLedgersAvailable = subtractValues(ledgerFYBefore.getAvailable(), amount);
-    expectedLedgersUnavailable = sumValues(ledgerFYBefore.getUnavailable(), amount);
-
     assertEquals(expectedBudgetsEncumbered, budgetAfter.getEncumbered());
     assertEquals(expectedBudgetsAvailable , budgetAfter.getAvailable());
     assertEquals(expectedBudgetsUnavailable, budgetAfter.getUnavailable());
     verifyBudgetTotalsAfter(budgetAfter);
-
-    assertEquals(expectedLedgersAvailable, ledgerFYAfter.getAvailable());
-    assertEquals(expectedLedgersUnavailable , ledgerFYAfter.getUnavailable());
-    verifyLedgerFYAfterCreateEncumbrance(ledgerFYBefore, ledgerFYAfter,
-      Collections.singletonList(budgetBefore), Collections.singletonList(budgetAfter));
 
     //create same encumbrances again
     postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
@@ -160,11 +127,6 @@ public class EncumbrancesTest extends TestBase {
     assertEquals(expectedBudgetsAvailable , budgetAfter.getAvailable());
     assertEquals(expectedBudgetsUnavailable, budgetAfter.getUnavailable());
     verifyBudgetTotalsAfter(budgetAfter);
-
-    assertEquals(expectedLedgersAvailable, ledgerFYAfter.getAvailable());
-    assertEquals(expectedLedgersUnavailable , ledgerFYAfter.getUnavailable());
-    verifyLedgerFYAfterCreateEncumbrance(ledgerFYBefore, ledgerFYAfter,
-      Collections.singletonList(budgetBefore), Collections.singletonList(budgetAfter));
 
   }
 
@@ -395,7 +357,6 @@ public class EncumbrancesTest extends TestBase {
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
     String fundId = createFund(ledgerId);
-    String paymentLedgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, ledgerId, fiscalYearId);
 
     Budget fromBudgetBefore = buildBudget(fiscalYearId, fundId);
 
@@ -456,7 +417,6 @@ public class EncumbrancesTest extends TestBase {
      getDataById(TRANSACTION.getEndpointWithId(), encumbrance2Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
      getDataById(TRANSACTION.getEndpointWithId(), encumbrance3Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
     Budget fromBudgetBeforeUpdate = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
-    LedgerFY ledgerFYBeforeUpdate = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
 
     verifyBudgetTotalsAfter(fromBudgetBeforeUpdate);
     double releasedAmount = encumbrance1.getAmount();
@@ -517,11 +477,6 @@ public class EncumbrancesTest extends TestBase {
 
     verifyBudgetTotalsAfter(fromBudgetAfterUpdate);
 
-    // check ledgerFy updates
-    LedgerFY ledgerFYAfter = getLedgerFYAndValidate(paymentLedgerFYEndpointWithQueryParams);
-
-    assertEquals(sumValues(ledgerFYBeforeUpdate.getAvailable(), transactionsTotalAmount), ledgerFYAfter.getAvailable());
-    assertEquals(subtractValues(ledgerFYBeforeUpdate.getUnavailable(), transactionsTotalAmount), ledgerFYAfter.getUnavailable());
   }
 
   @Test
@@ -665,15 +620,6 @@ public class EncumbrancesTest extends TestBase {
     String budgetId = postData(BUDGET.getEndpoint(), JsonObject.mapFrom(budgetBefore).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201).extract().as(Budget.class).getId();
 
-    String ledgerFYEndpointWithQueryParams = String.format(LEDGER_FYS_ENDPOINT, ledgerId, fiscalYearId);
-
-    LedgerFY ledgerFYBefore = getLedgerFYAndValidate(ledgerFYEndpointWithQueryParams);
-    ledgerFYBefore.withAllocated(budgetBefore.getAllocated())
-      .withAvailable(budgetBefore.getAvailable())
-      .withUnavailable(budgetBefore.getUnavailable());
-
-    updateLedgerFy(ledgerFYBefore);
-
     String orderId = UUID.randomUUID().toString();
     createOrderSummary(orderId, 1);
 
@@ -703,8 +649,6 @@ public class EncumbrancesTest extends TestBase {
     assertEquals(sumValues(budgetBefore.getEncumbered(), transactionAmount), budgetAfter.getEncumbered());
     verifyBudgetTotalsAfter(budgetAfter);
 
-    LedgerFY ledgerFYAfter = getLedgerFYAndValidate(ledgerFYEndpointWithQueryParams);
-    verifyLedgerFYAfterCreateEncumbrance(ledgerFYBefore, ledgerFYAfter, Collections.singletonList(budgetBefore), Collections.singletonList(budgetAfter));
   }
 
   @Test
@@ -813,21 +757,6 @@ public class EncumbrancesTest extends TestBase {
     verifyBudgetTotalsAfter(fromBudget1AfterUpdate);
   }
 
-  private void updateLedgerFy(LedgerFY ledgerFYBefore) {
-    try {
-      CompletableFuture<RowSet<Row>> updated = new CompletableFuture<>();
-      PostgresClient.getInstance(StorageTestSuite.getVertx(), TRANSACTION_TENANT_HEADER.getValue()).update(LEDGERFY_TABLE, ledgerFYBefore, ledgerFYBefore.getId(), res -> {
-        if (res.succeeded()) {
-          updated.complete(res.result());
-        } else {
-          updated.completeExceptionally(res.cause());
-        }
-      });
-      updated.get(60, TimeUnit.SECONDS);
-    } catch (Exception e) {
-      fail("Failed to update ledgerFY");
-    }
-  }
 
   private void verifyBudgetTotalsAfter(Budget budget) {
     double expectedOverEncumbrance = max(0, subtractValues(budget.getEncumbered(),
@@ -840,19 +769,6 @@ public class EncumbrancesTest extends TestBase {
     assertEquals(sumValues(budget.getAvailable(), budget.getUnavailable()), budget.getAllocated());
   }
 
-  private void verifyLedgerFYAfterCreateEncumbrance(LedgerFY ledgerFYBefore, LedgerFY ledgerFYAfter, List<Budget> budgetsBefore, List<Budget> budgetsAfter) {
-    double availableBefore = budgetsBefore.stream().mapToDouble(Budget::getAvailable).reduce((left, right) -> sumValues(left, right)).orElse(0);
-    double availableAfter = budgetsAfter.stream().mapToDouble(Budget::getAvailable).reduce((left, right) -> sumValues(left, right)).orElse(0);
-    double budgetAvailableDifference = max(0, subtractValues(availableBefore, availableAfter));
-
-    double unavailableBefore = budgetsBefore.stream().mapToDouble(Budget::getUnavailable).reduce((left, right) -> sumValues(left, right)).orElse(0);
-    double unavailableAfter = budgetsAfter.stream().mapToDouble(Budget::getUnavailable).reduce((left, right) -> sumValues(left, right)).orElse(0);
-    double budgetUnavailableDifference = subtractValues(unavailableAfter, unavailableBefore);
-
-    assertEquals(budgetAvailableDifference, max(0, subtractValues(ledgerFYBefore.getAvailable(), ledgerFYAfter.getAvailable())));
-    assertEquals(budgetUnavailableDifference, subtractValues(ledgerFYAfter.getUnavailable(), ledgerFYBefore.getUnavailable()));
-
-  }
 
   private String createFund(String ledgerId) throws MalformedURLException {
     Fund fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class).withId(null).withLedgerId(ledgerId);
@@ -902,14 +818,6 @@ public class EncumbrancesTest extends TestBase {
     jsonTx.put("fromFundId", fundId);
     jsonTx.remove("sourceFiscalYearId");
     return jsonTx;
-  }
-
-  private LedgerFY getLedgerFYAndValidate(String endpoint) throws MalformedURLException {
-    return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(200)
-      .body("ledgerFY", hasSize(1))
-      .extract()
-      .as(LedgerFYCollection.class).getLedgerFY().get(0);
   }
 
   private void checkBudgetTotalsNotChanged(Budget fromBudgetBefore, Budget fromBudgetAfterUpdate) {
