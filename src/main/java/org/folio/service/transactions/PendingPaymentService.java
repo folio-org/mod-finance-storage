@@ -33,7 +33,6 @@ import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.calculation.CalculationService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
