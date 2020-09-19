@@ -230,7 +230,7 @@ public class PendingPaymentServiceTest {
     verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
     Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
     assertThat(updatedEncumbrance.getAmount(), is(0.0));
-    assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(10.1));
+    assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(0d));
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
