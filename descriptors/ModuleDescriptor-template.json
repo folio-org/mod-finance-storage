@@ -251,7 +251,7 @@
     },
     {
       "id": "finance-storage.ledgers",
-      "version": "2.3",
+      "version": "3.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -277,11 +277,6 @@
           "methods": ["DELETE"],
           "pathPattern": "/finance-storage/ledgers/{id}",
           "permissionsRequired": ["finance-storage.ledgers.item.delete"]
-        },
-        {
-          "methods": ["GET"],
-          "pathPattern": "/finance-storage/ledger-fiscal-years",
-          "permissionsRequired": ["finance-storage.ledgersFY.collection.get"]
         }
       ]
     },
@@ -702,11 +697,6 @@
       "description" : "Delete a ledger"
     },
     {
-      "permissionName" : "finance-storage.ledgersFY.collection.get",
-      "displayName" : "ledgersFY-collection get",
-      "description" : "Get collection of ledgersFY"
-    },
-    {
       "permissionName" : "finance-storage.ledgers.all",
       "displayName" : "All fund perms",
       "description" : "All permissions for the ledger",
@@ -715,8 +705,7 @@
         "finance-storage.ledgers.item.post",
         "finance-storage.ledgers.item.get",
         "finance-storage.ledgers.item.put",
-        "finance-storage.ledgers.item.delete",
-        "finance-storage.ledgersFY.collection.get"
+        "finance-storage.ledgers.item.delete"
       ]
     },
     {

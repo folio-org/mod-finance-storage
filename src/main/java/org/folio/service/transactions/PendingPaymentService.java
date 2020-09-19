@@ -33,7 +33,6 @@ import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.calculation.CalculationService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
@@ -49,16 +48,13 @@ public class PendingPaymentService implements TransactionManagingStrategy {
   private final AllOrNothingTransactionService allOrNothingPendingPaymentService;
   private final TransactionDAO transactionsDAO;
   private final BudgetService budgetService;
-  private final CalculationService calculationService;
 
   public PendingPaymentService(AllOrNothingTransactionService allOrNothingPendingPaymentService,
                                TransactionDAO transactionsDAO,
-                               BudgetService budgetService,
-                               CalculationService calculationService) {
+                               BudgetService budgetService) {
     this.allOrNothingPendingPaymentService = allOrNothingPendingPaymentService;
     this.transactionsDAO = transactionsDAO;
     this.budgetService = budgetService;
-    this.calculationService = calculationService;
   }
 
   @Override
@@ -107,8 +103,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
       .compose(oldBudgets -> processLinkedPendingPayments(linkedToEncumbrance, oldBudgets, client)
         .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
         .map(this::makeAvailableUnavailableNonNegative)
-        .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)
-          .compose(integer -> calculationService.updateLedgerFYsWithTotals(oldBudgets, newBudgets, client))))
+        .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)))
       .map(transactions);
   }
 
