@@ -9,10 +9,10 @@ public class TemporaryOrderTransactionDAO extends BaseTemporaryTransactionsDAO i
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
 
-  public static final String INSERT_TEMPORARY_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) VALUES ($1, $2) "
-    + "ON CONFLICT ((lower(f_unaccent(concat_space_sql(jsonb->>'amount', jsonb->>'fromFundId', " +
-    "jsonb->'encumbrance'->>'sourcePurchaseOrderId' , jsonb->'encumbrance'->>'sourcePoLineId' , " +
-    "jsonb->'encumbrance'->>'initialAmountEncumbered' , jsonb->'encumbrance'->>'status'))))) " +
+  public static final String INSERT_TEMPORARY_ENCUMBRANCES = "INSERT INTO %s (id, jsonb) VALUES ($1, $2) " +
+    "ON CONFLICT (lower(f_unaccent(concat_space_sql(jsonb->>'amount', jsonb->>'fromFundId', " +
+    "jsonb->'encumbrance'->>'sourcePurchaseOrderId', jsonb->'encumbrance'->>'sourcePoLineId' , " +
+    "jsonb->'encumbrance'->>'initialAmountEncumbered', jsonb->'encumbrance'->>'status', jsonb->>'expenseClassId')))) " +
     "DO UPDATE SET id = excluded.id RETURNING id;";
 
   public TemporaryOrderTransactionDAO() {
