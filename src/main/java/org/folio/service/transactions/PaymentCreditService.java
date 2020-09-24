@@ -11,7 +11,7 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.MoneyUtils;
+import org.folio.utils.MoneyUtils;
 import org.folio.service.budget.BudgetService;
 
 import javax.money.CurrencyUnit;

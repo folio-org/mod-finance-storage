@@ -10,7 +10,6 @@ import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.calculation.CalculationService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
 import org.folio.service.ledger.LedgerService;
@@ -49,11 +48,6 @@ public class ServicesConfiguration {
   @Bean
   public LedgerService ledgerService(LedgerDAO ledgerDAO, FundService fundService) {
     return new StorageLedgerService(ledgerDAO, fundService);
-  }
-
-  @Bean
-  public CalculationService calculationService() {
-    return new CalculationService();
   }
 
   @Bean
@@ -129,10 +123,9 @@ public class ServicesConfiguration {
   @Bean
   public TransactionService encumbranceService(AllOrNothingTransactionService allOrNothingEncumbranceService,
                                                TransactionDAO encumbranceDAO,
-                                               BudgetService budgetService,
-                                               CalculationService calculationService) {
+                                               BudgetService budgetService) {
 
-    return new EncumbranceService(allOrNothingEncumbranceService, encumbranceDAO, budgetService, calculationService);
+    return new EncumbranceService(allOrNothingEncumbranceService, encumbranceDAO, budgetService);
   }
 
   @Bean
@@ -141,8 +134,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public TransactionService transferService(BudgetService budgetService, CalculationService calculationService) {
-    return new TransferService(budgetService, calculationService);
+  public TransactionService transferService(BudgetService budgetService) {
+    return new TransferService(budgetService);
   }
 
   @Bean

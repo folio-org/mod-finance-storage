@@ -11,7 +11,7 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.calculation.CalculationService;
+import org.folio.utils.CalculationUtils;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -30,8 +30,8 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.persist.MoneyUtils.subtractMoney;
-import static org.folio.rest.persist.MoneyUtils.sumMoney;
+import static org.folio.utils.MoneyUtils.subtractMoney;
+import static org.folio.utils.MoneyUtils.sumMoney;
 
 public class EncumbranceService implements TransactionManagingStrategy {
 
@@ -47,16 +47,13 @@ public class EncumbranceService implements TransactionManagingStrategy {
   private final AllOrNothingTransactionService allOrNothingEncumbranceService;
   private final TransactionDAO transactionDAO;
   private final BudgetService budgetService;
-  private final CalculationService calculationService;
 
   public EncumbranceService(AllOrNothingTransactionService allOrNothingEncumbranceService,
                             TransactionDAO transactionsDAO,
-                            BudgetService budgetService,
-                            CalculationService calculationService) {
+                            BudgetService budgetService) {
     this.allOrNothingEncumbranceService = allOrNothingEncumbranceService;
     this.transactionDAO = transactionsDAO;
     this.budgetService = budgetService;
-    this.calculationService = calculationService;
   }
 
   @Override
@@ -126,8 +123,8 @@ public class EncumbranceService implements TransactionManagingStrategy {
           budget.setEncumbered(newEncumbered);
           budgetService.updateBudgetMetadata(budget, tmpTransaction);
 
-          calculationService.recalculateOverEncumbered(budget, currency);
-          calculationService.recalculateAvailableUnavailable(budget, tmpTransaction.getAmount(), currency);
+          CalculationUtils.recalculateOverEncumbered(budget, currency);
+          CalculationUtils.recalculateAvailableUnavailable(budget, currency);
         });
     }
     return budget;
@@ -236,8 +233,8 @@ public class EncumbranceService implements TransactionManagingStrategy {
     budget.setEncumbered(newEncumbered);
     budgetService.updateBudgetMetadata(budget, tmpTransaction);
 
-    calculationService.recalculateOverEncumbered(budget, currency);
-    calculationService. recalculateAvailableUnavailable(budget, subtractMoney(tmpTransaction.getAmount(), existingTransaction.getAmount(), currency) , currency);
+    CalculationUtils.recalculateOverEncumbered(budget, currency);
+    CalculationUtils. recalculateAvailableUnavailable(budget, currency);
   }
 
 
