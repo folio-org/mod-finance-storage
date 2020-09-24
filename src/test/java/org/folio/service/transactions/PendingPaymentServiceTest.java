@@ -1,5 +1,7 @@
 package org.folio.service.transactions;
 
+import static java.lang.Double.max;
+import static java.lang.Double.min;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.service.transactions.PendingPaymentService.SELECT_BUDGETS_BY_INVOICE_ID;
@@ -32,6 +34,7 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.service.budget.BudgetService;
+import org.folio.utils.CalculationUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -43,6 +46,7 @@ import org.mockito.MockitoAnnotations;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Tuple;
+import org.mockito.Spy;
 
 public class PendingPaymentServiceTest {
 
@@ -328,6 +332,80 @@ public class PendingPaymentServiceTest {
   }
 
   @Test
+  void testProcessTemporaryToPermanentTransactionsWithLinkedPendingPaymentGreaterThanBudgetRemainingAmount() {
+    BigDecimal linkedAmount = BigDecimal.valueOf(110d);
+    linkedTransaction.withAmount(linkedAmount.doubleValue());
+    linkedTransaction.getAwaitingPayment().setReleaseEncumbrance(false);
+
+    List<Transaction> transactions = Collections.singletonList(linkedTransaction);
+
+    BigDecimal awaitingPayment = BigDecimal.ZERO;
+    BigDecimal allocated = BigDecimal.valueOf(50d);
+    BigDecimal netTransfer = BigDecimal.valueOf(50d);
+    BigDecimal available = BigDecimal.valueOf(90d);
+    BigDecimal encumbered = BigDecimal.valueOf(10d);
+    BigDecimal unavailable = BigDecimal.valueOf(10d);
+    budget.withAwaitingPayment(awaitingPayment.doubleValue())
+      .withAvailable(available.doubleValue())
+      .withEncumbered(encumbered.doubleValue())
+      .withUnavailable(unavailable.doubleValue());
+    List<Budget> budgets = Collections.singletonList(budget);
+
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+
+    encumbrance.withAmount(encumbered.doubleValue());
+    List<Transaction> encumbrances = Collections.singletonList(encumbrance);
+
+    when(transactionsDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
+
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+
+    PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
+
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+
+    Future<Void> result = spyService.createTransactions(transactions, client);
+
+    assertTrue(result.succeeded());
+
+    final ArgumentCaptor<List<String>> listArgumentCaptor = ArgumentCaptor.forClass(List.class);
+    verify(transactionsDAO).getTransactions(listArgumentCaptor.capture(), eq(client));
+    final List<String> idsArgument = listArgumentCaptor.getValue();
+    assertThat(idsArgument, contains(linkedTransaction.getAwaitingPayment().getEncumbranceId()));
+
+    final ArgumentCaptor<List<Transaction>> encumbranceUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
+    verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
+    Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
+    assertThat(updatedEncumbrance.getAmount(), is(0.0));
+    assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(linkedAmount.doubleValue()));
+
+    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
+
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
+      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+
+    final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+
+    Tuple params = paramsArgumentCapture.getValue();
+    assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
+
+    final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
+    Budget updatedBudget = updatedBudgets.get(0);
+
+    assertThat(updatedBudget.getAvailable(), is(max(available.subtract(linkedAmount).add(encumbered).doubleValue(), 0d)));
+    assertThat(updatedBudget.getUnavailable(), is(min(unavailable.add(linkedAmount).subtract(encumbered).doubleValue(), updatedBudget.getAllocated())));
+    assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(linkedAmount).doubleValue()));
+    assertThat(updatedBudget.getOverExpended(), is(awaitingPayment.add(linkedAmount).subtract(allocated).subtract(netTransfer).doubleValue()));
+    assertThat(updatedBudget.getEncumbered(), is(0d));
+
+  }
+
+  @Test
   void testProcessTemporaryToPermanentTransactionsWithNotLinkedPendingPayment() {
     BigDecimal notLinkedAmount = BigDecimal.valueOf(1.5);
     notLinkedTransaction.withAmount(notLinkedAmount.doubleValue());
@@ -378,6 +456,63 @@ public class PendingPaymentServiceTest {
     assertThat(updatedBudget.getAvailable(), is(available.subtract(notLinkedAmount).doubleValue()));
     assertThat(updatedBudget.getUnavailable(), is(unavailable.add(notLinkedAmount).doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(notLinkedAmount).doubleValue()));
+    assertThat(updatedBudget.getEncumbered(), is(encumbered.doubleValue()));
+
+  }
+
+
+  @Test
+  void overExpendedShouldBeIncreasedWhenProcessTemporaryToPermanentTransactionsWithNotLinkedPendingPaymentWithAmountGreaterThenBudgetRemaining() {
+    BigDecimal notLinkedAmount = BigDecimal.valueOf(150);
+    notLinkedTransaction.withAmount(notLinkedAmount.doubleValue());
+
+    List<Transaction> transactions = Collections.singletonList(notLinkedTransaction);
+
+    BigDecimal awaitingPayment = BigDecimal.ZERO;
+    BigDecimal available = BigDecimal.valueOf(90d);
+    BigDecimal encumbered = BigDecimal.valueOf(10d);
+    BigDecimal unavailable = BigDecimal.valueOf(10d);
+    budget.withAwaitingPayment(awaitingPayment.doubleValue())
+      .withAvailable(available.doubleValue())
+      .withEncumbered(encumbered.doubleValue())
+      .withUnavailable(unavailable.doubleValue());
+    List<Budget> budgets = Collections.singletonList(budget);
+
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+
+    PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
+
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+
+    spyService.createTransactions(transactions, client)
+      .onComplete(res -> assertTrue(res.succeeded()));
+
+
+    verify(transactionsDAO, never()).getTransactions(anyList(), any());
+    verify(transactionsDAO, never()).updatePermanentTransactions(anyList(), any());
+
+    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
+
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
+      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+
+    final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+
+    Tuple params = paramsArgumentCapture.getValue();
+    assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
+
+    final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
+    Budget updatedBudget = updatedBudgets.get(0);
+
+    assertThat(updatedBudget.getAvailable(), is(available.subtract(notLinkedAmount).max(BigDecimal.ZERO).doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(unavailable.add(notLinkedAmount).min(BigDecimal.valueOf(100)).doubleValue()));
+    assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(notLinkedAmount).doubleValue()));
+    assertThat(updatedBudget.getOverExpended(), is(awaitingPayment.add(notLinkedAmount).add(encumbered).subtract(BigDecimal.valueOf(100)).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.doubleValue()));
 
   }
@@ -526,6 +661,70 @@ public class PendingPaymentServiceTest {
     assertThat(updatedBudget.getUnavailable(), is(unavailable.doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(amountDifference).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.subtract(amountDifference).doubleValue()));
+
+  }
+
+  @Test
+  void shouldUpdateBudgetsWithOverExpendedWhenUpdateNotLinkedToEncumbrancePendingPaymentsAmount() {
+    BigDecimal newAmount = BigDecimal.valueOf(1.5);
+    BigDecimal amount = BigDecimal.valueOf(20000d);
+    notLinkedTransaction.withAmount(newAmount.doubleValue());
+    Transaction existingTransaction = JsonObject.mapFrom(notLinkedTransaction).mapTo(Transaction.class)
+      .withAmount(amount.doubleValue());
+    List<Transaction> transactions = Collections.singletonList(notLinkedTransaction);
+
+    BigDecimal allocated = BigDecimal.valueOf(100d);
+    BigDecimal awaitingPayment = BigDecimal.valueOf(20000d);
+    BigDecimal available = BigDecimal.ZERO;
+    BigDecimal encumbered = BigDecimal.valueOf(10d);
+    BigDecimal unavailable = BigDecimal.valueOf(100d);
+    BigDecimal overExpended = BigDecimal.valueOf(19910d);
+    budget.withAllocated(allocated.doubleValue())
+      .withAwaitingPayment(awaitingPayment.doubleValue())
+      .withAvailable(available.doubleValue())
+      .withEncumbered(encumbered.doubleValue())
+      .withUnavailable(unavailable.doubleValue())
+      .withOverExpended(overExpended.doubleValue());
+    List<Budget> budgets = Collections.singletonList(budget);
+
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.getTransactions(anyList(), any())).thenReturn(Future.succeededFuture(Collections.singletonList(existingTransaction)));
+
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+
+    PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
+
+    spyService.updateTransactions(transactions, client)
+      .onComplete(res -> assertTrue(res.succeeded()));
+
+    verify(transactionsDAO).getTransactions(anyList(), any());
+    verify(transactionsDAO).updatePermanentTransactions(anyList(), any());
+
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
+      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+
+    final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+
+    Tuple params = paramsArgumentCapture.getValue();
+    assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
+
+    final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
+    Budget updatedBudget = updatedBudgets.get(0);
+
+    BigDecimal amountDifference = newAmount.subtract(amount);
+    BigDecimal expectedAwaitingPayment = awaitingPayment.add(amountDifference);
+    BigDecimal expectedUnavailable = expectedAwaitingPayment.add(encumbered);
+
+    assertThat(updatedBudget.getAvailable(), is(allocated.subtract(expectedUnavailable).doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(expectedUnavailable.doubleValue()));
+    assertThat(updatedBudget.getAwaitingPayment(), is(expectedAwaitingPayment.doubleValue()));
+    assertThat(updatedBudget.getOverExpended(), is(0d));
+    assertThat(updatedBudget.getEncumbered(), is(encumbered.doubleValue()));
 
   }
 

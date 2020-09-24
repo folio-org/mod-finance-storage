@@ -15,7 +15,7 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.calculation.CalculationService;
+import org.folio.utils.CalculationUtils;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -25,11 +25,9 @@ import io.vertx.ext.web.handler.impl.HttpStatusException;
 public class TransferService extends AbstractTransactionService implements TransactionManagingStrategy {
 
   private final BudgetService budgetService;
-  private final CalculationService calculationService;
 
-  public TransferService(BudgetService budgetService, CalculationService calculationService) {
+  public TransferService(BudgetService budgetService) {
     this.budgetService = budgetService;
-    this.calculationService = calculationService;
   }
 
   @Override
@@ -92,7 +90,7 @@ public class TransferService extends AbstractTransactionService implements Trans
     return budgetService.getBudgetByFundIdAndFiscalYearId(transfer.getFiscalYearId(), transfer.getFromFundId(), dbClient)
       .map(budgetFromOld -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFromOld).mapTo(Budget.class);
-        calculationService.recalculateBudgetTransfer(budgetFromNew, transfer, transfer.getAmount());
+        CalculationUtils.recalculateBudgetTransfer(budgetFromNew, transfer, transfer.getAmount());
         return budgetFromNew;
       })
       .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), dbClient))
@@ -103,7 +101,7 @@ public class TransferService extends AbstractTransactionService implements Trans
     return budgetService.getBudgetByFundIdAndFiscalYearId(transfer.getFiscalYearId(), transfer.getToFundId(), dbClient)
       .map(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo).mapTo(Budget.class);
-        calculationService.recalculateBudgetTransfer(budgetToNew, transfer, -transfer.getAmount());
+        CalculationUtils.recalculateBudgetTransfer(budgetToNew, transfer, -transfer.getAmount());
         budgetService.updateBudgetMetadata(budgetToNew, transfer);
         return budgetToNew;
       })
