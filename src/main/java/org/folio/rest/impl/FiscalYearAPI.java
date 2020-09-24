@@ -15,7 +15,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 
 public class FiscalYearAPI implements FinanceStorageFiscalYears {
-  static final String FISCAL_YEAR_TABLE = "fiscal_year";
+  public static final String FISCAL_YEAR_TABLE = "fiscal_year";
 
   @Override
   @Validate
