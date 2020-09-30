@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.folio</groupId>
   <artifactId>mod-finance-storage</artifactId>
@@ -13,17 +14,17 @@
   </licenses>
 
   <properties>
-    <aspectj.version>1.9.4</aspectj.version>
+    <aspectj.version>1.9.6</aspectj.version>
     <module_name>mod-finance-storage</module_name>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
     <ramlfiles_acq_models_path>${ramlfiles_path}/acq-models</ramlfiles_acq_models_path>
-    <raml-module-builder.version>30.2.0</raml-module-builder.version>
+    <raml-module-builder.version>31.1.1</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jmockit.version>1.48</jmockit.version>
-    <vertx.version>3.9.1</vertx.version>
+    <jmockit.version>1.49</jmockit.version>
+    <vertx.version>3.9.3</vertx.version>
     <sonar.test.exclusions>**/*Test.java</sonar.test.exclusions>
-    <argLine />
+    <argLine/>
   </properties>
 
   <repositories>
@@ -39,21 +40,21 @@
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>2.11.0</version>
+        <version>2.11.1</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.5.2</version>
+        <version>5.6.2</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-bom</artifactId>
-        <version>2.12.1</version>
+        <version>2.13.3</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -118,7 +119,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>3.3.3</version>
+      <version>3.4.6</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -149,8 +150,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <release>11</release>
           <encoding>UTF-8</encoding>
         </configuration>
       </plugin>
@@ -158,7 +158,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.2.0</version>
         <executions>
           <execution>
             <id>addGeneratedSourceFolder</id>
@@ -178,7 +178,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.6.0</version>
+        <version>3.0.0</version>
         <executions>
           <execution>
             <id>generate_interfaces</id>
@@ -252,9 +252,9 @@
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
+        <groupId>com.nickwongdev</groupId>
         <artifactId>aspectj-maven-plugin</artifactId>
-        <version>1.11</version>
+        <version>1.12.6</version>
         <configuration>
           <verbose>true</verbose>
           <showWeaveInfo>false</showWeaveInfo>
@@ -384,14 +384,14 @@
         api console on IE -->
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.8</version>
+        <version>3.0.0</version>
         <executions>
           <execution>
             <phase>prepare-package</phase>
             <configuration>
               <target>
                 <replaceregexp match="baseUri:.+$" replace="baseUri: http://localhost:{http.port}" byline="true">
-                  <fileset dir="${basedir}/target/classes/apidocs/raml" includes="**/*.raml" />
+                  <fileset dir="${basedir}/target/classes/apidocs/raml" includes="**/*.raml"/>
                 </replaceregexp>
               </target>
             </configuration>
@@ -405,7 +405,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.2</version>
+        <version>3.2.4</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -435,7 +435,7 @@
                   </excludes>
                 </filter>
               </filters>
-              <artifactSet />
+              <artifactSet/>
               <outputFile>${project.build.directory}/${project.artifactId}-fat.jar</outputFile>
             </configuration>
           </execution>
@@ -459,10 +459,12 @@
         <version>2.22.2</version>
         <configuration>
           <systemPropertyVariables>
-            <vertx.logger-delegate-factory-class-name>io.vertx.core.logging.Log4j2LogDelegateFactory</vertx.logger-delegate-factory-class-name>
+            <vertx.logger-delegate-factory-class-name>io.vertx.core.logging.Log4j2LogDelegateFactory
+            </vertx.logger-delegate-factory-class-name>
           </systemPropertyVariables>
           <argLine>
             @{argLine} -javaagent:${settings.localRepository}/org/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar
+            -Duser.language=en -Duser.region=US
           </argLine>
           <excludes>
             <exclude>org/folio/**/**/*Test.java</exclude>
