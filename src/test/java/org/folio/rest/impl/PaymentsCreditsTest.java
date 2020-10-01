@@ -10,7 +10,6 @@ import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SU
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
-import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
 import static org.folio.service.transactions.restriction.BaseTransactionRestrictionService.FUND_CANNOT_BE_PAID;
@@ -26,7 +25,6 @@ import java.util.stream.Stream;
 import org.folio.rest.jaxrs.model.AwaitingPayment;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
-import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -79,8 +77,6 @@ public class PaymentsCreditsTest extends TestBase {
 
     // prepare budget queries
     String budgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
-    Fund paymentFund = getDataById(FUND.getEndpointWithId(), fromFundId, TRANSACTION_TENANT_HEADER).as(Fund.class);
-
 
     // create 1st Encumbrance, expected number is 2
     String paymentEncumbranceId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(paymentEncumbranceBefore)
@@ -146,6 +142,18 @@ public class PaymentsCreditsTest extends TestBase {
     postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(pendingPaymentForCredit).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201);
 
+
+    Transaction paymentEncumbranceBeforePayment= getDataById(TRANSACTION.getEndpointWithId(), paymentEncumbranceId,
+            TRANSACTION_TENANT_HEADER).then()
+            .statusCode(200)
+            .extract()
+            .as(Transaction.class);
+    Transaction creditEncumbranceBeforePayment = getDataById(TRANSACTION.getEndpointWithId(), creditEncumbranceId,
+            TRANSACTION_TENANT_HEADER).then()
+            .statusCode(200)
+            .extract()
+            .as(Transaction.class);
+
     Budget budgetBefore = getBudgetAndValidate(budgetEndpointWithQueryParams);
 
     String paymentId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
@@ -198,19 +206,29 @@ public class PaymentsCreditsTest extends TestBase {
       .extract()
       .as(TransactionCollection.class);
 
-    assertEquals(transactionCollection.getTotalRecords(), 0);
+    assertEquals(0, transactionCollection.getTotalRecords());
 
     // Encumbrance Changes for payment
     assertEquals(payment.getAmount(), subtractValues(paymentEncumbranceAfter.getEncumbrance()
       .getAmountExpended(),
-        paymentEncumbranceBefore.getEncumbrance()
+        paymentEncumbranceBeforePayment.getEncumbrance()
           .getAmountExpended()));
+
+    assertEquals(payment.getAmount(), subtractValues(paymentEncumbranceBeforePayment.getEncumbrance()
+                    .getAmountAwaitingPayment(),
+            paymentEncumbranceAfter.getEncumbrance()
+                    .getAmountAwaitingPayment()));
 
     // Encumbrance Changes for credit
     assertEquals(-credit.getAmount(), subtractValues(creditEncumbranceAfter.getEncumbrance()
       .getAmountExpended(),
-        creditEncumbranceBefore.getEncumbrance()
+        creditEncumbranceBeforePayment.getEncumbrance()
           .getAmountExpended()));
+
+    assertEquals(-credit.getAmount(), subtractValues(creditEncumbranceBeforePayment.getEncumbrance()
+                    .getAmountAwaitingPayment(),
+            creditEncumbranceAfter.getEncumbrance()
+                    .getAmountAwaitingPayment()));
 
     Budget budgetAfter = getBudgetAndValidate(budgetEndpointWithQueryParams);
 
