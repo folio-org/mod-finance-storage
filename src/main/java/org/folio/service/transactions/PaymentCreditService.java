@@ -209,9 +209,12 @@ public class PaymentCreditService extends AbstractTransactionService implements 
       Transaction encumbranceTxn = encumbrancesMap.get(creditTxn.getPaymentEncumbranceId());
 
       double newExpended = MoneyUtils.subtractMoneyNonNegative(encumbranceTxn.getEncumbrance()
-        .getAmountExpended(), creditTxn.getAmount(), currency);
+              .getAmountExpended(), creditTxn.getAmount(), currency);
+      double newAwaitingPayment = MoneyUtils.sumMoney(encumbranceTxn.getEncumbrance()
+              .getAmountAwaitingPayment(), creditTxn.getAmount(), currency);
       encumbranceTxn.getEncumbrance()
-        .setAmountExpended(newExpended);
+        .withAmountExpended(newExpended)
+        .withAmountAwaitingPayment(newAwaitingPayment);
 
     });
 
@@ -237,10 +240,13 @@ public class PaymentCreditService extends AbstractTransactionService implements 
     tempPayments.forEach(pymtTxn -> {
       Transaction encumbranceTxn = encumbrancesMap.get(pymtTxn.getPaymentEncumbranceId());
       double newExpended = MoneyUtils.sumMoney(encumbranceTxn.getEncumbrance()
-        .getAmountExpended(), pymtTxn.getAmount(), currency);
+              .getAmountExpended(), pymtTxn.getAmount(), currency);
+      double newAwaitingPayment = MoneyUtils.subtractMoney(encumbranceTxn.getEncumbrance()
+              .getAmountAwaitingPayment(), pymtTxn.getAmount(), currency);
 
       encumbranceTxn.getEncumbrance()
-        .setAmountExpended(newExpended);
+        .withAmountExpended(newExpended)
+        .withAmountAwaitingPayment(newAwaitingPayment);
 
     });
 
