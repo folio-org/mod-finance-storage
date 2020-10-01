@@ -17,6 +17,7 @@ import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLQueryValidationException;
 import org.junit.Assert;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
@@ -42,6 +43,7 @@ public class HelperUtilsTest extends TestBase {
 
 
   @Test
+  @Disabled("Disabled until 'jdk11 + jmockit + jacoco' incompatibility will be fixed")
   public void entitiesMetadataHolderRespond400FailTest() throws Exception {
     new MockUp<EntitiesMetadataHolder>()
     {
@@ -54,6 +56,7 @@ public class HelperUtilsTest extends TestBase {
   }
 
   @Test
+  @Disabled("Disabled until 'jdk11 + jmockit + jacoco' incompatibility will be fixed")
   public void entitiesMetadataHolderRespond500FailTest() throws Exception {
     new MockUp<EntitiesMetadataHolder>()
     {
@@ -66,6 +69,7 @@ public class HelperUtilsTest extends TestBase {
   }
 
   @Test
+  @Disabled("Disabled until 'jdk11 + jmockit + jacoco' incompatibility will be fixed")
   public void entitiesMetadataHolderRespond200FailTest() throws Exception {
     new MockUp<EntitiesMetadataHolder>()
     {
