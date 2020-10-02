@@ -49,6 +49,11 @@
       "run": "after",
       "snippetPath": "migration/fill_budget_net_transfer.sql",
       "fromModuleVersion": "mod-finance-storage-5.1.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/update_processed_order_transaction_summary.sql",
+      "fromModuleVersion": "mod-finance-storage-6.0.0"
     }
   ],
   "tables": [
