@@ -4,6 +4,7 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.BUDGET;
+import static org.folio.rest.utils.TestEntities.BUDGET_EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.GROUP;
@@ -20,6 +21,7 @@ import java.net.MalformedURLException;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
+import org.folio.rest.util.ErrorCodes;
 import org.folio.rest.utils.TestEntities;
 import org.hamcrest.beans.HasProperty;
 import org.hamcrest.beans.HasPropertyWithValue;
@@ -68,6 +70,24 @@ public class BudgetTest extends TestBase {
     deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then()
       .statusCode(400)
       .body(containsString(TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
+
+    deleteTenant(BUDGET_TENANT_HEADER);
+  }
+
+  @Test
+  void testDeleteBudgetWithExitingExpenseClass() throws MalformedURLException {
+    prepareTenant(BUDGET_TENANT_HEADER, false, true);
+
+    givenTestData(BUDGET_TENANT_HEADER,
+      Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
+      Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
+      Pair.of(FUND, FUND.getPathToSampleFile()),
+      Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
+      Pair.of(BUDGET_EXPENSE_CLASS, BUDGET_EXPENSE_CLASS.getPathToSampleFile()));
+
+    deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then()
+      .statusCode(400)
+      .body(containsString(ErrorCodes.BUDGET_EXPENSE_CLASS_REFERENCE_ERROR.getCode()));
 
     deleteTenant(BUDGET_TENANT_HEADER);
   }

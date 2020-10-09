@@ -1,4 +1,4 @@
-package org.folio.rest.persist;
+package org.folio.utils;
 
 import java.math.BigDecimal;
 import java.util.stream.Stream;

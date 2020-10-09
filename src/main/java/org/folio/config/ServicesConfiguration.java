@@ -1,21 +1,19 @@
 package org.folio.config;
 
+import java.util.Set;
+
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.fund.FundDAO;
 import org.folio.dao.ledger.LedgerDAO;
-import org.folio.dao.ledgerfy.LedgerFiscalYearDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.calculation.CalculationService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledger.StorageLedgerService;
-import org.folio.service.ledgerfy.LedgerFiscalYearService;
-import org.folio.service.ledgerfy.StorageLedgerFiscalYearService;
 import org.folio.service.summary.EncumbranceTransactionSummaryService;
 import org.folio.service.summary.PaymentCreditTransactionSummaryService;
 import org.folio.service.summary.PendingPaymentTransactionSummaryService;
@@ -35,8 +33,6 @@ import org.folio.service.transactions.restriction.PendingPaymentRestrictionServi
 import org.folio.service.transactions.restriction.TransactionRestrictionService;
 import org.springframework.context.annotation.Bean;
 
-import java.util.Set;
-
 public class ServicesConfiguration {
 
   @Bean
@@ -52,16 +48,6 @@ public class ServicesConfiguration {
   @Bean
   public LedgerService ledgerService(LedgerDAO ledgerDAO, FundService fundService) {
     return new StorageLedgerService(ledgerDAO, fundService);
-  }
-
-  @Bean
-  public LedgerFiscalYearService ledgerFiscalYearService(LedgerFiscalYearDAO ledgerFiscalYearDAO, FundService fundService) {
-    return new StorageLedgerFiscalYearService(ledgerFiscalYearDAO, fundService);
-  }
-
-  @Bean
-  public CalculationService calculationService(FundService fundService, LedgerFiscalYearService ledgerFiscalYearService) {
-    return new CalculationService(fundService, ledgerFiscalYearService);
   }
 
   @Bean
@@ -121,10 +107,9 @@ public class ServicesConfiguration {
   @Bean
   public TransactionService pendingPaymentService(AllOrNothingTransactionService allOrNothingPendingPaymentService,
                                                   TransactionDAO pendingPaymentDAO,
-                                                  BudgetService budgetService,
-                                                  CalculationService calculationService) {
+                                                  BudgetService budgetService) {
 
-    return new PendingPaymentService(allOrNothingPendingPaymentService, pendingPaymentDAO, budgetService, calculationService);
+    return new PendingPaymentService(allOrNothingPendingPaymentService, pendingPaymentDAO, budgetService);
   }
 
   @Bean
@@ -138,10 +123,9 @@ public class ServicesConfiguration {
   @Bean
   public TransactionService encumbranceService(AllOrNothingTransactionService allOrNothingEncumbranceService,
                                                TransactionDAO encumbranceDAO,
-                                               BudgetService budgetService,
-                                               CalculationService calculationService) {
+                                               BudgetService budgetService) {
 
-    return new EncumbranceService(allOrNothingEncumbranceService, encumbranceDAO, budgetService, calculationService);
+    return new EncumbranceService(allOrNothingEncumbranceService, encumbranceDAO, budgetService);
   }
 
   @Bean
@@ -150,8 +134,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public TransactionService transferService(BudgetService budgetService, CalculationService calculationService) {
-    return new TransferService(budgetService, calculationService);
+  public TransactionService transferService(BudgetService budgetService) {
+    return new TransferService(budgetService);
   }
 
   @Bean

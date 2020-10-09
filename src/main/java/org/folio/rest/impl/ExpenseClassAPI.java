@@ -20,7 +20,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 public class ExpenseClassAPI implements FinanceStorageExpenseClasses {
-  private static final String EXPENSE_CLASS_TABLE = "expense_class";
+  public static final String EXPENSE_CLASS_TABLE = "expense_class";
 
   private ExpenseClassService expenseClassService;
 

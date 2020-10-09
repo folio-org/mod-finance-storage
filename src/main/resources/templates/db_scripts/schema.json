@@ -49,6 +49,11 @@
       "run": "after",
       "snippetPath": "migration/fill_budget_net_transfer.sql",
       "fromModuleVersion": "mod-finance-storage-5.1.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/update_processed_order_transaction_summary.sql",
+      "fromModuleVersion": "mod-finance-storage-6.0.0"
     }
   ],
   "tables": [
@@ -310,25 +315,25 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-5.1.0",
+      "fromModuleVersion": "mod-finance-storage-6.0.0",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
         {
           "fieldName": "encumbrance",
-          "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
+          "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status, expenseClassId",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
         },
         {
           "fieldName": "payment",
-          "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType",
+          "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment' OR (jsonb->>'transactionType')::text = 'Pending payment'"
         },
         {
           "fieldName": "credit",
-          "multiFieldNames": "amount, toFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType",
+          "multiFieldNames": "amount, toFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Credit'"
         }
@@ -399,28 +404,9 @@
     },
     {
       "tableName": "ledgerFY",
-      "fromModuleVersion": "mod-finance-storage-5.0.1",
-      "foreignKeys": [
-        {
-          "fieldName": "ledgerId",
-          "targetTable": "ledger",
-          "tableAlias": "ledgerFY",
-          "targetTableAlias": "ledger"
-        },
-        {
-          "fieldName": "fiscalYearId",
-          "targetTable": "fiscal_year",
-          "tableAlias": "ledgerFY",
-          "targetTableAlias": "fiscalYear"
-        }
-      ],
-      "uniqueIndex": [
-        {
-          "fieldName": "ledgerId_fiscalYearId",
-          "multiFieldNames": "ledgerId, fiscalYearId",
-          "tOps": "ADD"
-        }
-      ]
+      "fromModuleVersion": "mod-finance-storage-6.0.0",
+      "mode": "delete",
+      "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     },
     {
       "tableName": "group_fund_fiscal_year",
@@ -482,7 +468,7 @@
     },
     {
       "tableName": "temporary_order_transactions",
-      "fromModuleVersion": "mod-finance-storage-5.0.0",
+      "fromModuleVersion": "mod-finance-storage-6.0.0",
       "foreignKeys": [
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
@@ -506,7 +492,7 @@
       "uniqueIndex": [
         {
           "fieldName": "temp_order_tx",
-          "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status",
+          "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status, expenseClassId",
           "tOps": "ADD"
         }
       ]
@@ -517,11 +503,11 @@
     },
     {
       "tableName": "temporary_invoice_transactions",
-      "fromModuleVersion": "mod-finance-storage-5.0.0",
+      "fromModuleVersion": "mod-finance-storage-6.0.0",
       "uniqueIndex": [
         {
           "fieldName": "temp_invoice_tx",
-          "sqlExpression": "concat_space_sql(lower(f_unaccent(jsonb->>'amount')) , lower(f_unaccent(jsonb->>'fromFundId')) , lower(f_unaccent(jsonb->>'sourceInvoiceId')) , lower(f_unaccent(jsonb->>'sourceInvoiceLineId')) , lower(f_unaccent(jsonb->>'toFundId')) , lower(f_unaccent(jsonb->>'transactionType')))",
+          "sqlExpression": "concat_space_sql(lower(f_unaccent(jsonb->>'amount')) , lower(f_unaccent(jsonb->>'fromFundId')) , lower(f_unaccent(jsonb->>'sourceInvoiceId')) , lower(f_unaccent(jsonb->>'sourceInvoiceLineId')) , lower(f_unaccent(jsonb->>'toFundId')) , lower(f_unaccent(jsonb->>'transactionType')), lower(f_unaccent(jsonb->>'expenseClassId')))",
           "tOps": "ADD"
         }
       ],

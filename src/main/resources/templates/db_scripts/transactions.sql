@@ -8,21 +8,11 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
     fromBudgetEncumbered        decimal;
     fromBudgetOverEncumbered    decimal;
 
-    fromLedgerFY                  jsonb;
-    fromLedgerFYAllocated         decimal;
-    fromLedgerFYAvailable         decimal;
-    fromLedgerFYUnavailable       decimal;
-
     toBudget                    jsonb;
     toBudgetAllocated           decimal;
     toBudgetAvailable           decimal;
 
-    toLedgerFY                    jsonb;
-    toLedgerFYAllocated           decimal;
-    toLedgerFYAvailable           decimal;
-
     newBudgetValues             text[];
-    newLedgerFYValues             text[];
     amount                      decimal;
     transactionType             text;
 
@@ -50,27 +40,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
          UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb
            WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'fromFundId');
 
-          -- Update LedgerFY identified by the transaction's fiscal year (fiscalYearId) and the source fund (fromFundId)
-          SELECT INTO fromLedgerFY (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledgerFy AS ledger_fy
-          WHERE (ledger_fy.ledgerId = (SELECT fund.ledgerId FROM ${myuniversity}_${mymodule}.fund AS fund WHERE (fund.id::text = fromBudget->>'fundId')))
-          AND ledger_fy.fiscalYearId::text = fromBudget->>'fiscalYearId';
-
-          IF (fromLedgerFY IS NULL) THEN
-            RAISE EXCEPTION 'Ledger fiscal year for source ledger not found';
-          END IF;
-
-          fromLedgerFYAvailable = (fromLedgerFY->>'available')::decimal - amount;
-          fromLedgerFYUnavailable = (fromLedgerFY->>'unavailable')::decimal + amount;
-
-          fromLedgerFYAllocated = (fromLedgerFY->>'allocated')::decimal - amount;
-          newLedgerFYValues = '{allocated,' || fromLedgerFYAllocated || ', available, ' || fromLedgerFYAvailable || '}';
-
-          UPDATE ${myuniversity}_${mymodule}.ledgerFy SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
-          WHERE (ledgerId::text = fromLedgerFY->>'ledgerId') AND (fiscalYearId::text = fromLedgerFY->>'fiscalYearId');
-
         END IF;
 
-        -- update destination budget and ledgerFy only for operations: Allocation
           -- Update Budget identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
             SELECT INTO toBudget (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.budget WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'toFundId');
             IF (toBudget IS NULL) THEN
@@ -83,22 +54,6 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.recalculate_totals() RETU
 
             UPDATE ${myuniversity}_${mymodule}.budget SET jsonb = jsonb || json_object(newBudgetValues)::jsonb
             WHERE (fiscalYearId::text = NEW.jsonb->>'fiscalYearId' AND fundId::text = NEW.jsonb->>'toFundId');
-
-          -- Update LedgerFY identified by the transaction's fiscal year (fiscalYearId) and the destination fund (toFundId)
-            SELECT INTO toLedgerFY (jsonb::jsonb) FROM  ${myuniversity}_${mymodule}.ledgerFy AS ledger_fy
-             WHERE (ledger_fy.ledgerId = (SELECT ledgerId FROM ${myuniversity}_${mymodule}.fund WHERE (id::text = toBudget->>'fundId')))
-             AND ledger_fy.fiscalYearId::text = toBudget->>'fiscalYearId';
-
-            IF (toLedgerFY IS NULL) THEN
-              RAISE EXCEPTION 'Ledger fiscal year for destination ledger not found';
-            END IF;
-
-            toLedgerFYAvailable = (toLedgerFY->>'available')::decimal + amount;
-            toLedgerFYAllocated = (toLedgerFY->>'allocated')::decimal + amount;
-            newLedgerFYValues = '{allocated,' || toLedgerFYAllocated || ', available, ' || toLedgerFYAvailable ||'}';
-
-            UPDATE ${myuniversity}_${mymodule}.ledgerFy SET jsonb = jsonb || json_object(newLedgerFYValues)::jsonb
-            WHERE (ledgerId::text = toLedgerFY->>'ledgerId') AND (fiscalYearId::text = toLedgerFY->>'fiscalYearId');
 
       END IF;
 
