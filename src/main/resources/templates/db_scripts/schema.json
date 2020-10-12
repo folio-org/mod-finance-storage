@@ -48,7 +48,7 @@
     {
       "run": "after",
       "snippetPath": "migration/fill_budget_net_transfer.sql",
-      "fromModuleVersion": "mod-finance-storage-5.1.0"
+      "fromModuleVersion": "mod-finance-storage-6.0.0"
     },
     {
       "run": "after",
@@ -59,7 +59,7 @@
   "tables": [
     {
       "tableName": "expense_class",
-      "fromModuleVersion": "mod-finance-storage-5.1.0",
+      "fromModuleVersion": "mod-finance-storage-6.0.0",
       "uniqueIndex": [
         {
           "fieldName": "name",
@@ -282,7 +282,7 @@
     },
     {
       "tableName": "budget_expense_class",
-      "fromModuleVersion": "mod-finance-storage-5.1.0",
+      "fromModuleVersion": "mod-finance-storage-6.0.0",
       "uniqueIndex": [
         {
           "fieldName": "budgetId_expenseClassId",
