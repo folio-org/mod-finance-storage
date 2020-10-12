@@ -4,7 +4,6 @@
 The primary focus of this release introduce shared allocations and net transfer for budgets.
 Also **major versions of APIs** were changed for **finance-storage.ledgers**  
 
-
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v5.0.2...v6.0.0)
 
 ### Stories
@@ -25,7 +24,7 @@ Also **major versions of APIs** were changed for **finance-storage.ledgers**
 * [MODFISTO-102](https://issues.folio.org/browse/MODFISTO-102)	Update budget schema with new field "netTransfers"
 * [MODFISTO-94](https://issues.folio.org/browse/MODFISTO-94)	Migration script for performed transactions
   
- ### Bug Fixes
+### Bug Fixes
 * [MODFISTO-166](https://issues.folio.org/browse/MODFISTO-166)	Wrong calculation upon Pending payment update
 * [MODFISTO-136](https://issues.folio.org/browse/MODFISTO-136)	Awaiting payment value not updated in encumbrances when invoice is paid.	
 * [MODFISTO-113](https://issues.folio.org/browse/MODFISTO-113)	Incorrect calculation of the "overEncumbrance"
