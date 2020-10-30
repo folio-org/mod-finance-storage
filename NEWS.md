@@ -1,4 +1,34 @@
-## 5.1.0 - Unreleased
+## 6.1.0 - Unreleased
+
+## 6.0.0 - Released
+The primary focus of this release introduce shared allocations and net transfer for budgets.
+Also **major versions of APIs** were changed for **finance-storage.ledgers**  
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v5.0.2...v6.0.0)
+
+### Stories
+* [MODFISTO-165](https://issues.folio.org/browse/MODFISTO-165)	Field "expenseClassId" must be a part of unique-constraint
+* [MODFISTO-142](https://issues.folio.org/browse/MODFISTO-142)	Restrict transfer money if budget doesn't have enough available price
+* [MODFISTO-140](https://issues.folio.org/browse/MODFISTO-140)	Composite orders web API updates budget objects with invalid date updated values
+* [MODFISTO-137](https://issues.folio.org/browse/MODFISTO-137)	Return helpful information when delete Budget with assigned Expense Classes	
+* [MODFISTO-132](https://issues.folio.org/browse/MODFISTO-132)	mod-finance-storage: Update RMB
+* [MODFISTO-128](https://issues.folio.org/browse/MODFISTO-128)	Migrate mod-finance-storage to JDK 11
+* [MODFISTO-124](https://issues.folio.org/browse/MODFISTO-124)	Return helpful information when store Expense Class with name/code which already exist	
+* [MODFISTO-122](https://issues.folio.org/browse/MODFISTO-122)	Remove ledgerFY totals calculation logic
+* [MODFISTO-120](https://issues.folio.org/browse/MODFISTO-120)	Update ledger and ledgerFY schemas with new field "netTransfer"	
+* [MODFISTO-119](https://issues.folio.org/browse/MODFISTO-119)	Create migration script for filling "NetTransfer" field in the budget
+* [MODFISTO-115](https://issues.folio.org/browse/MODFISTO-115)	Define and implement budget-expense-classes API
+* [MODFISTO-105](https://issues.folio.org/browse/MODFISTO-105)	Define and Implement Storage API for expense classes 
+* [MODFISTO-104](https://issues.folio.org/browse/MODFISTO-104)	Create expense class schema
+* [MODFISTO-103](https://issues.folio.org/browse/MODFISTO-103)	Add logic for calculating budget "netTransfer" field and store it in DB	
+* [MODFISTO-102](https://issues.folio.org/browse/MODFISTO-102)	Update budget schema with new field "netTransfers"
+* [MODFISTO-94](https://issues.folio.org/browse/MODFISTO-94)	Migration script for performed transactions
+  
+### Bug Fixes
+* [MODFISTO-166](https://issues.folio.org/browse/MODFISTO-166)	Wrong calculation upon Pending payment update
+* [MODFISTO-136](https://issues.folio.org/browse/MODFISTO-136)	Awaiting payment value not updated in encumbrances when invoice is paid.	
+* [MODFISTO-113](https://issues.folio.org/browse/MODFISTO-113)	Incorrect calculation of the "overEncumbrance"
+
 ## 5.0.2 - Released
 This is a bugfix release and contains fix that user able to pay order and invoice if budget have enough money
 
