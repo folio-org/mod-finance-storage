@@ -1,0 +1,10 @@
+{
+  "id": "184b5dc5-92f6-4db7-b996-b549d88f5e4a",
+  "name": "Fiscal Year 2021",
+  "code": "FY2021",
+  "currency": "USD",
+  "description": "Fiscal year for 2021",
+  "periodStart": "2021-01-01T00:00:00Z",
+  "periodEnd": "2021-12-31T23:59:59Z",
+  "series": "FY"
+}

@@ -40,7 +40,7 @@ import io.vertx.core.logging.LoggerFactory;
 public abstract class TestBase {
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  static final String TENANT_NAME = "diku";
+  public static final String TENANT_NAME = "diku";
   static final String NON_EXISTED_ID = "bad500aa-aaaa-500a-aaaa-aaaaaaaaaaaa";
   public static final Header TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TENANT_NAME);
 
@@ -105,7 +105,7 @@ public abstract class TestBase {
     return getData(endpoint, TENANT_HEADER);
   }
 
-  String getFile(String filename) {
+  public String getFile(String filename) {
     String value;
     try {
       InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filename);
