@@ -74,7 +74,7 @@ public class PendingPaymentServiceTest {
 
   @BeforeEach
   public void initMocks(){
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
     when(client.getTenantId()).thenReturn(TENANT_ID);
   }
 
@@ -234,7 +234,7 @@ public class PendingPaymentServiceTest {
     verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
     Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
     assertThat(updatedEncumbrance.getAmount(), is(0.0));
-    assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(0d));
+    assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(10.1d));
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 

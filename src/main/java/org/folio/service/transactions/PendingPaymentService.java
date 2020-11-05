@@ -209,15 +209,14 @@ public class PendingPaymentService implements TransactionManagingStrategy {
       .reduce(Money::add)
       .orElse(Money.zero(Monetary.getCurrency(encumbrance.getCurrency())));
 
-    // set awaiting payment value
+
     if (transactions.stream().anyMatch(transaction -> transaction.getAwaitingPayment().getReleaseEncumbrance())) {
       encumbrance.getEncumbrance().setStatus(Encumbrance.Status.RELEASED);
-      encumbrance.getEncumbrance().setAmountAwaitingPayment(0d);
     }
-    else {
-      MonetaryAmount awaitingPayment = Money.of(encumbrance.getEncumbrance().getAmountAwaitingPayment(), encumbrance.getCurrency()).add(ppAmountTotal);
-      encumbrance.getEncumbrance().setAmountAwaitingPayment(awaitingPayment.with(getDefaultRounding()).getNumber().doubleValue());
-    }
+
+    // set awaiting payment value
+    MonetaryAmount awaitingPayment = Money.of(encumbrance.getEncumbrance().getAmountAwaitingPayment(), encumbrance.getCurrency()).add(ppAmountTotal);
+    encumbrance.getEncumbrance().setAmountAwaitingPayment(awaitingPayment.with(getDefaultRounding()).getNumber().doubleValue());
 
     MonetaryAmount amount = Money.of(encumbrance.getAmount(), encumbrance.getCurrency()).subtract(ppAmountTotal);
     encumbrance.setAmount(amount.with(getDefaultRounding()).getNumber().doubleValue());
