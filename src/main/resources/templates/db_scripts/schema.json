@@ -322,7 +322,6 @@
       "tableName": "transaction",
       "fromModuleVersion": "mod-finance-storage-6.0.0",
       "withMetadata": true,
-      "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
         {
           "fieldName": "encumbrance",
@@ -550,6 +549,16 @@
     },
     {
       "tableName": "rollover",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "withMetadata": true
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover_status",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "withMetadata": true
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover_errors",
       "fromModuleVersion": "mod-finance-storage-6.1.0",
       "withMetadata": true
     },

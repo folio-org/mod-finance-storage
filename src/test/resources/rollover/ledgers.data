@@ -1,0 +1,1 @@
+1ac18928-a447-491d-94c9-875dcc7bb3e5	{ "id": "1ac18928-a447-491d-94c9-875dcc7bb3e5", "name": "Rollover-ledger", "code": "roll", "description": "This is the ledger for testing rollover", "fiscalYearOneId": "8da275b8-e099-49a1-9a31-b8241ff26ffc", "ledgerStatus": "Active", "currency": "USD", "restrictEncumbrance" : true, "restrictExpenditures" : true }
