@@ -1,8 +1,5 @@
 /*
     Entry point - budget_encumbrances_rollover(_ledger_id TEXT) function
-    TODO: since we plan to keep the rollover history, it will not be enough just an ledgerId to find the right  rollover record.
-    Options: 1 add additional fiscalYearId parameter, 2 use rollover id instead of ledger id, 3 pass whole rollover record as parameter
-
 
     #1 Retrieve rollover record
     #2 Create budgets using build_budget() function for the toFiscalYearId and every fund related to the ledger,
@@ -15,9 +12,11 @@
     #7 If #6 is true than create rollover error record
     #8 if #6 is false then check if rollover restrictEncumbrance setting is true and there is any sum of expected encumbrances grouped by fromFundId greater than corresponding budget remaining amount
     #9 If #8 is true then create corresponding rollover error
-    #10 if #8 is false
+    #10 if #8 is false create encumbrances with amount non-zero amount calculated with calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) function
+    #11 update budget available, unavailable, encumbered, overEncumbrance by sum of encumbrances amount created on #10 step
  */
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA public;
+-- Map encumbrance with corresponding encumbranceRollover item, calculate expected encumbrance amount based on that item
 CREATE OR REPLACE FUNCTION public.calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) RETURNS decimal as $$
 	DECLARE
 		amount decimal DEFAULT 0;
@@ -65,6 +64,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 SELECT public.uuid_generate_v4(), jsonb_build_object
                 (
                     'ledgerId', _rollover_record->>'ledgerId',
+                    'toFiscalYearId', _rollover_record->>'toFiscalYearId',
                     'errorType', 'ORDER',
                     'failedAction', 'Create encumbrance',
                     'errorMessage', 'Part of the encumbrances belong to the ledger, which has not been rollovered',
@@ -88,18 +88,19 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 LEFT JOIN ${myuniversity}_${mymodule}.budget budget ON tr.fromFundId=budget.fundId
                 WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.fiscalYearId::text=_rollover_record->>'fromFiscalYearId' AND budget.fiscalYearId::text=_rollover_record->>'toFiscalYearId'
                 GROUP BY budget.jsonb, tr.jsonb->>'fromFundId'
-                HAVING sum(public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record)) > (budget.jsonb->>'available')::decimal) +
+                HAVING sum(public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record)) > (budget.jsonb->>'available')::decimal +
                                                                                                       ((budget.jsonb->>'allocated')::decimal +
                                                                                                       (budget.jsonb->>'netTransfers')::decimal) *
-                                                                                                      (budget.jsonb->>'allowableEncumbrance')/100 -
+                                                                                                      (budget.jsonb->>'allowableEncumbrance')::decimal/100 -
                                                                                                       (budget.jsonb->>'encumbered')::decimal -
-                                                                                                      (budget.jsonb->>'overEncumbrance')::decimal
+                                                                                                      (budget.jsonb->>'overEncumbrance')::decimal)
         THEN
             -- #9
             INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_errors (id, jsonb)
                 SELECT public.uuid_generate_v4(), jsonb_build_object
                 (
                     'ledgerId', _rollover_record->>'ledgerId',
+                    'toFiscalYearId', _rollover_record->>'toFiscalYearId',
                     'errorType', 'ORDER',
                     'failedAction', 'Create encumbrance',
                     'errorMessage', 'Insufficient funds',
@@ -120,13 +121,13 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         WHERE tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
                             AND budget.fiscalYearId::text=_rollover_record->>'toFiscalYearId'
                         GROUP BY tr.jsonb->>'fromFundId', budget.jsonb
-                        HAVING sum(public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record)) > (budget.jsonb->>'available')::decimal) +
+                        HAVING sum(public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record)) > (budget.jsonb->>'available')::decimal +
                                                                                                             ((budget.jsonb->>'allocated')::decimal +
                                                                                                             (budget.jsonb->>'netTransfers')::decimal) *
-                                                                                                            (budget.jsonb->>'allowableEncumbrance')/100 -
+                                                                                                            (budget.jsonb->>'allowableEncumbrance')::decimal/100 -
                                                                                                             (budget.jsonb->>'encumbered')::decimal -
                                                                                                             (budget.jsonb->>'overEncumbrance')::decimal
-                    ) summary ON summary.budget->>'fundId'=tr.jsonb->>'fromFundId'
+                    ) as summary ON summary.budget->>'fundId'=tr.jsonb->>'fromFundId'
                 WHERE tr.jsonb->>'transactionType'='Encumbrance' AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id
                 AND tr.fiscalYearId::text=_rollover_record->>'fromFiscalYearId';
         ELSE
@@ -148,11 +149,11 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 FROM ${myuniversity}_${mymodule}.transaction tr
                     WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
                         AND public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record) <> 0 AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
-                        AND tr.jsonb->'encumbrance'->>'status'='Unreleased';
+                        AND tr.jsonb->'encumbrance'->>'status'='Unreleased'; -- TODO: Instead of this use tr.jsonb->'encumbrance'->>'orderStatus'='Open' criteria when MODFISTO-194 is completed
         END IF;
 
-        
-        UPDATE ${myuniversity}_${mymodule}.budget budget
+        -- #11 update budget amounts
+        UPDATE ${myuniversity}_${mymodule}.budget as budget
         SET jsonb = budget.jsonb || jsonb_build_object
             (
                 'available', GREATEST((budget.jsonb->>'available')::decimal - subquery.amount, 0),
@@ -173,6 +174,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
 
 $$ LANGUAGE plpgsql;
 
+-- build budget based on corresponding budgetRollover item
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget jsonb, _fund jsonb, _rollover_record jsonb, _fiscal_year jsonb) RETURNS jsonb AS $$
     DECLARE
         budget_rollover                 jsonb;
@@ -221,7 +223,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
             (
                 'fiscalYearId', _rollover_record->>'toFiscalYearId',
                 'name', (_fund->>'code') || '-' ||  (_fiscal_year->>'code'),
-                'allocated', allocated,
+                'allocated', allocated, -- TODO: After MODFISTO-186 allocated will become readOnly. initialAllocation, allocationTo, allocationFrom will have to be populated
                 'available', allocated + available,
                 'metadata', metadata,
                 'budgetStatus', 'Active',
@@ -238,6 +240,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
     END;
 $$ LANGUAGE plpgsql;
 
+-- TODO: since we plan to keep the rollover history, it will not be enough just an ledgerId to find the right  rollover record.
+--       Options: 1 add additional fiscalYearId parameter, 2 use rollover id instead of ledger id, 3 pass whole rollover record as parameter
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollover(_ledger_id TEXT) RETURNS VOID as $$
     DECLARE
             toFiscalYear					jsonb;
@@ -253,7 +257,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         SELECT INTO fromFiscalYear (jsonb::jsonb) FROM ${myuniversity}_${mymodule}.fiscal_year WHERE rollover_record->>'fromFiscalYearId'=jsonb->>'id';
 
         -- #2 Upsert budgets
-        INSERT INTO ${myuniversity}_${mymodule}.budget AS budget
+        INSERT INTO ${myuniversity}_${mymodule}.budget
             (
                 SELECT public.uuid_generate_v4(), ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, rollover_record, toFiscalYear)
                 FROM ${myuniversity}_${mymodule}.budget AS budget
@@ -261,12 +265,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                 WHERE budget.jsonb->>'fiscalYearId'=rollover_record->>'fromFiscalYearId' AND fund.jsonb->>'ledgerId'=_ledger_id
             )
             ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fundId'::text)), lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fiscalYearId'::text)))
-                 DO UPDATE SET jsonb=budget.jsonb || jsonb_build_object
+                 DO UPDATE SET jsonb=${myuniversity}_${mymodule}.budget.jsonb || jsonb_build_object
                     (
-                        'allocated', (budget.jsonb->>'allocated')::decimal + (EXCLUDED.jsonb->>'allocated')::decimal,
-                        'available', (budget.jsonb->>'available')::decimal + (EXCLUDED.jsonb->>'available')::decimal,
-                        'available', (budget.jsonb->>'netTransfers')::decimal + (EXCLUDED.jsonb->>'netTransfers')::decimal,
-                        'metadata', budget.jsonb->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text));
+                        'allocated', (${myuniversity}_${mymodule}.budget.jsonb->>'allocated')::decimal + (EXCLUDED.jsonb->>'allocated')::decimal,
+                        'available', (${myuniversity}_${mymodule}.budget.jsonb->>'available')::decimal + (EXCLUDED.jsonb->>'available')::decimal, -- TODO: After MODFISTO-186 allocated will become readOnly. initialAllocation, allocationTo, allocationFrom will have to be updated
+                        'netTransfers', (${myuniversity}_${mymodule}.budget.jsonb->>'netTransfers')::decimal + (EXCLUDED.jsonb->>'netTransfers')::decimal,
+                        'metadata', ${myuniversity}_${mymodule}.budget.jsonb->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text));
 
          -- #3 Create allocations
         INSERT INTO ${myuniversity}_${mymodule}.transaction
