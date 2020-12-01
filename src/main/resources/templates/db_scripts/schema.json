@@ -556,15 +556,15 @@
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
-          "targetTable": "ledger",
+          "targetTable": "ledger"
         },
         {
           "fieldName": "fromFiscalYearId",
-          "targetTable": "fiscal_year",
+          "targetTable": "fiscal_year"
         },
         {
           "fieldName": "toFiscalYearId",
-          "targetTable": "fiscal_year",
+          "targetTable": "fiscal_year"
         }
       ]
     }
