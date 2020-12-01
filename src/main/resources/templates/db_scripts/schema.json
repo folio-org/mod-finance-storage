@@ -548,6 +548,28 @@
       "fromModuleVersion": "mod-finance-storage-4.2.1",
       "mode": "delete",
       "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "withMetadata": true,
+      "foreignKeys": [
+        {
+          "fieldName": "ledgerId",
+          "targetTable": "ledger",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fromFiscalYearId",
+          "targetTable": "fiscal_year",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "toFiscalYearId",
+          "targetTable": "fiscal_year",
+          "tOps": "ADD"
+        }
+      ]
     }
   ]
 
