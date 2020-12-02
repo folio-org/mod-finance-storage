@@ -441,7 +441,10 @@
           "tOps": "ADD"
         },
         {
-          "targetPath": ["fundId", "ledgerId"],
+          "targetPath": [
+            "fundId",
+            "ledgerId"
+          ],
           "targetTable": "ledger",
           "targetTableAlias": "ledger",
           "tableAlias": "groupFundFY",
@@ -548,6 +551,32 @@
       "fromModuleVersion": "mod-finance-storage-4.2.1",
       "mode": "delete",
       "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "withMetadata": true,
+      "foreignKeys": [
+        {
+          "fieldName": "ledgerId",
+          "targetTable": "ledger"
+        },
+        {
+          "fieldName": "fromFiscalYearId",
+          "targetTable": "fiscal_year"
+        },
+        {
+          "fieldName": "toFiscalYearId",
+          "targetTable": "fiscal_year"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "ledgerId_fromFiscalYearId",
+          "multiFieldNames": "ledgerId, fromFiscalYearId",
+          "tOps": "ADD"
+        }
+      ]
     }
   ]
 
