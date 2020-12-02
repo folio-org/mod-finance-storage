@@ -441,7 +441,10 @@
           "tOps": "ADD"
         },
         {
-          "targetPath": ["fundId", "ledgerId"],
+          "targetPath": [
+            "fundId",
+            "ledgerId"
+          ],
           "targetTable": "ledger",
           "targetTableAlias": "ledger",
           "tableAlias": "groupFundFY",
@@ -565,6 +568,13 @@
         {
           "fieldName": "toFiscalYearId",
           "targetTable": "fiscal_year"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "ledgerId_fromFiscalYearId",
+          "multiFieldNames": "ledgerId, fromFiscalYearId",
+          "tOps": "ADD"
         }
       ]
     }
