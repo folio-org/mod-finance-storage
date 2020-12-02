@@ -129,8 +129,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public TransactionService allocationService() {
-    return new AllocationService();
+  public TransactionService allocationService(BudgetService budgetService) {
+    return new AllocationService(budgetService);
   }
 
   @Bean

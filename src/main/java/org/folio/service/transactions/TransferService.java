@@ -6,7 +6,9 @@ import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Error;
@@ -74,10 +76,12 @@ public class TransferService extends AbstractTransactionService implements Trans
 
   public Future<Transaction> createTransfer(Transaction transaction, DBClient dbClient) {
     Promise<Transaction> promise = Promise.promise();
+      if (StringUtils.isEmpty(transaction.getId())) {
+          transaction.setId(UUID.randomUUID().toString());
+      }
     dbClient.getPgClient()
-      .save(dbClient.getConnection(), TRANSACTION_TABLE, transaction, event -> {
+      .save(dbClient.getConnection(), TRANSACTION_TABLE, transaction.getId(), transaction, event -> {
         if (event.succeeded()) {
-          transaction.setId(event.result());
           promise.complete(transaction);
         } else {
           promise.fail(new HttpStatusException(500, PgExceptionUtil.getMessage(event.cause())));

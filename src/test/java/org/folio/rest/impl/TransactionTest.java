@@ -47,6 +47,7 @@ public class TransactionTest extends TestBase {
   public static final String ALLOCATION_TO_FUND_SAMPLE_PATH = "data/funds/ANZHIST.json";
   public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets/CANLATHIST-FY20-closed.json";
   public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets/ANZHIST-FY20.json";
+  public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations/allocation2_CANLATHIST-FY20.json";
 
   @BeforeEach
   void prepareData() throws MalformedURLException {
@@ -69,7 +70,8 @@ public class TransactionTest extends TestBase {
       Pair.of(FUND, ALLOCATION_TO_FUND_SAMPLE_PATH),
       Pair.of(FUND, ALLOCATION_FROM_FUND_SAMPLE_PATH),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH),
-      Pair.of(BUDGET, ALLOCATION_FROM_BUDGET_SAMPLE_PATH));
+      Pair.of(BUDGET, ALLOCATION_FROM_BUDGET_SAMPLE_PATH),
+      Pair.of(TRANSACTION, ALLOCATION_SAMPLE_PATH));
 
     JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     jsonTx.remove("id");
@@ -151,7 +153,7 @@ public class TransactionTest extends TestBase {
       .log().all()
       .post(storageUrl(TRANSACTION_ENDPOINT))
       .then()
-      .statusCode(500);
+      .statusCode(422);
 
     Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
 
@@ -196,7 +198,7 @@ public class TransactionTest extends TestBase {
       .log().all()
       .post(storageUrl(TRANSACTION_ENDPOINT))
       .then()
-      .statusCode(500);
+      .statusCode(400);
 
     Budget toBudgetAfter = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
 

@@ -315,7 +315,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-6.0.0",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
