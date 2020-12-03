@@ -3,8 +3,6 @@ package org.folio.rest.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import java.util.Map;
 import javax.ws.rs.core.Response;
 import org.folio.rest.annotations.Validate;
@@ -15,7 +13,6 @@ import org.folio.rest.persist.PgUtil;
 
 public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
 
-  private static final Logger log = LoggerFactory.getLogger(LedgerRolloverAPI.class);
   private static final String LEDGER_FISCAL_YEAR_ROLLOVER_TABLE = "ledger_fiscal_year_rollover";
 
   @Override

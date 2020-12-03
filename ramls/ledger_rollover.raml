@@ -4,13 +4,11 @@ baseUri: https://github.com/folio-org/mod-finance-storage
 version: v3
 
 documentation:
-  - title: mod-finance-storage (Ledgers)
-    content: <b>CRUD APIs used to manage ledgers.</b>
+  - title: mod-finance-storage (Ledger Rollover)
+    content: <b>CRUD APIs used to manage ledger rollover.</b>
 
 types:
   errors: !include raml-util/schemas/errors.schema
-  ledger: !include acq-models/mod-finance/schemas/ledger.json
-  ledger-collection: !include acq-models/mod-finance/schemas/ledger_collection.json
   ledger-fiscal-year-rollover: !include acq-models/mod-finance/schemas/ledger_fiscal_year_rollover.json
   ledger-fiscal-year-rollover-collection: !include acq-models/mod-finance/schemas/ledger_fiscal_year_rollover_collection.json
   UUID:
@@ -28,16 +26,16 @@ resourceTypes:
   collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/finance-storage/ledgers:
+/finance-storage/ledger-rollovers:
   type:
     collection:
-      exampleCollection: !include acq-models/mod-finance/examples/ledger_collection.sample
-      exampleItem: !include acq-models/mod-finance/examples/ledger.sample
-      schemaCollection: ledger-collection
-      schemaItem: ledger
+      exampleCollection: !include acq-models/mod-finance/examples/ledger_fiscal_year_rollover_collection.sample
+      exampleItem: !include acq-models/mod-finance/examples/ledger_fiscal_year_rollover.sample
+      schemaCollection: ledger-fiscal-year-rollover-collection
+      schemaItem: ledger-fiscal-year-rollover
   is: [validate]
   get:
-    description: Get list of ledgers
+    description: Get list of rollovers
     is: [
       searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
       pageable
@@ -45,10 +43,10 @@ resourceTypes:
   /{id}:
     uriParameters:
       id:
-        description: The UUID of a ledger
+        description: The UUID of a rollover
         type: UUID
     type:
       collection-item:
-        exampleItem: !include acq-models/mod-finance/examples/ledger.sample
-        schema: ledger
+        exampleItem: !include acq-models/mod-finance/examples/ledger_fiscal_year_rollover.sample
+        schema: ledger-fiscal-year-rollover
     is: [validate]

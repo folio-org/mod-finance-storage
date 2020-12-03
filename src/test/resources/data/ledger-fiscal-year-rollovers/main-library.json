@@ -1,0 +1,32 @@
+{
+  "id": "5599c9c5-5ba5-4ddf-b0d6-598f506f0703",
+  "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
+  "fromFiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
+  "toFiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
+  "restrictEncumbrance": false,
+  "restrictExpenditures": false,
+  "needCloseBudgets": true,
+  "budgetsRollover": [
+    {
+      "fundTypeId": "c93373df-e7ec-4d31-b200-719736610d89",
+      "rolloverAllocation": true,
+      "rolloverAvailable": true,
+      "adjustAllocation": 5,
+      "addAvailableTo": "Available",
+      "allowableEncumbrance": 100,
+      "allowableExpenditure": 100
+    }
+  ],
+  "encumbrancesRollover": [
+    {
+      "orderType": "Ongoing",
+      "basedOn": "Expended",
+      "increaseBy": 5
+    },
+    {
+      "orderType": "One-time",
+      "basedOn": "Expended",
+      "increaseBy": 4
+    }
+  ]
+}
