@@ -281,6 +281,37 @@
       ]
     },
     {
+      "id": "finance-storage.ledger-rollovers",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/ledger-rollovers",
+          "permissionsRequired": ["finance-storage.ledger-rollovers.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/ledger-rollovers",
+          "permissionsRequired": ["finance-storage.ledger-rollovers.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/ledger-rollovers/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/ledger-rollover/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/ledger-rollover/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.transactions",
       "version": "3.1",
       "handlers": [
@@ -697,6 +728,31 @@
       "description" : "Delete a ledger"
     },
     {
+      "permissionName" : "finance-storage.ledger-rollovers.collection.get",
+      "displayName" : "ledger rollover collection get",
+      "description" : "Get collection of ledgers rollover"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers.item.post",
+      "displayName" : "ledger rollover item post",
+      "description" : "Create a new ledger rollover"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers.item.get",
+      "displayName" : "ledger rollover item get",
+      "description" : "Fetch a ledger rollover"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers.item.put",
+      "displayName" : "ledger rollover item put",
+      "description" : "Update a ledger rollover"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers.item.delete",
+      "displayName" : "ledger rollover item delete",
+      "description" : "Delete a ledger rollover"
+    },
+    {
       "permissionName" : "finance-storage.ledgers.all",
       "displayName" : "All fund perms",
       "description" : "All permissions for the ledger",
@@ -705,7 +761,12 @@
         "finance-storage.ledgers.item.post",
         "finance-storage.ledgers.item.get",
         "finance-storage.ledgers.item.put",
-        "finance-storage.ledgers.item.delete"
+        "finance-storage.ledgers.item.delete",
+        "finance-storage.ledger-rollovers.collection.get",
+        "finance-storage.ledger-rollovers.item.post",
+        "finance-storage.ledger-rollovers.item.get",
+        "finance-storage.ledger-rollovers.item.put",
+        "finance-storage.ledger-rollovers.item.delete"
       ]
     },
     {
