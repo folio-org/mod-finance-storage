@@ -36,7 +36,7 @@ public class TransactionTest extends TestBase {
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
   private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";
-  public static final String ALLOCATION_SAMPLE = "data/transactions/allocations/allocation3_AFRICAHIST-FY20_ANZHIST-FY20.json";
+  public static final String ALLOCATION_SAMPLE = "data/transactions/allocations/allocation_ZAFRICAHIST-FY20_ANZHIST-FY20.json";
   public static final String TRANSFER_NOT_ENOUGH_MONEY_ERROR_TEXT = "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer";
 
   static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
