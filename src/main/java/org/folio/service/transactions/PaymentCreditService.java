@@ -114,9 +114,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
       .map(encumbrancesMap -> applyPayments(transactions, encumbrancesMap))
       .map(encumbrancesMap -> applyCredits(transactions, encumbrancesMap))
       //update all the re-calculated encumbrances into the Transaction table
-      .map(map -> map.values()
-        .stream()
-        .collect(Collectors.toList()))
+      .map(map -> new ArrayList<>(map.values()))
       .compose(trns -> transactionsDAO.updatePermanentTransactions(trns, client))
       .compose(ok -> Future.succeededFuture(client));
 

@@ -6,6 +6,7 @@ public enum ErrorCodes {
   GENERIC_ERROR_CODE("genericError", "Generic error"),
   UNIQUE_FIELD_CONSTRAINT_ERROR("uniqueField{0}{1}Error", "Field {0} must be unique"),
   NOT_ENOUGH_MONEY_FOR_TRANSFER("notEnoughMoneyForTransferError", "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer."),
+  NOT_ENOUGH_MONEY_FOR_ALLOCATION("notEnoughMoneyForAllocationError", "Allocation was not successful. There is not enough money Available in the budget to complete this Allocation."),
   BUDGET_EXPENSE_CLASS_REFERENCE_ERROR("budgetExpenseClassReferenceError", "Can't delete budget that referenced with expense class");
 
   private final String code;

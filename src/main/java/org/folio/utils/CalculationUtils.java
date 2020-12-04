@@ -48,4 +48,13 @@ public final class CalculationUtils {
     recalculateAvailableUnavailable(budgetFromNew, currency);
 
   }
+
+  public static void recalculateBudgetAllocation(Budget budget, Transaction allocation, Double allocatedAmount) {
+    CurrencyUnit currency = Monetary.getCurrency(allocation.getCurrency());
+    double newAllocation = sumMoney(budget.getAllocated(), allocatedAmount, currency);
+    budget.setAllocated(newAllocation);
+    recalculateOverEncumbered(budget, currency);
+    recalculateOverExpended(budget, currency);
+    recalculateAvailableUnavailable(budget, currency);
+  }
 }

@@ -4,6 +4,8 @@ import static java.util.stream.Collectors.toList;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.getQueryValues;
+import static org.folio.rest.util.ErrorCodes.GENERIC_ERROR_CODE;
+import static org.folio.rest.util.ErrorCodes.NOT_ENOUGH_MONEY_FOR_ALLOCATION;
 import static org.folio.rest.util.ErrorCodes.NOT_ENOUGH_MONEY_FOR_TRANSFER;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
@@ -22,6 +24,7 @@ import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
+import org.folio.rest.util.ErrorCodes;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -160,9 +163,15 @@ public class BudgetService {
     return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), client)
       .compose(budget -> {
         if (budget.getAvailable() < transaction.getAmount()) {
-          logger.error(NOT_ENOUGH_MONEY_FOR_TRANSFER.getDescription());
+          ErrorCodes errorCode;
+          switch (transaction.getTransactionType()) {
+            case TRANSFER: errorCode = NOT_ENOUGH_MONEY_FOR_TRANSFER; break;
+            case ALLOCATION: errorCode = NOT_ENOUGH_MONEY_FOR_ALLOCATION; break;
+            default: errorCode = GENERIC_ERROR_CODE;
+          }
+          logger.error(errorCode.getDescription());
           return Future.failedFuture(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(),
-            JsonObject.mapFrom(NOT_ENOUGH_MONEY_FOR_TRANSFER.toError()).encodePrettily()));
+            JsonObject.mapFrom(errorCode.toError()).encodePrettily()));
         }
         return Future.succeededFuture();
       });

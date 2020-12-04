@@ -33,7 +33,7 @@ public class EntitiesCrudTest extends TestBase {
    *
    */
   static Stream<TestEntities> deleteOrder() {
-    return Stream.of(TRANSACTION, GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
+    return Stream.of(TRANSACTION, GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, FUND, FUND_TYPE, LEDGER_FISCAL_YEAR_ROLLOVER, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
   }
 
   static Stream<TestEntities> deleteFailOrder() {

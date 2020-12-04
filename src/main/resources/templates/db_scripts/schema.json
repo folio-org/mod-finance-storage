@@ -320,7 +320,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-6.0.0",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
       "withMetadata": true,
       "uniqueIndex": [
         {
@@ -445,7 +445,10 @@
           "tOps": "ADD"
         },
         {
-          "targetPath": ["fundId", "ledgerId"],
+          "targetPath": [
+            "fundId",
+            "ledgerId"
+          ],
           "targetTable": "ledger",
           "targetTableAlias": "ledger",
           "tableAlias": "groupFundFY",
@@ -567,6 +570,54 @@
       "fromModuleVersion": "mod-finance-storage-4.2.1",
       "mode": "delete",
       "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "withMetadata": true,
+      "foreignKeys": [
+        {
+          "fieldName": "ledgerId",
+          "targetTable": "ledger"
+        },
+        {
+          "fieldName": "fromFiscalYearId",
+          "targetTable": "fiscal_year"
+        },
+        {
+          "fieldName": "toFiscalYearId",
+          "targetTable": "fiscal_year"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "ledgerId_fromFiscalYearId",
+          "multiFieldNames": "ledgerId, fromFiscalYearId",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover_progress",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "withMetadata": true,
+      "index": [
+        {
+          "fieldName": "overallRolloverStatus",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ],
+      "foreignKeys": [
+        {
+          "fieldName": "ledgerRolloverId",
+          "targetTable": "ledger_fiscal_year_rollover",
+          "tableAlias": "ledgerFYROProgress",
+          "targetTableAlias": "ledgerFYRO",
+          "tOps": "ADD"
+        }
+      ]
     }
   ]
 
