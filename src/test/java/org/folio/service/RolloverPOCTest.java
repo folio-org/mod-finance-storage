@@ -271,7 +271,7 @@ class RolloverPOCTest extends TestBase {
   }
 
   private Future<Void> assertTransfers(DBClient client, VertxTestContext testContext) {
-    return getTransactions(client, Transaction.TransactionType.TRANSFER)
+    return getTransactions(client, Transaction.TransactionType.ROLLOVER_TRANSFER)
             .map(transactions -> {
               testContext.verify(() -> transactions.forEach(transfer -> {
                 expectedTransfer.withId(transfer.getId())
