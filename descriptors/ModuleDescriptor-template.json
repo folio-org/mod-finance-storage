@@ -301,12 +301,12 @@
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/finance-storage/ledger-rollover/{id}",
+          "pathPattern": "/finance-storage/ledger-rollovers/{id}",
           "permissionsRequired": ["finance-storage.ledger-rollovers.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/finance-storage/ledger-rollover/{id}",
+          "pathPattern": "/finance-storage/ledger-rollovers/{id}",
           "permissionsRequired": ["finance-storage.ledger-rollovers.item.delete"]
         }
       ]
