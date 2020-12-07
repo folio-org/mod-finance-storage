@@ -33,7 +33,7 @@ public class EntitiesCrudTest extends TestBase {
    *
    */
   static Stream<TestEntities> deleteOrder() {
-    return Stream.of(TRANSACTION, GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, FUND, FUND_TYPE, LEDGER_FISCAL_YEAR_ROLLOVER, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
+    return Stream.of(TRANSACTION, GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, FUND, FUND_TYPE, LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS, LEDGER_FISCAL_YEAR_ROLLOVER, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
   }
 
   static Stream<TestEntities> deleteFailOrder() {
@@ -66,7 +66,8 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(2)
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class)
+ // @EnumSource(value = TestEntities.class, mode = EnumSource.Mode.INCLUDE, names = {"LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS"})
   void testPostData(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... ", testEntity.name(), testEntity.name()));
     sample = getSample(testEntity.getSampleFileName());
