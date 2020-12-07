@@ -301,13 +301,44 @@
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/finance-storage/ledger-rollover/{id}",
+          "pathPattern": "/finance-storage/ledger-rollovers/{id}",
           "permissionsRequired": ["finance-storage.ledger-rollovers.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/finance-storage/ledger-rollover/{id}",
+          "pathPattern": "/finance-storage/ledger-rollovers/{id}",
           "permissionsRequired": ["finance-storage.ledger-rollovers.item.delete"]
+        }
+      ]
+    },
+    {
+      "id": "finance-storage.ledger-rollovers-progress",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/ledger-rollovers-progress",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-progress.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/ledger-rollovers-progress",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-progress.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/ledger-rollovers-progress/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-progress.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/ledger-rollovers-progress/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-progress.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/ledger-rollovers-progress/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-progress.item.delete"]
         }
       ]
     },
@@ -753,6 +784,31 @@
       "description" : "Delete a ledger rollover"
     },
     {
+      "permissionName" : "finance-storage.ledger-rollovers-progress.collection.get",
+      "displayName" : "ledger rollover progress collection get",
+      "description" : "Get collection of ledgers rollover progress"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers-progress.item.post",
+      "displayName" : "ledger rollover progress item post",
+      "description" : "Create a new ledger rollover progress"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers-progress.item.get",
+      "displayName" : "ledger rollover progress item get",
+      "description" : "Fetch a ledger rollover progress"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers-progress.item.put",
+      "displayName" : "ledger rollover progress item put",
+      "description" : "Update a ledger rollover progress"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers-progress.item.delete",
+      "displayName" : "ledger rollover progress item delete",
+      "description" : "Delete a ledger rollover progress"
+    },
+    {
       "permissionName" : "finance-storage.ledgers.all",
       "displayName" : "All fund perms",
       "description" : "All permissions for the ledger",
@@ -766,7 +822,12 @@
         "finance-storage.ledger-rollovers.item.post",
         "finance-storage.ledger-rollovers.item.get",
         "finance-storage.ledger-rollovers.item.put",
-        "finance-storage.ledger-rollovers.item.delete"
+        "finance-storage.ledger-rollovers.item.delete",
+        "finance-storage.ledger-rollovers-progress.collection.get",
+        "finance-storage.ledger-rollovers-progress.item.post",
+        "finance-storage.ledger-rollovers-progress.item.get",
+        "finance-storage.ledger-rollovers-progress.item.put",
+        "finance-storage.ledger-rollovers-progress.item.delete"
       ]
     },
     {
