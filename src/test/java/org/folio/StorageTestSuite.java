@@ -133,7 +133,7 @@ public class StorageTestSuite {
   @Nested
   class TenantSampleDataTestNested extends TenantSampleDataTest {
   }
-  
+
   @Nested
   class GroupFundFYTestNested extends GroupFundFYTest {
   }
