@@ -577,7 +577,56 @@
           "tOps": "ADD"
         }
       ]
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover_progress",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "withMetadata": true,
+      "index": [
+        {
+          "fieldName": "overallRolloverStatus",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ],
+      "foreignKeys": [
+        {
+          "fieldName": "ledgerRolloverId",
+          "targetTable": "ledger_fiscal_year_rollover",
+          "tableAlias": "ledgerFYROProgress",
+          "targetTableAlias": "ledgerFYRO",
+          "tOps": "ADD"
+        }
+      ]
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover_error",
+      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "withMetadata": true,
+      "index": [
+        {
+          "fieldName": "details.purchaseOrderId",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "details.fundId",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
+      ],
+      "foreignKeys": [
+        {
+          "fieldName": "ledgerRolloverId",
+          "targetTable": "ledger_fiscal_year_rollover",
+          "tableAlias": "ledgerFYROError",
+          "targetTableAlias": "ledgerFYRO",
+          "tOps": "ADD"
+        }
+      ]
     }
   ]
-
 }
