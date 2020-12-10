@@ -2,4 +2,4 @@
 UPDATE ${myuniversity}_${mymodule}.transaction
 SET jsonb = jsonb_set(jsonb, '{encumbrance, reEncumber}', 'true', false)
 WHERE jsonb ? 'encumbrance'
-AND (jsonb::json -> 'encumbrance' ->> 'reEncumber')::text <> 'true';
+AND (jsonb::json -> 'encumbrance' ->> 'reEncumber')::boolean <> true;
