@@ -621,6 +621,9 @@
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
+        },
+        {
+          "fieldName": "errorType"
         }
       ],
       "foreignKeys": [
