@@ -343,6 +343,37 @@
       ]
     },
     {
+      "id": "finance-storage.ledger-rollovers-errors",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/ledger-rollovers-errors",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-errors.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/ledger-rollovers-errors",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-errors.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/ledger-rollovers-errors/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-errors.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/ledger-rollovers-errors/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-errors.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/ledger-rollovers-errors/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-errors.item.delete"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.transactions",
       "version": "3.1",
       "handlers": [
@@ -809,6 +840,31 @@
       "description" : "Delete a ledger rollover progress"
     },
     {
+      "permissionName" : "finance-storage.ledger-rollovers-errors.collection.get",
+      "displayName" : "ledger rollover errors collection get",
+      "description" : "Get collection of ledgers rollover errors"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers-errors.item.post",
+      "displayName" : "ledger rollover errors item post",
+      "description" : "Create a new ledger rollover error"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers-errors.item.get",
+      "displayName" : "ledger rollover errors item get",
+      "description" : "Fetch a ledger rollover error"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers-errors.item.put",
+      "displayName" : "ledger rollover errors item put",
+      "description" : "Update a ledger rollover error"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers-errors.item.delete",
+      "displayName" : "ledger rollover errors item delete",
+      "description" : "Delete a ledger rollover error"
+    },
+    {
       "permissionName" : "finance-storage.ledgers.all",
       "displayName" : "All fund perms",
       "description" : "All permissions for the ledger",
@@ -827,7 +883,12 @@
         "finance-storage.ledger-rollovers-progress.item.post",
         "finance-storage.ledger-rollovers-progress.item.get",
         "finance-storage.ledger-rollovers-progress.item.put",
-        "finance-storage.ledger-rollovers-progress.item.delete"
+        "finance-storage.ledger-rollovers-progress.item.delete",
+        "finance-storage.ledger-rollovers-errors.collection.get",
+        "finance-storage.ledger-rollovers-errors.item.post",
+        "finance-storage.ledger-rollovers-errors.item.get",
+        "finance-storage.ledger-rollovers-errors.item.put",
+        "finance-storage.ledger-rollovers-errors.item.delete"
       ]
     },
     {

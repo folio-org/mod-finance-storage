@@ -1,4 +1,5 @@
 {
+  "exactCount" : 20000,
   "scripts": [
     {
       "run": "after",
@@ -621,6 +622,9 @@
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
+        },
+        {
+          "fieldName": "errorType"
         }
       ],
       "foreignKeys": [
