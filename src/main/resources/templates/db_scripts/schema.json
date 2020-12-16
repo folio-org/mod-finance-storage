@@ -59,6 +59,11 @@
       "run": "after",
       "snippetPath": "migration/update_order_encumbrance.sql",
       "fromModuleVersion": "mod-finance-storage-6.1.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/update_encumbrances_order_status.ftl",
+      "fromModuleVersion": "mod-finance-storage-6.1.0"
     }
   ],
   "tables": [
