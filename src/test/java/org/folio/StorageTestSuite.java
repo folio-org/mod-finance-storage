@@ -13,6 +13,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
+import org.folio.dao.rollover.RolloverProgressDAOTest;
 import org.folio.dao.transactions.PendingPaymentDAOTest;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.impl.BudgetTest;
@@ -29,6 +31,7 @@ import org.folio.rest.impl.TransactionsSummariesTest;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.PendingPaymentServiceTest;
 import org.folio.service.transactions.restriction.PendingPaymentRestrictionServiceTest;
@@ -182,4 +185,13 @@ public class StorageTestSuite {
 
   @Nested
   class PendingPaymentRestrictionServiceTestNested extends PendingPaymentRestrictionServiceTest {}
+
+  @Nested
+  class LedgerRolloverServiceTestNested extends LedgerRolloverServiceTest {}
+
+  @Nested
+  class LedgerFiscalYearRolloverDAOTestNested extends LedgerFiscalYearRolloverDAOTest {}
+
+  @Nested
+  class RolloverProgressDAOTestNested extends RolloverProgressDAOTest {}
 }

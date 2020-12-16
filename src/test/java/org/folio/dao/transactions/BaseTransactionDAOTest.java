@@ -57,7 +57,7 @@ class BaseTransactionDAOTest {
 
   @BeforeEach
   public void initMocks(){
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
     baseTransactionDAO = Mockito.mock(
       BaseTransactionDAO.class, Mockito.CALLS_REAL_METHODS);
   }
@@ -73,7 +73,7 @@ class BaseTransactionDAOTest {
     }).when(postgresClient).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), any(Criterion.class), anyBoolean(), anyBoolean(), any(Handler.class));
 
 
-    testContext.assertFailure(baseTransactionDAO.getTransactions(new Criterion(), client))
+    testContext.assertComplete(baseTransactionDAO.getTransactions(new Criterion(), client))
       .onComplete(event -> {
         HttpStatusException exception = (HttpStatusException) event.cause();
         testContext.verify(() -> {
