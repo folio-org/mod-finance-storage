@@ -17,6 +17,7 @@ import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
 import org.folio.dao.rollover.RolloverProgressDAOTest;
 import org.folio.dao.transactions.PendingPaymentDAOTest;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.core.RestClientTest;
 import org.folio.rest.impl.BudgetTest;
 import org.folio.rest.impl.EncumbrancesTest;
 import org.folio.rest.impl.EntitiesCrudTest;
@@ -194,4 +195,7 @@ public class StorageTestSuite {
 
   @Nested
   class RolloverProgressDAOTestNested extends RolloverProgressDAOTest {}
+
+  @Nested
+  class RestClientTestNested extends RestClientTest {}
 }
