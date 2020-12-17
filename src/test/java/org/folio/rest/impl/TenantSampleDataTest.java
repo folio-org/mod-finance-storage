@@ -11,11 +11,23 @@ import static org.folio.rest.utils.TenantApiTestUtil.prepareTenantBody;
 import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 
 import io.vertx.core.json.JsonArray;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.apache.commons.io.IOUtils;
+import org.folio.StorageTestSuite;
+import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.PomReader;
 import org.folio.rest.utils.TestEntities;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
@@ -40,6 +52,18 @@ public class TenantSampleDataTest extends TestBase {
       .then()
       .assertThat()
       .statusCode(200);
+  }
+
+  @BeforeAll
+  static void createPurchaseOrderTable() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    InputStream tableInput = TenantSampleDataTest.class.getClassLoader().getResourceAsStream("orders_schema.sql");
+    String sqlFile = IOUtils.toString(Objects.requireNonNull(tableInput), StandardCharsets.UTF_8);
+    CompletableFuture<Void> schemaCreated = new CompletableFuture<>();
+    PostgresClient.getInstance(StorageTestSuite.getVertx()).runSQLFile(sqlFile, false)
+      .onComplete(listAsyncResult -> {
+        schemaCreated.complete(null);
+      });
+    schemaCreated.get(60, TimeUnit.SECONDS);
   }
 
   @Test
