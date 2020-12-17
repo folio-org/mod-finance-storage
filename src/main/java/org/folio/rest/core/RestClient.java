@@ -71,7 +71,7 @@ public class RestClient {
     return promise.future();
   }
 
-  private HttpClientInterface getHttpClient(Map<String, String> okapiHeaders) {
+  public HttpClientInterface getHttpClient(Map<String, String> okapiHeaders) {
     final String okapiURL = okapiHeaders.getOrDefault(RestConstants.OKAPI_URL, "");
     final String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
 
