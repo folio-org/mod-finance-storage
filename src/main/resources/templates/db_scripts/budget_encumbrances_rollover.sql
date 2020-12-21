@@ -52,18 +52,18 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             -- #5
             EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.transaction tr
                   LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
-                  LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_status rollover_status ON fund.ledgerId::text = rollover_status.jsonb->>'ledgerId'
-                  WHERE fund.ledgerId::text<>_rollover_record->>'ledgerId' AND rollover_status.jsonb->>'toFiscalYearId' = _rollover_record->>'toFiscalYearId' AND
-                           (NOT rollover_status.jsonb ? 'overallStatus' OR rollover_status.jsonb->>'overallStatus'='Not Started' OR rollover_status.jsonb->>'overallStatus'='In Progress')
+                  LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover rollover ON rollover.ledgerId = fund.ledgerId
+                  LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_progress rollover_progress ON rollover.id = rollover_progress.ledgerRolloverId
+                  WHERE fund.ledgerId::text<>_rollover_record->>'ledgerId' AND tr.fiscalYearId::text = _rollover_record->>'fromFiscalYearId' AND
+                           (rollover_progress.jsonb IS NULL OR rollover_progress.jsonb->>'overallRolloverStatus'='Not Started' OR rollover_progress.jsonb->>'overallRolloverStatus'='In Progress')
                             AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id)
         THEN
             -- #6
-            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_errors (id, jsonb)
+            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                 SELECT public.uuid_generate_v4(), jsonb_build_object
                 (
-                    'ledgerId', _rollover_record->>'ledgerId',
-                    'toFiscalYearId', _rollover_record->>'toFiscalYearId',
-                    'errorType', 'ORDER',
+                    'ledgerRolloverId', _rollover_record->>'id',
+                    'errorType', 'Order',
                     'failedAction', 'Create encumbrance',
                     'errorMessage', 'Part of the encumbrances belong to the ledger, which has not been rollovered',
                     'details', jsonb_build_object
@@ -75,11 +75,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                     )
                 )
                 FROM ${myuniversity}_${mymodule}.transaction tr
-                  LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
-                  LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_status rollover_status ON fund.ledgerId::text = rollover_status.jsonb->>'ledgerId'
-                  WHERE fund.ledgerId::text<>_rollover_record->>'ledgerId' AND rollover_status.jsonb->>'toFiscalYearId' = _rollover_record->>'toFiscalYearId' AND
-                           (NOT rollover_status.jsonb ? 'overallStatus' OR rollover_status.jsonb->>'overallStatus'='Not Started' OR rollover_status.jsonb->>'overallStatus'='In Progress')
-                            AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
+                    LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
+                    WHERE fund.ledgerId::text=_rollover_record->>'ledgerId' AND tr.fiscalYearId::text = _rollover_record->>'fromFiscalYearId'
+                          AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
         ELSEIF
             -- #7
             (_rollover_record->>'restrictEncumbrance')::boolean AND EXISTS (SELECT sum((tr.jsonb->>'amount')::decimal) FROM ${myuniversity}_${mymodule}.transaction tr
@@ -94,12 +92,11 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                                                                                                       (budget.jsonb->>'overEncumbrance')::decimal)
         THEN
             -- #8
-            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_errors (id, jsonb)
+            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                 SELECT public.uuid_generate_v4(), jsonb_build_object
                 (
-                    'ledgerId', _rollover_record->>'ledgerId',
-                    'toFiscalYearId', _rollover_record->>'toFiscalYearId',
-                    'errorType', 'ORDER',
+                    'ledgerRolloverId', _rollover_record->>'id',
+                    'errorType', 'Order',
                     'failedAction', 'Create encumbrance',
                     'errorMessage', 'Insufficient funds',
                     'details', jsonb_build_object
@@ -147,7 +144,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 FROM ${myuniversity}_${mymodule}.transaction tr
                     WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
                         AND public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record) <> 0 AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
-                        AND tr.jsonb->'encumbrance'->>'status'='Unreleased'; -- TODO: Instead of this use tr.jsonb->'encumbrance'->>'orderStatus'='Open' criteria when MODFISTO-194 is completed
+                        AND tr.jsonb->'encumbrance'->>'orderStatus'='Open';
         END IF;
 
         -- #10 update budget amounts
@@ -238,8 +235,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
     END;
 $$ LANGUAGE plpgsql;
 
--- TODO: since we plan to keep the rollover history, it will not be enough just an ledgerId to find the right  rollover record.
---       Options: 1 add additional fiscalYearId parameter, 2 use rollover id instead of ledger id, 3 pass whole rollover record as parameter
+
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollover(_rollover_record jsonb) RETURNS VOID as $$
     DECLARE
             toFiscalYear					jsonb;
@@ -257,7 +253,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                 SELECT public.uuid_generate_v4(), ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear)
                 FROM ${myuniversity}_${mymodule}.budget AS budget
                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id=budget.fundId
-                WHERE budget.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId' AND fund.jsonb->>'ledgerId'=_ledger_id
+                WHERE budget.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId' AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId'
             )
             ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fundId'::text)), lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fiscalYearId'::text)))
                  DO UPDATE SET jsonb=${myuniversity}_${mymodule}.budget.jsonb || jsonb_build_object
@@ -302,7 +298,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                 LEFT JOIN ${myuniversity}_${mymodule}.ledger ledger ON ledger.id=fund.ledgerId
                 WHERE tr.jsonb->>'transactionType' = 'Encumbrance'
                     AND tr.fiscalYearId::text = _rollover_record->>'fromFiscalYearId'
-                    AND ledger.id::text=_ledger_id
+                    AND tr.jsonb->'encumbrance'->>'orderStatus' = 'Open'
+                    AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
+                    AND ledger.id::text=_rollover_record->>'ledgerId'
                 GROUP BY order_id
                 ORDER BY date
         LOOP

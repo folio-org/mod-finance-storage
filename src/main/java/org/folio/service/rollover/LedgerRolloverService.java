@@ -96,7 +96,7 @@ public class LedgerRolloverService {
             .withOverallRolloverStatus(ERROR), client)
             .compose(v -> Future.failedFuture(t));
         }))
-      .compose(aVoid -> rolloverProgressDAO.update(progress.withOrdersRolloverStatus(SUCCESS), client));
+      .compose(aVoid -> rolloverProgressDAO.update(progress.withOrdersRolloverStatus(SUCCESS).withOverallRolloverStatus(SUCCESS), client));
   }
 
   private Future<Void> startFinancialRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
