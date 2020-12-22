@@ -7,6 +7,7 @@ import org.folio.dao.fund.FundPostgresDAO;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.dao.ledger.LedgerPostgresDAO;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
+import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
 import org.folio.dao.summary.OrderTransactionSummaryDAO;
@@ -79,6 +80,11 @@ public class DAOConfiguration {
   @Bean
   public RolloverProgressDAO rolloverProgressDAO() {
     return new RolloverProgressDAO();
+  }
+
+  @Bean
+  public RolloverErrorDAO rolloverErrorDAO() {
+    return new RolloverErrorDAO();
   }
 
 }

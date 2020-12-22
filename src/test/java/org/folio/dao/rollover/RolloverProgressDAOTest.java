@@ -1,17 +1,26 @@
 package org.folio.dao.rollover;
 
+import static org.folio.dao.rollover.RolloverErrorDAO.LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE;
 import static org.folio.rest.impl.LedgerRolloverProgressAPI.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.UUID;
 
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.SQLConnection;
+import org.folio.rest.persist.interfaces.Results;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +41,7 @@ import io.vertx.sqlclient.RowSet;
 public class RolloverProgressDAOTest {
 
   @InjectMocks
-  private RolloverProgressDAO rolloverProgressDAO;
+  private RolloverErrorDAO rolloverErrorDAO;
 
   @Mock
   private DBClient dbClient;
@@ -41,7 +50,7 @@ public class RolloverProgressDAOTest {
   private PostgresClient postgresClient;
 
   @Mock
-  private AsyncResult<SQLConnection> connectionAsyncResult;
+  private Criterion criterion;
 
   @BeforeEach
   public void initMocks() {
@@ -49,43 +58,31 @@ public class RolloverProgressDAOTest {
   }
 
   @Test
-  void shouldCompletedSuccessfullyWhenCreateLedgerFiscalYearRolloverProgress(VertxTestContext testContext) {
+  void shouldCompletedSuccessfullyWhenRetrieveRolloverErrors(VertxTestContext testContext) {
     String id = UUID.randomUUID()
       .toString();
 
-    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress().withId(id);
+    LedgerFiscalYearRolloverError error = new LedgerFiscalYearRolloverError().withId(id);
     when(dbClient.getPgClient()).thenReturn(postgresClient);
-    when(dbClient.getConnection()).thenReturn(connectionAsyncResult);
 
     doAnswer((Answer<Void>) invocation -> {
-      Handler<AsyncResult<String>> handler = invocation.getArgument(4);
-      handler.handle(Future.succeededFuture(id));
+      Handler<AsyncResult<Results<LedgerFiscalYearRolloverError>>> handler = invocation.getArgument(4);
+      Results<LedgerFiscalYearRolloverError> results = new Results<>();
+      results.setResults(Collections.singletonList(error));
+      handler.handle(Future.succeededFuture(results));
       return null;
     }).when(postgresClient)
-      .save(any(), eq(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE), eq(id), eq(progress), any(Handler.class));
+      .get(eq(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE), eq(LedgerFiscalYearRolloverError.class), eq(criterion), anyBoolean(), any(Handler.class));
 
-    testContext.assertComplete(rolloverProgressDAO.create(progress, dbClient))
-      .onComplete(event -> testContext.completeNow());
-  }
+    testContext.assertComplete(rolloverErrorDAO.get(criterion, dbClient))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          assertThat(event.result(), hasSize(1));
+          assertEquals(error, event.result().get(0));
+        });
 
-  @Test
-  void shouldCompletedSuccessfullyWhenUpdateLedgerFiscalYearRolloverProgress(VertxTestContext testContext) {
-    String id = UUID.randomUUID()
-            .toString();
-
-    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress().withId(id);
-    when(dbClient.getPgClient()).thenReturn(postgresClient);
-    when(dbClient.getConnection()).thenReturn(connectionAsyncResult);
-
-    doAnswer((Answer<Void>) invocation -> {
-      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(3);
-      handler.handle(Future.succeededFuture());
-      return null;
-    }).when(postgresClient)
-            .update(eq(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE), eq(progress), eq(id), any(Handler.class));
-
-    testContext.assertComplete(rolloverProgressDAO.update(progress, dbClient))
-            .onComplete(event -> testContext.completeNow());
+        testContext.completeNow();
+      });
   }
 
 }
