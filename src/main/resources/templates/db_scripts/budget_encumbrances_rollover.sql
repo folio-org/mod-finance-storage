@@ -13,7 +13,7 @@
     #9 if #7 is false create encumbrances with amount non-zero amount calculated with calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) function
     #10 update budget available, unavailable, encumbered, overEncumbrance by sum of encumbrances amount created on #10 step
  */
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 -- Map encumbrance with corresponding encumbranceRollover item, calculate expected encumbrance amount based on that item
 CREATE OR REPLACE FUNCTION public.calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) RETURNS decimal as $$
 	DECLARE

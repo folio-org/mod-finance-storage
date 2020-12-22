@@ -1,5 +1,5 @@
 <#if mode.name() == "UPDATE">
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 -- rename numEncumbrances to numPendingPayments in invoice_transaction_summary table and mark numPendingPayments as processed
 UPDATE ${myuniversity}_${mymodule}.invoice_transaction_summaries
 	SET jsonb = jsonb - '{numEncumbrances}'::text[] || jsonb_build_object('numPendingPayments', -(jsonb->>'numPaymentsCredits')::integer)
@@ -7,7 +7,7 @@ WHERE jsonb ? 'numEncumbrances';
 
 -- Create pending payments from invoice lines
 INSERT INTO ${myuniversity}_${mymodule}.transaction
-SELECT uuid_generate_v4(), jsonb_strip_nulls(jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
+SELECT .public.uuid_generate_v4(), jsonb_strip_nulls(jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
                                               'amount', fdi.amount*(vouchers.jsonb->>'exchangeRate')::decimal, 'source', 'Invoice',
                                               'sourceInvoiceId', invoices.id, 'sourceInvoiceLineId', fdi.il->>'id',
                                               'fiscalYearId', budget.fiscalYearId, 'currency', fy.jsonb->>'currency',
@@ -29,7 +29,7 @@ WHERE invoices.jsonb->>'status' = 'Approved' AND budget.jsonb->>'budgetStatus'='
 
 -- Create pending payments not linked from invoices
 INSERT INTO ${myuniversity}_${mymodule}.transaction
-SELECT uuid_generate_v4(), jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
+SELECT public.uuid_generate_v4(), jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
 											  'amount', fdi.amount*(vouchers.jsonb->>'exchangeRate')::decimal, 'source', 'Invoice',
 											  'sourceInvoiceId', invoice_id,
 											  'fiscalYearId', budget.fiscalYearId, 'currency', fy.jsonb->>'currency')
@@ -78,5 +78,4 @@ UPDATE ${myuniversity}_${mymodule}.ledgerFy as ledger_fy
         GROUP BY ledger.id, transactions.fiscalYearId) AS sub
   WHERE ledger_fy.fiscalYearId=sub.fiscalYearId AND ledger_fy.ledgerId=sub.ledgerId;
 
-DROP EXTENSION "uuid-ossp";
 </#if>
