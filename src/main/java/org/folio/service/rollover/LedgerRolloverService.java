@@ -88,15 +88,13 @@ public class LedgerRolloverService {
       RequestContext requestContext) {
     DBClient client = requestContext.toDBClient();
     log.info("Orders rollover started for Ledger {}", rollover.getLedgerId());
-    return rolloverProgressService.updateRolloverProgress(progress.withOrdersRolloverStatus(IN_PROGRESS)
-      .withFinancialRolloverStatus(SUCCESS), client)
-      .compose(aVoid -> orderRolloverRestClient.postEmptyResponse(rollover, requestContext)
+    return orderRolloverRestClient.postEmptyResponse(rollover, requestContext)
         .recover(t -> {
           log.error("Orders rollover failed for Ledger {}:", t, rollover.getLedgerId());
           return rolloverProgressService.updateRolloverProgress(progress.withOrdersRolloverStatus(ERROR)
             .withOverallRolloverStatus(ERROR), client)
             .compose(v -> Future.failedFuture(t));
-        }))
+        })
       .compose(aVoid -> rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress.withOrdersRolloverStatus(SUCCESS), client));
   }
 
@@ -107,9 +105,7 @@ public class LedgerRolloverService {
         .updateRolloverProgress(progress.withFinancialRolloverStatus(ERROR)
           .withOverallRolloverStatus(ERROR), client)
         .compose(v -> Future.failedFuture(t))))
-      .compose(aVoid -> {
-        return rolloverProgressService.calculateAndUpdateFinancialProgressStatus(progress.withOrdersRolloverStatus(IN_PROGRESS), client);
-      });
+      .compose(aVoid -> rolloverProgressService.calculateAndUpdateFinancialProgressStatus(progress.withOrdersRolloverStatus(IN_PROGRESS), client));
   }
 
   private Future<Void> runRolloverScript(LedgerFiscalYearRollover rollover, DBClient client) {
