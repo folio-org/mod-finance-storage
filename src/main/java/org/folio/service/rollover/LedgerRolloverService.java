@@ -106,7 +106,10 @@ public class LedgerRolloverService {
       .compose(aVoid -> runRolloverScript(rollover, client).recover(t -> rolloverProgressService
         .updateRolloverProgress(progress.withFinancialRolloverStatus(ERROR)
           .withOverallRolloverStatus(ERROR), client)
-        .compose(v -> Future.failedFuture(t))));
+        .compose(v -> Future.failedFuture(t))))
+      .compose(aVoid -> {
+        return rolloverProgressService.calculateAndUpdateFinancialProgressStatus(progress.withOrdersRolloverStatus(IN_PROGRESS), client);
+      });
   }
 
   private Future<Void> runRolloverScript(LedgerFiscalYearRollover rollover, DBClient client) {

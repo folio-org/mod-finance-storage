@@ -56,7 +56,7 @@ public class TenantSampleDataTest extends TestBase {
 
   @BeforeAll
   static void createPurchaseOrderTable() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-    InputStream tableInput = TenantSampleDataTest.class.getClassLoader().getResourceAsStream("orders_schema.sql");
+    InputStream tableInput = TenantSampleDataTest.class.getClassLoader().getResourceAsStream("cross_module_migrations_schemas.sql");
     String sqlFile = IOUtils.toString(Objects.requireNonNull(tableInput), StandardCharsets.UTF_8);
     CompletableFuture<Void> schemaCreated = new CompletableFuture<>();
     PostgresClient.getInstance(StorageTestSuite.getVertx()).runSQLFile(sqlFile, false)

@@ -47,221 +47,228 @@ import io.vertx.junit5.VertxTestContext;
 @ExtendWith(VertxExtension.class)
 public class LedgerRolloverServiceTest {
 
-    @InjectMocks
-    private LedgerRolloverService ledgerRolloverService;
+  @InjectMocks
+  private LedgerRolloverService ledgerRolloverService;
 
-    @Mock
-    private LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO;
+  @Mock
+  private LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO;
 
-    @Mock
-    private RolloverProgressService rolloverProgressService;
+  @Mock
+  private RolloverProgressService rolloverProgressService;
 
-    @Mock
-    private BudgetService budgetService;
+  @Mock
+  private BudgetService budgetService;
 
-    @Mock
-    private PostgresFunctionExecutionService postgresFunctionExecutionService;
+  @Mock
+  private PostgresFunctionExecutionService postgresFunctionExecutionService;
 
-    @Mock
-    private RestClient orderRolloverRestClient;
+  @Mock
+  private RestClient orderRolloverRestClient;
 
-    @Mock
-    private RequestContext requestContext;
+  @Mock
+  private RequestContext requestContext;
 
-    @Mock
-    private DBClient dbClient;
+  @Mock
+  private DBClient dbClient;
 
-    @BeforeEach
-    public void initMocks() {
-        MockitoAnnotations.openMocks(this);
-    }
+  @BeforeEach
+  public void initMocks() {
+    MockitoAnnotations.openMocks(this);
+  }
 
-    @Test
-    void shouldCreateNewRolloverProgressFirstWhenRolloverLedger(VertxTestContext testContext) {
-        LedgerRolloverService spy = Mockito.spy(ledgerRolloverService);
-        LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
-                .withId(UUID.randomUUID().toString());
-        Mockito.doReturn(Future.succeededFuture()).when(spy).rolloverPreparation(any(), isA(LedgerFiscalYearRolloverProgress.class), any());
-        Mockito.doReturn(Future.succeededFuture()).when(spy).startRollover(any(), isA(LedgerFiscalYearRolloverProgress.class), any());
+  @Test
+  void shouldCreateNewRolloverProgressFirstWhenRolloverLedger(VertxTestContext testContext) {
+    LedgerRolloverService spy = Mockito.spy(ledgerRolloverService);
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withId(UUID.randomUUID()
+      .toString());
+    Mockito.doReturn(Future.succeededFuture())
+      .when(spy)
+      .rolloverPreparation(any(), isA(LedgerFiscalYearRolloverProgress.class), any());
+    Mockito.doReturn(Future.succeededFuture())
+      .when(spy)
+      .startRollover(any(), isA(LedgerFiscalYearRolloverProgress.class), any());
 
-        testContext.assertComplete(spy.rolloverLedger(rollover, requestContext))
-                .onComplete(event -> {
-                    testContext.verify(() -> {
-                        ArgumentCaptor<LedgerFiscalYearRolloverProgress> argumentCaptor = ArgumentCaptor.forClass(LedgerFiscalYearRolloverProgress.class);
-                        verify(spy).rolloverPreparation(eq(rollover), argumentCaptor.capture(), eq(requestContext));
-                        LedgerFiscalYearRolloverProgress progress =  argumentCaptor.getValue();
-                        assertEquals(rollover.getId(), progress.getLedgerRolloverId());
-                        assertEquals(SUCCESS, progress.getBudgetsClosingRolloverStatus());
-                        assertEquals(IN_PROGRESS, progress.getOverallRolloverStatus());
-                        assertEquals(NOT_STARTED, progress.getFinancialRolloverStatus());
-                        assertEquals(NOT_STARTED, progress.getOrdersRolloverStatus());
-                        verify(spy).startRollover(eq(rollover), eq(progress), eq(requestContext));
-                    });
-                    testContext.completeNow();
-                });
-    }
-
-    @Test
-    void shouldCallCloseBudgetsWhenRolloverPreparationWithNeedCloseBudgetsTrue(VertxTestContext testContext) {
-        LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
-                .withNeedCloseBudgets(true);
-
-        LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress();
-
-        when(requestContext.toDBClient()).thenReturn(dbClient);
-        when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
-        when(dbClient.endTx()).thenReturn(Future.succeededFuture());
-        when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
-        when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
-        when(budgetService.closeBudgets(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
-
-        testContext.assertComplete(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
-        .onComplete(event -> {
-            testContext.verify(() -> {
-                verify(budgetService).closeBudgets(eq(rollover), eq(dbClient));
-                verify(dbClient, never()).rollbackTransaction();
-            });
-            testContext.completeNow();
+    testContext.assertComplete(spy.rolloverLedger(rollover, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          ArgumentCaptor<LedgerFiscalYearRolloverProgress> argumentCaptor = ArgumentCaptor
+            .forClass(LedgerFiscalYearRolloverProgress.class);
+          verify(spy).rolloverPreparation(eq(rollover), argumentCaptor.capture(), eq(requestContext));
+          LedgerFiscalYearRolloverProgress progress = argumentCaptor.getValue();
+          assertEquals(rollover.getId(), progress.getLedgerRolloverId());
+          assertEquals(SUCCESS, progress.getBudgetsClosingRolloverStatus());
+          assertEquals(IN_PROGRESS, progress.getOverallRolloverStatus());
+          assertEquals(NOT_STARTED, progress.getFinancialRolloverStatus());
+          assertEquals(NOT_STARTED, progress.getOrdersRolloverStatus());
+          verify(spy).startRollover(eq(rollover), eq(progress), eq(requestContext));
         });
+        testContext.completeNow();
+      });
+  }
 
-    }
+  @Test
+  void shouldCallCloseBudgetsWhenRolloverPreparationWithNeedCloseBudgetsTrue(VertxTestContext testContext) {
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withNeedCloseBudgets(true);
 
-    @Test
-    void shouldNotCallCloseBudgetsWhenRolloverPreparationWithNeedCloseBudgetsFalse(VertxTestContext testContext) {
-        LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
-                .withNeedCloseBudgets(false);
+    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress();
 
-        LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress();
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+    when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
+    when(dbClient.endTx()).thenReturn(Future.succeededFuture());
+    when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(budgetService.closeBudgets(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
 
-        when(requestContext.toDBClient()).thenReturn(dbClient);
-        when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
-        when(dbClient.endTx()).thenReturn(Future.succeededFuture());
-        when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
-        when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
-
-        testContext.assertComplete(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
-        .onComplete(event -> {
-            testContext.verify(() -> {
-                verify(budgetService, never()).closeBudgets(any(), any());
-                verify(dbClient, never()).rollbackTransaction();
-            });
-            testContext.completeNow();
+    testContext.assertComplete(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          verify(budgetService).closeBudgets(eq(rollover), eq(dbClient));
+          verify(dbClient, never()).rollbackTransaction();
         });
+        testContext.completeNow();
+      });
 
-    }
+  }
 
-    @Test
-    void shouldRollbackTransactionWhenRolloverPreparationWithExceptionThrownInFuturePipeline(VertxTestContext testContext) {
-        LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
-                .withNeedCloseBudgets(true);
+  @Test
+  void shouldNotCallCloseBudgetsWhenRolloverPreparationWithNeedCloseBudgetsFalse(VertxTestContext testContext) {
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withNeedCloseBudgets(false);
 
-        LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress();
-        Throwable t = new IllegalArgumentException();
+    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress();
 
-        when(requestContext.toDBClient()).thenReturn(dbClient);
-        when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
-        when(dbClient.rollbackTransaction()).thenReturn(Future.succeededFuture());
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+    when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
+    when(dbClient.endTx()).thenReturn(Future.succeededFuture());
+    when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
 
-        when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.failedFuture(t));
-
-
-        testContext.assertFailure(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
-            .onComplete(event -> {
-                testContext.verify(() -> {
-                    verify(dbClient).rollbackTransaction();
-                    verify(dbClient, never()).endTx();
-                });
-                testContext.completeNow();
-            });
-
-    }
-
-    @Test
-    void shouldNotUpdateProgressWithErrorStatusWhenStartRolloverCompletedSuccessfully(VertxTestContext testContext) {
-        LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
-                .withId(UUID.randomUUID().toString());
-        LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
-
-
-        when(requestContext.toDBClient()).thenReturn(dbClient);
-        when(rolloverProgressService.updateRolloverProgress(eq(initialProgress), eq(dbClient))).thenReturn(Future.succeededFuture());
-        when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient)).thenReturn(Future.succeededFuture());
-        when(rolloverProgressService.calculateAndUpdateOverallProgressStatus(eq(initialProgress), eq(dbClient))).thenReturn(Future.succeededFuture());
-        when(orderRolloverRestClient.postEmptyResponse(eq(rollover), eq(requestContext))).thenReturn(Future.succeededFuture());
-
-        testContext.assertComplete(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))
-        .onComplete(event -> {
-            testContext.verify(() -> {
-                ArgumentCaptor<LedgerFiscalYearRolloverProgress> argumentCaptor = ArgumentCaptor.forClass(LedgerFiscalYearRolloverProgress.class);
-                verify(rolloverProgressService, times(2)).updateRolloverProgress(argumentCaptor.capture(), any());
-                List<LedgerFiscalYearRolloverProgress> progressArgs = argumentCaptor.getAllValues();
-                assertThat(progressArgs, everyItem(allOf(
-                        not(hasProperty("budgetsClosingRolloverStatus", is(ERROR))),
-                        not(hasProperty("financialRolloverStatus", is(ERROR))),
-                        not(hasProperty("ordersRolloverStatus", is(ERROR))),
-                        not(hasProperty("overallRolloverStatus", is(ERROR)))
-                )));
-            });
-            testContext.completeNow();
+    testContext.assertComplete(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          verify(budgetService, never()).closeBudgets(any(), any());
+          verify(dbClient, never()).rollbackTransaction();
         });
-    }
+        testContext.completeNow();
+      });
 
-    @Test
-    void shouldUpdateProgressFinancialRolloverStatusWithErrorStatusWhenRunBudgetEncumbrancesRolloverScriptFailed(VertxTestContext testContext) {
-        LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
-                .withId(UUID.randomUUID().toString());
-        LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
-        Exception e = new IllegalArgumentException("Test");
-        when(requestContext.toDBClient()).thenReturn(dbClient);
-        when(rolloverProgressService.updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(IN_PROGRESS), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
-        when(rolloverProgressService.updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(ERROR).withOverallRolloverStatus(ERROR), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
-        when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient)).thenReturn(Future.failedFuture(e));
+  }
 
-        testContext.assertFailure(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))
-                .onComplete(event -> {
-                    testContext.verify(() -> {
-                        assertThat(event.cause(), is(e));
-                        verify(rolloverProgressService, times(2)).updateRolloverProgress(any(), any());
+  @Test
+  void shouldRollbackTransactionWhenRolloverPreparationWithExceptionThrownInFuturePipeline(VertxTestContext testContext) {
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withNeedCloseBudgets(true);
 
-                        verify(orderRolloverRestClient, never()).postEmptyResponse(any(), any());
-                    });
-                    testContext.completeNow();
-                });
-    }
+    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress();
+    Throwable t = new IllegalArgumentException();
 
-    @Test
-    void shouldUpdateProgressOrdersRolloverStatusWithErrorStatusWhenRolloverPostEmptyResponseFailed(VertxTestContext testContext) {
-        LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
-                .withId(UUID.randomUUID().toString());
-        LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+    when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
+    when(dbClient.rollbackTransaction()).thenReturn(Future.succeededFuture());
 
-        Exception e = new IllegalArgumentException("Test");
-        when(requestContext.toDBClient()).thenReturn(dbClient);
+    when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.failedFuture(t));
 
-        when(rolloverProgressService.updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(IN_PROGRESS), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
-        when(rolloverProgressService.updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(SUCCESS).withOrdersRolloverStatus(IN_PROGRESS), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
-        when(rolloverProgressService.updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(SUCCESS).withOrdersRolloverStatus(ERROR).withOverallRolloverStatus(ERROR), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
+    testContext.assertFailure(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          verify(dbClient).rollbackTransaction();
+          verify(dbClient, never()).endTx();
+        });
+        testContext.completeNow();
+      });
 
+  }
 
-        when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient)).thenReturn(Future.succeededFuture());
-        when(orderRolloverRestClient.postEmptyResponse(eq(rollover), eq(requestContext))).thenReturn(Future.failedFuture(e));
+  @Test
+  void shouldNotUpdateProgressWithErrorStatusWhenStartRolloverCompletedSuccessfully(VertxTestContext testContext) {
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withId(UUID.randomUUID()
+      .toString());
+    LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
 
-        testContext.assertFailure(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))
-                .onComplete(event -> {
-                    testContext.verify(() -> {
-                        assertThat(event.cause(), is(e));
-                        verify(rolloverProgressService, times(3)).updateRolloverProgress(any(), any());
-                    });
-                    testContext.completeNow();
-                });
-    }
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+    when(rolloverProgressService.updateRolloverProgress(eq(initialProgress), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
+      .thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.calculateAndUpdateFinancialProgressStatus(eq(initialProgress), eq(dbClient)))
+      .thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.calculateAndUpdateOverallProgressStatus(eq(initialProgress), eq(dbClient)))
+      .thenReturn(Future.succeededFuture());
+    when(orderRolloverRestClient.postEmptyResponse(eq(rollover), eq(requestContext))).thenReturn(Future.succeededFuture());
 
-    private LedgerFiscalYearRolloverProgress getInitialProgress(LedgerFiscalYearRollover rollover) {
-        return new LedgerFiscalYearRolloverProgress().withId(UUID.randomUUID()
-                .toString())
-                .withLedgerRolloverId(rollover.getId())
-                .withBudgetsClosingRolloverStatus(SUCCESS)
-                .withOverallRolloverStatus(IN_PROGRESS)
-                .withMetadata(rollover.getMetadata());
-    }
+    testContext.assertComplete(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          assertThat(initialProgress,
+              allOf(not(hasProperty("budgetsClosingRolloverStatus", is(ERROR))),
+                  not(hasProperty("financialRolloverStatus", is(ERROR))), not(hasProperty("ordersRolloverStatus", is(ERROR))),
+                  not(hasProperty("overallRolloverStatus", is(ERROR)))));
+        });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  void shouldUpdateProgressFinancialRolloverStatusWithErrorStatusWhenRunBudgetEncumbrancesRolloverScriptFailed(
+      VertxTestContext testContext) {
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withId(UUID.randomUUID()
+      .toString());
+    LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
+    Exception e = new IllegalArgumentException("Test");
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+    when(rolloverProgressService
+      .updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(IN_PROGRESS), "id"), eq(dbClient)))
+        .thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.calculateAndUpdateFinancialProgressStatus(eq(initialProgress), eq(dbClient)))
+      .thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(ERROR)
+      .withOverallRolloverStatus(ERROR), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
+      .thenReturn(Future.failedFuture(e));
+
+    testContext.assertFailure(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          assertThat(event.cause(), is(e));
+          verify(orderRolloverRestClient, never()).postEmptyResponse(any(), any());
+        });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  void shouldUpdateProgressOrdersRolloverStatusWithErrorStatusWhenRolloverPostEmptyResponseFailed(VertxTestContext testContext) {
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withId(UUID.randomUUID()
+      .toString());
+    LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
+
+    Exception e = new IllegalArgumentException("Test");
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+
+    when(rolloverProgressService.updateRolloverProgress(refEq(initialProgress.withFinancialRolloverStatus(IN_PROGRESS), "id"), eq(dbClient)))
+        .thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.calculateAndUpdateFinancialProgressStatus(refEq(initialProgress
+      .withOrdersRolloverStatus(IN_PROGRESS), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(SUCCESS)
+      .withOrdersRolloverStatus(ERROR)
+      .withOverallRolloverStatus(ERROR), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
+
+    when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
+      .thenReturn(Future.succeededFuture());
+    when(orderRolloverRestClient.postEmptyResponse(eq(rollover), eq(requestContext))).thenReturn(Future.failedFuture(e));
+
+    testContext.assertFailure(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          assertThat(event.cause(), is(e));
+        });
+        testContext.completeNow();
+      });
+  }
+
+  private LedgerFiscalYearRolloverProgress getInitialProgress(LedgerFiscalYearRollover rollover) {
+    return new LedgerFiscalYearRolloverProgress().withId(UUID.randomUUID()
+      .toString())
+      .withLedgerRolloverId(rollover.getId())
+      .withBudgetsClosingRolloverStatus(SUCCESS)
+      .withOverallRolloverStatus(IN_PROGRESS)
+      .withMetadata(rollover.getMetadata());
+  }
 }

@@ -84,4 +84,45 @@ public class RolloverProgressServiceTest {
 
   }
 
+  @Test
+  void shouldUpdateRolloverProgressWithErrorFinancialStatusWhenThereAreRolloverErrors(VertxTestContext testContext) {
+
+    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
+      .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
+
+    LedgerFiscalYearRolloverError error = new LedgerFiscalYearRolloverError();
+    when(rolloverErrorDAO.get(any(), any())).thenReturn(Future.succeededFuture(Collections.singletonList(error)));
+    when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
+
+    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          assertEquals(ERROR, progress.getOverallRolloverStatus());
+        });
+
+        testContext.completeNow();
+      });
+
+  }
+
+  @Test
+  void shouldUpdateRolloverProgressWithSuccessFinancialStatusWhenThereAreNoRolloverErrors(VertxTestContext testContext) {
+
+    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
+      .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
+
+    when(rolloverErrorDAO.get(any(), any())).thenReturn(Future.succeededFuture(Collections.emptyList()));
+    when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
+
+    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          assertEquals(SUCCESS, progress.getOverallRolloverStatus());
+        });
+
+        testContext.completeNow();
+      });
+
+  }
+
 }

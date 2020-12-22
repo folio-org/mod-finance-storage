@@ -27,8 +27,23 @@ public class RolloverProgressService {
     return rolloverProgressDAO.update(progress, client);
   }
 
+  public Future<Void> calculateAndUpdateFinancialProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
+    Criterion criterion = new CriterionBuilder().with("ledgerRolloverId", progress.getLedgerRolloverId())
+      .build();
+    return rolloverErrorDAO.get(criterion, client)
+      .compose(rolloverErrors -> {
+        if (rolloverErrors.isEmpty()) {
+          progress.setFinancialRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS);
+        } else {
+          progress.setFinancialRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR);
+        }
+        return rolloverProgressDAO.update(progress, client);
+      });
+  }
+
   public Future<Void> calculateAndUpdateOverallProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
-    Criterion criterion = new CriterionBuilder().with("ledgerRolloverId", progress.getLedgerRolloverId()).build();
+    Criterion criterion = new CriterionBuilder().with("ledgerRolloverId", progress.getLedgerRolloverId())
+      .build();
     return rolloverErrorDAO.get(criterion, client)
       .compose(rolloverErrors -> {
         if (rolloverErrors.isEmpty()) {
