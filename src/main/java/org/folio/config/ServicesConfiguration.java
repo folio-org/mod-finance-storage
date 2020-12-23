@@ -5,15 +5,22 @@ import java.util.Set;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.fund.FundDAO;
 import org.folio.dao.ledger.LedgerDAO;
+import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
+import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
+import org.folio.rest.core.RestClient;
+import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledger.StorageLedgerService;
+import org.folio.service.rollover.LedgerRolloverService;
+import org.folio.dao.rollover.RolloverProgressDAO;
+import org.folio.service.rollover.RolloverProgressService;
 import org.folio.service.summary.EncumbranceTransactionSummaryService;
 import org.folio.service.summary.PaymentCreditTransactionSummaryService;
 import org.folio.service.summary.PendingPaymentTransactionSummaryService;
@@ -142,4 +149,24 @@ public class ServicesConfiguration {
   public TransactionManagingStrategyFactory transactionManagingStrategyFactory(Set<TransactionManagingStrategy> transactionServices) {
     return new TransactionManagingStrategyFactory(transactionServices);
   }
+
+  @Bean
+  public PostgresFunctionExecutionService postgresFunctionExecutionService() {
+    return new PostgresFunctionExecutionService();
+  }
+
+  @Bean
+  public RolloverProgressService rolloverProgressService(RolloverProgressDAO rolloverProgressDAO, RolloverErrorDAO rolloverErrorDAO) {
+    return new RolloverProgressService(rolloverProgressDAO, rolloverErrorDAO);
+  }
+
+  @Bean
+  public LedgerRolloverService ledgerRolloverService(LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO,
+                                                     BudgetService budgetService,
+                                                     RolloverProgressService rolloverProgressService,
+                                                     PostgresFunctionExecutionService postgresFunctionExecutionService,
+                                                     RestClient orderRolloverRestClient) {
+    return new LedgerRolloverService(ledgerFiscalYearRolloverDAO, budgetService, rolloverProgressService, postgresFunctionExecutionService, orderRolloverRestClient);
+  }
+
 }

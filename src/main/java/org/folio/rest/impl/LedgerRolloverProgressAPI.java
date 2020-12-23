@@ -16,7 +16,7 @@ import io.vertx.core.Handler;
 
 public class LedgerRolloverProgressAPI implements FinanceStorageLedgerRolloversProgress {
 
-  private static final String LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE = "ledger_fiscal_year_rollover_progress";
+  public static final String LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE = "ledger_fiscal_year_rollover_progress";
 
   @Override
   @Validate
