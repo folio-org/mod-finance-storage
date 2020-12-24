@@ -90,7 +90,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
       .map(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo)
           .mapTo(Budget.class);
-        CalculationUtils.recalculateBudgetAllocation(budgetToNew, allocation, allocation.getAmount());
+        CalculationUtils.recalculateBudgetAllocationTo(budgetToNew, allocation, allocation.getAmount());
         budgetService.updateBudgetMetadata(budgetToNew, allocation);
         return budgetToNew;
       })
@@ -106,7 +106,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
       .map(budgetFrom -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFrom)
           .mapTo(Budget.class);
-        CalculationUtils.recalculateBudgetAllocation(budgetFromNew, allocation, -allocation.getAmount());
+        CalculationUtils.recalculateBudgetAllocationFrom(budgetFromNew, allocation, allocation.getAmount());
         budgetService.updateBudgetMetadata(budgetFromNew, allocation);
         return budgetFromNew;
       })

@@ -760,13 +760,12 @@ public class EncumbrancesTest extends TestBase {
 
   private void verifyBudgetTotalsAfter(Budget budget) {
     double expectedOverEncumbrance = max(0, subtractValues(budget.getEncumbered(),
-      max(0, subtractValues(budget.getAllocated(), budget.getAwaitingPayment(), budget.getExpenditures()))));
+      max(0, budget.getTotalFunding())));
     assertEquals(expectedOverEncumbrance, budget.getOverEncumbrance());
     assertTrue(budget.getUnavailable() >= 0);
-    assertTrue(budget.getUnavailable() <= budget.getAllocated());
-    double expectedUnavailable = sumValues(budget.getEncumbered(), budget.getAwaitingPayment(), budget.getExpenditures(), -budget.getOverEncumbrance(), -budget.getOverExpended());
+    double expectedUnavailable = sumValues(budget.getEncumbered(), budget.getAwaitingPayment(), budget.getExpenditures());
     assertEquals(expectedUnavailable, budget.getUnavailable());
-    assertEquals(sumValues(budget.getAvailable(), budget.getUnavailable()), budget.getAllocated());
+    assertEquals(subtractValues(sumValues(budget.getInitialAllocation(), budget.getAllocationTo()), budget.getAllocationFrom()), budget.getAllocated());
   }
 
 
@@ -801,7 +800,7 @@ public class EncumbrancesTest extends TestBase {
       .withFundId(fundId)
       .withFiscalYearId(fiscalYearId)
       .withBudgetStatus(Budget.BudgetStatus.ACTIVE)
-      .withAllocated(allocated)
+      .withInitialAllocation(allocated)
       .withAvailable(available)
       .withExpenditures(1500d)
       .withAwaitingPayment(1500d)

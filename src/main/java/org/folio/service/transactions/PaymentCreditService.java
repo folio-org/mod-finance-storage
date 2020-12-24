@@ -170,6 +170,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
         double newAwaitingPayment = MoneyUtils.subtractMoney(budget.getAwaitingPayment(), txn.getAmount(), currency);
         budget.setAwaitingPayment(newAwaitingPayment);
         budgetService.updateBudgetMetadata(budget, txn);
+        budgetService.clearReadOnlyFields(budget);
       });
   }
 
@@ -183,6 +184,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
         budget.setExpenditures(MoneyUtils.subtractMoney(budget.getExpenditures(), txn.getAmount(), currency));
         budget.setAwaitingPayment(MoneyUtils.sumMoney(budget.getAwaitingPayment(), txn.getAmount(), currency));
         budgetService.updateBudgetMetadata(budget, txn);
+        budgetService.clearReadOnlyFields(budget);
       });
   }
 

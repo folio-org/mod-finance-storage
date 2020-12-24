@@ -1,12 +1,11 @@
 package org.folio.utils;
 
 import static org.folio.utils.MoneyUtils.subtractMoney;
-import static org.folio.utils.MoneyUtils.subtractMoneyNonNegative;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
+import java.math.BigDecimal;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
-
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 
@@ -14,47 +13,59 @@ public final class CalculationUtils {
 
   private CalculationUtils() {}
 
-  public static void recalculateOverEncumbered(Budget budget, CurrencyUnit currency) {
-    double a = subtractMoneyNonNegative(sumMoney(budget.getAllocated(), budget.getNetTransfers(), currency), budget.getExpenditures(), currency);
-    a = subtractMoneyNonNegative(a, budget.getAwaitingPayment(), currency);
-    double newOverEncumbrance = subtractMoneyNonNegative(budget.getEncumbered(), a, currency);
-    budget.setOverEncumbrance(newOverEncumbrance);
-  }
-
-  public static void recalculateOverExpended(Budget budget, CurrencyUnit currency) {
-    double a = subtractMoneyNonNegative(sumMoney(budget.getAllocated(), budget.getNetTransfers(), currency), budget.getEncumbered(), currency);
-    a = subtractMoneyNonNegative(a, budget.getExpenditures(), currency);
-    double newOverExpended = subtractMoneyNonNegative(budget.getAwaitingPayment(), a, currency);
-    budget.setOverExpended(newOverExpended);
-  }
-
-  public static void recalculateAvailableUnavailable(Budget budget, CurrencyUnit currency) {
-    double newUnavailable = sumMoney(currency, budget.getEncumbered(), budget.getAwaitingPayment(), budget.getExpenditures(),
-      -budget.getOverEncumbrance(), -budget.getOverExpended());
-    double maxAvailable = sumMoney(budget.getAllocated(), budget.getNetTransfers(), currency);
-    double newAvailable = subtractMoneyNonNegative(maxAvailable, newUnavailable, currency);
-
-    budget.setAvailable(newAvailable);
-    budget.setUnavailable(newUnavailable);
-  }
-
   public static void recalculateBudgetTransfer(Budget budgetFromNew, Transaction transfer, Double netTransferAmount) {
     CurrencyUnit currency = Monetary.getCurrency(transfer.getCurrency());
 
     double newNetTransfers = subtractMoney(budgetFromNew.getNetTransfers(), netTransferAmount, currency);
     budgetFromNew.setNetTransfers(newNetTransfers);
-
-    recalculateOverEncumbered(budgetFromNew, currency);
-    recalculateAvailableUnavailable(budgetFromNew, currency);
-
   }
 
-  public static void recalculateBudgetAllocation(Budget budget, Transaction allocation, Double allocatedAmount) {
+  public static void recalculateBudgetAllocationFrom(Budget budget, Transaction allocation, Double allocatedAmount) {
     CurrencyUnit currency = Monetary.getCurrency(allocation.getCurrency());
-    double newAllocation = sumMoney(budget.getAllocated(), allocatedAmount, currency);
-    budget.setAllocated(newAllocation);
-    recalculateOverEncumbered(budget, currency);
-    recalculateOverExpended(budget, currency);
-    recalculateAvailableUnavailable(budget, currency);
+    double newAllocation = sumMoney(budget.getAllocationFrom(), allocatedAmount, currency);
+    if (budget.getInitialAllocation() > 0) {
+      budget.setAllocationFrom(newAllocation);
+    } else {
+      budget.setInitialAllocation(allocatedAmount);
+    }
+  }
+
+  public static void recalculateBudgetAllocationTo(Budget budget, Transaction allocation, Double allocatedAmount) {
+    CurrencyUnit currency = Monetary.getCurrency(allocation.getCurrency());
+    double newAllocation = sumMoney(budget.getAllocationTo(), allocatedAmount, currency);
+    if (budget.getInitialAllocation() > 0) {
+      budget.setAllocationTo(newAllocation);
+    } else {
+      budget.setInitialAllocation(allocatedAmount);
+    }
+  }
+
+  public static void calculateBudgetSummaryFields(Budget budget) {
+    BigDecimal initialAllocation = BigDecimal.valueOf(budget.getInitialAllocation());
+    BigDecimal allocationFrom = BigDecimal.valueOf(budget.getAllocationFrom());
+    BigDecimal allocationTo = BigDecimal.valueOf(budget.getAllocationTo());
+
+    BigDecimal netTransfers = BigDecimal.valueOf(budget.getNetTransfers());
+    BigDecimal expended = BigDecimal.valueOf(budget.getExpenditures());
+    BigDecimal encumbered = BigDecimal.valueOf(budget.getEncumbered());
+    BigDecimal awaitingPayment = BigDecimal.valueOf(budget.getAwaitingPayment());
+
+    BigDecimal allocated = initialAllocation.add(allocationTo).subtract(allocationFrom);
+    BigDecimal unavailable = encumbered.add(awaitingPayment).add(expended);
+    BigDecimal totalFunding = allocated.add(netTransfers);
+    BigDecimal cashBalance = totalFunding.subtract(expended);
+    BigDecimal available = totalFunding.subtract(unavailable).max(BigDecimal.ZERO);
+    BigDecimal overEncumbered = encumbered.subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
+    BigDecimal overExpended = encumbered
+      .subtract(totalFunding.subtract(expended).max(BigDecimal.ZERO).subtract(awaitingPayment).max(BigDecimal.ZERO))
+      .max(BigDecimal.ZERO);
+
+    budget.setAllocated(allocated.doubleValue());
+    budget.setAvailable(available.doubleValue());
+    budget.setUnavailable(unavailable.doubleValue());
+    budget.setOverEncumbrance(overEncumbered.doubleValue());
+    budget.setOverExpended(overExpended.doubleValue());
+    budget.setTotalFunding(totalFunding.doubleValue());
+    budget.setCashBalance(cashBalance.doubleValue());
   }
 }

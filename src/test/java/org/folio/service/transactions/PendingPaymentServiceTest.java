@@ -180,8 +180,8 @@ public class PendingPaymentServiceTest {
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
-    assertThat(updatedBudget.getAvailable(), is(available.subtract(notLinkedAmount).doubleValue()));
-    assertThat(updatedBudget.getUnavailable(), is(unavailable.add(notLinkedAmount).doubleValue()));
+    assertThat(updatedBudget.getAvailable(), is(available.doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(unavailable.doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(linkedAmount).add(notLinkedAmount).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.subtract(linkedAmount).doubleValue()));
 
@@ -253,8 +253,8 @@ public class PendingPaymentServiceTest {
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
-    assertThat(updatedBudget.getAvailable(), is(available.subtract(linkedAmount).add(encumbered).doubleValue()));
-    assertThat(updatedBudget.getUnavailable(), is(unavailable.add(linkedAmount).subtract(encumbered).doubleValue()));
+    assertThat(updatedBudget.getAvailable(), is(available.doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(unavailable.doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(linkedAmount).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(0.0));
 
@@ -324,8 +324,8 @@ public class PendingPaymentServiceTest {
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
-    assertThat(updatedBudget.getAvailable(), is(available.subtract(linkedAmount).add(encumbered).doubleValue()));
-    assertThat(updatedBudget.getUnavailable(), is(unavailable.add(linkedAmount).subtract(encumbered).doubleValue()));
+    assertThat(updatedBudget.getAvailable(), is(available.doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(unavailable.doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(linkedAmount).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(0d));
 
@@ -397,10 +397,9 @@ public class PendingPaymentServiceTest {
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
-    assertThat(updatedBudget.getAvailable(), is(max(available.subtract(linkedAmount).add(encumbered).doubleValue(), 0d)));
-    assertThat(updatedBudget.getUnavailable(), is(min(unavailable.add(linkedAmount).subtract(encumbered).doubleValue(), updatedBudget.getAllocated())));
+    assertThat(updatedBudget.getAvailable(), is(available.doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(unavailable.doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(linkedAmount).doubleValue()));
-    assertThat(updatedBudget.getOverExpended(), is(awaitingPayment.add(linkedAmount).subtract(allocated).subtract(netTransfer).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(0d));
 
   }
@@ -453,8 +452,8 @@ public class PendingPaymentServiceTest {
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
-    assertThat(updatedBudget.getAvailable(), is(available.subtract(notLinkedAmount).doubleValue()));
-    assertThat(updatedBudget.getUnavailable(), is(unavailable.add(notLinkedAmount).doubleValue()));
+    assertThat(updatedBudget.getAvailable(), is(available.doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(unavailable.doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(notLinkedAmount).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.doubleValue()));
 
@@ -509,10 +508,9 @@ public class PendingPaymentServiceTest {
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
-    assertThat(updatedBudget.getAvailable(), is(available.subtract(notLinkedAmount).max(BigDecimal.ZERO).doubleValue()));
-    assertThat(updatedBudget.getUnavailable(), is(unavailable.add(notLinkedAmount).min(BigDecimal.valueOf(100)).doubleValue()));
+    assertThat(updatedBudget.getAvailable(), is(available.doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(unavailable.doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(notLinkedAmount).doubleValue()));
-    assertThat(updatedBudget.getOverExpended(), is(awaitingPayment.add(notLinkedAmount).add(encumbered).subtract(BigDecimal.valueOf(100)).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.doubleValue()));
 
   }
@@ -567,8 +565,8 @@ public class PendingPaymentServiceTest {
 
     BigDecimal amountDifference = newAmount.subtract(amount);
 
-    assertThat(updatedBudget.getAvailable(), is(available.subtract(amountDifference).doubleValue()));
-    assertThat(updatedBudget.getUnavailable(), is(unavailable.add(amountDifference).doubleValue()));
+    assertThat(updatedBudget.getAvailable(), is(available.doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(unavailable.doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(awaitingPayment.add(amountDifference).doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.doubleValue()));
 
@@ -720,10 +718,9 @@ public class PendingPaymentServiceTest {
     BigDecimal expectedAwaitingPayment = awaitingPayment.add(amountDifference);
     BigDecimal expectedUnavailable = expectedAwaitingPayment.add(encumbered);
 
-    assertThat(updatedBudget.getAvailable(), is(allocated.subtract(expectedUnavailable).doubleValue()));
-    assertThat(updatedBudget.getUnavailable(), is(expectedUnavailable.doubleValue()));
+    assertThat(updatedBudget.getAvailable(), is(available.doubleValue()));
+    assertThat(updatedBudget.getUnavailable(), is(unavailable.doubleValue()));
     assertThat(updatedBudget.getAwaitingPayment(), is(expectedAwaitingPayment.doubleValue()));
-    assertThat(updatedBudget.getOverExpended(), is(0d));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.doubleValue()));
 
   }

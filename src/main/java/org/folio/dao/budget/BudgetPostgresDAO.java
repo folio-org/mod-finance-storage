@@ -23,6 +23,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import org.folio.rest.persist.PgExceptionUtil;
+import org.folio.utils.CalculationUtils;
 
 public class BudgetPostgresDAO implements BudgetDAO {
 
@@ -65,6 +66,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
         } else {
           List<Budget> budgets = reply.result()
             .getResults();
+          budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
           promise.complete(budgets);
         }
       });
@@ -86,7 +88,9 @@ public class BudgetPostgresDAO implements BudgetDAO {
           promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), Response.Status.NOT_FOUND.getReasonPhrase()));
         } else {
           logger.debug("Budget with id={} successfully extracted", id);
-          promise.complete(budget.mapTo(Budget.class));
+          Budget convertedBudget = budget.mapTo(Budget.class);
+          CalculationUtils.calculateBudgetSummaryFields(convertedBudget);
+          promise.complete(convertedBudget);
         }
       }
     });

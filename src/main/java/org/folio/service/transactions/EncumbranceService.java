@@ -11,7 +11,6 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
-import org.folio.utils.CalculationUtils;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -122,9 +121,7 @@ public class EncumbranceService implements TransactionManagingStrategy {
           double newEncumbered = sumMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency);
           budget.setEncumbered(newEncumbered);
           budgetService.updateBudgetMetadata(budget, tmpTransaction);
-
-          CalculationUtils.recalculateOverEncumbered(budget, currency);
-          CalculationUtils.recalculateAvailableUnavailable(budget, currency);
+          budgetService.clearReadOnlyFields(budget);
         });
     }
     return budget;
@@ -232,9 +229,7 @@ public class EncumbranceService implements TransactionManagingStrategy {
 
     budget.setEncumbered(newEncumbered);
     budgetService.updateBudgetMetadata(budget, tmpTransaction);
-
-    CalculationUtils.recalculateOverEncumbered(budget, currency);
-    CalculationUtils. recalculateAvailableUnavailable(budget, currency);
+    budgetService.clearReadOnlyFields(budget);
   }
 
 
