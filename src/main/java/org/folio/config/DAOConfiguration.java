@@ -6,6 +6,9 @@ import org.folio.dao.fund.FundDAO;
 import org.folio.dao.fund.FundPostgresDAO;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.dao.ledger.LedgerPostgresDAO;
+import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
+import org.folio.dao.rollover.RolloverErrorDAO;
+import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
 import org.folio.dao.summary.OrderTransactionSummaryDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
@@ -67,6 +70,21 @@ public class DAOConfiguration {
   @Bean
   public TransactionDAO pendingPaymentDAO() {
     return new PendingPaymentDAO();
+  }
+
+  @Bean
+  public LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO() {
+    return new LedgerFiscalYearRolloverDAO();
+  }
+
+  @Bean
+  public RolloverProgressDAO rolloverProgressDAO() {
+    return new RolloverProgressDAO();
+  }
+
+  @Bean
+  public RolloverErrorDAO rolloverErrorDAO() {
+    return new RolloverErrorDAO();
   }
 
 }

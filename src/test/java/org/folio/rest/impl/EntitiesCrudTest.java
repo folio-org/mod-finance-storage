@@ -5,6 +5,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgressCollection;
 import org.folio.rest.utils.TestEntities;
 import org.junit.Assert;
 import org.junit.jupiter.api.MethodOrderer;
@@ -83,6 +85,15 @@ public class EntitiesCrudTest extends TestBase {
       .response()
       .as(testEntity.getClazz()));
     testAllFieldsExists(responseJson, sampleJson);
+
+    if (testEntity == LEDGER_FISCAL_YEAR_ROLLOVER) {
+      LedgerFiscalYearRolloverProgressCollection collection = getData(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS.getEndpoint() + "?query=ledgerRolloverId==" + testEntity.getId() + " AND id<>" + LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS.getId()).as(LedgerFiscalYearRolloverProgressCollection.class);
+      String progressId = collection.getLedgerFiscalYearRolloverProgresses().get(0).getId();
+      deleteData(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS.getEndpointWithId(), progressId).then()
+              .log()
+              .ifValidationFails()
+              .statusCode(204);
+    }
   }
 
   @ParameterizedTest

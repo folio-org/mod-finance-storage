@@ -68,6 +68,11 @@
     },
     {
       "run": "after",
+      "snippetPath": "budget_encumbrances_rollover.sql",
+      "fromModuleVersion": "mod-finance-storage-6.1.0"
+    },
+    {
+      "run": "after",
       "snippetPath": "migration/update_budget_summary_information.sql",
       "fromModuleVersion": "mod-finance-storage-6.1.0"
     },

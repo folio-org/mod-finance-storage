@@ -48,16 +48,13 @@ public class PendingPaymentRestrictionService extends BaseTransactionRestriction
     Money allocated = Money.of(budget.getAllocated(), currency);
     // get allowableExpenditure from percentage value
     double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
-    Money available = Money.of(budget.getAvailable(), currency);
     Money expenditure = Money.of(budget.getExpenditures(), currency);
     Money encumbered = Money.of(budget.getEncumbered(), currency);
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
     Money relatedEncumbered = relatedTransaction == null ? Money.of(0d, currency) : Money.of(relatedTransaction.getAmount(), currency);
-    Money unavailable = Money.of(budget.getUnavailable(), currency);
     Money netTransfers = Money.of(budget.getNetTransfers(), currency);
 
     Money result = allocated.add(netTransfers).multiply(allowableExpenditure);
-    result = result.subtract(allocated.subtract(unavailable.add(available)));
     result = result.subtract(encumbered.add(expenditure.add(awaitingPayment)).subtract(relatedEncumbered));
 
     return result;
