@@ -1,6 +1,5 @@
 {
   "id": "d71635df-c08c-49cc-9082-197a30fd0392",
-  "allocated": 0,
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
   "budgetStatus": "Active",
@@ -8,5 +7,9 @@
   "fundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
   "name": "AFRICAHIST-FY2020",
   "netTransfers": 0,
-  "overEncumbrance": 0
+  "expenditures": 0,
+  "encumbered": 0,
+  "initialAllocation": 0,
+  "allocationTo": 0,
+  "allocationFrom": 0
 }

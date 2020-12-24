@@ -33,7 +33,6 @@ import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
-import org.folio.utils.CalculationUtils;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
@@ -104,7 +103,6 @@ public class PendingPaymentService implements TransactionManagingStrategy {
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)
       .compose(oldBudgets -> processLinkedPendingPayments(linkedToEncumbrance, oldBudgets, client)
         .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
-        .map(this::makeAvailableUnavailableNonNegative)
         .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)))
       .map(transactions);
   }
@@ -172,8 +170,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
           double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getAmount(), currency);
           budget.setAwaitingPayment(newAwaitingPayment);
           budgetService.updateBudgetMetadata(budget, tmpTransaction);
-          CalculationUtils.recalculateOverExpended(budget, currency);
-          CalculationUtils.recalculateAvailableUnavailable(budget, currency);
+          budgetService.clearReadOnlyFields(budget);
         });
     }
     return budget;
@@ -252,10 +249,8 @@ public class PendingPaymentService implements TransactionManagingStrategy {
         MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);
 
         budget.setEncumbered(encumbered.add(amount).getNumber().doubleValue());
-        CalculationUtils.recalculateOverEncumbered(budget, currency);
-        CalculationUtils.recalculateAvailableUnavailable(budget, currency);
         budgetService.updateBudgetMetadata(budget, transaction);
-
+        budgetService.clearReadOnlyFields(budget);
         transaction.setAmount(0.00);
       });
     }
@@ -273,9 +268,8 @@ public class PendingPaymentService implements TransactionManagingStrategy {
        double newAwaitingPayment = awaitingPayment.add(amount).getNumber().doubleValue();
        budget.setEncumbered(newEncumbered);
        budget.setAwaitingPayment(newAwaitingPayment);
-       CalculationUtils.recalculateOverEncumbered(budget, currency);
-       CalculationUtils.recalculateOverExpended(budget, currency);
        budgetService.updateBudgetMetadata(budget, transaction);
+       budgetService.clearReadOnlyFields(budget);
      });
   }
 
@@ -289,10 +283,8 @@ public class PendingPaymentService implements TransactionManagingStrategy {
         double newEncumbered = encumbered.subtract(amount).getNumber().doubleValue();
         budget.setEncumbered(newEncumbered);
         transaction.setAmount(0.00);
-        CalculationUtils.recalculateOverEncumbered(budget, currency);
-        CalculationUtils.recalculateOverExpended(budget, currency);
-        CalculationUtils.recalculateAvailableUnavailable(budget, currency);
         budgetService.updateBudgetMetadata(budget, transaction);
+        budgetService.clearReadOnlyFields(budget);
       });
     }
 

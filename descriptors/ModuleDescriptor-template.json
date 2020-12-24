@@ -4,7 +4,7 @@
   "provides": [
     {
       "id": "finance-storage.budgets",
-      "version": "2.2",
+      "version": "2.3",
       "handlers": [
         {
           "methods": ["GET"],

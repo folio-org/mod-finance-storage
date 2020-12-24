@@ -19,6 +19,7 @@ import javax.ws.rs.core.Response;
 
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
@@ -36,6 +37,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
+import org.folio.utils.CalculationUtils;
 
 public class BudgetService {
 
@@ -135,6 +137,7 @@ public class BudgetService {
   }
 
   public Future<Integer> updateBatchBudgets(Collection<Budget> budgets, DBClient client) {
+    budgets.forEach(this::clearReadOnlyFields);
     return budgetDAO.updateBatchBudgets(buildUpdateBudgetsQuery(budgets, client.getTenantId()), client);
   }
 
@@ -153,6 +156,15 @@ public class BudgetService {
   public void updateBudgetMetadata(Budget budget, Transaction transaction) {
     budget.getMetadata().setUpdatedDate(transaction.getMetadata().getUpdatedDate());
     budget.getMetadata().setUpdatedByUserId(transaction.getMetadata().getUpdatedByUserId());
+  }
+  public void clearReadOnlyFields(Budget budgetFromNew) {
+    budgetFromNew.setAllocated(null);
+    budgetFromNew.setAvailable(null);
+    budgetFromNew.setUnavailable(null);
+    budgetFromNew.setOverEncumbrance(null);
+    budgetFromNew.setOverExpended(null);
+    budgetFromNew.setCashBalance(null);
+    budgetFromNew.setTotalFunding(null);
   }
 
   public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBClient client) {
@@ -175,5 +187,8 @@ public class BudgetService {
         }
         return Future.succeededFuture();
       });
+  }
+  public void updateBudgetsWithCalculatedFilds(List<Budget> budgets){
+    budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
   }
 }
