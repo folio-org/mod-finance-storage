@@ -5,7 +5,7 @@ set jsonb = jsonb ||
                                                                WHERE jsonb -> 'transactionType' = '"Allocation"'
                                                                  and jsonb -> 'fiscalYearId' = budget.jsonb -> 'fiscalYearId'
                                                                  and jsonb -> 'toFundId' = budget.jsonb -> 'fundId'
-                                                               order by budget.creation_date
+                                                               order by creation_date
                                                                limit 1), '0'))::decimal) ||
             jsonb_build_object('allocationTo', (coalesce((SELECT sum(amount.amount)
                                                           FROM (select (jsonb ->> 'amount')::decimal as amount
