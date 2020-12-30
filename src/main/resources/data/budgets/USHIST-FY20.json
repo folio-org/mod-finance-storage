@@ -1,12 +1,10 @@
 {
   "id": "5255e36f-4444-49d5-baa3-38f7f687f69d",
-  "allocated": 0.00,
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
   "budgetStatus": "Active",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "fundId": "65032151-39a5-4cef-8810-5350eb316300",
   "name": "USHIST-FY2020",
-  "netTransfers": 0,
-  "overEncumbrance": 0
+  "netTransfers": 0
 }

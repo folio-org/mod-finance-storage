@@ -1,12 +1,10 @@
 {
   "id": "735fdf73-592b-4967-85ef-e8b82d09382c",
-  "allocated": 0.00,
   "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
   "budgetStatus": "Active",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "fundId": "4428a37c-8bae-4f0d-865d-970d83d5ad55",
   "name": "UNIV-SUBN-FY2020",
-  "netTransfers": 0,
-  "overEncumbrance": 0
+  "netTransfers": 0
 }
