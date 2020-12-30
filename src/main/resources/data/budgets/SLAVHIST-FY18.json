@@ -1,16 +1,13 @@
 {
   "id": "a7c63802-4c1a-4646-9392-024e08df9c02",
-  "allocated": 15000.00,
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "available": 9188.07,
-  "awaitingPayment": 90.36,
+  "awaitingPayment": 0,
   "budgetStatus": "Active",
-  "encumbered": 4384.44,
-  "expenditures": 1337.13,
+  "encumbered": 0,
+  "expenditures": 0,
   "fiscalYearId": "8da275b8-e099-49a1-9a31-b8241ff26ffc",
   "fundId": "f31a36de-fcf8-44f9-87ef-a55d06ad21ae",
   "name": "SLAVHIST-FY2018",
-  "netTransfers": 0,
-  "overEncumbrance": 0
+  "netTransfers": 0
 }
