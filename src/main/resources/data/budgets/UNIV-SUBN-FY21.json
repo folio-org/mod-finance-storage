@@ -1,11 +1,10 @@
 {
-  "id": "eb3c3a49-0c6d-423d-bf60-ac6ad2f96221",
-  "allocated": 0.00,
+  "id": "735fdf73-592b-4967-85ef-e8b82d09382c",
   "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
   "budgetStatus": "Active",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
-  "fundId": "d6f7c1ba-a237-465e-94ed-f37e91bc64bd",
-  "name": "EXCH-SUBN-FY2020",
+  "fundId": "4428a37c-8bae-4f0d-865d-970d83d5ad55",
+  "name": "UNIV-SUBN-FY2021",
   "netTransfers": 0
 }

@@ -1,9 +1,9 @@
 {
-  "id": "78110b4e-2f8e-4eef-81ee-3058c0c7a9ee",
-  "name": "Fiscal Year 2019",
+  "id": "8da275b8-e099-49a1-9a31-b8241ff26ffc",
+  "name": "FY19",
   "code": "FY2019",
   "currency": "USD",
-  "description": "Fiscal year for 2019",
+  "description": "Fiscal year 2019",
   "periodStart": "2019-01-01T00:00:00Z",
   "periodEnd": "2019-12-31T23:59:59Z",
   "series": "FY"

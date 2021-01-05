@@ -5,7 +5,6 @@
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
   "source": "User",
   "sourceFiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
-  "sourceInvoiceId": "041c1fe8-adfa-44eb-b6b3-f85acdd71f81",
   "toFundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
   "transactionType": "Allocation"
 }

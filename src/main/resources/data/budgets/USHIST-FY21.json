@@ -1,11 +1,10 @@
 {
-  "id": "4eadbf22-e6dc-4ea4-9453-c6e9de2cb5a8",
-  "allocated": 0.00,
+  "id": "5255e36f-4444-49d5-baa3-38f7f687f69d",
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
   "budgetStatus": "Active",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
-  "fundId": "30fcc8e7-a019-43f4-b642-2edc389f4501",
-  "name": "MIDEASTHIS-FY2020",
+  "fundId": "65032151-39a5-4cef-8810-5350eb316300",
+  "name": "USHIST-FY2021",
   "netTransfers": 0
 }
