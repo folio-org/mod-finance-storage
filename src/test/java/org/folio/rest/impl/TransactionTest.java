@@ -47,7 +47,7 @@ public class TransactionTest extends TestBase {
   public static final String ALLOCATION_TO_FUND_SAMPLE_PATH = "data/funds/ANZHIST.json";
   public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets/CANLATHIST-FY21-closed.json";
   public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets/ANZHIST-FY21.json";
-  public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations/allocation2_CANLATHIST-FY21.json";
+  public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations/allocation_CANLATHIST-FY21.json";
 
   @BeforeEach
   void prepareData() throws MalformedURLException {
@@ -224,7 +224,7 @@ public class TransactionTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
 
-    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation1_AFRICAHIST-FY21.json"));
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation_AFRICAHIST-FY21.json"));
     jsonAllocation.remove("id");
     String allocationSample = jsonAllocation.toString();
 
@@ -289,7 +289,7 @@ public class TransactionTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
 
-    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation1_AFRICAHIST-FY21.json"));
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation_AFRICAHIST-FY21.json"));
     jsonAllocation.remove("id");
     String allocationSample = jsonAllocation.toString();
 
