@@ -1,12 +1,12 @@
 {
-  "id": "53c28e77-4623-4af7-ad3d-60a9ba470c45",
-  "allocated": 0.00,
+  "id": "012e7da4-003c-48ff-9feb-f3745044da35",
+  "allocated": 0,
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
   "budgetStatus": "Active",
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
-  "fundId": "e6d7e91a-4dbc-4a70-9b38-e000d2fbdc79",
-  "name": "LATAMHIST-FY2020",
+  "fundId": "69640328-788e-43fc-9c3c-af39e243f3b7",
+  "name": "ANZHIST-FY2021",
   "netTransfers": 0,
   "overEncumbrance": 0
 }

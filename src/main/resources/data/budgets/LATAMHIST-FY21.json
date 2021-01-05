@@ -1,16 +1,12 @@
 {
-  "id": "f6aea7f1-e614-4010-a2f7-913bb63d1561",
+  "id": "53c28e77-4623-4af7-ad3d-60a9ba470c45",
   "allocated": 0.00,
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "available": 0,
-  "awaitingPayment": 0,
   "budgetStatus": "Active",
-  "encumbered": 0,
-  "expenditures": 0,
   "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
-  "fundId": "fb7b70f1-b898-4924-a991-0e4b6312bb5f",
-  "name": "HIST-FY2020",
+  "fundId": "e6d7e91a-4dbc-4a70-9b38-e000d2fbdc79",
+  "name": "LATAMHIST-FY2021",
   "netTransfers": 0,
   "overEncumbrance": 0
 }

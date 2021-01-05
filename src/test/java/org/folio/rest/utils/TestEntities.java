@@ -7,15 +7,15 @@ import org.folio.rest.persist.HelperUtils;
 public enum TestEntities {
   //The Order is important because of the foreign key relationships
   EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageExpenseClasses.class), ExpenseClass.class, "data/expense-classes/", "elec.json", "name", "Electronic", 2),
-  FISCAL_YEAR(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class), FiscalYear.class, "data/fiscal-years/", "fy20.json", "name", "FY20", 3),
+  FISCAL_YEAR(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class), FiscalYear.class, "data/fiscal-years/", "fy21.json", "name", "FY21", 4),
   LEDGER(HelperUtils.getEndpoint(FinanceStorageLedgers.class), Ledger.class, "data/ledgers/", "One-time.json", "code", "One-time", 3),
   FUND_TYPE(HelperUtils.getEndpoint(FinanceStorageFundTypes.class), FundType.class, "data/fund-types/", "approvals.json", "name", "New type name", 26),
   FUND(HelperUtils.getEndpoint(FinanceStorageFunds.class), Fund.class, "data/funds/", "AFRICAHIST.json", "name", "African History", 21),
-  BUDGET(HelperUtils.getEndpoint(FinanceStorageBudgets.class), Budget.class, "data/budgets/", "AFRICAHIST-FY20.json", "name", "AFRICAHIST-FY20", 21),
-  BUDGET_EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageBudgetExpenseClasses.class), BudgetExpenseClass.class, "data/budget-expense-classes/", "AFRICAHIST-FY20-elec.json", "status", "Inactive", 1),
-  TRANSACTION(HelperUtils.getEndpoint(FinanceStorageTransactions.class), Transaction.class, "data/transactions/", "allocations/allocation1_AFRICAHIST-FY20.json", "source", "Invoice", 17),
+  BUDGET(HelperUtils.getEndpoint(FinanceStorageBudgets.class), Budget.class, "data/budgets/", "AFRICAHIST-FY21.json", "name", "AFRICAHIST-FY21", 21),
+  BUDGET_EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageBudgetExpenseClasses.class), BudgetExpenseClass.class, "data/budget-expense-classes/", "AFRICAHIST-FY21-elec.json", "status", "Inactive", 1),
+  TRANSACTION(HelperUtils.getEndpoint(FinanceStorageTransactions.class), Transaction.class, "data/transactions/", "allocations/allocation1_AFRICAHIST-FY21.json", "source", "Invoice", 17),
   GROUP(HelperUtils.getEndpoint(FinanceStorageGroups.class), Group.class, "data/groups/", "HIST.json", "name", "New name", 1),
-  GROUP_FUND_FY(HelperUtils.getEndpoint(FinanceStorageGroupFundFiscalYears.class), GroupFundFiscalYear.class, "data/group-fund-fiscal-years/", "AFRICAHIST-FY20.json", "fundId", "7fbd5d84-62d1-44c6-9c45-6cb173998bbd", 12),
+  GROUP_FUND_FY(HelperUtils.getEndpoint(FinanceStorageGroupFundFiscalYears.class), GroupFundFiscalYear.class, "data/group-fund-fiscal-years/", "AFRICAHIST-FY21.json", "fundId", "7fbd5d84-62d1-44c6-9c45-6cb173998bbd", 12),
   LEDGER_FISCAL_YEAR_ROLLOVER(HelperUtils.getEndpoint(FinanceStorageLedgerRollovers.class), LedgerFiscalYearRollover.class, "data/ledger-fiscal-year-rollovers/", "main-library.json", "restrictEncumbrance", "true", 0),
   LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversProgress.class), LedgerFiscalYearRolloverProgress.class, "data/ledger-fiscal-year-rollovers/", "main-library-progress.json", "financialRolloverStatus", "Success", 0),
   LEDGER_FISCAL_YEAR_ROLLOVER_ERROR(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversErrors.class), LedgerFiscalYearRolloverError.class, "data/ledger-fiscal-year-rollovers/", "main-library-errors.json", "errorType", "Fund", 0);

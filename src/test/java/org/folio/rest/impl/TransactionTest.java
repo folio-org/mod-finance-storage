@@ -36,7 +36,7 @@ public class TransactionTest extends TestBase {
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
   private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";
-  public static final String ALLOCATION_SAMPLE = "data/transactions/allocations/allocation_ZAFRICAHIST-FY20_ANZHIST-FY20.json";
+  public static final String ALLOCATION_SAMPLE = "data/transactions/allocations/allocation_ZAFRICAHIST-FY21_ANZHIST-FY21.json";
   public static final String TRANSFER_NOT_ENOUGH_MONEY_ERROR_TEXT = "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer";
 
   static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
@@ -45,9 +45,9 @@ public class TransactionTest extends TestBase {
   public static final String LEDGER_MAIN_LIBRARY_SAMPLE_PATH = "data/ledgers/MainLibrary.json";
   public static final String ALLOCATION_FROM_FUND_SAMPLE_PATH = "data/funds/CANLATHIST.json";
   public static final String ALLOCATION_TO_FUND_SAMPLE_PATH = "data/funds/ANZHIST.json";
-  public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets/CANLATHIST-FY20-closed.json";
-  public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets/ANZHIST-FY20.json";
-  public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations/allocation2_CANLATHIST-FY20.json";
+  public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets/CANLATHIST-FY21-closed.json";
+  public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets/ANZHIST-FY21.json";
+  public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations/allocation2_CANLATHIST-FY21.json";
 
   @BeforeEach
   void prepareData() throws MalformedURLException {
@@ -224,7 +224,7 @@ public class TransactionTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
 
-    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation1_AFRICAHIST-FY20.json"));
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation1_AFRICAHIST-FY21.json"));
     jsonAllocation.remove("id");
     String allocationSample = jsonAllocation.toString();
 
@@ -289,7 +289,7 @@ public class TransactionTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
 
-    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation1_AFRICAHIST-FY20.json"));
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation1_AFRICAHIST-FY21.json"));
     jsonAllocation.remove("id");
     String allocationSample = jsonAllocation.toString();
 
