@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.dao.rollover.LedgerFiscalYearRolloverDAO.LEDGER_FISCAL_YEAR_ROLLOVER_TABLE;
 import static org.folio.rest.RestConstants.OKAPI_URL;
+import static org.folio.rest.util.ResponseUtils.buildNoContentResponse;
 import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
 
 public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
@@ -71,9 +72,18 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
 
   @Override
   @Validate
-  public void deleteFinanceStorageLedgerRolloversById(String id, String lang, Map<String, String> okapiHeaders,
+  public void deleteFinanceStorageLedgerRolloversById(String rolloverId, String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.deleteById(LEDGER_FISCAL_YEAR_ROLLOVER_TABLE, id, okapiHeaders, vertxContext, DeleteFinanceStorageLedgerRolloversByIdResponse.class, asyncResultHandler);
+    ledgerRolloverService.deleteRollover(rolloverId, new RequestContext(vertxContext, okapiHeaders))
+      .onComplete(result -> {
+        if (result.failed()) {
+          HttpStatusException cause = (HttpStatusException) result.cause();
+          log.error("Rollover deletion error {}", cause, rolloverId);
+          HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
+        } else {
+          asyncResultHandler.handle(buildNoContentResponse());
+        }
+      });
   }
 
   @Override

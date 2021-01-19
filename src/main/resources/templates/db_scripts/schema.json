@@ -616,6 +616,12 @@
           "removeAccents": true
         }
       ],
+      "uniqueIndex": [
+        {
+          "fieldName": "ledgerRolloverId",
+          "tOps": "ADD"
+        }
+      ],
       "foreignKeys": [
         {
           "fieldName": "ledgerRolloverId",
