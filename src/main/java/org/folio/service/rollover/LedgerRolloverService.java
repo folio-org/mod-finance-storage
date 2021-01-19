@@ -4,6 +4,8 @@ import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.Overal
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS;
 
+import io.vertx.core.Promise;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 import java.util.UUID;
 
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
@@ -11,6 +13,7 @@ import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
@@ -41,6 +44,10 @@ public class LedgerRolloverService {
 
   public Future<Void> rolloverLedger(LedgerFiscalYearRollover rollover, RequestContext requestContext) {
 
+    if (rollover.getId() == null) {
+      rollover.setId(UUID.randomUUID().toString());
+    }
+
     LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress().withId(UUID.randomUUID()
       .toString())
       .withLedgerRolloverId(rollover.getId())
@@ -51,6 +58,37 @@ public class LedgerRolloverService {
     return rolloverPreparation(rollover, progress, requestContext)
       .onSuccess(aVoid -> startRollover(rollover, progress, requestContext));
 
+  }
+
+  public Future<Void> deleteRollover(String rolloverId, RequestContext requestContext) {
+    DBClient client = requestContext.toDBClient();
+    return rolloverProgressService.getLedgerRolloverProgressForRollover(rolloverId, client)
+      .compose(rolloverProgress ->
+        checkCanDeleteRollover(rolloverProgress)
+        .compose(aVoid -> deleteRolloverWithProgress(rolloverProgress, requestContext)));
+  }
+
+  private  Future<Void> deleteRolloverWithProgress(LedgerFiscalYearRolloverProgress rolloverProgress, RequestContext requestContext) {
+    DBClient client = requestContext.toDBClient();
+    return client.startTx()
+      .compose(aVoid -> rolloverProgressService.deleteRolloverProgress(rolloverProgress.getId(), client))
+      .compose(aVoid -> ledgerFiscalYearRolloverDAO.delete(rolloverProgress.getLedgerRolloverId(), client))
+      .compose(aVoid -> client.endTx())
+      .onFailure(t -> {
+        log.error("Rollover delete failed for Ledger {}", rolloverProgress.getLedgerRolloverId());
+        client.rollbackTransaction();
+    });
+  }
+
+  private Future<Void> checkCanDeleteRollover(LedgerFiscalYearRolloverProgress rolloverProgress) {
+    Promise<Void> promise = Promise.promise();
+    OverallRolloverStatus ordersRolloverStatus = rolloverProgress.getOrdersRolloverStatus();
+    if (ordersRolloverStatus.equals(IN_PROGRESS)) {
+      promise.fail(new HttpStatusException(422, "Can't delete in progress rollover"));
+    } else {
+      promise.complete();
+    }
+    return promise.future();
   }
 
   public Future<Void> rolloverPreparation(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,

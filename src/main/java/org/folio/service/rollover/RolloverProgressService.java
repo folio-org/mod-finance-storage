@@ -1,13 +1,13 @@
 package org.folio.service.rollover;
 
+import io.vertx.core.Future;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.Criteria.Criterion;
-
-import io.vertx.core.Future;
 
 public class RolloverProgressService {
 
@@ -25,6 +25,19 @@ public class RolloverProgressService {
 
   public Future<Void> updateRolloverProgress(LedgerFiscalYearRolloverProgress progress, DBClient client) {
     return rolloverProgressDAO.update(progress, client);
+  }
+
+  public Future<LedgerFiscalYearRolloverProgress> getLedgerRolloverProgressForRollover(String rolloverId, DBClient client){
+    Criterion criterion = new CriterionBuilder()
+      .with("ledgerRolloverId", rolloverId).build();
+    return rolloverProgressDAO.get(criterion, client)
+      .map(progresses -> {
+        if (progresses.isEmpty()) {
+          throw new HttpStatusException(404, "Can't retrieve rollover progress by rolloverId");
+        } else {
+          return progresses.get(0);
+        }
+      });
   }
 
   public Future<Void> calculateAndUpdateFinancialProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
@@ -53,5 +66,9 @@ public class RolloverProgressService {
         }
         return rolloverProgressDAO.update(progress, client);
       });
+  }
+
+  public Future<Void> deleteRolloverProgress(String rolloverId, DBClient client) {
+    return rolloverProgressDAO.delete(rolloverId, client);
   }
 }
