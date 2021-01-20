@@ -30,10 +30,10 @@ public class RolloverErrorDAO {
     return promise.future();
   }
 
-  public Future<Void> delete(String id, DBClient client) {
+  public Future<Void> deleteByQuery(Criterion filter, DBClient client) {
     Promise<Void> promise = Promise.promise();
     client.getPgClient()
-      .delete(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, id, reply -> {
+      .delete(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, filter, reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {

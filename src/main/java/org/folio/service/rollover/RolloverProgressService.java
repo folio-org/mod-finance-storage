@@ -1,13 +1,9 @@
 package org.folio.service.rollover;
 
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
-import java.util.ArrayList;
-import java.util.List;
 import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
-import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.CriterionBuilder;
@@ -44,12 +40,6 @@ public class RolloverProgressService {
       });
   }
 
-  public Future<List<LedgerFiscalYearRolloverError>> getLedgerRolloverErrorsForRollover(String rolloverId, DBClient client){
-    Criterion criterion = new CriterionBuilder()
-      .with("ledgerRolloverId", rolloverId).build();
-    return rolloverErrorDAO.get(criterion, client);
-  }
-
   public Future<Void> calculateAndUpdateFinancialProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
     Criterion criterion = new CriterionBuilder().with("ledgerRolloverId", progress.getLedgerRolloverId())
       .build();
@@ -83,11 +73,7 @@ public class RolloverProgressService {
   }
 
   public Future<Void> deleteRolloverErrors(String ledgerRolloverId, DBClient client) {
-    return getLedgerRolloverErrorsForRollover(ledgerRolloverId, client)
-      .compose(errors -> {
-        List<Future> futures = new ArrayList<>();
-        errors.forEach(error -> futures.add(rolloverErrorDAO.delete(error.getId(), client)));
-        return CompositeFuture.all(futures).mapEmpty();
-      });
+    Criterion criterion = new CriterionBuilder().with("ledgerRolloverId", ledgerRolloverId).build();
+    return rolloverErrorDAO.deleteByQuery(criterion, client);
   }
 }
