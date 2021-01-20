@@ -71,4 +71,9 @@ public class RolloverProgressService {
   public Future<Void> deleteRolloverProgress(String rolloverId, DBClient client) {
     return rolloverProgressDAO.delete(rolloverId, client);
   }
+
+  public Future<Void> deleteRolloverErrors(String ledgerRolloverId, DBClient client) {
+    Criterion criterion = new CriterionBuilder().with("ledgerRolloverId", ledgerRolloverId).build();
+    return rolloverErrorDAO.deleteByQuery(criterion, client);
+  }
 }
