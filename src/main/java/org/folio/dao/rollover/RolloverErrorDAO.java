@@ -29,4 +29,17 @@ public class RolloverErrorDAO {
 
     return promise.future();
   }
+
+  public Future<Void> delete(String id, DBClient client) {
+    Promise<Void> promise = Promise.promise();
+    client.getPgClient()
+      .delete(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, id, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete();
+        }
+      });
+    return promise.future();
+  }
 }

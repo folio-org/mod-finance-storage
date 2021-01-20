@@ -65,13 +65,14 @@ public class LedgerRolloverService {
     return rolloverProgressService.getLedgerRolloverProgressForRollover(rolloverId, client)
       .compose(rolloverProgress ->
         checkCanDeleteRollover(rolloverProgress)
-        .compose(aVoid -> deleteRolloverWithProgress(rolloverProgress, requestContext)));
+        .compose(aVoid -> deleteRolloverWithProgressAndErrors(rolloverProgress, requestContext)));
   }
 
-  private  Future<Void> deleteRolloverWithProgress(LedgerFiscalYearRolloverProgress rolloverProgress, RequestContext requestContext) {
+  private  Future<Void> deleteRolloverWithProgressAndErrors(LedgerFiscalYearRolloverProgress rolloverProgress, RequestContext requestContext) {
     DBClient client = requestContext.toDBClient();
     return client.startTx()
       .compose(aVoid -> rolloverProgressService.deleteRolloverProgress(rolloverProgress.getId(), client))
+      .compose(aVoid -> rolloverProgressService.deleteRolloverErrors(rolloverProgress.getLedgerRolloverId(), client))
       .compose(aVoid -> ledgerFiscalYearRolloverDAO.delete(rolloverProgress.getLedgerRolloverId(), client))
       .compose(aVoid -> client.endTx())
       .onFailure(t -> {
