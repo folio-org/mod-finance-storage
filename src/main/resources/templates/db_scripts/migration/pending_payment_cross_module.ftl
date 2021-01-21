@@ -7,7 +7,7 @@ WHERE jsonb ? 'numEncumbrances';
 
 -- Create pending payments from invoice lines
 INSERT INTO ${myuniversity}_${mymodule}.transaction
-SELECT .public.uuid_generate_v4(), jsonb_strip_nulls(jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
+SELECT public.uuid_generate_v4(), jsonb_strip_nulls(jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
                                               'amount', fdi.amount*(vouchers.jsonb->>'exchangeRate')::decimal, 'source', 'Invoice',
                                               'sourceInvoiceId', invoices.id, 'sourceInvoiceLineId', fdi.il->>'id',
                                               'fiscalYearId', budget.fiscalYearId, 'currency', fy.jsonb->>'currency',
