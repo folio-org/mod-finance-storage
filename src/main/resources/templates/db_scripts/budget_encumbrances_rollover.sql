@@ -173,6 +173,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
         totalFunding                    decimal;
         available                       decimal;
         unavailable                     decimal;
+        allowableEncumbrance            decimal;
+        allowableExpenditure            decimal;
         metadata                        jsonb;
 
     BEGIN
@@ -198,6 +200,16 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
             newNetTransfers := available;
          ELSE
             newNetTransfers := 0;
+         END IF;
+
+         IF
+             (budget_rollover->>'setAllowances')::boolean
+         THEN
+             allowableEncumbrance := budget_rollover->>'allowableEncumbrance';
+             allowableExpenditure := budget_rollover->>'allowableExpenditure';
+         ELSE
+             allowableEncumbrance := _budget->>'allowableEncumbrance';
+             allowableExpenditure := _budget->>'allowableExpenditure';
          END IF;
 
         newAllocated := newAllocated +
@@ -226,8 +238,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
                 'allocationFrom', 0,
                 'metadata', metadata,
                 'budgetStatus', 'Active',
-                'allowableEncumbrance', budget_rollover->>'allowableEncumbrance',
-                'allowableExpenditure', budget_rollover->>'allowableExpenditure',
+                'allowableEncumbrance', allowableEncumbrance,
+                'allowableExpenditure', allowableExpenditure,
                 'netTransfers', newNetTransfers,
                 'awaitingPayment', 0,
                 'encumbered', 0,
