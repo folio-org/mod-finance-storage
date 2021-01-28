@@ -82,7 +82,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             -- #7
             (_rollover_record->>'restrictEncumbrance')::boolean AND EXISTS (SELECT sum((tr.jsonb->>'amount')::decimal) FROM ${myuniversity}_${mymodule}.transaction tr
                 LEFT JOIN ${myuniversity}_${mymodule}.budget budget ON tr.fromFundId=budget.fundId
-                WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.fiscalYearId::text=_rollover_record->>'fromFiscalYearId' AND budget.fiscalYearId::text=_rollover_record->>'toFiscalYearId'
+                WHERE budget.jsonb->>'allowableEncumbrance' IS NOT NULL AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.fiscalYearId::text=_rollover_record->>'fromFiscalYearId' AND budget.fiscalYearId::text=_rollover_record->>'toFiscalYearId'
                 GROUP BY budget.jsonb, tr.jsonb->>'fromFundId'
                 HAVING sum(public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record)) > ((budget.jsonb->>'initialAllocation')::decimal +
                                                                                                       (budget.jsonb->>'allocationTo')::decimal -
@@ -176,6 +176,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
         allowableEncumbrance            decimal;
         allowableExpenditure            decimal;
         metadata                        jsonb;
+        result_budget                   jsonb;
 
     BEGIN
          SELECT br INTO budget_rollover FROM jsonb_array_elements(_rollover_record->'budgetsRollover') br
@@ -229,7 +230,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
 
         metadata := _rollover_record->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text);
 
-        RETURN (_budget - 'id') || jsonb_build_object
+        result_budget := (_budget - 'id' - 'allowableEncumbrance' - 'allowableExpenditure') || jsonb_build_object
             (
                 'fiscalYearId', _rollover_record->>'toFiscalYearId',
                 'name', (_fund->>'code') || '-' ||  (_fiscal_year->>'code'),
@@ -238,13 +239,23 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
                 'allocationFrom', 0,
                 'metadata', metadata,
                 'budgetStatus', 'Active',
-                'allowableEncumbrance', allowableEncumbrance,
-                'allowableExpenditure', allowableExpenditure,
                 'netTransfers', newNetTransfers,
                 'awaitingPayment', 0,
                 'encumbered', 0,
                 'expenditures', 0
             );
+
+        IF allowableEncumbrance is not null
+        THEN
+            result_budget := result_budget || jsonb_build_object('allowableEncumbrance', allowableEncumbrance);
+        END IF;
+
+        IF allowableExpenditure is not null
+        THEN
+            result_budget := result_budget || jsonb_build_object('allowableExpenditure', allowableExpenditure);
+        END IF;
+
+        RETURN result_budget;
     END;
 $$ LANGUAGE plpgsql;
 
