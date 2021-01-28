@@ -56,9 +56,7 @@ public final class CalculationUtils {
     BigDecimal cashBalance = totalFunding.subtract(expended);
     BigDecimal available = totalFunding.subtract(unavailable).max(BigDecimal.ZERO);
     BigDecimal overEncumbered = encumbered.subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
-    BigDecimal overExpended = encumbered
-      .subtract(totalFunding.subtract(expended).max(BigDecimal.ZERO).subtract(awaitingPayment).max(BigDecimal.ZERO))
-      .max(BigDecimal.ZERO);
+    BigDecimal overExpended = expended.add(awaitingPayment).subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
 
     budget.setAllocated(allocated.doubleValue());
     budget.setAvailable(available.doubleValue());
