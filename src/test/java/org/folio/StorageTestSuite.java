@@ -38,6 +38,7 @@ import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.PendingPaymentServiceTest;
 import org.folio.service.transactions.restriction.PendingPaymentRestrictionServiceTest;
+import org.folio.utils.CalculationUtilsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -206,4 +207,7 @@ public class StorageTestSuite {
 
   @Nested
   class RolloverErrorDAOTestNested extends RolloverErrorDAOTest {}
+
+  @Nested
+  class CalculationUtilsTestNested extends CalculationUtilsTest {}
 }
