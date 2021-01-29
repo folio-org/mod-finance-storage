@@ -20,15 +20,13 @@ import javax.ws.rs.core.Response;
 
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.rest.jaxrs.model.Budget;
-import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.util.ErrorCodes;
+import org.folio.utils.CalculationUtils;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -40,7 +38,6 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
-import org.folio.utils.CalculationUtils;
 
 public class BudgetService {
 

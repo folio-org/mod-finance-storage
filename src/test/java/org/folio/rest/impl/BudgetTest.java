@@ -1,6 +1,8 @@
 package org.folio.rest.impl;
 
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
+import static org.folio.rest.impl.TransactionsSummariesTest.ORDERS_SUMMARY_SAMPLE;
+import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.BUDGET;
@@ -18,9 +20,12 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.MalformedURLException;
+import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
+import org.folio.rest.jaxrs.model.OrderTransactionSummary;
+import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.util.ErrorCodes;
 import org.folio.rest.utils.TestEntities;
 import org.hamcrest.beans.HasProperty;
@@ -28,12 +33,14 @@ import org.hamcrest.beans.HasPropertyWithValue;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
+import io.vertx.core.json.JsonObject;
 
 public class BudgetTest extends TestBase {
 
   private static final String BUDGET_ENDPOINT = TestEntities.BUDGET.getEndpoint();
   private static final String BUDGET_TEST_TENANT = "budget_test_tenant";
   private static final Header BUDGET_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, BUDGET_TEST_TENANT);
+  private static final String ENCUMBR_SAMPLE = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
 
   @Test
   void testGetQuery() throws MalformedURLException {
@@ -57,7 +64,7 @@ public class BudgetTest extends TestBase {
   }
 
   @Test
-  void testAbleToDeleteBudgetWithExitingOnlyAllocationTransactions() throws MalformedURLException {
+  void testAbleToDeleteBudgetWithExistingOnlyAllocationTransactions() throws MalformedURLException {
     prepareTenant(BUDGET_TENANT_HEADER, false, true);
 
     givenTestData(BUDGET_TENANT_HEADER,
@@ -69,6 +76,38 @@ public class BudgetTest extends TestBase {
 
     deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then()
       .statusCode(204);
+
+    deleteTenant(BUDGET_TENANT_HEADER);
+  }
+
+  @Test
+  void testDeleteBudgetFailedWhenExistOtherThenAllocationTransactions() throws MalformedURLException {
+    prepareTenant(BUDGET_TENANT_HEADER, false, true);
+
+    givenTestData(BUDGET_TENANT_HEADER,
+      Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
+      Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
+      Pair.of(FUND, FUND.getPathToSampleFile()),
+      Pair.of(BUDGET, BUDGET.getPathToSampleFile()));
+
+    String orderId = UUID.randomUUID().toString();
+
+    OrderTransactionSummary sample = new JsonObject(getFile(ORDERS_SUMMARY_SAMPLE)).mapTo(OrderTransactionSummary.class);
+    sample.setId(orderId);
+    postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
+      .encodePrettily(), BUDGET_TENANT_HEADER).as(OrderTransactionSummary.class);
+
+
+    Transaction transaction = new JsonObject(getFile(ENCUMBR_SAMPLE)).mapTo(Transaction.class);
+    transaction.getEncumbrance().setSourcePurchaseOrderId(orderId);
+
+    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(transaction).encodePrettily(), BUDGET_TENANT_HEADER)
+      .then()
+      .statusCode(201);
+
+    deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then()
+      .statusCode(400)
+      .body(containsString(TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
 
     deleteTenant(BUDGET_TENANT_HEADER);
   }
