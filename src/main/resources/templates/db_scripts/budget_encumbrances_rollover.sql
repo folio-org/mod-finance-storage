@@ -113,7 +113,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         SELECT budget.jsonb  AS budget
                         FROM ${myuniversity}_${mymodule}.transaction tr
                         LEFT JOIN ${myuniversity}_${mymodule}.budget budget ON tr.jsonb->>'fromFundId'=budget.fundId::text
-                        WHERE tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
+                        WHERE budget.jsonb->>'allowableEncumbrance' IS NOT NULL
+                            AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
                             AND budget.fiscalYearId::text=_rollover_record->>'toFiscalYearId'
                         GROUP BY tr.jsonb->>'fromFundId', budget.jsonb
                         HAVING sum(public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record)) > ((budget.jsonb->>'initialAllocation')::decimal +
