@@ -57,7 +57,7 @@ public class BudgetTest extends TestBase {
   }
 
   @Test
-  void testDeleteBudgetWithExitingTransactionsMustFail() throws MalformedURLException {
+  void testAbleToDeleteBudgetWithExitingOnlyAllocationTransactions() throws MalformedURLException {
     prepareTenant(BUDGET_TENANT_HEADER, false, true);
 
     givenTestData(BUDGET_TENANT_HEADER,
@@ -68,8 +68,7 @@ public class BudgetTest extends TestBase {
       Pair.of(TRANSACTION, TRANSACTION.getPathToSampleFile()));
 
     deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then()
-      .statusCode(400)
-      .body(containsString(TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
+      .statusCode(204);
 
     deleteTenant(BUDGET_TENANT_HEADER);
   }
