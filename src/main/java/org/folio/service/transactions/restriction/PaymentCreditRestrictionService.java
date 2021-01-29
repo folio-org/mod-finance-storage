@@ -34,8 +34,8 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
   }
 
   /**
-   * Calculates remaining amount for payment [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable +
-   * available)) - (expenditure + encumbered + awaitingPayment - relatedAwaitingPayment)
+   * Calculates remaining amount for payment
+   * [remaining amount] = (allocated + netTransfers) * allowableExpenditure - (encumbered + awaitingPayment + expended) + relatedAwaitingPayment
    *
    * @param budget             processed budget
    * @param currency

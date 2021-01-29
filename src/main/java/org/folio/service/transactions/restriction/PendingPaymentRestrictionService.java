@@ -35,8 +35,8 @@ public class PendingPaymentRestrictionService extends BaseTransactionRestriction
   }
 
   /**
-   * Calculates remaining amount for payment and pending payments [remaining amount] = (allocated * allowableExpenditure) - (allocated
-   * - (unavailable + available)) - (encumbered + expended + awaitingPayment - relatedEncumbered)
+   * Calculates remaining amount for payment and pending payments
+   * [remaining amount] = (allocated + netTransfers) * allowableExpenditure - (encumbered + awaitingPayment + expended) + relatedEncumbered
    *
    * @param budget             processed budget
    * @param currency

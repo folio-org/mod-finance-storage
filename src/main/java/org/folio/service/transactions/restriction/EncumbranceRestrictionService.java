@@ -26,8 +26,8 @@ public class EncumbranceRestrictionService extends BaseTransactionRestrictionSer
   }
 
   /**
-   * Calculates remaining amount for encumbrance [remaining amount] = (allocated * allowableEncumbered) - (allocated - (unavailable
-   * + available)) - (encumbered + awaitingPayment + expenditures)
+   * Calculates remaining amount for encumbrance
+   * [remaining amount] = (allocated + netTransfers) * allowableEncumbered - (encumbered + awaitingPayment + expended)
    *
    * @param budget   processed budget
    * @param currency
