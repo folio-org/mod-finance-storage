@@ -39,18 +39,15 @@ public class EncumbranceRestrictionService extends BaseTransactionRestrictionSer
     Money allocated = Money.of(budget.getAllocated(), currency);
     // get allowableEncumbered converted from percentage value
     double allowableEncumbered = Money.of(budget.getAllowableEncumbrance(), currency).divide(100d).getNumber().doubleValue();
-    Money unavailable = Money.of(budget.getUnavailable(), currency);
-    Money available = Money.of(budget.getAvailable(), currency);
     Money encumbered = Money.of(budget.getEncumbered(), currency);
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
-    Money expenditures = Money.of(budget.getExpenditures(), currency);
+    Money expended = Money.of(budget.getExpenditures(), currency);
     Money netTransfers = Money.of(budget.getNetTransfers(), currency);
 
-    Money result = allocated.add(netTransfers).multiply(allowableEncumbered);
-    result = result.subtract(allocated.subtract(unavailable.add(available)));
-    result = result.subtract(encumbered.add(awaitingPayment).add(expenditures));
+    Money totalFunding = allocated.add(netTransfers);
+    Money unavailable = encumbered.add(awaitingPayment).add(expended);
 
-    return result;
+    return totalFunding.multiply(allowableEncumbered).subtract(unavailable);
   }
 
   @Override
