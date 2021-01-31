@@ -34,8 +34,8 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
   }
 
   /**
-   * Calculates remaining amount for payment [remaining amount] = (allocated * allowableExpenditure) - (allocated - (unavailable +
-   * available)) - (expenditure + encumbered + awaitingPayment - relatedAwaitingPayment)
+   * Calculates remaining amount for payment
+   * [remaining amount] = (allocated + netTransfers) * allowableExpenditure - (encumbered + awaitingPayment + expended) + relatedAwaitingPayment
    *
    * @param budget             processed budget
    * @param currency
@@ -48,17 +48,16 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
     // get allowableExpenditure from percentage value
     double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d).getNumber().doubleValue();
 
-    Money expenditure = Money.of(budget.getExpenditures(), currency);
+    Money expended = Money.of(budget.getExpenditures(), currency);
     Money relatedAwaitingPayment = relatedTransaction == null ? Money.of(0d, currency) : Money.of(relatedTransaction.getAmount(), currency);
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
     Money encumbered = Money.of(budget.getEncumbered(), currency);
     Money netTransfers = Money.of(budget.getNetTransfers(), currency);
 
-    Money result = allocated.add(netTransfers).multiply(allowableExpenditure);
+    Money totalFunding = allocated.add(netTransfers);
+    Money unavailable = encumbered.add(awaitingPayment).add(expended);
 
-    result = result.subtract(expenditure.add(encumbered).add(awaitingPayment).subtract(relatedAwaitingPayment));
-
-    return result;
+    return totalFunding.multiply(allowableExpenditure).subtract(unavailable).add(relatedAwaitingPayment);
   }
 
   @Override

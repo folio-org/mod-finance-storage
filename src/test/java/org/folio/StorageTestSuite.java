@@ -37,6 +37,8 @@ import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.PendingPaymentServiceTest;
+import org.folio.service.transactions.restriction.EncumbranceRestrictionServiceTest;
+import org.folio.service.transactions.restriction.PaymentCreditRestrictionServiceTest;
 import org.folio.service.transactions.restriction.PendingPaymentRestrictionServiceTest;
 import org.folio.utils.CalculationUtilsTest;
 import org.junit.jupiter.api.AfterAll;
@@ -186,6 +188,12 @@ public class StorageTestSuite {
 
   @Nested
   class PendingPaymentTransactionSummaryServiceTestNested extends PendingPaymentTransactionSummaryServiceTest {}
+
+  @Nested
+  class EncumbranceRestrictionServiceTestNested extends EncumbranceRestrictionServiceTest {}
+
+  @Nested
+  class PaymentCreditRestrictionServiceTestNested extends PaymentCreditRestrictionServiceTest {}
 
   @Nested
   class PendingPaymentRestrictionServiceTestNested extends PendingPaymentRestrictionServiceTest {}
