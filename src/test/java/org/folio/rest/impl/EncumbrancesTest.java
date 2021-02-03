@@ -8,6 +8,7 @@ import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SU
 import static org.folio.rest.jaxrs.model.Encumbrance.Status.PENDING;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
+import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TestEntities.BUDGET;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
@@ -34,7 +35,9 @@ import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
+import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,15 +47,21 @@ import io.vertx.core.json.JsonObject;
 public class EncumbrancesTest extends TestBase {
 
   public static final String ENCUMBRANCE_SAMPLE = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
+  private static TenantJob tenantJob;
 
   @BeforeEach
-  void prepareData() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, false, true);
+  void prepareData() {
+    tenantJob = prepareTenant(TRANSACTION_TENANT_HEADER, false, true);
   }
 
   @AfterEach
-  void deleteData() throws MalformedURLException {
-    deleteTenant(TRANSACTION_TENANT_HEADER);
+  void deleteData() {
+    purge(TRANSACTION_TENANT_HEADER);
+  }
+
+  @AfterAll
+  public static void after() {
+    deleteTenant(tenantJob, TRANSACTION_TENANT_HEADER);
   }
 
   @Test

@@ -9,6 +9,7 @@ import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
+import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
@@ -27,8 +28,10 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
+import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionCollection;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,15 +44,21 @@ public class PaymentsCreditsTest extends TestBase {
   private static final String CREDIT_SAMPLE = "data/transactions/credits/credit_CANHIST_30121.json";
   private static final String PAYMENT_SAMPLE = "data/transactions/payments/payment_ENDOW-SUBN_30121.json";
   private static final String TRANSACTION_SAMPLE = "data/transactions/encumbrances/encumbrance_ENDOW-SUBN_S60402_80.json";
+  private static TenantJob tenantJob;
 
   @BeforeEach
-  void prepareData() throws MalformedURLException {
-    prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
+  void prepareData() {
+    tenantJob = prepareTenant(TRANSACTION_TENANT_HEADER, true, true);
   }
 
   @AfterEach
-  void cleanupData() throws MalformedURLException {
-    deleteTenant(TRANSACTION_TENANT_HEADER);
+  void cleanupData() {
+    purge(TRANSACTION_TENANT_HEADER);
+  }
+
+  @AfterAll
+  public static void after() {
+    deleteTenant(tenantJob, TRANSACTION_TENANT_HEADER);
   }
 
   @Test

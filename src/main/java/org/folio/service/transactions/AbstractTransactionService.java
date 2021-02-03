@@ -1,14 +1,15 @@
 package org.folio.service.transactions;
 
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
+
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public abstract class AbstractTransactionService implements TransactionService {
   public static final String TRANSACTION_TABLE = "transaction";
@@ -16,7 +17,7 @@ public abstract class AbstractTransactionService implements TransactionService {
   public static final String FROM_FUND_ID = "fromFundId";
   public static final String TO_FUND_ID = "toFundId";
 
-  protected final Logger log = LoggerFactory.getLogger(this.getClass());
+  protected final Logger log = LogManager.getLogger(this.getClass());
 
   @Override
   public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {

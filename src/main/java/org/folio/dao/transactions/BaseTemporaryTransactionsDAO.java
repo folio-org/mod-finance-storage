@@ -8,20 +8,20 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
 
 public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransactionDAO {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  protected final Logger logger = LogManager.getLogger(this.getClass());
 
   private final String tableName;
 
@@ -46,7 +46,7 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
           logger.debug("New transaction with id={} successfully created", transaction.getId());
           promise.complete(transaction);
         } else {
-          logger.error("Transaction creation with id={} failed", reply.cause(), transaction.getId());
+          logger.error("Transaction creation with id={} failed", transaction.getId(), reply.cause());
           handleFailure(promise, reply);
         }
       });
@@ -66,7 +66,7 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
 
     client.getPgClient().get(tableName, Transaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
-        logger.error("Failed to extract temporary transaction by summary id={}", reply.cause(), summaryId);
+        logger.error("Failed to extract temporary transaction by summary id={}", summaryId, reply.cause());
         handleFailure(promise, reply);
       } else {
         List<Transaction> transactions = reply.result().getResults();

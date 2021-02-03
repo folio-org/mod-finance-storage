@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.ws.rs.core.Response;
 
 import io.vertx.sqlclient.Tuple;
+import org.apache.logging.log4j.LogManager;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -19,15 +20,14 @@ import org.folio.rest.persist.Criteria.Criterion;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.apache.logging.log4j.Logger;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.utils.CalculationUtils;
 
 public class BudgetPostgresDAO implements BudgetDAO {
 
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final Logger logger = LogManager.getLogger(this.getClass());
 
   public Future<Integer> updateBatchBudgets(String sql, DBClient client) {
     Promise<Integer> promise = Promise.promise();
@@ -80,7 +80,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
 
     client.getPgClient().getById(BUDGET_TABLE, id, reply -> {
       if (reply.failed()) {
-        logger.error("Budget retrieval with id={} failed", reply.cause(), id);
+        logger.error("Budget retrieval with id={} failed", id, reply.cause());
         handleFailure(promise, reply);
       } else {
         final JsonObject budget = reply.result();
@@ -101,7 +101,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
     Promise<DBClient> promise = Promise.promise();
     client.getPgClient().delete(client.getConnection(), BUDGET_TABLE, id, reply -> {
       if (reply.failed()) {
-        logger.error("Budget deletion with id={} failed", reply.cause(), id);
+        logger.error("Budget deletion with id={} failed", id, reply.cause());
         if (checkForeignKeyViolationError(reply.cause())) {
           promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(),
             buildErrorForBudgetExpenseClassReferenceError()));

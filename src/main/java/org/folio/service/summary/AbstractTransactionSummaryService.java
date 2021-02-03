@@ -1,22 +1,23 @@
 package org.folio.service.summary;
 
-import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
+
+import javax.ws.rs.core.Response;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 
-import javax.ws.rs.core.Response;
-
-import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public abstract class AbstractTransactionSummaryService implements TransactionSummaryService {
 
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final Logger logger = LogManager.getLogger(this.getClass());
 
   private TransactionSummaryDao transactionSummaryDao;
 

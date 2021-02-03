@@ -131,14 +131,6 @@ public class PendingPaymentService implements TransactionManagingStrategy {
     return transactionsDAO.getTransactions(ids, client);
   }
 
-  private List<Budget> makeAvailableUnavailableNonNegative(List<Budget> budgets) {
-    budgets.forEach(budget -> {
-        budget.setAvailable(max(0, budget.getAvailable()));
-        budget.setUnavailable(max(0, budget.getUnavailable()));
-      });
-    return budgets;
-  }
-
   private List<Budget> processNotLinkedPendingPayments(List<Transaction> pendingPayments, List<Budget> oldBudgets) {
     if (isNotEmpty(pendingPayments)) {
       return updateBudgetsTotalsWithNotLinkedPendingPayments(pendingPayments, oldBudgets);

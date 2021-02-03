@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.logging.log4j.LogManager;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundCollection;
@@ -28,15 +29,14 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.apache.logging.log4j.Logger;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
 
 public class FundAPI implements FinanceStorageFunds {
   public static final String FUND_TABLE = "fund";
 
-  private static final Logger log = LoggerFactory.getLogger(FundAPI.class);
+  private static final Logger log = LogManager.getLogger(FundAPI.class);
 
   @Override
   @Validate
@@ -73,7 +73,7 @@ public class FundAPI implements FinanceStorageFunds {
         .onComplete(result -> {
           if (result.failed()) {
             HttpStatusException cause = (HttpStatusException) result.cause();
-            log.error("Update of the fund record {} has failed", cause, fund.getId());
+            log.error("Update of the fund record {} has failed", fund.getId(), cause);
             HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
           } else if (result.result() == null) {
             asyncResultHandler.handle(succeededFuture(FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.respond404WithTextPlain("Not found")));
