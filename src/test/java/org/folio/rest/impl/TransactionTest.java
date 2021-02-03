@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static io.restassured.RestAssured.given;
 import static org.folio.StorageTestSuite.storageUrl;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
+import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -12,6 +13,7 @@ import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -23,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
+import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.junit.jupiter.api.AfterAll;
@@ -129,52 +132,6 @@ public class TransactionTest extends TestBase {
 
     assertEquals(expectedBudgetsAvailable, toBudgetAfter.getAvailable());
     assertEquals(expectedBudgetsAllocated, toBudgetAfter.getAllocated());
-  }
-
-  @Test
-  void testCreateAllocationWithDestinationFundEmpty() throws MalformedURLException {
-
-    givenTestData(TRANSACTION_TENANT_HEADER,
-      Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
-      Pair.of(FISCAL_YEAR, FISCAL_YEAR_18_SAMPLE_PATH),
-      Pair.of(LEDGER, LEDGER_MAIN_LIBRARY_SAMPLE_PATH),
-      Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
-      Pair.of(FUND, ALLOCATION_FROM_FUND_SAMPLE_PATH),
-      Pair.of(BUDGET, ALLOCATION_FROM_BUDGET_SAMPLE_PATH));
-
-    JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
-    jsonTx.remove("id");
-    jsonTx.remove("toFundId");
-    String transactionSample = jsonTx.toString();
-
-    String fY = jsonTx.getString("fiscalYearId");
-    String fromFundId = jsonTx.getString("fromFundId");
-
-    // prepare budget query
-    String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
-
-    Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
-
-    // try to create Allocation
-    given()
-      .header(TRANSACTION_TENANT_HEADER)
-      .accept(ContentType.TEXT)
-      .contentType(ContentType.JSON)
-      .body(transactionSample)
-      .log().all()
-      .post(storageUrl(TRANSACTION_ENDPOINT))
-      .then()
-      .statusCode(422);
-
-    Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
-
-    // verify budget values not changed
-    if (StringUtils.isNotEmpty(jsonTx.getString("fromFundId"))){
-      assertEquals(fromBudgetBefore.getAllocated(), fromBudgetAfter.getAllocated());
-      assertEquals(fromBudgetBefore.getAvailable(), fromBudgetAfter.getAvailable());
-      assertEquals(fromBudgetBefore.getUnavailable() , fromBudgetAfter.getUnavailable());
-    }
-
   }
 
   @Test

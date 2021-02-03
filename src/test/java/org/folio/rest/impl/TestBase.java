@@ -104,10 +104,10 @@ public abstract class TestBase {
     return getData(endpoint, TENANT_HEADER);
   }
 
-  String getFile(String filename) {
+  public static String getFile(String filename) {
     String value;
     try {
-      InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filename);
+      InputStream inputStream = TestBase.class.getClassLoader().getResourceAsStream(filename);
       value = IOUtils.toString(inputStream, "UTF-8");
     } catch (Exception e) {
       value = "";
