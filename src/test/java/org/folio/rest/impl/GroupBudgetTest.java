@@ -4,6 +4,7 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.persist.HelperUtils.getEndpoint;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
+import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TestEntities.BUDGET;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.GROUP;
@@ -15,11 +16,14 @@ import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import java.net.MalformedURLException;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
+import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroupBudgets;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,27 +31,27 @@ import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 public class GroupBudgetTest extends TestBase {
-  private static final Logger logger = LoggerFactory.getLogger(GroupBudgetTest.class);
+  private static final Logger logger = LogManager.getLogger(GroupBudgetTest.class);
 
   private static final String TENANT_NAME = "acqunitsearch";
   private static final Header VIEW_SEARCH_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TENANT_NAME);
   private static final String EMPTY_ACQ_UNITS_QUERY = "?query=groups.acqUnitIds==[]&limit=20";
   private static final String QUERY_ACQ_UNIT_BY_ID = "?query=groups.acqUnitIds=%s&limit=20";
+  private static TenantJob tenantJob;
 
   @BeforeAll
-  public static void before() throws MalformedURLException {
+  public static void before() {
     logger.info("Create a new tenant loading the sample data");
-    prepareTenant(VIEW_SEARCH_TENANT_HEADER, true, true);
+    tenantJob = prepareTenant(VIEW_SEARCH_TENANT_HEADER, true, true);
   }
 
   @AfterAll
-  public static void after() throws MalformedURLException {
+  public static void after() {
     logger.info("Delete the created \"acqunitsearch\" tenant");
-    deleteTenant(VIEW_SEARCH_TENANT_HEADER);
+    purge(VIEW_SEARCH_TENANT_HEADER);
+    deleteTenant(tenantJob, VIEW_SEARCH_TENANT_HEADER);
   }
 
   @Test

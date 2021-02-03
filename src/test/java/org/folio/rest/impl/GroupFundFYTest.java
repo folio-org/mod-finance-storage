@@ -1,10 +1,14 @@
 package org.folio.rest.impl;
 
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
+import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
+import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
 
+import org.folio.rest.jaxrs.model.TenantJob;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
@@ -15,7 +19,7 @@ public class GroupFundFYTest extends TestBase {
 
   @Test
   public void testGetQuery() throws Exception {
-    prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
+    TenantJob tenantJob = prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
 
     // search for GET
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint(), GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
@@ -47,6 +51,9 @@ public class GroupFundFYTest extends TestBase {
     // search with invalid cql query
     testInvalidCQLQuery(GROUP_FUND_FY.getEndpoint() + "?query=invalid-query");
 
-    deleteTenant(GROUP_FUND_FY_TENANT_HEADER);
+    purge(GROUP_FUND_FY_TENANT_HEADER);
+    deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
   }
+
+
 }

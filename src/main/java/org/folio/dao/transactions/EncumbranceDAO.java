@@ -6,15 +6,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.persist.HelperUtils;
 
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 public class EncumbranceDAO extends BaseTransactionDAO implements TransactionDAO {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  protected final Logger logger = LogManager.getLogger(this.getClass());
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
   public static final String TRANSACTIONS_TABLE = "transaction";

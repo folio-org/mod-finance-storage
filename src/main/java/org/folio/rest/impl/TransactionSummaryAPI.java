@@ -9,6 +9,8 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -25,8 +27,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.sqlclient.Tuple;
 
 public class TransactionSummaryAPI implements FinanceStorage {
@@ -36,7 +36,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
   public static final String INVOICE_TRANSACTION_SUMMARIES = "invoice_transaction_summaries";
   public static final String INVOICE_TRANSACTION_SUMMARIES_LOCATION_PREFIX = "/finance-storage/invoice-transaction-summaries/";
 
-  private static final Logger log = LoggerFactory.getLogger(TransactionSummaryAPI.class);
+  private static final Logger log = LogManager.getLogger(TransactionSummaryAPI.class);
 
   private PostgresClient pgClient;
   private String tenantId;

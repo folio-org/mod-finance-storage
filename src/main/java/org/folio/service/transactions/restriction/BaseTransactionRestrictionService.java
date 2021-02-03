@@ -1,9 +1,11 @@
 package org.folio.service.transactions.restriction;
 
-import io.vertx.core.Future;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import static org.folio.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
+
+import javax.ws.rs.core.Response;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -12,15 +14,14 @@ import org.folio.service.budget.BudgetService;
 import org.folio.service.ledger.LedgerService;
 import org.javamoney.moneta.Money;
 
-import javax.ws.rs.core.Response;
-
-import static org.folio.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
+import io.vertx.core.Future;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public abstract class BaseTransactionRestrictionService implements TransactionRestrictionService {
 
   public static final String FUND_CANNOT_BE_PAID = "Fund cannot be paid due to restrictions";
 
-  protected final Logger log = LoggerFactory.getLogger(this.getClass());
+  protected final Logger log = LogManager.getLogger(this.getClass());
 
   private final BudgetService budgetService;
   private final LedgerService ledgerService;

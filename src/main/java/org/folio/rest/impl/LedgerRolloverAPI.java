@@ -1,15 +1,17 @@
 package org.folio.rest.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Handler;
+import static io.vertx.core.Future.succeededFuture;
+import static org.folio.dao.rollover.LedgerFiscalYearRolloverDAO.LEDGER_FISCAL_YEAR_ROLLOVER_TABLE;
+import static org.folio.rest.RestConstants.OKAPI_URL;
+import static org.folio.rest.util.ResponseUtils.buildNoContentResponse;
+import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
+
 import java.util.Map;
+
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.Vertx;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
@@ -21,15 +23,15 @@ import org.folio.service.rollover.LedgerRolloverService;
 import org.folio.spring.SpringContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import static io.vertx.core.Future.succeededFuture;
-import static org.folio.dao.rollover.LedgerFiscalYearRolloverDAO.LEDGER_FISCAL_YEAR_ROLLOVER_TABLE;
-import static org.folio.rest.RestConstants.OKAPI_URL;
-import static org.folio.rest.util.ResponseUtils.buildNoContentResponse;
-import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
 
-  private static final Logger log = LoggerFactory.getLogger(LedgerRolloverAPI.class);
+  private static final Logger log = LogManager.getLogger(LedgerRolloverAPI.class);
 
   @Autowired
   private LedgerRolloverService ledgerRolloverService;
@@ -54,7 +56,7 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
             .onComplete(result -> {
               if (result.failed()) {
                 HttpStatusException cause = (HttpStatusException) result.cause();
-                log.error("Update of the fund record {} has failed", cause, entity.getId());
+                log.error("Update of the fund record {} has failed", entity.getId(), cause);
                 HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
               } else {
                 asyncResultHandler.handle(succeededFuture(buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/ledger-rollover", entity)));
@@ -78,7 +80,7 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
       .onComplete(result -> {
         if (result.failed()) {
           HttpStatusException cause = (HttpStatusException) result.cause();
-          log.error("Rollover deletion error {}", cause, rolloverId);
+          log.error("Rollover deletion error {}", rolloverId, cause);
           HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
         } else {
           asyncResultHandler.handle(buildNoContentResponse());

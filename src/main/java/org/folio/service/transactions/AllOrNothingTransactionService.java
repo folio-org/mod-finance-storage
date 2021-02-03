@@ -1,13 +1,14 @@
 package org.folio.service.transactions;
 
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.core.shareddata.Lock;
-import io.vertx.core.shareddata.SharedData;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
+
+import java.util.List;
+import java.util.function.BiFunction;
+
+import javax.ws.rs.core.Response;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -16,19 +17,20 @@ import org.folio.rest.persist.DBClient;
 import org.folio.service.summary.TransactionSummaryService;
 import org.folio.service.transactions.restriction.TransactionRestrictionService;
 
-import javax.ws.rs.core.Response;
-import java.util.List;
-import java.util.function.BiFunction;
-
-import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.shareddata.Lock;
+import io.vertx.core.shareddata.SharedData;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class AllOrNothingTransactionService {
 
-  private static final Logger log = LoggerFactory.getLogger(AllOrNothingTransactionService.class);
+  private static final Logger log = LogManager.getLogger(AllOrNothingTransactionService.class);
 
   public static final String TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION = "Transaction summary not found for transaction";
   public static final String ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED = "All expected transactions already processed";
-  public static final String BUDGET_IS_INACTIVE = "Cannot create encumbrance from the not active budget";
+  public static final String BUDGET_IS_INACTIVE = "Cannot create encumbrance from the not active budget {}";
 
   private final TransactionDAO transactionDAO;
   private final TemporaryTransactionDAO temporaryTransactionDAO;

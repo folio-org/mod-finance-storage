@@ -25,7 +25,7 @@ public class PaymentCreditRestrictionServiceTest {
 
   @BeforeEach
   public void initMocks(){
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
 
     budget = new Budget()
       .withFiscalYearId(fiscalYearId)
