@@ -101,7 +101,7 @@ public class BudgetService {
       + " AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId() + "') AND ((jsonb->>'transactionType')::text<>'Allocation'"
       + " OR ((jsonb->>'transactionType')::text='Allocation' AND (jsonb->'toFundId') is not null AND (jsonb->'fromFundId') is not null))";
 
-    client.getPgClient().execute(client.getConnection(), sql, reply -> {
+    client.getPgClient().execute(sql, reply -> {
         if (reply.failed()) {
           logger.error("Transaction retrieval by query {} failed", sql, reply.cause());
           handleFailure(promise, reply);
