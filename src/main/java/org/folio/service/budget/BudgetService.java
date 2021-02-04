@@ -81,7 +81,7 @@ public class BudgetService {
       + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() +"' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "')"
       + " AND (jsonb->>'fiscalYearId')::text = '" + budget.getFiscalYearId() + "' AND (jsonb->>'transactionType')::text = 'Allocation'";
 
-    client.getPgClient().execute(sql, reply -> {
+    client.getPgClient().execute(client.getConnection(), sql, reply -> {
       if (reply.failed()) {
         logger.error("Allocation Transaction deletion by query {} failed", sql, reply.cause());
         handleFailure(promise, reply);
@@ -101,7 +101,7 @@ public class BudgetService {
       + " AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId() + "') AND ((jsonb->>'transactionType')::text<>'Allocation'"
       + " OR ((jsonb->>'transactionType')::text='Allocation' AND (jsonb->'toFundId') is not null AND (jsonb->'fromFundId') is not null))";
 
-    client.getPgClient().execute(sql, reply -> {
+    client.getPgClient().execute(client.getConnection(), sql, reply -> {
         if (reply.failed()) {
           logger.error("Transaction retrieval by query {} failed", sql, reply.cause());
           handleFailure(promise, reply);
