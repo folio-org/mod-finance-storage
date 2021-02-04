@@ -1,7 +1,5 @@
 package org.folio.service.transactions;
 
-import static java.lang.Double.max;
-import static java.lang.Double.min;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.service.transactions.PendingPaymentService.SELECT_BUDGETS_BY_INVOICE_ID;
@@ -34,7 +32,6 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.service.budget.BudgetService;
-import org.folio.utils.CalculationUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -46,7 +43,6 @@ import org.mockito.MockitoAnnotations;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Tuple;
-import org.mockito.Spy;
 
 public class PendingPaymentServiceTest {
 
