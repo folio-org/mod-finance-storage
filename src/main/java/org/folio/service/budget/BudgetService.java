@@ -59,10 +59,11 @@ public class BudgetService {
     vertxContext.runOnContext(v -> {
       DBClient client = new DBClient(vertxContext, headers);
       budgetDAO.getBudgetById(id, client)
-        .compose(budget -> checkTransactions(budget, client))
-        .compose(aVoid -> client.startTx()
+        .compose(budget -> checkTransactions(budget, client).map(budget))
+        .compose(budget -> client.startTx()
           .compose(t -> unlinkGroupFundFiscalYears(id, client))
           .compose(t -> budgetDAO.deleteBudget(id, client))
+          .compose(t -> deleteAllocationTransactions(budget, client))
           .compose(t -> client.endTx())
           .onComplete(reply -> {
             if (reply.failed()) {
@@ -71,6 +72,25 @@ public class BudgetService {
           }))
         .onComplete(handleNoContentResponse(asyncResultHandler, id, "Budget {} {} deleted"));
     });
+  }
+
+  private Future<Void> deleteAllocationTransactions(Budget budget, DBClient client) {
+    Promise<Void> promise = Promise.promise();
+
+    String sql ="DELETE FROM "+ getFullTableName(client.getTenantId(), TRANSACTIONS_TABLE)
+      + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() +"' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "')"
+      + " AND (jsonb->>'fiscalYearId')::text = '" + budget.getFiscalYearId() + "' AND (jsonb->>'transactionType')::text = 'Allocation'";
+
+    client.getPgClient().execute(sql, reply -> {
+      if (reply.failed()) {
+        logger.error("Allocation Transaction deletion by query {} failed", sql, reply.cause());
+        handleFailure(promise, reply);
+      } else {
+        logger.debug("Allocation Transaction successfully deleted");
+        promise.complete();
+      }
+    });
+    return promise.future();
   }
 
   private Future<Void> checkTransactions(Budget budget, DBClient client) {
