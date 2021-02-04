@@ -38,6 +38,7 @@ import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
+import org.folio.service.transactions.AllocationServiceTest;
 import org.folio.service.transactions.PendingPaymentServiceTest;
 import org.folio.service.transactions.restriction.EncumbranceRestrictionServiceTest;
 import org.folio.service.transactions.restriction.PaymentCreditRestrictionServiceTest;
@@ -218,4 +219,7 @@ public class StorageTestSuite {
 
   @Nested
   class CalculationUtilsTestNested extends CalculationUtilsTest {}
+
+  @Nested
+  class AllocationServiceTestNested extends AllocationServiceTest {}
 }

@@ -7,7 +7,9 @@ public enum ErrorCodes {
   UNIQUE_FIELD_CONSTRAINT_ERROR("uniqueField{0}{1}Error", "Field {0} must be unique"),
   NOT_ENOUGH_MONEY_FOR_TRANSFER("notEnoughMoneyForTransferError", "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer."),
   NOT_ENOUGH_MONEY_FOR_ALLOCATION("notEnoughMoneyForAllocationError", "Allocation was not successful. There is not enough money Available in the budget to complete this Allocation."),
-  BUDGET_EXPENSE_CLASS_REFERENCE_ERROR("budgetExpenseClassReferenceError", "Can't delete budget that referenced with expense class");
+  BUDGET_EXPENSE_CLASS_REFERENCE_ERROR("budgetExpenseClassReferenceError", "Can't delete budget that referenced with expense class"),
+  MISSING_FUND_ID("missingFundId", "One of the fields toFundId or fromFundId must be specified"),
+  MUST_BE_POSITIVE("mustBePositive", "Value must be greater than zero");
 
   private final String code;
   private final String description;

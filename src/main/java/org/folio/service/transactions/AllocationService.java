@@ -1,18 +1,17 @@
 package org.folio.service.transactions;
 
-import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
+import static java.util.Collections.singletonList;
+import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
+import static org.folio.rest.util.ErrorCodes.MUST_BE_POSITIVE;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
-import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PgExceptionUtil;
@@ -46,7 +45,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
     } catch (HttpStatusException e) {
       return Future.failedFuture(e);
     }
-    DBClient client = new DBClient(requestContext);
+    DBClient client = requestContext.toDBClient();
 
     client.startTx()
       .compose(v -> budgetService.checkBudgetHaveMoneyForTransaction(allocation, client))
@@ -86,6 +85,9 @@ public class AllocationService extends DefaultTransactionService implements Tran
   }
 
   private Future<Void> updateBudgetTo(Transaction allocation, DBClient client) {
+    if (StringUtils.isEmpty(allocation.getToFundId())) {
+      return Future.succeededFuture();
+    }
     return budgetService.getBudgetByFundIdAndFiscalYearId(allocation.getFiscalYearId(), allocation.getToFundId(), client)
       .map(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo)
@@ -94,7 +96,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
         budgetService.updateBudgetMetadata(budgetToNew, allocation);
         return budgetToNew;
       })
-      .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), client))
+      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), client))
       .map(i -> null);
   }
 
@@ -110,17 +112,31 @@ public class AllocationService extends DefaultTransactionService implements Tran
         budgetService.updateBudgetMetadata(budgetFromNew, allocation);
         return budgetFromNew;
       })
-      .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), client))
+      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), client))
       .map(i -> null);
   }
 
-  private void handleValidationError(Transaction transfer) {
+  private void handleValidationError(Transaction transaction) {
+    checkRequiredFields(transaction);
+    checkAmount(transaction);
+  }
 
-    List<Error> errors = new ArrayList<>(buildNullValidationError(transfer.getToFundId(), TO_FUND_ID));
+  private void checkAmount(Transaction transaction) {
+    if (transaction.getAmount() <= 0) {
+      List<Parameter> parameters = singletonList(new Parameter().withKey("fieldName")
+        .withValue("amount"));
+      Errors errors = new Errors().withErrors(singletonList(MUST_BE_POSITIVE.toError()
+        .withParameters(parameters)))
+        .withTotalRecords(1);
+      throw new HttpStatusException(422, JsonObject.mapFrom(errors)
+        .encode());
+    }
+  }
 
-    if (isNotEmpty(errors)) {
-      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
-        .withTotalRecords(errors.size()))
+  private void checkRequiredFields(Transaction transaction) {
+    if (transaction.getToFundId() == null && transaction.getFromFundId() == null) {
+      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(singletonList(MISSING_FUND_ID.toError()))
+        .withTotalRecords(1))
         .encode());
     }
   }
