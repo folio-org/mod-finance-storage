@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.builders.error.NameCodeConstraintErrorBuilder;
 import org.folio.rest.jaxrs.model.ExpenseClass;
 import org.folio.rest.jaxrs.resource.FinanceStorageExpenseClasses;
@@ -19,14 +21,12 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class ExpenseClassService {
   private static final String EXPENSE_CLASS_TABLE = "expense_class";
 
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final Logger logger = LogManager.getLogger(this.getClass());
   private final PostgresClient pgClient;
   private final NameCodeConstraintErrorBuilder nameCodeConstraintErrorBuilder;
 
@@ -43,7 +43,7 @@ public class ExpenseClassService {
           FinanceStorageExpenseClasses.PostFinanceStorageExpenseClassesResponse.respond201WithApplicationJson(group, headersFor201())));
       })
       .onFailure(throwable -> {
-        logger.error("ExpenseClass creation with id {} failed", throwable, entity.getId());
+        logger.error("ExpenseClass creation with id {} failed", entity.getId(), throwable);
         asyncResultHandler.handle(buildErrorResponse(throwable));
       }));
   }
@@ -56,7 +56,7 @@ public class ExpenseClassService {
           FinanceStorageExpenseClasses.PutFinanceStorageExpenseClassesByIdResponse.respond204()));
       })
       .onFailure(throwable -> {
-        logger.error("ExpenseClass update with id {} failed", throwable, entity.getId());
+        logger.error("ExpenseClass update with id {} failed", entity.getId(), throwable);
         asyncResultHandler.handle(buildErrorResponse(throwable));
       }));
   }

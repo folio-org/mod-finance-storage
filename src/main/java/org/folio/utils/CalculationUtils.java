@@ -23,11 +23,7 @@ public final class CalculationUtils {
   public static void recalculateBudgetAllocationFrom(Budget budget, Transaction allocation, Double allocatedAmount) {
     CurrencyUnit currency = Monetary.getCurrency(allocation.getCurrency());
     double newAllocation = sumMoney(budget.getAllocationFrom(), allocatedAmount, currency);
-    if (budget.getInitialAllocation() > 0) {
-      budget.setAllocationFrom(newAllocation);
-    } else {
-      budget.setInitialAllocation(allocatedAmount);
-    }
+    budget.setAllocationFrom(newAllocation);
   }
 
   public static void recalculateBudgetAllocationTo(Budget budget, Transaction allocation, Double allocatedAmount) {

@@ -11,13 +11,13 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
+import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.service.transactions.AbstractTransactionService.TRANSACTION_TABLE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -29,11 +29,13 @@ import org.folio.rest.jaxrs.model.ExpenseClass;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
+import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,15 +55,21 @@ public class PendingPaymentDAOTest extends TestBase {
   private static final Header TEST_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TEST_TENANT);
 
   private PendingPaymentDAO pendingPaymentDAO = new PendingPaymentDAO();
+  private static TenantJob tenantJob;
 
   @BeforeEach
-  void prepareData() throws MalformedURLException {
-    prepareTenant(TEST_TENANT_HEADER, false, false);
+  void prepareData() throws Exception {
+   tenantJob = prepareTenant(TEST_TENANT_HEADER, false, false);
   }
 
   @AfterEach
-  void cleanupData() throws MalformedURLException {
-    deleteTenant(TEST_TENANT_HEADER);
+  void cleanupData() {
+    purge(TEST_TENANT_HEADER);
+  }
+
+  @AfterAll
+  static void deleteTable() {
+    deleteTenant(tenantJob, TEST_TENANT_HEADER);
   }
 
   @Test

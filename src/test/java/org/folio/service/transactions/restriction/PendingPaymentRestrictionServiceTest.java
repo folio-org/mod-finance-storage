@@ -35,7 +35,7 @@ public class PendingPaymentRestrictionServiceTest {
 
   @BeforeEach
   public void initMocks(){
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
 
     budget = new Budget()
       .withFiscalYearId(fiscalYearId)
@@ -72,13 +72,15 @@ public class PendingPaymentRestrictionServiceTest {
 
   @Test
   void testGetBudgetRemainingAmountForEncumbrance() {
-    budget.withExpenditures(90d)
+    budget.withNetTransfers(20d)
       .withAllowableExpenditure(110d)
-      .withAvailable(0d)
-      .withUnavailable(100d)
-      .withEncumbered(10d);
-    MonetaryAmount amount = restrictionService.getBudgetRemainingAmount(budget, currency, new Transaction().withAmount(0d));
-    assertThat(amount.getNumber().doubleValue(), is(10d));
+      .withEncumbered(10d)
+      .withAwaitingPayment(11d)
+      .withExpenditures(90d)
+      .withAvailable(21d) // should not be used
+      .withUnavailable(22d); // should not be used
+    MonetaryAmount amount = restrictionService.getBudgetRemainingAmount(budget, currency, new Transaction().withAmount(5d));
+    assertThat(amount.getNumber().doubleValue(), is(26d));
   }
 
   @Test

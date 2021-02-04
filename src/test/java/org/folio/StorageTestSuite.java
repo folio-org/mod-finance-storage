@@ -4,7 +4,6 @@ import static org.folio.rest.impl.TestBase.TENANT_HEADER;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Locale;
@@ -13,6 +12,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
 import org.folio.dao.rollover.RolloverErrorDAOTest;
 import org.folio.dao.rollover.RolloverProgressDAOTest;
@@ -30,13 +31,17 @@ import org.folio.rest.impl.PaymentsCreditsTest;
 import org.folio.rest.impl.TenantSampleDataTest;
 import org.folio.rest.impl.TransactionTest;
 import org.folio.rest.impl.TransactionsSummariesTest;
+import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
+import org.folio.service.transactions.AllocationServiceTest;
 import org.folio.service.transactions.PendingPaymentServiceTest;
+import org.folio.service.transactions.restriction.EncumbranceRestrictionServiceTest;
+import org.folio.service.transactions.restriction.PaymentCreditRestrictionServiceTest;
 import org.folio.service.transactions.restriction.PendingPaymentRestrictionServiceTest;
 import org.folio.utils.CalculationUtilsTest;
 import org.junit.jupiter.api.AfterAll;
@@ -49,17 +54,16 @@ import io.restassured.http.Header;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 
 @RunWith(JUnitPlatform.class)
 public class StorageTestSuite {
-  private static final Logger logger = LoggerFactory.getLogger(StorageTestSuite.class);
+  private static final Logger logger = LogManager.getLogger(StorageTestSuite.class);
 
   private static Vertx vertx;
   private static int port = NetworkUtils.nextFreePort();
   public static final Header URL_TO_HEADER = new Header("X-Okapi-Url-to", "http://localhost:" + port);
+  private static TenantJob tenantJob;
 
   private StorageTestSuite() {
   }
@@ -73,7 +77,7 @@ public class StorageTestSuite {
   }
 
   @BeforeAll
-  public static void before() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+  public static void before() throws Exception {
 
     // tests expect English error messages only, no Danish/German/...
     Locale.setDefault(Locale.US);
@@ -87,17 +91,16 @@ public class StorageTestSuite {
     DeploymentOptions options = new DeploymentOptions();
 
     options.setConfig(new JsonObject().put("http.port", port).put(HttpClientMock2.MOCK_MODE, "true"));
-    options.setWorker(true);
 
     startVerticle(options);
 
-    prepareTenant(TENANT_HEADER, false, false);
+    tenantJob = prepareTenant(TENANT_HEADER, false, false);
   }
 
   @AfterAll
-  public static void after() throws InterruptedException, ExecutionException, TimeoutException, MalformedURLException {
+  public static void after() throws InterruptedException, ExecutionException, TimeoutException {
     logger.info("Delete tenant");
-    deleteTenant(TENANT_HEADER);
+    deleteTenant(tenantJob, TENANT_HEADER);
 
     CompletableFuture<String> undeploymentComplete = new CompletableFuture<>();
 
@@ -188,6 +191,12 @@ public class StorageTestSuite {
   class PendingPaymentTransactionSummaryServiceTestNested extends PendingPaymentTransactionSummaryServiceTest {}
 
   @Nested
+  class EncumbranceRestrictionServiceTestNested extends EncumbranceRestrictionServiceTest {}
+
+  @Nested
+  class PaymentCreditRestrictionServiceTestNested extends PaymentCreditRestrictionServiceTest {}
+
+  @Nested
   class PendingPaymentRestrictionServiceTestNested extends PendingPaymentRestrictionServiceTest {}
 
   @Nested
@@ -210,4 +219,7 @@ public class StorageTestSuite {
 
   @Nested
   class CalculationUtilsTestNested extends CalculationUtilsTest {}
+
+  @Nested
+  class AllocationServiceTestNested extends AllocationServiceTest {}
 }

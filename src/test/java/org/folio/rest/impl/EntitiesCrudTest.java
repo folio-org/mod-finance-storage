@@ -1,11 +1,26 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.utils.TestEntities.BUDGET;
+import static org.folio.rest.utils.TestEntities.BUDGET_EXPENSE_CLASS;
+import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
+import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
+import static org.folio.rest.utils.TestEntities.FUND;
+import static org.folio.rest.utils.TestEntities.FUND_TYPE;
+import static org.folio.rest.utils.TestEntities.GROUP;
+import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
+import static org.folio.rest.utils.TestEntities.LEDGER;
+import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER;
+import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_ERROR;
+import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS;
+import static org.folio.rest.utils.TestEntities.TRANSACTION;
+
 import java.net.MalformedURLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgressCollection;
 import org.folio.rest.utils.TestEntities;
 import org.junit.Assert;
@@ -18,16 +33,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import io.restassured.response.Response;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-
-import static org.folio.rest.utils.TestEntities.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class EntitiesCrudTest extends TestBase {
 
-
-  private final Logger logger = LoggerFactory.getLogger(EntitiesCrudTest.class);
+  private final Logger logger = LogManager.getLogger(EntitiesCrudTest.class);
   private String sample = null;
 
   /**
@@ -59,6 +69,7 @@ public class EntitiesCrudTest extends TestBase {
   static Stream<TestEntities> createDuplicateRecords() {
     return Stream.of(BUDGET_EXPENSE_CLASS, BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
   }
+
 
   @ParameterizedTest
   @Order(1)

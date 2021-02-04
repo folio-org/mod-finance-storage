@@ -18,16 +18,17 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.rest.jaxrs.model.Budget;
-import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.util.ErrorCodes;
+import org.folio.utils.CalculationUtils;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -35,11 +36,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
-import org.folio.utils.CalculationUtils;
 
 public class BudgetService {
 
@@ -48,7 +46,7 @@ public class BudgetService {
   public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
   public static final String BUDGET_NOT_FOUND_FOR_TRANSACTION = "Budget not found for pair fiscalYear-fundId";
 
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final Logger logger = LogManager.getLogger(this.getClass());
 
   private BudgetDAO budgetDAO;
 
@@ -78,24 +76,18 @@ public class BudgetService {
   private Future<Void> checkTransactions(Budget budget, DBClient client) {
     Promise<Void> promise = Promise.promise();
 
-    Criterion criterion = new CriterionBuilder("OR").with("fromFundId", budget.getFundId())
-      .with("toFundId", budget.getFundId())
-      .withOperation("AND")
-      .with("fiscalYearId", budget.getFiscalYearId())
-      .build();
-    criterion.setLimit(new Limit(0));
+    String sql ="SELECT jsonb FROM "+ getFullTableName(client.getTenantId(), TRANSACTIONS_TABLE)
+      + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() +"' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "'"
+      + " AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId() + "') AND ((jsonb->>'transactionType')::text<>'Allocation'"
+      + " OR ((jsonb->>'transactionType')::text='Allocation' AND (jsonb->'toFundId') is not null AND (jsonb->'fromFundId') is not null))";
 
-    client.getPgClient()
-      .get(TRANSACTIONS_TABLE, Transaction.class, criterion, true, reply -> {
+    client.getPgClient().execute(sql, reply -> {
         if (reply.failed()) {
-          logger.error("Transaction retrieval by query {} failed", reply.cause(), criterion.toString());
+          logger.error("Transaction retrieval by query {} failed", sql, reply.cause());
           handleFailure(promise, reply);
         } else {
-          if (reply.result()
-            .getResultInfo()
-            .getTotalRecords() > 0) {
-            promise.fail(
-                new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
+          if (reply.result().size() > 0) {
+            promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
           }
           promise.complete();
         }
@@ -112,7 +104,7 @@ public class BudgetService {
     client.getPgClient()
       .execute(client.getConnection(), sql, Tuple.of(UUID.fromString(id)), reply -> {
         if (reply.failed()) {
-          logger.error("Failed to update group_fund_fiscal_year by budgetId={}", reply.cause(), id);
+          logger.error("Failed to update group_fund_fiscal_year by budgetId={}", id, reply.cause());
           handleFailure(promise, reply);
         } else {
           promise.complete();

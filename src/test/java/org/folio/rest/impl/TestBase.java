@@ -1,8 +1,8 @@
 package org.folio.rest.impl;
 
 import static io.restassured.RestAssured.given;
-import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.StorageTestSuite.storageUrl;
+import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -18,6 +18,8 @@ import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.StorageTestSuite;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.AfterAll;
@@ -29,8 +31,6 @@ import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 /**
  * When not run from StorageTestSuite then this class invokes StorageTestSuite.before() and
@@ -38,7 +38,7 @@ import io.vertx.core.logging.LoggerFactory;
  * IDE during development.
  */
 public abstract class TestBase {
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  protected final Logger logger = LogManager.getLogger(this.getClass());
 
   static final String TENANT_NAME = "diku";
   static final String NON_EXISTED_ID = "bad500aa-aaaa-500a-aaaa-aaaaaaaaaaaa";
@@ -47,7 +47,7 @@ public abstract class TestBase {
   private static boolean invokeStorageTestSuiteAfter = false;
 
   @BeforeAll
-  public static void testBaseBeforeClass() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+  public static void testBaseBeforeClass() throws Exception {
     Vertx vertx = StorageTestSuite.getVertx();
     if (vertx == null) {
       invokeStorageTestSuiteAfter = true;
@@ -60,8 +60,7 @@ public abstract class TestBase {
   public static void testBaseAfterClass()
     throws InterruptedException,
     ExecutionException,
-    TimeoutException,
-    MalformedURLException {
+    TimeoutException {
 
     if (invokeStorageTestSuiteAfter) {
       StorageTestSuite.after();
@@ -105,10 +104,10 @@ public abstract class TestBase {
     return getData(endpoint, TENANT_HEADER);
   }
 
-  String getFile(String filename) {
+  public static String getFile(String filename) {
     String value;
     try {
-      InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filename);
+      InputStream inputStream = TestBase.class.getClassLoader().getResourceAsStream(filename);
       value = IOUtils.toString(inputStream, "UTF-8");
     } catch (Exception e) {
       value = "";

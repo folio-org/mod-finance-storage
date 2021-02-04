@@ -1,66 +1,119 @@
 package org.folio.rest.utils;
 
-import io.restassured.http.ContentType;
-import io.restassured.http.Header;
-import io.restassured.response.ValidatableResponse;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
+import static org.folio.StorageTestSuite.URL_TO_HEADER;
+import static org.folio.rest.impl.TenantReferenceAPI.LOAD_SYNC_PARAMETER;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.folio.rest.client.TenantClient;
+import org.folio.rest.jaxrs.model.Parameter;
+import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.tools.PomReader;
 
-import java.net.MalformedURLException;
-
-import static io.restassured.RestAssured.given;
-import static org.folio.StorageTestSuite.URL_TO_HEADER;
-import static org.folio.StorageTestSuite.storageUrl;
+import io.restassured.http.Header;
 
 public class TenantApiTestUtil {
 
-  public static final String TENANT_ENDPOINT = "/_/tenant";
-  private static final Header USER_ID_HEADER = new Header("X-Okapi-User-id", "28d0fb04-d137-11e8-a8d5-f2801f1b9fd1");
+  private static final int TENANT_OP_WAITINGTIME = 60000;
 
   private TenantApiTestUtil() {
 
   }
 
-  public static JsonObject prepareTenantBody(boolean isLoadSampleData, boolean isLoadReferenceData) {
-    String moduleId = String.format("%s-%s", PomReader.INSTANCE.getModuleName(), PomReader.INSTANCE.getVersion());
+  public static TenantAttributes prepareTenantBody(Boolean isLoadSampleData, Boolean isLoadReferenceData) {
+    TenantAttributes tenantAttributes = new TenantAttributes();
 
-    JsonArray parameterArray = new JsonArray();
-    parameterArray.add(new JsonObject().put("key", "loadReference").put("value", isLoadReferenceData));
-    parameterArray.add(new JsonObject().put("key", "loadSample").put("value", isLoadSampleData));
-    JsonObject jsonBody = new JsonObject();
-    jsonBody.put("module_to", moduleId);
-    jsonBody.put("parameters", parameterArray);
-    return jsonBody;
+    String moduleId = String.format("%s-%s", PomReader.INSTANCE.getModuleName(), PomReader.INSTANCE.getVersion());
+    List<Parameter> parameters = new ArrayList<>();
+    parameters.add(new Parameter().withKey("loadReference").withValue(isLoadReferenceData.toString()));
+    parameters.add(new Parameter().withKey("loadSample").withValue(isLoadSampleData.toString()));
+    parameters.add(new Parameter().withKey(LOAD_SYNC_PARAMETER).withValue("true"));
+
+    tenantAttributes.withModuleTo(moduleId)
+      .withParameters(parameters);
+
+    return tenantAttributes;
   }
 
-  public static JsonObject prepareTenantBody() {
+  public static TenantAttributes prepareTenantBody() {
     return prepareTenantBody(true, true);
   }
 
-  public static void prepareTenant(Header tenantHeader, boolean isLoadSampleData, boolean isLoadReferenceData) throws MalformedURLException {
-    JsonObject jsonBody = prepareTenantBody(isLoadSampleData, isLoadReferenceData);
-    postToTenant(tenantHeader, jsonBody).statusCode(201);
+  public static TenantJob prepareTenant(Header tenantHeader, boolean isLoadSampleData, boolean isLoadReferenceData) {
+    TenantAttributes tenantAttributes = prepareTenantBody(isLoadSampleData, isLoadReferenceData);
+
+    return postTenant(tenantHeader, tenantAttributes);
   }
 
-  public static ValidatableResponse postToTenant(Header tenantHeader, JsonObject jsonBody) throws MalformedURLException {
-    return given()
-      .header(tenantHeader)
-      .header(URL_TO_HEADER)
-      .header(USER_ID_HEADER)
-      .contentType(ContentType.JSON)
-      .body(jsonBody.encodePrettily())
-      .post(storageUrl(TENANT_ENDPOINT))
-      .then();
+  public static TenantJob postTenant(Header tenantHeader, TenantAttributes tenantAttributes) {
+    CompletableFuture<TenantJob> future = new CompletableFuture<>();
+    TenantClient tClient =  new TenantClient(URL_TO_HEADER.getValue(), tenantHeader.getValue(), null);
+    try {
+      tClient.postTenant(tenantAttributes, event -> {
+        if (event.failed()) {
+          future.completeExceptionally(event.cause());
+        } else {
+          TenantJob tenantJob = event.result().bodyAsJson(TenantJob.class);
+          tClient.getTenantByOperationId(tenantJob.getId(), TENANT_OP_WAITINGTIME, result -> {
+            if(result.failed()) {
+              future.completeExceptionally(result.cause());
+            } else {
+              future.complete(tenantJob);
+            }
+          });
+        }
+      });
+      return future.get(60, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      fail(e);
+      return null;
+    }
   }
 
-  public static void deleteTenant(Header tenantHeader)
-    throws MalformedURLException {
-    given()
-      .header(tenantHeader)
-      .contentType(ContentType.JSON)
-      .delete(storageUrl(TENANT_ENDPOINT))
-      .then()
-      .statusCode(204);
+  public static void deleteTenant(TenantJob tenantJob, Header tenantHeader) {
+    TenantClient tenantClient = new TenantClient(URL_TO_HEADER.getValue(), tenantHeader.getValue(), null);
+
+    if (tenantJob != null) {
+      CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+      tenantClient.deleteTenantByOperationId(tenantJob.getId(), event -> {
+        if (event.failed()) {
+          completableFuture.completeExceptionally(event.cause());
+        } else {
+          completableFuture.complete(null);
+        }
+      });
+      try {
+        completableFuture.get(60, TimeUnit.SECONDS);
+      } catch (InterruptedException | ExecutionException | TimeoutException e) {
+        fail(e);
+      }
+
+    }
+
+  }
+
+  public static void purge(Header tenantHeader) {
+    CompletableFuture<Void> future = new CompletableFuture<>();
+    TenantClient tClient =  new TenantClient(URL_TO_HEADER.getValue(), tenantHeader.getValue(), null);
+    TenantAttributes tenantAttributes = prepareTenantBody(false, false).withPurge(true);
+    try {
+      tClient.postTenant(tenantAttributes, event -> {
+        if (event.failed()) {
+          future.completeExceptionally(event.cause());
+        } else {
+          future.complete(null);
+        }
+      });
+      future.get(60, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      fail(e);
+    }
   }
 }

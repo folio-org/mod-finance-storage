@@ -11,7 +11,8 @@ import org.folio.rest.persist.DBClient;
 
 public class RolloverProgressService {
 
-  private final RolloverProgressDAO rolloverProgressDAO;
+    public static final String LEDGER_ROLLOVER_ID = "ledgerRolloverId";
+    private final RolloverProgressDAO rolloverProgressDAO;
   private final RolloverErrorDAO rolloverErrorDAO;
 
   public RolloverProgressService(RolloverProgressDAO rolloverProgressDAO, RolloverErrorDAO rolloverErrorDAO) {
@@ -29,7 +30,7 @@ public class RolloverProgressService {
 
   public Future<LedgerFiscalYearRolloverProgress> getLedgerRolloverProgressForRollover(String rolloverId, DBClient client){
     Criterion criterion = new CriterionBuilder()
-      .with("ledgerRolloverId", rolloverId).build();
+      .with(LEDGER_ROLLOVER_ID, rolloverId).build();
     return rolloverProgressDAO.get(criterion, client)
       .map(progresses -> {
         if (progresses.isEmpty()) {
@@ -41,7 +42,7 @@ public class RolloverProgressService {
   }
 
   public Future<Void> calculateAndUpdateFinancialProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
-    Criterion criterion = new CriterionBuilder().with("ledgerRolloverId", progress.getLedgerRolloverId())
+    Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, progress.getLedgerRolloverId())
       .build();
     return rolloverErrorDAO.get(criterion, client)
       .compose(rolloverErrors -> {
@@ -55,7 +56,7 @@ public class RolloverProgressService {
   }
 
   public Future<Void> calculateAndUpdateOverallProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
-    Criterion criterion = new CriterionBuilder().with("ledgerRolloverId", progress.getLedgerRolloverId())
+    Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, progress.getLedgerRolloverId())
       .build();
     return rolloverErrorDAO.get(criterion, client)
       .compose(rolloverErrors -> {
@@ -73,7 +74,7 @@ public class RolloverProgressService {
   }
 
   public Future<Void> deleteRolloverErrors(String ledgerRolloverId, DBClient client) {
-    Criterion criterion = new CriterionBuilder().with("ledgerRolloverId", ledgerRolloverId).build();
+    Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, ledgerRolloverId).build();
     return rolloverErrorDAO.deleteByQuery(criterion, client);
   }
 }

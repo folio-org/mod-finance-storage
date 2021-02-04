@@ -19,6 +19,8 @@ import java.util.stream.IntStream;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
@@ -32,15 +34,13 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.impl.ArrayTuple;
 
 public class LedgerAPI implements FinanceStorageLedgers {
 
-  private static final Logger log = LoggerFactory.getLogger(LedgerAPI.class);
+  private static final Logger log = LogManager.getLogger(LedgerAPI.class);
 
   @Override
   @Validate
@@ -77,7 +77,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
         .onComplete(result -> {
           if (result.failed()) {
             HttpStatusException cause = (HttpStatusException) result.cause();
-            log.error("Update of the ledger record {} has failed", cause, ledger.getId());
+            log.error("Update of the ledger record {} has failed", ledger.getId(), cause);
             HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
           } else if (result.result() == null) {
             asyncResultHandler.handle(succeededFuture(PutFinanceStorageLedgersByIdResponse.respond404WithTextPlain("Not found")));
