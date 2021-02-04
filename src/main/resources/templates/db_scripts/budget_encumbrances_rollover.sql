@@ -300,7 +300,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                  INNER JOIN ${myuniversity}_${mymodule}.budget_expense_class AS exp ON oldBudget.id = exp.budgetid
         WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
           AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
-          AND newBudget.id != oldBudget.id
+          AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
         ON CONFLICT DO NOTHING;
 
          -- #2 Create allocations
