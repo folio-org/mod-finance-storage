@@ -3,6 +3,7 @@
     #1 Create budgets using build_budget() function for the toFiscalYearId and every fund related to the ledger,
         if corresponding budget has already been created (ON CONFLICT) then update existed budget with new allocated, available, netTransfers, metadata values
     #1.1 Create budget expense class relations for new budgets
+    #1.2 Create budget groups relation for new budgets
     #2  Create allocation for every difference between budget.allocated and sum of corresponding allocations amount
     #3  Create transfer for every difference between budget.netTransfers and sum of corresponding transfers amount
     #4  Call rollover_order(_order_id text, _rollover_record jsonb) function for every order id ordered by the lowest creation date of related encumbrances
@@ -298,6 +299,22 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                  INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
                  INNER JOIN ${myuniversity}_${mymodule}.budget AS newBudget ON newBudget.fundId = oldBudget.fundId
                  INNER JOIN ${myuniversity}_${mymodule}.budget_expense_class AS exp ON oldBudget.id = exp.budgetid
+        WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
+          AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
+          AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
+        ON CONFLICT DO NOTHING;
+
+        -- #1.2 Create budget groups relation for new budgets
+        INSERT INTO ${myuniversity}_${mymodule}.group_fund_fiscal_year
+        SELECT public.uuid_generate_v4(),
+               jsonb_build_object('budgetId', newBudget.id,
+                                  'groupId', gr.jsonb->>'groupId',
+                                  'fiscalYearId', _rollover_record->>'toFiscalYearId',
+                                  'fundId', gr.jsonb->>'fundId')
+        FROM ${myuniversity}_${mymodule}.budget AS oldBudget
+                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
+                 INNER JOIN ${myuniversity}_${mymodule}.budget AS newBudget ON newBudget.fundId = oldBudget.fundId
+                 INNER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year AS gr ON oldBudget.id = gr.budgetid
         WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
           AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
           AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
