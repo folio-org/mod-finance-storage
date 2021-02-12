@@ -14,6 +14,8 @@
     #8 If #7 is true then create corresponding rollover error
     #9 if #7 is false create encumbrances with amount non-zero amount calculated with calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) function
     #10 update budget available, unavailable, encumbered, overEncumbrance by sum of encumbrances amount created on #10 step
+    #11 Check budget existence
+    #12 If #11 is true create corresponding rollover error
  */
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 -- Map encumbrance with corresponding encumbranceRollover item, calculate expected encumbrance amount based on that item
@@ -80,6 +82,35 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                     LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
                     WHERE fund.ledgerId::text=_rollover_record->>'ledgerId' AND tr.fiscalYearId::text = _rollover_record->>'fromFiscalYearId'
                           AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
+        ELSEIF
+           -- #10
+           EXISTS (SELECT tr.jsonb as transaction FROM ${myuniversity}_${mymodule}.transaction tr
+           					 WHERE NOT EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.budget budget
+           								 	WHERE tr.fromFundId=budget.fundId AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId')
+           						AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
+                               	AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId')
+       THEN
+           -- #11
+           INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
+               SELECT public.uuid_generate_v4(), jsonb_build_object
+               (
+                   'ledgerRolloverId', _rollover_record->>'id',
+                   'errorType', 'Order',
+                   'failedAction', 'Create encumbrance',
+                   'errorMessage', 'Budget not found',
+                   'details', jsonb_build_object
+                   (
+                       'purchaseOrderId', _order_id,
+                       'poLineId', tr.jsonb->'encumbrance'->>'sourcePoLineId',
+                       'amount', public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record),
+                       'fundId', tr.jsonb->>'fromFundId'
+                   )
+               )
+               FROM ${myuniversity}_${mymodule}.transaction tr
+                 WHERE NOT EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.budget budget
+                                WHERE tr.fromFundId=budget.fundId AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId')
+                    AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
+                    AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId';
         ELSEIF
             -- #7
             (_rollover_record->>'restrictEncumbrance')::boolean AND EXISTS (SELECT sum((tr.jsonb->>'amount')::decimal) FROM ${myuniversity}_${mymodule}.transaction tr
@@ -280,7 +311,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                 SELECT public.uuid_generate_v4(), ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear)
                 FROM ${myuniversity}_${mymodule}.budget AS budget
                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id=budget.fundId
-                WHERE budget.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId' AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId'
+                WHERE fund.jsonb->>'fundStatus'<>'Inactive' AND budget.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId' AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId'
             )
             ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fundId'::text)), lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fiscalYearId'::text)))
                  DO UPDATE SET jsonb=${myuniversity}_${mymodule}.budget.jsonb || jsonb_build_object
