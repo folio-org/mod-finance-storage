@@ -108,7 +108,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                )
                FROM ${myuniversity}_${mymodule}.transaction tr
                  WHERE NOT EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.budget budget
-                                WHERE tr.fromFundId=budget.fundId AND budget.fiscalYearId::text = '78110b4e-2f8e-4eef-81ee-3058c0c7a9ee')
+                                WHERE tr.fromFundId=budget.fundId AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId')
                     AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
                     AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId';
         ELSEIF
