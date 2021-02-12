@@ -83,12 +83,14 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                     WHERE fund.ledgerId::text=_rollover_record->>'ledgerId' AND tr.fiscalYearId::text = _rollover_record->>'fromFiscalYearId'
                           AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
         ELSEIF
+           -- #10
            EXISTS (SELECT tr.jsonb as transaction FROM ${myuniversity}_${mymodule}.transaction tr
            					 WHERE NOT EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.budget budget
            								 	WHERE tr.fromFundId=budget.fundId AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId')
            						AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
                                	AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId')
        THEN
+           -- #11
            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                SELECT public.uuid_generate_v4(), jsonb_build_object
                (
