@@ -21,9 +21,20 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 -- Map encumbrance with corresponding encumbranceRollover item, calculate expected encumbrance amount based on that item
 CREATE OR REPLACE FUNCTION public.calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) RETURNS decimal as $$
 	DECLARE
-		amount decimal DEFAULT 0;
+		amount DECIMAL DEFAULT 0;
 		encumbrance_rollover jsonb DEFAULT null;
+		po_line_cost DECIMAL DEFAULT 0;
+		total_amount DECIMAL DEFAULT 0;
+		distribution_value DECIMAL DEFAULT 0;
 	BEGIN
+
+	    SELECT sum((jsonb->'encumbrance'->>'initialAmountEncumbered')::decimal) INTO po_line_cost
+	        FROM ${myuniversity}_${mymodule}.transaction
+            WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'fiscalYearId' AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
+            GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
+
+        distribution_value := (_transaction->'encumbrance'->>'initialAmountEncumbered')::decimal/po_line_cost;
+
 		IF
 		  _transaction->'encumbrance'->>'orderType'='Ongoing' AND (_transaction->'encumbrance'->>'subscription')::boolean
 		THEN
@@ -41,10 +52,19 @@ CREATE OR REPLACE FUNCTION public.calculate_planned_encumbrance_amount(_transact
 		IF
 			encumbrance_rollover->>'basedOn'='Expended'
 		THEN
-			amount:= (_transaction->'encumbrance'->>'amountExpended')::decimal + (_transaction->'encumbrance'->>'amountExpended')::decimal * (encumbrance_rollover->>'increaseBy')::decimal/100;
+		    SELECT sum((jsonb->'encumbrance'->>'amountExpended')::decimal) INTO total_amount
+            	        FROM ${myuniversity}_${mymodule}.transaction
+                        WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'fiscalYearId' AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
+                        GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
+
 		ELSE
-			amount:= (_transaction->>'amount')::decimal + (_transaction->>'amount')::decimal * (encumbrance_rollover->>'increaseBy')::decimal/100;
+			SELECT sum((jsonb->>'amount')::decimal) INTO total_amount
+                        	        FROM ${myuniversity}_${mymodule}.transaction
+                                    WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'fiscalYearId' AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
+                                    GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
 		END IF;
+		total_amount:= total_amount + total_amount * (encumbrance_rollover->>'increaseBy')::decimal/100;
+		amount := total_amount * distribution_value;
 		RETURN amount;
 	END;
 $$ LANGUAGE plpgsql;
