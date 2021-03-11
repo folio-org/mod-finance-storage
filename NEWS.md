@@ -13,6 +13,8 @@ Also a set of bugs were fixed.
 ### Stories
 [MODFISTO-224](https://issues.folio.org/browse/MODFISTO-224) Calculate transaction amount based on fundDistribution percentage value
 [MODFISTO-222](https://issues.folio.org/browse/MODFISTO-222) Budget created for inactive fund
+[MODFISTO-219](https://issues.folio.org/browse/MODFISTO-219) Allow user to delete a budget that has ONLY allocation type transactions
+[MODFISTO-216](https://issues.folio.org/browse/MODFISTO-216) Ensure Increase and decrease in allocation are always positive values
 [MODFISTO-210](https://issues.folio.org/browse/MODFISTO-210) Allow user to intentionally reset budget allowances during rollover
 [MODFISTO-209](https://issues.folio.org/browse/MODFISTO-209) Update test data to include an FY2021
 [MODFISTO-206](https://issues.folio.org/browse/MODFISTO-206) Ensure that Allowable Encumbrance and Allowable Expenditure restrictions are based on Total Funding
@@ -39,8 +41,6 @@ Also a set of bugs were fixed.
 [MODFISTO-221](https://issues.folio.org/browse/MODFISTO-221) Rollover budget ignores expense classes when creating new budget
 [MODFISTO-220](https://issues.folio.org/browse/MODFISTO-220) Funds lose group assignments after fiscal year rollover
 [MODFISTO-217](https://issues.folio.org/browse/MODFISTO-217) When not checking Rollover or Available in roll settings, systems rolls all amounts
-[MODFISTO-219](https://issues.folio.org/browse/MODFISTO-219) Allow user to delete a budget that has ONLY allocation type transactions
-[MODFISTO-216](https://issues.folio.org/browse/MODFISTO-216) Ensure Increase and decrease in allocation are always positive values
 [MODFISTO-211](https://issues.folio.org/browse/MODFISTO-211) Incorrect budget overExpended value
 
 ## 6.0.1 - Released
