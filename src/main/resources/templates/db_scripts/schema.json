@@ -59,27 +59,27 @@
     {
       "run": "after",
       "snippetPath": "migration/update_order_encumbrance.sql",
-      "fromModuleVersion": "mod-finance-storage-6.1.0"
+      "fromModuleVersion": "mod-finance-storage-7.0.0"
     },
     {
       "run": "after",
       "snippetPath": "migration/update_encumbrances_order_status.ftl",
-      "fromModuleVersion": "mod-finance-storage-6.1.0"
+      "fromModuleVersion": "mod-finance-storage-7.0.0"
     },
     {
       "run": "after",
       "snippetPath": "migration/update_budget_summary_information.sql",
-      "fromModuleVersion": "mod-finance-storage-6.1.0"
+      "fromModuleVersion": "mod-finance-storage-7.0.0"
     },
     {
       "run": "after",
       "snippetPath": "budget_financial_summary_view.sql",
-      "fromModuleVersion": "mod-finance-storage-6.1.0"
+      "fromModuleVersion": "mod-finance-storage-7.0.0"
     },
     {
       "run": "after",
       "snippetPath": "budget_encumbrances_rollover.sql",
-      "fromModuleVersion": "mod-finance-storage-6.1.0"
+      "fromModuleVersion": "mod-finance-storage-7.0.0"
     }
   ],
   "tables": [
@@ -341,7 +341,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "fromModuleVersion": "mod-finance-storage-7.0.0",
       "withMetadata": true,
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
@@ -580,7 +580,7 @@
     },
     {
       "tableName": "ledger_fiscal_year_rollover",
-      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "fromModuleVersion": "mod-finance-storage-7.0.0",
       "withMetadata": true,
       "foreignKeys": [
         {
@@ -606,7 +606,7 @@
     },
     {
       "tableName": "ledger_fiscal_year_rollover_progress",
-      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "fromModuleVersion": "mod-finance-storage-7.0.0",
       "withMetadata": true,
       "index": [
         {
@@ -634,7 +634,7 @@
     },
     {
       "tableName": "ledger_fiscal_year_rollover_error",
-      "fromModuleVersion": "mod-finance-storage-6.1.0",
+      "fromModuleVersion": "mod-finance-storage-7.0.0",
       "withMetadata": true,
       "index": [
         {
