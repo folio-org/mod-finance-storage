@@ -1,16 +1,21 @@
 package org.folio.rest.impl;
 
+import static org.folio.dao.ledger.LedgerPostgresDAO.LEDGER_TABLE;
 import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 
 import java.util.List;
 import java.util.Map;
 
+import java.util.function.Supplier;
 import javax.ws.rs.core.Response;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.okapi.common.ModuleId;
+import org.folio.okapi.common.SemVer;
+import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgetExpenseClasses;
@@ -23,6 +28,9 @@ import org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.CriterionBuilder;
+import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantLoading;
@@ -44,22 +52,78 @@ public class TenantReferenceAPI extends TenantAPI {
   public Future<Integer> loadData(TenantAttributes attributes, String tenantId, Map<String, String> headers, Context vertxContext) {
     log.info("postTenant");
     Vertx vertx = vertxContext.owner();
-    Promise<Integer> promise = Promise.promise();
 
     TenantLoading tl = new TenantLoading();
     buildDataLoadingParameters(attributes, tl);
 
-    tl.perform(attributes, headers, vertx, res1 -> {
-      if (res1.failed()) {
-        promise.fail(res1.cause());
+    return Future.succeededFuture()
+      // migrationModule value it the same as fromModuleVersion from schema.json
+      .compose(v -> migration(attributes, "mod-finance-storage-6.1.0", () -> customizeYourMigrationLogicHere(headers, vertxContext)))
+      .compose(v -> migration(attributes, "mod-finance-storage-5.0.0", () -> customizeYourMigrationLogicHere(headers, vertxContext)))
+      .compose(v -> {
+        Promise<Integer> promise = Promise.promise();
+        tl.perform(attributes, headers, vertx, res -> {
+          if (res.failed()) {
+            promise.fail(res.cause());
+          } else {
+            promise.complete(res.result());
+          }
+        });
+        return promise.future();
+      });
+  }
 
-      } else {
-        promise.complete(res1.result());
-      }
-
+  // Implement your own migration logic here
+  private Future<Void> customizeYourMigrationLogicHere(Map<String, String> headers, Context vertxContext) {
+    Promise<Void> promise = Promise.promise();
+    vertxContext.runOnContext(event -> {
+      DBClient client = new DBClient(vertxContext, headers);
+      client.startTx()
+        .compose(v -> retrieveSomeDataFromDB(client))
+        .compose(v -> client.endTx())
+        .onSuccess(v -> {
+          log.info("ok");
+          promise.complete();
+        })
+        .onFailure(v -> {
+          log.info("Some error");
+          promise.fail("Some error");
+        });
     });
-
     return promise.future();
+  }
+
+  private Future<Void> retrieveSomeDataFromDB(DBClient client) {
+    Promise<Void> promise = Promise.promise();
+
+    Criterion criterion = new CriterionBuilder() .build();
+
+    client.getPgClient().get(LEDGER_TABLE, Ledger.class, criterion, false, reply -> {
+      if (reply.failed()) {
+        promise.fail("error");
+      } else {
+        log.info("Ledger record {} was successfully retrieved", reply.result().toString());
+        promise.complete();
+      }
+    });
+    return promise.future();
+  }
+
+  private Future<Void> migration(TenantAttributes attributes, String migrationModule, Supplier<Future<Void>> supplier) {
+    SemVer moduleTo = moduleVersionToSemVer(migrationModule);
+    SemVer currentModuleVersion = moduleVersionToSemVer(attributes.getModuleFrom());
+    if (moduleTo.compareTo(currentModuleVersion) > 0){
+      return supplier.get();
+    }
+    return Future.succeededFuture();
+  }
+
+  private static SemVer moduleVersionToSemVer(String version) {
+    try {
+      return new SemVer(version);
+    } catch (IllegalArgumentException ex) {
+      return new ModuleId(version).getSemVer();
+    }
   }
 
   private boolean buildDataLoadingParameters(TenantAttributes tenantAttributes, TenantLoading tl) {
