@@ -7,41 +7,41 @@ Also a set of bugs were fixed.
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v6.0.1...v7.0.0)
 
 ### Technical tasks
-[MODFISTO-199](https://issues.folio.org/browse/MODFISTO-199) mod-finance-storage: Update RMB
-[MODFISTO-198](https://issues.folio.org/browse/MODFISTO-198) Fix fund type collection example JSON (acq-models)
+* [MODFISTO-199](https://issues.folio.org/browse/MODFISTO-199) mod-finance-storage: Update RMB
+* [MODFISTO-198](https://issues.folio.org/browse/MODFISTO-198) Fix fund type collection example JSON (acq-models)
 
 ### Stories
-[MODFISTO-224](https://issues.folio.org/browse/MODFISTO-224) Calculate transaction amount based on fundDistribution percentage value
-[MODFISTO-222](https://issues.folio.org/browse/MODFISTO-222) Budget created for inactive fund
-[MODFISTO-219](https://issues.folio.org/browse/MODFISTO-219) Allow user to delete a budget that has ONLY allocation type transactions
-[MODFISTO-216](https://issues.folio.org/browse/MODFISTO-216) Ensure Increase and decrease in allocation are always positive values
-[MODFISTO-210](https://issues.folio.org/browse/MODFISTO-210) Allow user to intentionally reset budget allowances during rollover
-[MODFISTO-209](https://issues.folio.org/browse/MODFISTO-209) Update test data to include an FY2021
-[MODFISTO-206](https://issues.folio.org/browse/MODFISTO-206) Ensure that Allowable Encumbrance and Allowable Expenditure restrictions are based on Total Funding
-[MODFISTO-204](https://issues.folio.org/browse/MODFISTO-204) Define and implement rollover error report storage API
-[MODFISTO-203](https://issues.folio.org/browse/MODFISTO-203) Update group-fiscal-year schema with new Financial information
-[MODFISTO-197](https://issues.folio.org/browse/MODFISTO-197) Adjust fiscal year schema with financial summary model	Max Shtanko
-[MODFISTO-195](https://issues.folio.org/browse/MODFISTO-195) Create view with Budget financial detail information
-[MODFISTO-194](https://issues.folio.org/browse/MODFISTO-194) Add order status to encumbrance schema
-[MODFISTO-192](https://issues.folio.org/browse/MODFISTO-192) Define Rollover transfer transactionType
-[MODFISTO-190](https://issues.folio.org/browse/MODFISTO-190) Migration : Fill new fields of the Budget schema with new Financial information
-[MODFISTO-188](https://issues.folio.org/browse/MODFISTO-188) Update Ledger schema with new Financial information
-[MODFISTO-187](https://issues.folio.org/browse/MODFISTO-187) Update logic with financial detail in the budget summary to improve the users ability
-[MODFISTO-186](https://issues.folio.org/browse/MODFISTO-186) Update Budget schema with new Financial information
-[MODFISTO-181](https://issues.folio.org/browse/MODFISTO-181) Move allocated logic from trigger to java code
-[MODFISTO-177](https://issues.folio.org/browse/MODFISTO-177) Create migration script for setting in all encumbrances "reEncumber" = true
-[MODFISTO-175](https://issues.folio.org/browse/MODFISTO-175) Define model and schema for the errors of the ledger fiscal year rollover
-[MODFISTO-174](https://issues.folio.org/browse/MODFISTO-174) Define model and schema for the progress of the ledger fiscal year rollover
-[MODFISTO-168](https://issues.folio.org/browse/MODFISTO-168) Define storage API for retrieving rollover status
-[MODFISTO-167](https://issues.folio.org/browse/MODFISTO-167) Add ledger fiscal year rollover logic
-[MODFISTO-164](https://issues.folio.org/browse/MODFISTO-164) Define model and schema of the fiscal year rollover for Ledger
-[MODFISTO-163](https://issues.folio.org/browse/MODFISTO-163) Define storage API for the ledger fiscal year rollover
+* [MODFISTO-224](https://issues.folio.org/browse/MODFISTO-224) Calculate transaction amount based on fundDistribution percentage value
+* [MODFISTO-222](https://issues.folio.org/browse/MODFISTO-222) Budget created for inactive fund
+* [MODFISTO-219](https://issues.folio.org/browse/MODFISTO-219) Allow user to delete a budget that has ONLY allocation type transactions
+* [MODFISTO-216](https://issues.folio.org/browse/MODFISTO-216) Ensure Increase and decrease in allocation are always positive values
+* [MODFISTO-210](https://issues.folio.org/browse/MODFISTO-210) Allow user to intentionally reset budget allowances during rollover
+* [MODFISTO-209](https://issues.folio.org/browse/MODFISTO-209) Update test data to include an FY2021
+* [MODFISTO-206](https://issues.folio.org/browse/MODFISTO-206) Ensure that Allowable Encumbrance and Allowable Expenditure restrictions are based on Total Funding
+* [MODFISTO-204](https://issues.folio.org/browse/MODFISTO-204) Define and implement rollover error report storage API
+* [MODFISTO-203](https://issues.folio.org/browse/MODFISTO-203) Update group-fiscal-year schema with new Financial information
+* [MODFISTO-197](https://issues.folio.org/browse/MODFISTO-197) Adjust fiscal year schema with financial summary model	Max Shtanko
+* [MODFISTO-195](https://issues.folio.org/browse/MODFISTO-195) Create view with Budget financial detail information
+* [MODFISTO-194](https://issues.folio.org/browse/MODFISTO-194) Add order status to encumbrance schema
+* [MODFISTO-192](https://issues.folio.org/browse/MODFISTO-192) Define Rollover transfer transactionType
+* [MODFISTO-190](https://issues.folio.org/browse/MODFISTO-190) Migration : Fill new fields of the Budget schema with new Financial information
+* [MODFISTO-188](https://issues.folio.org/browse/MODFISTO-188) Update Ledger schema with new Financial information
+* [MODFISTO-187](https://issues.folio.org/browse/MODFISTO-187) Update logic with financial detail in the budget summary to improve the users ability
+* [MODFISTO-186](https://issues.folio.org/browse/MODFISTO-186) Update Budget schema with new Financial information
+* [MODFISTO-181](https://issues.folio.org/browse/MODFISTO-181) Move allocated logic from trigger to java code
+* [MODFISTO-177](https://issues.folio.org/browse/MODFISTO-177) Create migration script for setting in all encumbrances "reEncumber" = true
+* [MODFISTO-175](https://issues.folio.org/browse/MODFISTO-175) Define model and schema for the errors of the ledger fiscal year rollover
+* [MODFISTO-174](https://issues.folio.org/browse/MODFISTO-174) Define model and schema for the progress of the ledger fiscal year rollover
+* [MODFISTO-168](https://issues.folio.org/browse/MODFISTO-168) Define storage API for retrieving rollover status
+* [MODFISTO-167](https://issues.folio.org/browse/MODFISTO-167) Add ledger fiscal year rollover logic
+* [MODFISTO-164](https://issues.folio.org/browse/MODFISTO-164) Define model and schema of the fiscal year rollover for Ledger
+* [MODFISTO-163](https://issues.folio.org/browse/MODFISTO-163) Define storage API for the ledger fiscal year rollover
 
 ### Bug Fixes
-[MODFISTO-221](https://issues.folio.org/browse/MODFISTO-221) Rollover budget ignores expense classes when creating new budget
-[MODFISTO-220](https://issues.folio.org/browse/MODFISTO-220) Funds lose group assignments after fiscal year rollover
-[MODFISTO-217](https://issues.folio.org/browse/MODFISTO-217) When not checking Rollover or Available in roll settings, systems rolls all amounts
-[MODFISTO-211](https://issues.folio.org/browse/MODFISTO-211) Incorrect budget overExpended value
+* [MODFISTO-221](https://issues.folio.org/browse/MODFISTO-221) Rollover budget ignores expense classes when creating new budget
+* [MODFISTO-220](https://issues.folio.org/browse/MODFISTO-220) Funds lose group assignments after fiscal year rollover
+* [MODFISTO-217](https://issues.folio.org/browse/MODFISTO-217) When not checking Rollover or Available in roll settings, systems rolls all amounts
+* [MODFISTO-211](https://issues.folio.org/browse/MODFISTO-211) Incorrect budget overExpended value
 
 ## 6.0.1 - Released
 The primary focus of this release was to fix RMB and logging issues
