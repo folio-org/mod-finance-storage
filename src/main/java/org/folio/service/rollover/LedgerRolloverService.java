@@ -1,16 +1,21 @@
 package org.folio.service.rollover;
 
+import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.UUID;
 
+import javax.money.CurrencyUnit;
+import javax.money.Monetary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus;
@@ -21,6 +26,7 @@ import org.folio.service.budget.BudgetService;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import org.folio.service.fiscalyear.FiscalYearService;
 
 public class LedgerRolloverService {
 
@@ -28,13 +34,15 @@ public class LedgerRolloverService {
 
   private final LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO;
   private final BudgetService budgetService;
+  private final FiscalYearService fiscalYearService;
   private final RolloverProgressService rolloverProgressService;
   private final PostgresFunctionExecutionService postgresFunctionExecutionService;
   private final RestClient orderRolloverRestClient;
 
-  public LedgerRolloverService(LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO, BudgetService budgetService,
+  public LedgerRolloverService(FiscalYearService fiscalYearService, LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO, BudgetService budgetService,
       RolloverProgressService rolloverProgressService, PostgresFunctionExecutionService postgresFunctionExecutionService,
       RestClient orderRolloverRestClient) {
+    this.fiscalYearService = fiscalYearService;
     this.ledgerFiscalYearRolloverDAO = ledgerFiscalYearRolloverDAO;
     this.budgetService = budgetService;
     this.rolloverProgressService = rolloverProgressService;
@@ -57,7 +65,6 @@ public class LedgerRolloverService {
 
     return rolloverPreparation(rollover, progress, requestContext)
       .onSuccess(aVoid -> startRollover(rollover, progress, requestContext));
-
   }
 
   public Future<Void> deleteRollover(String rolloverId, RequestContext requestContext) {
@@ -98,6 +105,7 @@ public class LedgerRolloverService {
     return client.startTx()
       .compose(aVoid -> ledgerFiscalYearRolloverDAO.create(rollover, client))
       .compose(aVoid -> rolloverProgressService.createRolloverProgress(progress, client))
+      .compose(aVoid -> fiscalYearService.populateRolloverWithCurrencyFactor(rollover, requestContext))
       .compose(aVoid -> closeBudgets(rollover, client))
       .compose(aVoid -> client.endTx())
       .onFailure(t -> {
