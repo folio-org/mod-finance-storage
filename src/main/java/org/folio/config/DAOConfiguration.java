@@ -2,6 +2,8 @@ package org.folio.config;
 
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.budget.BudgetPostgresDAO;
+import org.folio.dao.fiscalyear.FiscalYearDAO;
+import org.folio.dao.fiscalyear.FiscalYearPostgresDAO;
 import org.folio.dao.fund.FundDAO;
 import org.folio.dao.fund.FundPostgresDAO;
 import org.folio.dao.ledger.LedgerDAO;
@@ -25,6 +27,11 @@ public class DAOConfiguration {
   @Bean
   public BudgetDAO budgetDAO() {
     return new BudgetPostgresDAO();
+  }
+
+  @Bean
+  public FiscalYearDAO fiscalYearDAODAO() {
+    return new FiscalYearPostgresDAO();
   }
 
   @Bean

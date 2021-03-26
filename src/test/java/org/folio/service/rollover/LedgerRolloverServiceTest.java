@@ -31,6 +31,7 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.fiscalyear.FiscalYearService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +53,9 @@ public class LedgerRolloverServiceTest {
 
   @Mock
   private LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO;
+
+  @Mock
+  private FiscalYearService fiscalYearService;
 
   @Mock
   private RolloverProgressService rolloverProgressService;
@@ -115,6 +119,7 @@ public class LedgerRolloverServiceTest {
     when(requestContext.toDBClient()).thenReturn(dbClient);
     when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
     when(dbClient.endTx()).thenReturn(Future.succeededFuture());
+    when(fiscalYearService.populateRolloverWithCurrencyFactor(eq(rollover), eq(requestContext))).thenReturn(Future.succeededFuture());
     when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(budgetService.closeBudgets(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
@@ -139,6 +144,7 @@ public class LedgerRolloverServiceTest {
     when(requestContext.toDBClient()).thenReturn(dbClient);
     when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
     when(dbClient.endTx()).thenReturn(Future.succeededFuture());
+    when(fiscalYearService.populateRolloverWithCurrencyFactor(eq(rollover), eq(requestContext))).thenReturn(Future.succeededFuture());
     when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
 

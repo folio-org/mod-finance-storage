@@ -12,14 +12,16 @@
     #6 If #5 is true than create rollover error record
     #7 if #5 is false then check if rollover restrictEncumbrance setting is true and there is any sum of expected encumbrances grouped by fromFundId greater than corresponding budget remaining amount
     #8 If #7 is true then create corresponding rollover error
-    #9 if #7 is false create encumbrances with amount non-zero amount calculated with calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) function
+    #9 if #7 is false create temp encumbrances with amount non-zero amount calculated with calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) function
+    #9.1 Calculate and add missing penny to appropriate temp transaction
+    #9.2 move transactions from temp table to permanent
     #10 update budget available, unavailable, encumbered, overEncumbrance by sum of encumbrances amount created on #10 step
     #11 Check budget existence
     #12 If #11 is true create corresponding rollover error
  */
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 -- Map encumbrance with corresponding encumbranceRollover item, calculate expected encumbrance amount based on that item
-CREATE OR REPLACE FUNCTION public.calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) RETURNS decimal as $$
+CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb, _rounding boolean) RETURNS decimal as $$
 	DECLARE
 		amount DECIMAL DEFAULT 0;
 		encumbrance_rollover jsonb DEFAULT null;
@@ -65,13 +67,94 @@ CREATE OR REPLACE FUNCTION public.calculate_planned_encumbrance_amount(_transact
 		END IF;
 		total_amount:= total_amount + total_amount * (encumbrance_rollover->>'increaseBy')::decimal/100;
 		amount := total_amount * distribution_value;
-		RETURN amount;
+	    IF
+	        _rounding IS NOT NULL AND _rounding
+	    THEN
+		    RETURN ROUND(amount,(_rollover_record->>'currencyFactor')::integer);
+	    ELSE
+            RETURN amount;
+        END IF;
 	END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id text, _rollover_record jsonb) RETURNS VOID as $$
-
+    DECLARE
+        missing_penny_with_po_line refcursor;
+        missing_penny_row record;
+        missing_penny_transaction_id text;
     BEGIN
+
+        -- #9 create encumbrances to temp table
+        CREATE TEMPORARY TABLE tmp_transaction(LIKE ${myuniversity}_${mymodule}.transaction);
+
+        INSERT INTO tmp_transaction(id, jsonb)
+        SELECT public.uuid_generate_v4(), jsonb - 'id' || jsonb_build_object
+            (
+                'fiscalYearId', _rollover_record->>'toFiscalYearId',
+                'amount', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
+                'encumbrance', jsonb->'encumbrance' || jsonb_build_object
+                    (
+                        'initialAmountEncumbered', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
+                        'amountAwaitingPayment', 0,
+                        'amountExpended', 0
+                    ),
+                'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text)
+
+            )
+        FROM ${myuniversity}_${mymodule}.transaction tr
+        WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
+          AND ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true) <> 0 AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
+          AND tr.jsonb->'encumbrance'->>'orderStatus'='Open';
+
+        -- #9.1 calculate and add missing penny to appropriate temp transaction
+        -- find poLines and calculate missing penny amount for that poLine if any
+        OPEN missing_penny_with_po_line FOR
+            SELECT po.id                                                     as po_line_id,
+                   (round((SELECT sum(${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(jsonb, _rollover_record, false)) -
+                                  sum(${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(jsonb, _rollover_record, true)) penny
+                           FROM ${myuniversity}_${mymodule}.transaction
+                           WHERE _rollover_record ->> 'fromFiscalYearId' = jsonb ->> 'fiscalYearId'
+                             AND jsonb -> 'encumbrance' ->> 'sourcePoLineId' = po.id
+                           GROUP BY jsonb -> 'encumbrance' ->> 'sourcePoLineId'),
+                          (_rollover_record ->> 'currencyFactor')::integer)) as penny
+            FROM (
+                     SELECT DISTINCT tr.jsonb -> 'encumbrance' ->> 'sourcePoLineId' as id
+                     FROM ${myuniversity}_${mymodule}.transaction tr
+                     WHERE tr.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = _order_id
+                       AND _rollover_record ->> 'fromFiscalYearId' = jsonb ->> 'fiscalYearId'
+                 ) po;
+        -- if missing penny for poLines exist then find transaction (first or last) and add that missing amount to them
+        LOOP
+            FETCH missing_penny_with_po_line INTO missing_penny_row;
+            EXIT WHEN NOT found;
+
+            IF missing_penny_row.penny IS NOT NULL AND missing_penny_row.penny != 0
+            THEN
+                missing_penny_transaction_id :=
+                        (
+                            SELECT id
+                            FROM tmp_transaction
+                            WHERE _rollover_record ->> 'toFiscalYearId' = jsonb ->> 'fiscalYearId'
+                              AND jsonb -> 'encumbrance' ->> 'sourcePoLineId' = missing_penny_row.po_line_id
+                            ORDER BY CASE WHEN missing_penny_row.penny < 0 THEN jsonb -> 'metadata' ->> 'createdDate' END,
+                                     CASE WHEN missing_penny_row.penny > 0 THEN jsonb -> 'metadata' ->> 'createdDate' END DESC
+                            LIMIT 1
+                        );
+
+                IF missing_penny_transaction_id IS NOT NULL
+                THEN
+                    UPDATE tmp_transaction as tr
+                    SET jsonb = jsonb_set(
+                                jsonb || jsonb_build_object('amount', (jsonb ->> 'amount')::decimal + missing_penny_row.penny),
+                                '{encumbrance,initialAmountEncumbered}',
+                                ((jsonb -> 'encumbrance' ->> 'initialAmountEncumbered')::decimal +
+                                 missing_penny_row.penny)::text::jsonb)
+                    WHERE missing_penny_transaction_id = id::text;
+                END IF;
+            END IF;
+        END LOOP;
+        CLOSE missing_penny_with_po_line;
+
         IF
             -- #5
             EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.transaction tr
@@ -94,7 +177,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                     (
                         'purchaseOrderId', _order_id,
                         'poLineId', tr.jsonb->'encumbrance'->>'sourcePoLineId',
-                        'amount', public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record),
+                        'amount', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                         'fundId', tr.fromFundId::text
                     )
                 )
@@ -122,7 +205,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                    (
                        'purchaseOrderId', _order_id,
                        'poLineId', tr.jsonb->'encumbrance'->>'sourcePoLineId',
-                       'amount', public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record),
+                       'amount', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                        'fundId', tr.jsonb->>'fromFundId'
                    )
                )
@@ -133,11 +216,14 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                     AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId';
         ELSEIF
             -- #7
-            (_rollover_record->>'restrictEncumbrance')::boolean AND EXISTS (SELECT sum((tr.jsonb->>'amount')::decimal) FROM ${myuniversity}_${mymodule}.transaction tr
-                LEFT JOIN ${myuniversity}_${mymodule}.budget budget ON tr.fromFundId=budget.fundId
-                WHERE budget.jsonb->>'allowableEncumbrance' IS NOT NULL AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.fiscalYearId::text=_rollover_record->>'fromFiscalYearId' AND budget.fiscalYearId::text=_rollover_record->>'toFiscalYearId'
-                GROUP BY budget.jsonb, tr.jsonb->>'fromFundId'
-                HAVING sum(public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record)) > ((budget.jsonb->>'initialAllocation')::decimal +
+            (_rollover_record->>'restrictEncumbrance')::boolean AND EXISTS (SELECT sum((tr.jsonb->>'amount')::decimal) FROM tmp_transaction tr
+                LEFT JOIN ${myuniversity}_${mymodule}.budget budget ON tr.jsonb->>'fromFundId' = budget.fundId::text
+                                                                            WHERE budget.jsonb ->> 'allowableEncumbrance' IS NOT NULL
+                                                                              AND tr.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = _order_id
+                                                                              AND tr.jsonb->>'fiscalYearId' = _rollover_record ->> 'toFiscalYearId'
+                                                                              AND budget.fiscalYearId::text = _rollover_record ->> 'toFiscalYearId'
+                                                                            GROUP BY budget.jsonb, tr.jsonb ->> 'fromFundId'
+                HAVING sum((tr.jsonb->>'amount')::decimal) > ((budget.jsonb->>'initialAllocation')::decimal +
                                                                                                       (budget.jsonb->>'allocationTo')::decimal -
                                                                                                       (budget.jsonb->>'allocationFrom')::decimal +
                                                                                                       (budget.jsonb->>'netTransfers')::decimal) *
@@ -156,7 +242,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                     (
                         'purchaseOrderId', _order_id,
                         'poLineId', tr.jsonb->'encumbrance'->>'sourcePoLineId',
-                        'amount', public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record),
+                        'amount', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                         'fundId', tr.jsonb->>'fromFundId'
                     )
                 )
@@ -164,13 +250,13 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 INNER JOIN
                     (
                         SELECT budget.jsonb  AS budget
-                        FROM ${myuniversity}_${mymodule}.transaction tr
+                        FROM tmp_transaction tr
                         LEFT JOIN ${myuniversity}_${mymodule}.budget budget ON tr.jsonb->>'fromFundId'=budget.fundId::text
                         WHERE budget.jsonb->>'allowableEncumbrance' IS NOT NULL
-                            AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
+                            AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'toFiscalYearId'
                             AND budget.fiscalYearId::text=_rollover_record->>'toFiscalYearId'
                         GROUP BY tr.jsonb->>'fromFundId', budget.jsonb
-                        HAVING sum(public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record)) > ((budget.jsonb->>'initialAllocation')::decimal +
+                        HAVING sum((tr.jsonb->>'amount')::decimal) > ((budget.jsonb->>'initialAllocation')::decimal +
                                                                                                             (budget.jsonb->>'allocationTo')::decimal -
                                                                                                             (budget.jsonb->>'allocationFrom')::decimal +
                                                                                                             (budget.jsonb->>'netTransfers')::decimal) *
@@ -180,25 +266,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 WHERE tr.jsonb->>'transactionType'='Encumbrance' AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id
                 AND tr.fiscalYearId::text=_rollover_record->>'fromFiscalYearId';
         ELSE
-            -- #9 create encumbrances
-            INSERT INTO ${myuniversity}_${mymodule}.transaction (id, jsonb)
-                SELECT public.uuid_generate_v4(), jsonb - 'id' || jsonb_build_object
-                    (
-                        'fiscalYearId', _rollover_record->>'toFiscalYearId',
-                        'amount', public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record),
-                        'encumbrance', jsonb->'encumbrance' || jsonb_build_object
-                            (
-                                'initialAmountEncumbered', public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record),
-                                'amountAwaitingPayment', 0,
-                                'amountExpended', 0
-                            ),
-                        'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text)
-
-                    )
-                FROM ${myuniversity}_${mymodule}.transaction tr
-                    WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
-                        AND public.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record) <> 0 AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
-                        AND tr.jsonb->'encumbrance'->>'orderStatus'='Open';
+            -- #9.2 move transactions from temp table to permanent
+            INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction;
         END IF;
 
         -- #10 update budget amounts
@@ -213,6 +282,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             ) AS subquery
         LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON subquery.fund_id=fund.id::text
         WHERE subquery.fund_id=budget.jsonb->>'fundId' AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId' AND budget.jsonb->>'fiscalYearId'=_rollover_record->>'toFiscalYearId';
+
+        DROP TABLE IF EXISTS tmp_transaction;
     END;
 
 $$ LANGUAGE plpgsql;
@@ -420,3 +491,6 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
 
     END;
 $$ LANGUAGE plpgsql;
+
+-- remove old functions
+DROP FUNCTION IF EXISTS public.calculate_planned_encumbrance_amount(jsonb, jsonb);
