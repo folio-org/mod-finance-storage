@@ -42,11 +42,6 @@
       "fromModuleVersion": "mod-finance-storage-5.0.0"
     },
     {
-      "run": "before",
-      "snippetPath": "migration/update_ledger_fiscal_year_records_v_5.0.0.ftl",
-      "fromModuleVersion": "mod-finance-storage-5.0.0"
-    },
-    {
       "run": "after",
       "snippetPath": "migration/pending_payment_cross_module.ftl",
       "fromModuleVersion": "mod-finance-storage-5.0.0"
