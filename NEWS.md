@@ -1,4 +1,11 @@
 ## 7.1.0 - Unreleased
+## 7.0.2 - Released
+The primary focus of this release was to fix Unable to complete fiscal year rollover issue
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.1...v7.0.2)
+
+### Bug Fixes
+* [MODFISTO-234](https://issues.folio.org/browse/MODFISTO-234) Unable to complete fiscal year rollover
 
 ## 7.0.1 - Released
 The primary focus of this release was to fix migration issues and lost/extra penny when creating encumbrances during rollover
