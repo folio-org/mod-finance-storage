@@ -86,7 +86,8 @@ public class EncumbranceService implements TransactionManagingStrategy {
   public Future<Void> processEncumbrances(List<Transaction> tmpTransactions, DBClient client) {
     return getTransactionsForCreateAndUpdate(tmpTransactions, client)
       .compose(transactionsForCreateAndUpdate -> updateBudgetsTotals(transactionsForCreateAndUpdate, tmpTransactions, client)
-        .map(v -> excludeReleasedEncumbrances(transactionsForCreateAndUpdate.get(FOR_UPDATE), transactionsForCreateAndUpdate.get(EXISTING)))
+        .map(v -> excludeReleasedEncumbrancesExceptToUnrelease(transactionsForCreateAndUpdate.get(FOR_UPDATE),
+          transactionsForCreateAndUpdate.get(EXISTING)))
         .compose(transactions -> transactionDAO.updatePermanentTransactions(transactions, client))
         .compose(ok -> {
           if (!transactionsForCreateAndUpdate.get(FOR_CREATE).isEmpty()) {
@@ -150,7 +151,7 @@ public class EncumbranceService implements TransactionManagingStrategy {
     return groupedTransactions;
   }
 
-  private List<Transaction> excludeReleasedEncumbrances(List<Transaction> tmpTransactions, List<Transaction> existingTransactions) {
+  private List<Transaction> excludeReleasedEncumbrancesExceptToUnrelease(List<Transaction> tmpTransactions, List<Transaction> existingTransactions) {
     // if nothing to update
     if (existingTransactions.isEmpty()) {
       return new ArrayList<>();
@@ -160,7 +161,7 @@ public class EncumbranceService implements TransactionManagingStrategy {
     return tmpTransactions.stream()
       // filter transactions for update
       .filter(transaction -> groupedTransactions.containsKey(transaction.getId()))
-      .filter(transaction -> groupedTransactions.get(transaction.getId()).getEncumbrance().getStatus() != Encumbrance.Status.RELEASED)
+      .filter(transaction -> isNotFromReleasedExceptToUnreleased(transaction, groupedTransactions.get(transaction.getId())))
       .collect(Collectors.toList());
   }
 
@@ -199,7 +200,7 @@ public class EncumbranceService implements TransactionManagingStrategy {
       entry.getValue()
         .forEach(tmpTransaction -> {
           Transaction existingTransaction = existingGrouped.get(tmpTransaction.getId());
-          if (!isEncumbranceReleased(existingTransaction)) {
+          if (isNotFromReleasedExceptToUnreleased(tmpTransaction, existingTransaction)) {
             processBudget(budget, currency, tmpTransaction, existingTransaction);
           }
         });
@@ -222,8 +223,12 @@ public class EncumbranceService implements TransactionManagingStrategy {
       newAmount = subtractMoney(newAmount, existingTransaction.getEncumbrance().getAmountExpended(), currency);
       tmpTransaction.setAmount(newAmount);
       newEncumbered = sumMoney(currency, newEncumbered, newAmount);
+    } else if (isTransitionFromReleasedToUnreleased(tmpTransaction, existingTransaction)) {
+      double newAmount = tmpTransaction.getEncumbrance().getInitialAmountEncumbered();
+      tmpTransaction.setAmount(newAmount);
+      newEncumbered = sumMoney(newEncumbered, newAmount, currency);
     } else {
-      newEncumbered = sumMoney(budget.getEncumbered(), tmpTransaction.getAmount(), currency);
+      newEncumbered = sumMoney(newEncumbered, tmpTransaction.getAmount(), currency);
       newEncumbered = subtractMoney(newEncumbered, existingTransaction.getAmount(), currency);
     }
 
@@ -238,6 +243,11 @@ public class EncumbranceService implements TransactionManagingStrategy {
       .getStatus() == Encumbrance.Status.RELEASED;
   }
 
+  private boolean isNotFromReleasedExceptToUnreleased(Transaction newTransaction, Transaction existingTransaction) {
+    return existingTransaction.getEncumbrance().getStatus() != Encumbrance.Status.RELEASED ||
+      newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
+  }
+
   private boolean isTransitionFromUnreleasedToPending(Transaction newTransaction, Transaction existingTransaction) {
     return existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED
       && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.PENDING;
@@ -245,6 +255,11 @@ public class EncumbranceService implements TransactionManagingStrategy {
 
   private boolean isTransitionFromPendingToUnreleased(Transaction newTransaction, Transaction existingTransaction) {
     return existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.PENDING
+      && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
+  }
+
+  private boolean isTransitionFromReleasedToUnreleased(Transaction newTransaction, Transaction existingTransaction) {
+    return existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED
       && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
   }
 }
