@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
+import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
@@ -31,6 +32,7 @@ public class AllOrNothingTransactionService {
   public static final String TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION = "Transaction summary not found for transaction";
   public static final String ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED = "All expected transactions already processed";
   public static final String BUDGET_IS_INACTIVE = "Cannot create encumbrance from the not active budget {}";
+  public static final String ENCUMBRANCE_EXPENDED = "Encumbrance cannot be unreleased because it has been expended";
 
   private final TransactionDAO transactionDAO;
   private final TemporaryTransactionDAO temporaryTransactionDAO;
@@ -66,7 +68,8 @@ public class AllOrNothingTransactionService {
     } catch (HttpStatusException e) {
       return Future.failedFuture(e);
     }
-    return verifyTransactionExistence(transaction.getId(), client)
+    return getExistingTransaction(transaction.getId(), client)
+      .compose(existingTransaction -> checkEncumbranceNotExpendedToUnrelease(transaction, existingTransaction))
       .compose(v -> processAllOrNothing(transaction, client, operation));
   }
 
@@ -121,7 +124,7 @@ public class AllOrNothingTransactionService {
     }
   }
 
-  private Future<Void> verifyTransactionExistence(String transactionId, DBClient client) {
+  private Future<Transaction> getExistingTransaction(String transactionId, DBClient client) {
     CriterionBuilder criterionBuilder = new CriterionBuilder();
     criterionBuilder.with("id", transactionId);
     return transactionDAO.getTransactions(criterionBuilder.build(), client)
@@ -129,7 +132,7 @@ public class AllOrNothingTransactionService {
         if (transactions.isEmpty()) {
           throw new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Transaction not found");
         }
-        return null;
+        return transactions.get(0);
       });
   }
 
@@ -179,4 +182,12 @@ public class AllOrNothingTransactionService {
     lock.release();
   }
 
+  private Future<Void> checkEncumbranceNotExpendedToUnrelease(Transaction newTransaction, Transaction existingTransaction) {
+    if (existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED
+        && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED
+        && existingTransaction.getEncumbrance().getAmountExpended() != 0) {
+      throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), ENCUMBRANCE_EXPENDED);
+    }
+    return Future.succeededFuture();
+  }
 }
