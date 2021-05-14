@@ -4,5 +4,8 @@ SET jsonb = jsonb_set(jsonb, '{encumbrance,orderStatus}',
                       (SELECT jsonb -> 'workflowStatus'
                        from ${myuniversity}_mod_orders_storage.purchase_order
                        where jsonb ->> 'id' = tr.jsonb #>> '{encumbrance,sourcePurchaseOrderId}'))
-WHERE jsonb ? 'encumbrance';
+WHERE jsonb ? 'encumbrance'
+  AND (SELECT jsonb -> 'workflowStatus'
+  from ${myuniversity}_mod_orders_storage.purchase_order
+  where jsonb ->> 'id' = tr.jsonb #>> '{encumbrance,sourcePurchaseOrderId}') IS NOT NULL;
 </#if>
