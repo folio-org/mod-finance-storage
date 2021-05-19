@@ -1,4 +1,29 @@
 ## 7.1.0 - Unreleased
+## 7.0.3 - Released
+The primary focus of this release was to fix cross migration fail once order is missing
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.2...v7.0.3)
+
+### Bug Fixes
+* [MODFISTO-237](https://issues.folio.org/browse/MODFISTO-237) Transaction table upgrade failure when purchase order record is missing
+
+## 7.0.2 - Released
+The primary focus of this release was to fix Unable to complete fiscal year rollover issue
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.1...v7.0.2)
+
+### Bug Fixes
+* [MODFISTO-234](https://issues.folio.org/browse/MODFISTO-234) Unable to complete fiscal year rollover
+
+## 7.0.1 - Released
+The primary focus of this release was to fix migration issues and lost/extra penny when creating encumbrances during rollover
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.0...v7.0.1)
+
+### Bug Fixes
+
+* [MODFISTO-225](https://issues.folio.org/browse/MODFISTO-225)	The lost/extra penny when creating encumbrances during rollover
+* [MODFISTO-213](https://issues.folio.org/browse/MODFISTO-213)	ledgerfy does not exist when migating from v4.2.2 to v6.0.1
 
 ## 7.0.0 - Released
 The primary focus of this release was to update RMB, support of the fiscal year rollover feature and update total amounts calculations.
