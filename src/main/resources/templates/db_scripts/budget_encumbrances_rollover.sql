@@ -18,6 +18,8 @@
     #10 update budget available, unavailable, encumbered, overEncumbrance by sum of encumbrances amount created on #10 step
     #11 Check budget existence
     #12 If #11 is true create corresponding rollover error
+
+    NOTE: uuid_generate_v4() cannot be used to generate uuids because of pgpool2. uuid_generate_v5() is used instead, with unique strings.
  */
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 -- Map encumbrance with corresponding encumbranceRollover item, calculate expected encumbrance amount based on that item
@@ -88,7 +90,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         CREATE TEMPORARY TABLE tmp_transaction(LIKE ${myuniversity}_${mymodule}.transaction);
 
         INSERT INTO tmp_transaction(id, jsonb)
-        SELECT public.uuid_generate_v4(), jsonb - 'id' || jsonb_build_object
+        SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER1', tr.id)), jsonb - 'id' || jsonb_build_object
             (
                 'fiscalYearId', _rollover_record->>'toFiscalYearId',
                 'amount', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
@@ -167,7 +169,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         THEN
             -- #6
             INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
-                SELECT public.uuid_generate_v4(), jsonb_build_object
+                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER2', tr.id, fund.id)), jsonb_build_object
                 (
                     'ledgerRolloverId', _rollover_record->>'id',
                     'errorType', 'Order',
@@ -195,7 +197,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
        THEN
            -- #11
            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
-               SELECT public.uuid_generate_v4(), jsonb_build_object
+               SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER3', tr.id)), jsonb_build_object
                (
                    'ledgerRolloverId', _rollover_record->>'id',
                    'errorType', 'Order',
@@ -232,7 +234,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         THEN
             -- #8
             INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
-                SELECT public.uuid_generate_v4(), jsonb_build_object
+                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER4', tr.id, summary.budget->>'id')), jsonb_build_object
                 (
                     'ledgerRolloverId', _rollover_record->>'id',
                     'errorType', 'Order',
@@ -399,7 +401,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         -- #1 Upsert budgets
         INSERT INTO ${myuniversity}_${mymodule}.budget
             (
-                SELECT public.uuid_generate_v4(), ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear)
+                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER5', budget.id, fund.id)), ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear)
                 FROM ${myuniversity}_${mymodule}.budget AS budget
                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id=budget.fundId
                 WHERE fund.jsonb->>'fundStatus'<>'Inactive' AND budget.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId' AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId'
@@ -413,7 +415,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
 
         -- #1.1 Create budget expense class relations for new budgets
         INSERT INTO ${myuniversity}_${mymodule}.budget_expense_class
-        SELECT public.uuid_generate_v4(),
+        SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER6', oldBudget.id, fund.id, newBudget.id, exp.id)),
                jsonb_build_object('budgetId', newBudget.id,
                                   'expenseClassId', exp.jsonb->>'expenseClassId',
                                   'status', exp.jsonb->>'status')
@@ -428,7 +430,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
 
         -- #1.2 Create budget groups relation for new budgets
         INSERT INTO ${myuniversity}_${mymodule}.group_fund_fiscal_year
-        SELECT public.uuid_generate_v4(),
+        SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER7', oldBudget.id, fund.id, newBudget.id, gr.id)),
                jsonb_build_object('budgetId', newBudget.id,
                                   'groupId', gr.jsonb->>'groupId',
                                   'fiscalYearId', _rollover_record->>'toFiscalYearId',
@@ -445,12 +447,13 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
          -- #2 Create allocations
         INSERT INTO ${myuniversity}_${mymodule}.transaction
              (
-                SELECT public.uuid_generate_v4(), jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Allocation',
-                                                              'source', 'User', 'currency', toFiscalYear->>'currency', 'amount', (budget.jsonb->>'initialAllocation')::decimal+
-                                                                                                                                (budget.jsonb->>'allocationTo')::decimal-
-                                                                                                                                (budget.jsonb->>'allocationFrom')::decimal-
-                                                                                                                                sum(COALESCE((tr_to.jsonb->>'amount')::decimal, 0.00))+sum(COALESCE((tr_from.jsonb->>'amount')::decimal, 0.00)),
-                                                              'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text))
+                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER8', budget.jsonb->>'id')),
+                    jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Allocation',
+                    'source', 'User', 'currency', toFiscalYear->>'currency', 'amount', (budget.jsonb->>'initialAllocation')::decimal+
+                        (budget.jsonb->>'allocationTo')::decimal-
+                        (budget.jsonb->>'allocationFrom')::decimal-
+                        sum(COALESCE((tr_to.jsonb->>'amount')::decimal, 0.00))+sum(COALESCE((tr_from.jsonb->>'amount')::decimal, 0.00)),
+                    'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text))
                 FROM ${myuniversity}_${mymodule}.budget AS budget
                 LEFT JOIN ${myuniversity}_${mymodule}.transaction AS tr_to ON budget.fundId=tr_to.toFundId  AND budget.fiscalYearId=tr_to.fiscalYearId AND  tr_to.jsonb->>'transactionType'='Allocation'
                 LEFT JOIN ${myuniversity}_${mymodule}.transaction AS tr_from ON budget.fundId=tr_from.fromFundId AND budget.fiscalYearId=tr_from.fiscalYearId AND tr_from.jsonb->>'transactionType'='Allocation'
@@ -462,7 +465,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         -- #3 Create transfers
         INSERT INTO ${myuniversity}_${mymodule}.transaction
               (
-                 SELECT public.uuid_generate_v4(), jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Rollover transfer',
+                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER9', budget.jsonb->>'id')), jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Rollover transfer',
                                                                'source', 'User', 'currency', toFiscalYear->>'currency', 'amount', (budget.jsonb->>'netTransfers')::decimal-sum(COALESCE((tr_to.jsonb->>'amount')::decimal, 0.00))+sum(COALESCE((tr_from.jsonb->>'amount')::decimal, 0.00)),
                                                                'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text))
                  FROM ${myuniversity}_${mymodule}.budget AS budget

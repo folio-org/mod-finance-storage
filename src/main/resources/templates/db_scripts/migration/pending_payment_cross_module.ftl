@@ -7,7 +7,8 @@ WHERE jsonb ? 'numEncumbrances';
 
 -- Create pending payments from invoice lines
 INSERT INTO ${myuniversity}_${mymodule}.transaction
-SELECT public.uuid_generate_v4(), jsonb_strip_nulls(jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
+SELECT public.uuid_generate_v5(public.uuid_nil(), concat('PPCM1', fdi.il->>'id', invoices.id, vouchers.id, budget.id, fy.id)),
+                                              jsonb_strip_nulls(jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
                                               'amount', fdi.amount*(vouchers.jsonb->>'exchangeRate')::decimal, 'source', 'Invoice',
                                               'sourceInvoiceId', invoices.id, 'sourceInvoiceLineId', fdi.il->>'id',
                                               'fiscalYearId', budget.fiscalYearId, 'currency', fy.jsonb->>'currency',
@@ -29,7 +30,8 @@ WHERE invoices.jsonb->>'status' = 'Approved' AND budget.jsonb->>'budgetStatus'='
 
 -- Create pending payments not linked from invoices
 INSERT INTO ${myuniversity}_${mymodule}.transaction
-SELECT public.uuid_generate_v4(), jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
+SELECT public.uuid_generate_v5(public.uuid_nil(), concat('PPCM2', fdi.invoice_id, budget.id, vouchers.id, fy.id)),
+                        jsonb_build_object('transactionType', 'Pending payment', 'fromFundId', fd->>'fundId',
 											  'amount', fdi.amount*(vouchers.jsonb->>'exchangeRate')::decimal, 'source', 'Invoice',
 											  'sourceInvoiceId', invoice_id,
 											  'fiscalYearId', budget.fiscalYearId, 'currency', fy.jsonb->>'currency')
