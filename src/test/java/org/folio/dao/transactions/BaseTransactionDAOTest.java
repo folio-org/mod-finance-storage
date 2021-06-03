@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PostgresClient;
@@ -35,7 +36,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.pgclient.PgException;
@@ -75,7 +75,7 @@ class BaseTransactionDAOTest {
 
     testContext.assertComplete(baseTransactionDAO.getTransactions(new Criterion(), client))
       .onComplete(event -> {
-        HttpStatusException exception = (HttpStatusException) event.cause();
+        HttpException exception = (HttpException) event.cause();
         testContext.verify(() -> {
           assertEquals(exception.getStatusCode() , 400);
           assertEquals(exception.getPayload(), "Test");
@@ -126,7 +126,7 @@ class BaseTransactionDAOTest {
 
     testContext.assertFailure(baseTransactionDAO.saveTransactionsToPermanentTable(UUID.randomUUID().toString(), client))
       .onComplete(event -> {
-        HttpStatusException exception = (HttpStatusException) event.cause();
+        HttpException exception = (HttpException) event.cause();
         testContext.verify(() -> {
           assertEquals(exception.getStatusCode() , 400);
           assertEquals(exception.getPayload(), "Test");

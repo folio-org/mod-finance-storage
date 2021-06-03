@@ -7,23 +7,23 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import java.util.Map;
+
 import javax.ws.rs.core.Response;
 
-import io.vertx.sqlclient.Tuple;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.utils.CalculationUtils;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import org.apache.logging.log4j.Logger;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
-import org.folio.rest.persist.PgExceptionUtil;
-import org.folio.utils.CalculationUtils;
+import io.vertx.ext.web.handler.HttpException;
+import io.vertx.sqlclient.Tuple;
 
 public class BudgetPostgresDAO implements BudgetDAO {
 
@@ -85,7 +85,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
       } else {
         final JsonObject budget = reply.result();
         if (budget == null) {
-          promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), Response.Status.NOT_FOUND.getReasonPhrase()));
+          promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(), Response.Status.NOT_FOUND.getReasonPhrase()));
         } else {
           logger.debug("Budget with id={} successfully extracted", id);
           Budget convertedBudget = budget.mapTo(Budget.class);
@@ -103,13 +103,13 @@ public class BudgetPostgresDAO implements BudgetDAO {
       if (reply.failed()) {
         logger.error("Budget deletion with id={} failed", id, reply.cause());
         if (checkForeignKeyViolationError(reply.cause())) {
-          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(),
+          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
             buildErrorForBudgetExpenseClassReferenceError()));
         } else {
           handleFailure(promise, reply);
         }
       } else if (reply.result().rowCount() == 0) {
-        promise.fail(new HttpStatusException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase()));
+        promise.fail(new HttpException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase()));
       } else {
         promise.complete(client);
       }

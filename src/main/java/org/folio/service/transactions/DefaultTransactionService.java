@@ -2,7 +2,7 @@ package org.folio.service.transactions;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
@@ -18,7 +18,7 @@ public class DefaultTransactionService extends AbstractTransactionService {
         if (event.result().getStatus() == 201) {
           promise.complete((Transaction) event.result().getEntity());
         } else {
-          promise.fail(new HttpStatusException(event.result().getStatus(), event.result().getEntity().toString()));
+          promise.fail(new HttpException(event.result().getStatus(), event.result().getEntity().toString()));
         }
       } else {
         promise.fail(event.cause());

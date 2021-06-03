@@ -34,6 +34,7 @@ import org.folio.rest.impl.TransactionsSummariesTest;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
+import org.folio.rest.tools.utils.Envs;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
@@ -54,7 +55,7 @@ import io.restassured.http.Header;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-
+import org.testcontainers.containers.PostgreSQLContainer;
 
 @RunWith(JUnitPlatform.class)
 public class StorageTestSuite {
@@ -64,6 +65,8 @@ public class StorageTestSuite {
   private static int port = NetworkUtils.nextFreePort();
   public static final Header URL_TO_HEADER = new Header("X-Okapi-Url-to", "http://localhost:" + port);
   private static TenantJob tenantJob;
+  public static final String POSTGRES_DOCKER_IMAGE = "postgres:12-alpine";
+  private static PostgreSQLContainer<?> postgresSQLContainer;
 
   private StorageTestSuite() {
   }
@@ -84,9 +87,20 @@ public class StorageTestSuite {
 
     vertx = Vertx.vertx();
 
-    logger.info("Start embedded database");
-    PostgresClient.setIsEmbedded(true);
-    PostgresClient.getInstance(vertx).startEmbeddedPostgres();
+    logger.info("Start container database");
+
+    // databaseName = "test", username = "test" password = "test", port = random
+    postgresSQLContainer = new PostgreSQLContainer<>(POSTGRES_DOCKER_IMAGE);
+
+    postgresSQLContainer.start();
+
+    Envs.setEnv(
+      postgresSQLContainer.getHost(),
+      postgresSQLContainer.getFirstMappedPort(),
+      postgresSQLContainer.getUsername(),
+      postgresSQLContainer.getPassword(),
+      postgresSQLContainer.getDatabaseName()
+    );
 
     DeploymentOptions options = new DeploymentOptions();
 
@@ -114,7 +128,8 @@ public class StorageTestSuite {
 
     undeploymentComplete.get(20, TimeUnit.SECONDS);
     logger.info("Stop database");
-    PostgresClient.stopEmbeddedPostgres();
+    PostgresClient.stopPostgresTester();
+    postgresSQLContainer.stop();
   }
 
   private static void startVerticle(DeploymentOptions options)

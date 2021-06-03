@@ -15,6 +15,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -33,7 +34,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 
@@ -66,8 +66,8 @@ public class AllocationServiceTest {
     testContext.assertFailure(allocationService.createTransaction(transactionSample, requestContext))
       .onFailure(thrown -> {
         testContext.verify(() -> {
-          assertThat(thrown, instanceOf(HttpStatusException.class));
-          assertThat(((HttpStatusException) thrown).getPayload(), containsString(MISSING_FUND_ID.getCode()));
+          assertThat(thrown, instanceOf(HttpException.class));
+          assertThat(((HttpException) thrown).getPayload(), containsString(MISSING_FUND_ID.getCode()));
         });
         testContext.completeNow();
       });
@@ -82,8 +82,8 @@ public class AllocationServiceTest {
     testContext.assertFailure(allocationService.createTransaction(transactionSample, requestContext))
       .onFailure(thrown -> {
         testContext.verify(() -> {
-          assertThat(thrown, instanceOf(HttpStatusException.class));
-          assertThat(((HttpStatusException) thrown).getPayload(), containsString(MUST_BE_POSITIVE.getCode()));
+          assertThat(thrown, instanceOf(HttpException.class));
+          assertThat(((HttpException) thrown).getPayload(), containsString(MUST_BE_POSITIVE.getCode()));
         });
         testContext.completeNow();
       });

@@ -6,21 +6,21 @@ import java.util.Optional;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgExceptionUtil;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class NameCodeConstraintErrorBuilder {
 
-  public  <T> HttpStatusException buildException(AsyncResult<T> reply, Class<?> clazz ) {
+  public  <T> HttpException buildException(AsyncResult<T> reply, Class<?> clazz ) {
     String error = convertExceptionToStringError(reply, clazz);
     if (GENERIC_ERROR_CODE.getCode().equals(error)) {
-      return new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), error);
+      return new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), error);
     }
-    return new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), error);
+    return new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), error);
   }
 
   private <T> String convertExceptionToStringError(AsyncResult<T> reply, Class<?> clazz) {

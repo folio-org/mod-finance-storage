@@ -18,6 +18,7 @@ import java.util.stream.IntStream;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,7 +35,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.impl.ArrayTuple;
 
@@ -76,7 +76,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
       isLedgerStatusChanged(ledger, client)
         .onComplete(result -> {
           if (result.failed()) {
-            HttpStatusException cause = (HttpStatusException) result.cause();
+            HttpException cause = (HttpException) result.cause();
             log.error("Update of the ledger record {} has failed", ledger.getId(), cause);
             HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
           } else if (result.result() == null) {

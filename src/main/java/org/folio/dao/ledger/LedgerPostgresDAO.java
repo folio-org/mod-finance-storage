@@ -6,12 +6,12 @@ import java.util.Objects;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.persist.DBClient;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class LedgerPostgresDAO implements LedgerDAO {
 
@@ -25,7 +25,7 @@ public class LedgerPostgresDAO implements LedgerDAO {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else if (Objects.isNull(reply.result())) {
-          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), LEDGER_NOT_FOUND));
+          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), LEDGER_NOT_FOUND));
         } else {
           promise.complete(reply.result());
         }

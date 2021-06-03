@@ -1,7 +1,7 @@
 package org.folio.service.fund;
 
 import io.vertx.core.Future;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.dao.fund.FundDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Fund;
@@ -36,7 +36,7 @@ public class StorageFundService implements FundService{
     return fundDAO.getFunds(criterionBuilder.build(), client)
       .map(funds -> {
         if (funds.isEmpty()) {
-          throw new HttpStatusException(404, FUND_NOT_FOUND_FOR_TRANSACTION);
+          throw new HttpException(404, FUND_NOT_FOUND_FOR_TRANSACTION);
         }
         return funds.get(0);
     });

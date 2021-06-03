@@ -1,7 +1,7 @@
 package org.folio.service.transactions.restriction;
 
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Error;
@@ -64,7 +64,7 @@ public class EncumbranceRestrictionService extends BaseTransactionRestrictionSer
     errors.addAll(buildNullValidationError(transaction.getFromFundId(), "fromFundId"));
 
     if (isNotEmpty(errors)) {
-      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
+      throw new HttpException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
         .withTotalRecords(errors.size()))
         .encode());
     }

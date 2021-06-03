@@ -36,7 +36,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 import io.vertx.sqlclient.Tuple;
 
 public class BudgetService {
@@ -107,7 +107,7 @@ public class BudgetService {
           handleFailure(promise, reply);
         } else {
           if (reply.result().size() > 0) {
-            promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
+            promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
           }
           promise.complete();
         }
@@ -147,7 +147,7 @@ public class BudgetService {
         } else if (reply.result()
           .isEmpty()) {
           logger.error(BUDGET_NOT_FOUND_FOR_TRANSACTION);
-          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_NOT_FOUND_FOR_TRANSACTION));
+          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_NOT_FOUND_FOR_TRANSACTION));
         } else {
           promise.complete(reply.result()
             .get(0));
@@ -213,7 +213,7 @@ public class BudgetService {
         }
         logger.error(errorCode.getDescription());
         return Future
-          .failedFuture(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), JsonObject.mapFrom(errorCode.toError())
+          .failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), JsonObject.mapFrom(errorCode.toError())
             .encodePrettily()));
       }
       return Future.succeededFuture();

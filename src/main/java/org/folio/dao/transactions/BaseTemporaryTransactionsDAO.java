@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -16,7 +17,6 @@ import org.folio.rest.persist.Criteria.Criterion;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
 
 public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransactionDAO {
@@ -51,7 +51,7 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
         }
       });
     } catch (Exception e) {
-      promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage()));
+      promise.fail(new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage()));
     }
 
     return promise.future();
