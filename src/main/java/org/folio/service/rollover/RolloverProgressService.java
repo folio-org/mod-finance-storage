@@ -1,7 +1,7 @@
 package org.folio.service.rollover;
 
 import io.vertx.core.Future;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
@@ -34,7 +34,7 @@ public class RolloverProgressService {
     return rolloverProgressDAO.get(criterion, client)
       .map(progresses -> {
         if (progresses.isEmpty()) {
-          throw new HttpStatusException(404, "Can't retrieve rollover progress by rolloverId");
+          throw new HttpException(404, "Can't retrieve rollover progress by rolloverId");
         } else {
           return progresses.get(0);
         }

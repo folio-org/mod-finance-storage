@@ -22,7 +22,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.Lock;
 import io.vertx.core.shareddata.SharedData;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 
 public class AllOrNothingTransactionService {
 
@@ -51,7 +51,7 @@ public class AllOrNothingTransactionService {
   public Future<Transaction> createTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
     try {
       transactionRestrictionService.handleValidationError(transaction);
-    } catch (HttpStatusException e) {
+    } catch (HttpException e) {
       return  Future.failedFuture(e);
     }
 
@@ -63,7 +63,7 @@ public class AllOrNothingTransactionService {
   public Future<Void> updateTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
     try {
       transactionRestrictionService.handleValidationError(transaction);
-    } catch (HttpStatusException e) {
+    } catch (HttpException e) {
       return Future.failedFuture(e);
     }
     return verifyTransactionExistence(transaction.getId(), client)
@@ -112,11 +112,11 @@ public class AllOrNothingTransactionService {
           try {
             promise.complete(transactions);
           } catch (Exception e) {
-            promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+            promise.fail(new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
           }
           return promise.future();
         });
-    } catch (HttpStatusException e) {
+    } catch (HttpException e) {
       return Future.failedFuture(e);
     }
   }
@@ -127,7 +127,7 @@ public class AllOrNothingTransactionService {
     return transactionDAO.getTransactions(criterionBuilder.build(), client)
       .map(transactions -> {
         if (transactions.isEmpty()) {
-          throw new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Transaction not found");
+          throw new HttpException(Response.Status.NOT_FOUND.getStatusCode(), "Transaction not found");
         }
         return null;
       });
@@ -167,7 +167,7 @@ public class AllOrNothingTransactionService {
           promise.fail(e);
         }
       } else {
-        promise.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), lockResult.cause().getMessage()));
+        promise.fail(new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), lockResult.cause().getMessage()));
       }
     });
 

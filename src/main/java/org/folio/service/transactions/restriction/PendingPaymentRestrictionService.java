@@ -2,7 +2,7 @@ package org.folio.service.transactions.restriction;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.AwaitingPayment;
 import org.folio.rest.jaxrs.model.Budget;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static org.apache.commons.lang.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
 import static org.folio.service.transactions.AbstractTransactionService.FROM_FUND_ID;
 
@@ -90,7 +90,7 @@ public class PendingPaymentRestrictionService extends BaseTransactionRestriction
     List<Error> errors = new ArrayList<>(buildNullValidationError(transaction.getFromFundId(), FROM_FUND_ID));
 
     if (isNotEmpty(errors)) {
-      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
+      throw new HttpException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
         .withTotalRecords(errors.size()))
         .encode());
     }

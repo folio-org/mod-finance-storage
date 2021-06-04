@@ -32,7 +32,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 
 public final class HelperUtils {
   private HelperUtils() { }
@@ -50,7 +50,7 @@ public final class HelperUtils {
       if(reply.failed()) {
         handleFailure(promise, reply);
       } else if (reply.result().rowCount() == 0) {
-        promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
+        promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode()));
       } else {
         promise.complete();
       }
@@ -58,9 +58,9 @@ public final class HelperUtils {
     return promise.future();
   }
 
-  public static void replyWithErrorResponse(Handler<AsyncResult<Response>> asyncResultHandler, HttpStatusException cause) {
+  public static void replyWithErrorResponse(Handler<AsyncResult<Response>> asyncResultHandler, HttpException cause) {
     asyncResultHandler.handle(succeededFuture(Response.status(cause.getStatusCode())
-      .entity(Optional.of(cause).map(HttpStatusException::getPayload).orElse(cause.getMessage()))
+      .entity(Optional.of(cause).map(HttpException::getPayload).orElse(cause.getMessage()))
       .header(CONTENT_TYPE, MediaType.TEXT_PLAIN)
       .build()));
   }

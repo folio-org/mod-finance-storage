@@ -13,7 +13,7 @@ import org.folio.rest.persist.HelperUtils;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 
 public abstract class AbstractTransactionSummaryService implements TransactionSummaryService {
 
@@ -31,7 +31,7 @@ public abstract class AbstractTransactionSummaryService implements TransactionSu
       .map(summary -> {
         if ((isProcessed(summary))) {
           logger.debug("Expected number of transactions for summary with id={} already processed", summary.getString(HelperUtils.ID_FIELD_NAME));
-          throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED);
+          throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED);
         } else {
           return JsonObject.mapFrom(summary);
         }

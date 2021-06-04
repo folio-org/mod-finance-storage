@@ -10,6 +10,7 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.annotations.Validate;
@@ -27,7 +28,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
 
@@ -55,7 +55,7 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
     ledgerRolloverService.rolloverLedger(entity, new RequestContext(vertxContext, okapiHeaders))
             .onComplete(result -> {
               if (result.failed()) {
-                HttpStatusException cause = (HttpStatusException) result.cause();
+                HttpException cause = (HttpException) result.cause();
                 log.error("Update of the fund record {} has failed", entity.getId(), cause);
                 HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
               } else {
@@ -79,7 +79,7 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
     ledgerRolloverService.deleteRollover(rolloverId, new RequestContext(vertxContext, okapiHeaders))
       .onComplete(result -> {
         if (result.failed()) {
-          HttpStatusException cause = (HttpStatusException) result.cause();
+          HttpException cause = (HttpException) result.cause();
           log.error("Rollover deletion error {}", rolloverId, cause);
           HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
         } else {

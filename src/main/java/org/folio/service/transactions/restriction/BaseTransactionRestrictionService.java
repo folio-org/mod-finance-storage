@@ -15,7 +15,7 @@ import org.folio.service.ledger.LedgerService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 
 public abstract class BaseTransactionRestrictionService implements TransactionRestrictionService {
 
@@ -40,7 +40,7 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
       .compose(budget -> {
         if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
           log.error(BUDGET_IS_INACTIVE, budget.getId());
-          return Future.failedFuture(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_IS_INACTIVE));
+          return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_IS_INACTIVE));
         }
         if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT || transaction.getAmount() <= 0) {
           return Future.succeededFuture();
@@ -59,7 +59,7 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
     if (isTransactionOverspendRestricted(ledger, budget)) {
       Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction.getCurrency(), relatedTransaction);
       if (Money.of(transaction.getAmount(), transaction.getCurrency()).isGreaterThan(budgetRemainingAmount)) {
-        throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID);
+        throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID);
       }
     }
     return null;

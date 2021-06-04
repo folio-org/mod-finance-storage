@@ -9,7 +9,7 @@ import org.folio.rest.persist.PgUtil;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 
 public abstract class AbstractTransactionService implements TransactionService {
   public static final String TRANSACTION_TABLE = "transaction";
@@ -27,7 +27,7 @@ public abstract class AbstractTransactionService implements TransactionService {
         if (event.result().getStatus() == 204) {
           promise.complete();
         } else {
-          promise.fail(new HttpStatusException(event.result().getStatus(), event.result().getEntity().toString()));
+          promise.fail(new HttpException(event.result().getStatus(), event.result().getEntity().toString()));
         }
       } else {
         promise.fail(event.cause());

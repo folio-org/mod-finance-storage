@@ -11,7 +11,6 @@ import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,7 @@ import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.PomReader;
+import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -127,7 +126,7 @@ public class TenantSampleDataTest extends TestBase {
     return tenantJob;
   }
 
-  private TenantJob upgradeTenantWithNoSampleDataLoad() throws Exception {
+  private TenantJob upgradeTenantWithNoSampleDataLoad() {
 
     logger.info("upgrading Module without sample data");
 
@@ -140,19 +139,19 @@ public class TenantSampleDataTest extends TestBase {
   }
 
   private TenantAttributes prepareUpgradeTenantBody(boolean isLoadSampleData, boolean isLoadReferenceData) {
-    String moduleId = String.format("%s-%s", PomReader.INSTANCE.getModuleName(), PomReader.INSTANCE.getVersion());
+    String moduleName = "mod-finance-storage";
 
     List<Parameter> parameters = new ArrayList<>();
     parameters.add(new Parameter().withKey("loadReference").withValue(String.valueOf(isLoadReferenceData)));
     parameters.add(new Parameter().withKey("loadSample").withValue(String.valueOf(isLoadSampleData)));
     JsonObject jsonBody = new JsonObject();
-    jsonBody.put("module_to", moduleId);
-    jsonBody.put("module_from", String.format("%s-%s", PomReader.INSTANCE.getModuleName(), "5.0.0"));
+    jsonBody.put("module_to", ModuleName.getModuleName());
+    jsonBody.put("module_from", String.format("%s-%s", moduleName, "5.0.0"));
     jsonBody.put("parameters", parameters);
 
     return new TenantAttributes()
-            .withModuleTo(moduleId)
-            .withModuleFrom(String.format("%s-%s", PomReader.INSTANCE.getModuleName(), "5.0.0"))
+            .withModuleTo(ModuleName.getModuleName())
+            .withModuleFrom(String.format("%s-%s", moduleName, "5.0.0"))
             .withParameters(parameters);
   }
 }

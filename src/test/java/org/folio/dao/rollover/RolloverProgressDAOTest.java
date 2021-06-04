@@ -1,7 +1,6 @@
 package org.folio.dao.rollover;
 
 import static org.folio.dao.rollover.RolloverErrorDAO.LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE;
-import static org.folio.rest.impl.LedgerRolloverProgressAPI.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,11 +14,9 @@ import java.util.Collections;
 import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
-import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.SQLConnection;
 import org.folio.rest.persist.interfaces.Results;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,8 +31,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
 
 @ExtendWith(VertxExtension.class)
 public class RolloverProgressDAOTest {

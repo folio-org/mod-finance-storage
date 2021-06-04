@@ -1,21 +1,16 @@
 package org.folio.service.rollover;
 
-import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.UUID;
 
-import javax.money.CurrencyUnit;
-import javax.money.Monetary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
-import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus;
@@ -25,7 +20,7 @@ import org.folio.service.budget.BudgetService;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.service.fiscalyear.FiscalYearService;
 
 public class LedgerRolloverService {
@@ -92,7 +87,7 @@ public class LedgerRolloverService {
     Promise<Void> promise = Promise.promise();
     OverallRolloverStatus ordersRolloverStatus = rolloverProgress.getOrdersRolloverStatus();
     if (ordersRolloverStatus.equals(IN_PROGRESS)) {
-      promise.fail(new HttpStatusException(422, "Can't delete in progress rollover"));
+      promise.fail(new HttpException(422, "Can't delete in progress rollover"));
     } else {
       promise.complete();
     }
