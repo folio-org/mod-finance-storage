@@ -179,12 +179,4 @@ public class AllOrNothingTransactionService {
     lock.release();
   }
 
-  private Future<Void> checkEncumbranceNotExpendedToUnrelease(Transaction newTransaction, Transaction existingTransaction) {
-    if (existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED
-        && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED
-        && existingTransaction.getEncumbrance().getAmountExpended() != 0) {
-      throw new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), ENCUMBRANCE_EXPENDED);
-    }
-    return Future.succeededFuture();
-  }
 }
