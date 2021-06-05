@@ -23,7 +23,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgressCollection;
 import org.folio.rest.utils.TestEntities;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -123,7 +123,7 @@ public class EntitiesCrudTest extends TestBase {
 
     Pattern pattern = Pattern.compile("(already exists|uniqueField)");
     Matcher matcher = pattern.matcher(response.getBody().asString());
-    Assert.assertTrue(matcher.find());
+    Assertions.assertTrue(matcher.find());
   }
 
   @ParameterizedTest

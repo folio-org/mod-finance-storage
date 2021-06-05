@@ -16,7 +16,7 @@ import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLQueryValidationException;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -97,13 +97,13 @@ public class HelperUtilsTest extends TestBase {
   @Test
   public void testSQLUniqueConstraintFound() {
     String constraintName = HelperUtils.getSQLUniqueConstraintName("unique constraint \"idx_name_code\"");
-    Assert.assertEquals("idx_name_code", constraintName);
+    Assertions.assertEquals("idx_name_code", constraintName);
   }
 
   @Test
   public void testSQLUniqueConstraintNotFound() {
     String constraintName = HelperUtils.getSQLUniqueConstraintName("error \"error\"");
-    Assert.assertEquals(StringUtils.EMPTY, constraintName);
+    Assertions.assertEquals(StringUtils.EMPTY, constraintName);
   }
 
   private ValidatableResponse get(URL endpoint) {
