@@ -1,6 +1,7 @@
 package org.folio.utils;
 
 import org.folio.rest.jaxrs.model.Budget;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -17,7 +18,7 @@ public class CalculationUtilsTest {
 
         CalculationUtils.calculateBudgetSummaryFields(budget);
 
-        assertEquals(8d, budget.getOverExpended(), 0d);
+        Assertions.assertEquals(8d, budget.getOverExpended(), 0d);
 
     }
 }
