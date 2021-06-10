@@ -551,9 +551,9 @@ public class EncumbrancesTest extends TestBase {
     String fundId = createFund(ledgerId);
 
     Budget fromBudgetBefore = buildBudget(fiscalYearId, fundId);
-
-    String budgetId = postData(BUDGET.getEndpoint(), JsonObject.mapFrom(fromBudgetBefore).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(201).extract().as(Budget.class).getId();
+    String fromBudgetBeforeSerialized = JsonObject.mapFrom(fromBudgetBefore).encodePrettily();
+    String budgetId = postData(BUDGET.getEndpoint(), fromBudgetBeforeSerialized, TRANSACTION_TENANT_HEADER)
+      .then().statusCode(201).extract().as(Budget.class).getId();
 
     String orderId = UUID.randomUUID().toString();
     String invoiceId = UUID.randomUUID().toString();
@@ -562,92 +562,49 @@ public class EncumbrancesTest extends TestBase {
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
-    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
-    encumbrance.getEncumbrance().setStatus(Encumbrance.Status.RELEASED);
-    encumbrance.setAmount(0d);
-    encumbrance.getEncumbrance().setAmountExpended(0d);
-    encumbrance.getEncumbrance().setAmountAwaitingPayment(0d);
-    encumbrance.getEncumbrance().setInitialAmountEncumbered(100d);
-    encumbrance.setSourceFiscalYearId(fiscalYearId);
-    encumbrance.setFiscalYearId(fiscalYearId);
-    encumbrance.setFromFundId(fundId);
-    encumbrance.setSourceInvoiceId(invoiceId);
+    encumbrance.withAmount(0d)
+      .withSourceFiscalYearId(fiscalYearId)
+      .withFiscalYearId(fiscalYearId)
+      .withFromFundId(fundId)
+      .withSourceInvoiceId(invoiceId);
+    encumbrance.getEncumbrance()
+      .withSourcePurchaseOrderId(orderId)
+      .withStatus(Encumbrance.Status.RELEASED)
+      .withAmountExpended(10d)
+      .withAmountAwaitingPayment(5d)
+      .withInitialAmountEncumbered(100d);
 
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
     // create 1st encumbrance, expected number is 1
-    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(201)
-      .extract()
-      .as(Transaction.class).getId();
+    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER)
+      .then().statusCode(201).extract().as(Transaction.class).getId();
 
     // encumbrance appears in transaction table
-    encumbrance = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    String transactionById = TRANSACTION.getEndpointWithId();
+    encumbrance = getDataById(transactionById, encumbrance1Id, TRANSACTION_TENANT_HEADER)
+      .then().statusCode(200).extract().as(Transaction.class);
     assertEquals(0d, encumbrance.getAmount());
     assertEquals(100d, encumbrance.getEncumbrance().getInitialAmountEncumbered());
 
     // unrelease the encumbrance
     encumbrance.getEncumbrance().setStatus(Encumbrance.Status.UNRELEASED);
     updateOrderSummary(orderId, 1);
-    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
-    Transaction transaction1FromStorage = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    String encumbranceSerialized = JsonObject.mapFrom(encumbrance).encodePrettily();
+    putData(transactionById, encumbrance1Id, encumbranceSerialized, TRANSACTION_TENANT_HEADER)
+      .then().statusCode(204);
+    Transaction transaction1FromStorage = getDataById(transactionById, encumbrance1Id, TRANSACTION_TENANT_HEADER)
+      .then().statusCode(200).extract().as(Transaction.class);
     assertEquals(Encumbrance.Status.UNRELEASED, transaction1FromStorage.getEncumbrance().getStatus());
-    assertEquals(100d, transaction1FromStorage.getAmount());
+    assertEquals(85d, transaction1FromStorage.getAmount());
 
     // check the budget
-    Budget fromBudgetAfterUpdate = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
-    assertEquals(sumValues(fromBudgetBefore.getEncumbered(), 100d), fromBudgetAfterUpdate.getEncumbered());
-    assertEquals(subtractValues(fromBudgetBefore.getAvailable(), 100d), fromBudgetAfterUpdate.getAvailable());
-    assertEquals(sumValues(fromBudgetBefore.getUnavailable(), 100d), fromBudgetAfterUpdate.getUnavailable());
+    Budget fromBudgetAfterUpdate = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER)
+      .then().statusCode(200).extract().as(Budget.class);
+    assertEquals(sumValues(fromBudgetBefore.getEncumbered(), 85d), fromBudgetAfterUpdate.getEncumbered());
+    assertEquals(subtractValues(fromBudgetBefore.getAvailable(), 85d), fromBudgetAfterUpdate.getAvailable());
+    assertEquals(sumValues(fromBudgetBefore.getUnavailable(), 85d), fromBudgetAfterUpdate.getUnavailable());
     assertEquals(fromBudgetBefore.getAwaitingPayment(), fromBudgetAfterUpdate.getAwaitingPayment());
-  }
-
-  @Test
-  void testErrorWhenUnreleasingExpendedEncumbrance() throws MalformedURLException {
-    String fiscalYearId = createFiscalYear();
-    String ledgerId = createLedger(fiscalYearId, true);
-    String fundId = createFund(ledgerId);
-
-    Budget budget = buildBudget(fiscalYearId, fundId);
-
-    postData(BUDGET.getEndpoint(), JsonObject.mapFrom(budget).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(201);
-
-    String orderId = UUID.randomUUID().toString();
-    String invoiceId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
-
-    JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
-    jsonTx.remove("id");
-    Transaction encumbrance = jsonTx.mapTo(Transaction.class);
-    encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
-    encumbrance.getEncumbrance().setStatus(Encumbrance.Status.RELEASED);
-    encumbrance.setAmount(0d);
-    encumbrance.getEncumbrance().setAmountExpended(10d);
-    encumbrance.getEncumbrance().setAmountAwaitingPayment(0d);
-    encumbrance.getEncumbrance().setInitialAmountEncumbered(100d);
-    encumbrance.setSourceFiscalYearId(fiscalYearId);
-    encumbrance.setFiscalYearId(fiscalYearId);
-    encumbrance.setFromFundId(fundId);
-    encumbrance.setSourceInvoiceId(invoiceId);
-
-    String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
-
-    // create 1st encumbrance
-    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(201)
-      .extract()
-      .as(Transaction.class).getId();
-
-    // encumbrance appears in transaction table
-    encumbrance = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(200).extract().as(Transaction.class);
-
-    // check we get an error when unreleasing if amountExpended > 0
-    encumbrance.getEncumbrance().setStatus(Encumbrance.Status.UNRELEASED);
-    updateOrderSummary(orderId, 1);
-    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance).encodePrettily(),
-      TRANSACTION_TENANT_HEADER).then().statusCode(400);
   }
 
   @Test

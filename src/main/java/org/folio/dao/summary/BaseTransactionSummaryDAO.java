@@ -6,6 +6,7 @@ import static org.folio.service.transactions.AllOrNothingTransactionService.TRAN
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.persist.CriterionBuilder;
@@ -16,7 +17,6 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao {
   protected final Logger logger = LogManager.getLogger(this.getClass());
@@ -34,7 +34,7 @@ public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao
       } else {
         final JsonObject summary = reply.result();
         if (summary == null) {
-          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
+          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
         } else {
           logger.debug("Summary with id={} successfully extracted", summaryId);
           promise.complete(summary);

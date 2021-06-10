@@ -224,7 +224,9 @@ public class EncumbranceService implements TransactionManagingStrategy {
       tmpTransaction.setAmount(newAmount);
       newEncumbered = sumMoney(currency, newEncumbered, newAmount);
     } else if (isTransitionFromReleasedToUnreleased(tmpTransaction, existingTransaction)) {
-      double newAmount = tmpTransaction.getEncumbrance().getInitialAmountEncumbered();
+      double newAmount = subtractMoney(tmpTransaction.getEncumbrance().getInitialAmountEncumbered(),
+        tmpTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
+      newAmount = subtractMoney(newAmount, tmpTransaction.getEncumbrance().getAmountExpended(), currency);
       tmpTransaction.setAmount(newAmount);
       newEncumbered = sumMoney(newEncumbered, newAmount, currency);
     } else {

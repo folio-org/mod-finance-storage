@@ -5,9 +5,10 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 import java.util.Objects;
 import javax.ws.rs.core.Response;
+
+import io.vertx.ext.web.handler.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.FiscalYear;
@@ -26,7 +27,7 @@ public class FiscalYearPostgresDAO implements FiscalYearDAO {
           handleFailure(promise, reply);
         } else if (Objects.isNull(reply.result())) {
           logger.error(String.format(FISCAL_YEAR_NOT_FOUND, id));
-          promise.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), String.format(FISCAL_YEAR_NOT_FOUND, id)));
+          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), String.format(FISCAL_YEAR_NOT_FOUND, id)));
         } else {
           promise.complete(reply.result());
         }

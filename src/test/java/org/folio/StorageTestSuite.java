@@ -18,6 +18,7 @@ import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
 import org.folio.dao.rollover.RolloverErrorDAOTest;
 import org.folio.dao.rollover.RolloverProgressDAOTest;
 import org.folio.dao.transactions.PendingPaymentDAOTest;
+import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.core.RestClientTest;
 import org.folio.rest.impl.BudgetTest;
@@ -47,16 +48,12 @@ import org.folio.utils.CalculationUtilsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import io.restassured.http.Header;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
-
-@RunWith(JUnitPlatform.class)
 public class StorageTestSuite {
   private static final Logger logger = LogManager.getLogger(StorageTestSuite.class);
 
@@ -77,16 +74,15 @@ public class StorageTestSuite {
   }
 
   @BeforeAll
-  public static void before() throws Exception {
-
+  public static void before() throws InterruptedException, ExecutionException, TimeoutException {
     // tests expect English error messages only, no Danish/German/...
     Locale.setDefault(Locale.US);
 
     vertx = Vertx.vertx();
 
-    logger.info("Start embedded database");
-    PostgresClient.setIsEmbedded(true);
-    PostgresClient.getInstance(vertx).startEmbeddedPostgres();
+    logger.info("Start container database");
+
+    PostgresClient.setPostgresTester(new PostgresTesterContainer());
 
     DeploymentOptions options = new DeploymentOptions();
 
@@ -114,7 +110,7 @@ public class StorageTestSuite {
 
     undeploymentComplete.get(20, TimeUnit.SECONDS);
     logger.info("Stop database");
-    PostgresClient.stopEmbeddedPostgres();
+    PostgresClient.stopPostgresTester();
   }
 
   private static void startVerticle(DeploymentOptions options)

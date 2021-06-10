@@ -1,6 +1,5 @@
 package org.folio.service.transactions;
 
-import static java.lang.Math.max;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;

@@ -21,7 +21,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 
 public class GroupService {
   private static final String GROUPS_TABLE = "groups";
@@ -85,7 +85,7 @@ public class GroupService {
         promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, Group.class));
       }
       else if(reply.result().rowCount() == 0) {
-        promise.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode()));
+        promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode()));
       }
       else {
         promise.complete(group);

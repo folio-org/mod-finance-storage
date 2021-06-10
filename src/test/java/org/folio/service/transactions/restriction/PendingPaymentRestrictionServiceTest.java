@@ -1,7 +1,7 @@
 package org.folio.service.transactions.restriction;
 
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -49,8 +49,8 @@ public class PendingPaymentRestrictionServiceTest {
 
   @Test
   void TestHandleValidationErrorExceptionThrown() {
-    HttpStatusException thrown = assertThrows(
-      HttpStatusException.class,
+    HttpException thrown = assertThrows(
+      HttpException.class,
       () -> restrictionService.handleValidationError(new Transaction()),
       "Expected handleValidationError() to throw, but it didn't"
     );

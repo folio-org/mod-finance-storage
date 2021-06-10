@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Fund;
@@ -30,7 +31,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import org.apache.logging.log4j.Logger;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.sqlclient.Tuple;
 
 public class FundAPI implements FinanceStorageFunds {
@@ -72,7 +72,7 @@ public class FundAPI implements FinanceStorageFunds {
       isFundStatusChanged(fund, client)
         .onComplete(result -> {
           if (result.failed()) {
-            HttpStatusException cause = (HttpStatusException) result.cause();
+            HttpException cause = (HttpException) result.cause();
             log.error("Update of the fund record {} has failed", fund.getId(), cause);
             HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
           } else if (result.result() == null) {

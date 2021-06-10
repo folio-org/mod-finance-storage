@@ -22,7 +22,7 @@ import org.folio.utils.CalculationUtils;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.ext.web.handler.HttpException;
 
 public class TransferService extends AbstractTransactionService implements TransactionManagingStrategy {
 
@@ -38,7 +38,7 @@ public class TransferService extends AbstractTransactionService implements Trans
 
     try {
       handleValidationError(transfer);
-    } catch (HttpStatusException e) {
+    } catch (HttpException e) {
       return Future.failedFuture(e);
     }
     DBClient client = new DBClient(requestContext);
@@ -84,7 +84,7 @@ public class TransferService extends AbstractTransactionService implements Trans
         if (event.succeeded()) {
           promise.complete(transaction);
         } else {
-          promise.fail(new HttpStatusException(500, PgExceptionUtil.getMessage(event.cause())));
+          promise.fail(new HttpException(500, PgExceptionUtil.getMessage(event.cause())));
         }
       });
     return promise.future();
@@ -118,7 +118,7 @@ public class TransferService extends AbstractTransactionService implements Trans
     List<Error> errors = new ArrayList<>(buildNullValidationError(transfer.getToFundId(), TO_FUND_ID));
 
     if (isNotEmpty(errors)) {
-      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
+      throw new HttpException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
         .withTotalRecords(errors.size()))
         .encode());
     }

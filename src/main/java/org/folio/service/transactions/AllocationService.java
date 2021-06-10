@@ -7,6 +7,7 @@ import static org.folio.rest.util.ErrorCodes.MUST_BE_POSITIVE;
 import java.util.List;
 import java.util.UUID;
 
+import io.vertx.ext.web.handler.HttpException;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
@@ -21,7 +22,6 @@ import org.folio.utils.CalculationUtils;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class AllocationService extends DefaultTransactionService implements TransactionManagingStrategy {
 
@@ -42,7 +42,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
 
     try {
       handleValidationError(allocation);
-    } catch (HttpStatusException e) {
+    } catch (HttpException e) {
       return Future.failedFuture(e);
     }
     DBClient client = requestContext.toDBClient();
@@ -78,7 +78,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
         if (event.succeeded()) {
           promise.complete(transaction);
         } else {
-          promise.fail(new HttpStatusException(500, PgExceptionUtil.getMessage(event.cause())));
+          promise.fail(new HttpException(500, PgExceptionUtil.getMessage(event.cause())));
         }
       });
     return promise.future();
@@ -128,14 +128,14 @@ public class AllocationService extends DefaultTransactionService implements Tran
       Errors errors = new Errors().withErrors(singletonList(MUST_BE_POSITIVE.toError()
         .withParameters(parameters)))
         .withTotalRecords(1);
-      throw new HttpStatusException(422, JsonObject.mapFrom(errors)
+      throw new HttpException(422, JsonObject.mapFrom(errors)
         .encode());
     }
   }
 
   private void checkRequiredFields(Transaction transaction) {
     if (transaction.getToFundId() == null && transaction.getFromFundId() == null) {
-      throw new HttpStatusException(422, JsonObject.mapFrom(new Errors().withErrors(singletonList(MISSING_FUND_ID.toError()))
+      throw new HttpException(422, JsonObject.mapFrom(new Errors().withErrors(singletonList(MISSING_FUND_ID.toError()))
         .withTotalRecords(1))
         .encode());
     }

@@ -1,14 +1,12 @@
 package org.folio.rest.impl;
 
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
-import static org.folio.rest.impl.TransactionTest.TRANSACTION_TENANT_HEADER;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
 
 import org.folio.rest.jaxrs.model.TenantJob;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
