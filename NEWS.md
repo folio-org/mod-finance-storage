@@ -1,4 +1,21 @@
-## 7.1.0 - Unreleased
+## 7.2.0 - Unreleased
+
+## 7.0.1 - Released
+This release contains new logic of financial processing, RMB update up to v33.0.0, personal data disclosure form added
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.3...v7.1.0)
+
+### Stories
+* [MODFISTO-240](https://issues.folio.org/browse/MODFISTO-240) It should be possible to unrelease expended encumbrance
+* [MODFISTO-201](https://issues.folio.org/browse/MODFISTO-201) Add personal data disclosure form
+* [MODFISTO-227](https://issues.folio.org/browse/MODFISTO-227) mod-finance-storage: Update RMB
+* [MODFISTO-231](https://issues.folio.org/browse/MODFISTO-231) Issue with database migration for Iris release
+* [MODFISTO-233](https://issues.folio.org/browse/MODFISTO-233) reOpen logic for encumbrances
+
+### Bug Fixes
+* [MODFISTO-215](https://issues.folio.org/browse/MODFISTO-215) Remove uuid_generate_v4(), it fails in pgpool replication
+
+
 ## 7.0.3 - Released
 The primary focus of this release was to fix cross migration fail once order is missing
 
