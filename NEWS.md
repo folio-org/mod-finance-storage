@@ -7,12 +7,13 @@ This release contains new logic of financial processing, RMB update up to v33.0.
 
 ### Stories
 * [MODFISTO-240](https://issues.folio.org/browse/MODFISTO-240) It should be possible to unrelease expended encumbrance
-* [MODFISTO-201](https://issues.folio.org/browse/MODFISTO-201) Add personal data disclosure form
-* [MODFISTO-227](https://issues.folio.org/browse/MODFISTO-227) mod-finance-storage: Update RMB
-* [MODFISTO-231](https://issues.folio.org/browse/MODFISTO-231) Issue with database migration for Iris release
 * [MODFISTO-233](https://issues.folio.org/browse/MODFISTO-233) reOpen logic for encumbrances
+* [MODFISTO-231](https://issues.folio.org/browse/MODFISTO-231) Issue with database migration for Iris release
+* [MODFISTO-227](https://issues.folio.org/browse/MODFISTO-227) mod-finance-storage: Update RMB
+* [MODFISTO-201](https://issues.folio.org/browse/MODFISTO-201) Add personal data disclosure form
 
 ### Bug Fixes
+* [MODFISTO-237](https://issues.folio.org/browse/MODFISTO-237) Transaction table upgrade failure when purchase order record is missing
 * [MODFISTO-215](https://issues.folio.org/browse/MODFISTO-215) Remove uuid_generate_v4(), it fails in pgpool replication
 
 
@@ -21,7 +22,7 @@ The primary focus of this release was to fix cross migration fail once order is 
 
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.2...v7.0.3)
 
-### Bug Fixes
+### Hot Fixes
 * [MODFISTO-237](https://issues.folio.org/browse/MODFISTO-237) Transaction table upgrade failure when purchase order record is missing
 
 ## 7.0.2 - Released
