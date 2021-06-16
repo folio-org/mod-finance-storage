@@ -14,6 +14,7 @@ This release contains new logic of financial processing, RMB update up to v33.0.
 
 ### Bug Fixes
 * [MODFISTO-237](https://issues.folio.org/browse/MODFISTO-237) Transaction table upgrade failure when purchase order record is missing
+* [MODFISTO-225](https://issues.folio.org/browse/MODFISTO-225)	The lost/extra penny when creating encumbrances during rollover
 * [MODFISTO-215](https://issues.folio.org/browse/MODFISTO-215) Remove uuid_generate_v4(), it fails in pgpool replication
 
 
