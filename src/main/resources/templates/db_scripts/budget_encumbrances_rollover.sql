@@ -32,10 +32,10 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
 		distribution_value DECIMAL DEFAULT 0;
 	BEGIN
 
-	  SELECT sum((jsonb->'encumbrance'->>'initialAmountEncumbered')::decimal) INTO po_line_cost
-	    FROM ${myuniversity}_${mymodule}.transaction
-        WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'fiscalYearId' AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
-          GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
+	    SELECT sum((jsonb->'encumbrance'->>'initialAmountEncumbered')::decimal) INTO po_line_cost
+	        FROM ${myuniversity}_${mymodule}.transaction
+            WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'fiscalYearId' AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
+            GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
 
     distribution_value := 0;
 
