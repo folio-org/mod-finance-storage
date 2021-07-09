@@ -1,4 +1,13 @@
 ## 7.1.0 - Unreleased
+
+## 7.0.4 - Released
+The primary focus of this release was to fix rollover issue when encumbrance amount is zero
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.3...v7.0.4)
+
+### Bug Fixes
+* [MODFISTO-247](https://issues.folio.org/browse/MODFISTO-247) Rollover errors when at least 1 order has encumbrance with initialAllocation = 0
+
 ## 7.0.3 - Released
 The primary focus of this release was to fix cross migration fail once order is missing
 
