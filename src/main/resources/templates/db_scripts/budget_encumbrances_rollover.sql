@@ -109,8 +109,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             )
         FROM ${myuniversity}_${mymodule}.transaction tr
         WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
-          AND ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true) <> 0 AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
-          AND tr.jsonb->'encumbrance'->>'orderStatus'='Open';
+          AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean AND tr.jsonb->'encumbrance'->>'orderStatus'='Open';
 
         -- #9.1 calculate and add missing penny to appropriate temp transaction
         -- find poLines and calculate missing penny amount for that poLine if any
