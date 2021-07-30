@@ -1,5 +1,13 @@
 ## 7.2.0 - Unreleased
 
+## 7.1.1 - Released
+The primary focus of this release was to fix a rollover issue when encumbrance amount is zero.
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.1.0...v7.1.1)
+
+### Bug Fixes
+* [MODFISTO-247](https://issues.folio.org/browse/MODFISTO-247) Rollover errors when at least 1 order has encumbrance with initialAllocation = 0
+
 ## 7.1.0 - Released
 This release contains new logic of financial processing, RMB update up to v33.0.0, personal data disclosure form added
 
@@ -17,6 +25,22 @@ This release contains new logic of financial processing, RMB update up to v33.0.
 * [MODFISTO-225](https://issues.folio.org/browse/MODFISTO-225)	The lost/extra penny when creating encumbrances during rollover
 * [MODFISTO-215](https://issues.folio.org/browse/MODFISTO-215) Remove uuid_generate_v4(), it fails in pgpool replication
 
+
+## 7.0.5 - Released
+The primary focus of this release was to further fix rollover issue when encumbrance amount is zero.
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.4...v7.0.5)
+
+### Bug Fixes
+* [MODFISTO-247](https://issues.folio.org/browse/MODFISTO-247) Rollover errors when at least 1 order has encumbrance with initialAllocation = 0
+
+## 7.0.4 - Released
+The primary focus of this release was to fix rollover issue when encumbrance amount is zero
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.3...v7.0.4)
+
+### Bug Fixes
+* [MODFISTO-247](https://issues.folio.org/browse/MODFISTO-247) Rollover errors when at least 1 order has encumbrance with initialAllocation = 0
 
 ## 7.0.3 - Released
 The primary focus of this release was to fix cross migration fail once order is missing
