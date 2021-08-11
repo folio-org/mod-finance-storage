@@ -1,5 +1,14 @@
 ## 7.1.0 - Unreleased
 
+## 7.0.6 - Released
+Fix issue with running migration script for rollover.
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.0.5...v7.0.6)
+
+### Bug Fixes
+* [MODFISTO-247](https://issues.folio.org/browse/MODFISTO-247) Fix issue with running migration script for rollover.
+
+
 ## 7.0.5 - Released
 The primary focus of this release was to further fix rollover issue when encumbrance amount is zero.
 
