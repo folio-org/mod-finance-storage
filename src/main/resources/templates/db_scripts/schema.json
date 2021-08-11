@@ -79,7 +79,7 @@
     {
       "run": "after",
       "snippetPath": "budget_encumbrances_rollover.sql",
-      "fromModuleVersion": "mod-finance-storage-7.0.4"
+      "fromModuleVersion": "mod-finance-storage-7.0.6"
     }
   ],
   "tables": [
