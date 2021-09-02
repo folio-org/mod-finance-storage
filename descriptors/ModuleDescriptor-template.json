@@ -40,7 +40,7 @@
     },
     {
       "id": "finance-storage.expense-classes",
-      "version": "1.0",
+      "version": "2.0",
       "handlers": [
         {
           "methods": ["GET"],

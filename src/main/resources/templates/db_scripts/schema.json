@@ -80,6 +80,11 @@
       "run": "after",
       "snippetPath": "budget_encumbrances_rollover.sql",
       "fromModuleVersion": "mod-finance-storage-7.1.1"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/restrictions_for_fund_and_ec_codes.sql",
+      "fromModuleVersion": "mod-finance-storage-7.2.0"
     }
   ],
   "tables": [
