@@ -1,4 +1,4 @@
-## 8.0.0 - Unreleased
+## 7.2.0 - Unreleased
 
 ## 7.1.0 - Released
 This release contains new logic of financial processing, RMB update up to v33.0.0, personal data disclosure form added
