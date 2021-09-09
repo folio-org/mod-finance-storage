@@ -84,7 +84,7 @@
     {
       "run": "after",
       "snippetPath": "migration/restrictions_for_fund_and_ec_codes.sql",
-      "fromModuleVersion": "mod-finance-storage-7.2.0"
+      "fromModuleVersion": "mod-finance-storage-8.0.0"
     }
   ],
   "tables": [
