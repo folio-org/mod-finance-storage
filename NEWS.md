@@ -1,4 +1,16 @@
-## 7.2.0 - Unreleased
+## 8.0.0 - Released
+The primary focus of this release was to update Finance schema for combination of Fund code and Expense class,
+add validation for special character to Fund Code and Expense class code and prepare migration script
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.1.0...v8.0.0)
+
+### Stories
+* [MODFISTO-244](https://issues.folio.org/browse/MODFISTO-244) Add validation for special character to Fund Code and Expense class code and prepare migration script
+* [MODFISTO-243](https://issues.folio.org/browse/MODFISTO-243) Define DTO schema for combination of fund code and expense class
+
+### Bug Fixes
+* [MODFISTO-247](https://issues.folio.org/browse/MODFISTO-247) Rollover errors when at least 1 order has encumbrance with initialAllocation = 0
+
 
 ## 7.1.0 - Released
 This release contains new logic of financial processing, RMB update up to v33.0.0, personal data disclosure form added
