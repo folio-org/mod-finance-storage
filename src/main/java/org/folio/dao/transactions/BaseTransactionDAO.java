@@ -28,7 +28,7 @@ import io.vertx.sqlclient.Tuple;
 
 public abstract class BaseTransactionDAO implements TransactionDAO {
 
-  public static final String INSERT_PERMANENT_TRANSACTIONS_BY_IDS = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s WHERE id in (%s)) "
+  public static final String INSERT_PERMANENT_TRANSACTIONS_BY_IDS = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb - 'transactionSummaryId' FROM %s WHERE id in (%s)) "
     + "ON CONFLICT DO NOTHING;";
 
   @Override

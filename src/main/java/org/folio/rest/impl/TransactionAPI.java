@@ -48,8 +48,9 @@ public class TransactionAPI implements FinanceStorageTransactions {
 
   @Override
   @Validate
-  public void postFinanceStorageTransactions(String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    getTransactionService(transaction).createTransaction(transaction, new RequestContext(vertxContext, okapiHeaders))
+  public void postFinanceStorageTransactions(String transactionSummaryId, String lang, Transaction transaction,
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    getTransactionService(transaction).createTransaction(transaction, transactionSummaryId, new RequestContext(vertxContext, okapiHeaders))
       .onComplete(event -> {
         if (event.succeeded()) {
           asyncResultHandler.handle(succeededFuture(buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/transactions", event.result())));
@@ -74,9 +75,11 @@ public class TransactionAPI implements FinanceStorageTransactions {
 
   @Override
   @Validate
-  public void putFinanceStorageTransactionsById(String id, String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void putFinanceStorageTransactionsById(String id, String transactionSummaryId, String lang, Transaction transaction,
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     transaction.setId(id);
-    getTransactionService(transaction).updateTransaction(transaction, new RequestContext(vertxContext, okapiHeaders))
+    getTransactionService(transaction).updateTransaction(transaction, transactionSummaryId,
+      new RequestContext(vertxContext, okapiHeaders))
     .onComplete(event -> {
       if (event.succeeded()) {
         asyncResultHandler.handle(buildNoContentResponse());

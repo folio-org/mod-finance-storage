@@ -20,7 +20,7 @@ public abstract class AbstractTransactionService implements TransactionService {
   protected final Logger log = LogManager.getLogger(this.getClass());
 
   @Override
-  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
+  public Future<Void> updateTransaction(Transaction transaction, String transactionSummaryId, RequestContext requestContext) {
     Promise<Void> promise = Promise.promise();
     PgUtil.put(TRANSACTION_TABLE, transaction, transaction.getId(), requestContext.getHeaders(), requestContext.getContext(), FinanceStorageTransactions.PutFinanceStorageTransactionsByIdResponse.class, event -> {
       if (event.succeeded()) {

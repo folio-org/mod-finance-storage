@@ -8,10 +8,13 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.rest.jaxrs.model.TempTransaction;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
 
@@ -30,23 +33,25 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
   }
 
   @Override
-  public Future<Transaction> createTempTransaction(Transaction transaction, String summaryId, DBClient client) {
-    Promise<Transaction> promise = Promise.promise();
+  public Future<TempTransaction> createTempTransaction(Transaction transaction, String summaryId, DBClient client) {
+    Promise<TempTransaction> promise = Promise.promise();
 
     if (transaction.getId() == null) {
       transaction.setId(UUID.randomUUID().toString());
     }
 
-    logger.debug("Creating new transaction with id={}", transaction.getId());
+    logger.debug("Creating new temp transaction with id={}", transaction.getId());
 
+    TempTransaction tempTrans = JsonObject.mapFrom(transaction).mapTo(TempTransaction.class);
+    tempTrans.setTransactionSummaryId(summaryId);
     try {
       client.getPgClient().execute(createTempTransactionQuery(client.getTenantId()),
-        Tuple.of(UUID.fromString(transaction.getId()), pojo2JsonObject(transaction)), reply -> {
+        Tuple.of(UUID.fromString(tempTrans.getId()), pojo2JsonObject(tempTrans)), reply -> {
         if (reply.succeeded()) {
-          logger.debug("New transaction with id={} successfully created", transaction.getId());
-          promise.complete(transaction);
+          logger.debug("New temp transaction with id={} successfully created", tempTrans.getId());
+          promise.complete(tempTrans);
         } else {
-          logger.error("Transaction creation with id={} failed", transaction.getId(), reply.cause());
+          logger.error("Temp transaction creation with id={} failed", tempTrans.getId(), reply.cause());
           handleFailure(promise, reply);
         }
       });
@@ -59,17 +64,17 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
 
 
   @Override
-  public Future<List<Transaction>> getTempTransactionsBySummaryId(String summaryId, DBClient client) {
-    Promise<List<Transaction>> promise = Promise.promise();
+  public Future<List<TempTransaction>> getTempTransactionsBySummaryId(String summaryId, DBClient client) {
+    Promise<List<TempTransaction>> promise = Promise.promise();
 
     Criterion criterion = getSummaryIdCriteria(summaryId);
 
-    client.getPgClient().get(tableName, Transaction.class, criterion, false, false, reply -> {
+    client.getPgClient().get(tableName, TempTransaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
         logger.error("Failed to extract temporary transaction by summary id={}", summaryId, reply.cause());
         handleFailure(promise, reply);
       } else {
-        List<Transaction> transactions = reply.result().getResults();
+        List<TempTransaction> transactions = reply.result().getResults();
         promise.complete(transactions);
       }
     });
@@ -98,6 +103,9 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
 
   protected abstract String createTempTransactionQuery(String tenantId);
 
-  protected abstract Criterion getSummaryIdCriteria(String summaryId);
+  public Criterion getSummaryIdCriteria(String summaryId) {
+    return new CriterionBuilder().with("transactionSummaryId", summaryId).build();
+  }
+
 
 }

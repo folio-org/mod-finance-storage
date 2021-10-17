@@ -11,7 +11,7 @@ import org.folio.rest.persist.PgUtil;
 public class DefaultTransactionService extends AbstractTransactionService {
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
+  public Future<Transaction> createTransaction(Transaction transaction, String transactionSummaryId, RequestContext requestContext) {
     Promise<Transaction> promise = Promise.promise();
     PgUtil.post(TRANSACTION_TABLE, transaction, requestContext.getHeaders(), requestContext.getContext(), FinanceStorageTransactions.PostFinanceStorageTransactionsResponse.class, event -> {
       if (event.succeeded()) {

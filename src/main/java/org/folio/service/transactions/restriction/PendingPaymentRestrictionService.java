@@ -85,9 +85,10 @@ public class PendingPaymentRestrictionService extends BaseTransactionRestriction
   }
 
   @Override
-  public Void handleValidationError(Transaction transaction) {
+  public Void handleValidationError(Transaction transaction, String transactionSummaryId) {
 
-    List<Error> errors = new ArrayList<>(buildNullValidationError(transaction.getFromFundId(), FROM_FUND_ID));
+    List<Error> errors = new ArrayList<>(buildNullValidationError(transactionSummaryId, "transactionSummaryId"));
+    errors.addAll(buildNullValidationError(transaction.getFromFundId(), FROM_FUND_ID));
 
     if (isNotEmpty(errors)) {
       throw new HttpException(422, JsonObject.mapFrom(new Errors().withErrors(errors)

@@ -3,7 +3,7 @@ package org.folio.service.transactions;
 import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
 
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
+import org.folio.rest.jaxrs.model.TempTransaction;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
@@ -48,36 +49,42 @@ public class AllOrNothingTransactionService {
     this.transactionRestrictionService = transactionRestrictionService;
   }
 
-  public Future<Transaction> createTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
+  public Future<Transaction> createTransaction(Transaction transaction, String transactionSummaryId, DBClient client,
+      ProcessTransactionsFunction operation) {
     try {
-      transactionRestrictionService.handleValidationError(transaction);
+      transactionRestrictionService.handleValidationError(transaction, transactionSummaryId);
     } catch (HttpException e) {
       return  Future.failedFuture(e);
     }
-
     return transactionRestrictionService.verifyBudgetHasEnoughMoney(transaction, client)
-      .compose(v -> processAllOrNothing(transaction, client, operation))
+      .compose(v -> processAllOrNothing(transaction, transactionSummaryId, client, operation))
       .map(transaction);
   }
 
-  public Future<Void> updateTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
+  public Future<Void> updateTransaction(Transaction transaction, String transactionSummaryId, DBClient client,
+      ProcessTransactionsFunction operation) {
     try {
-      transactionRestrictionService.handleValidationError(transaction);
+      transactionRestrictionService.handleValidationError(transaction, transactionSummaryId);
     } catch (HttpException e) {
       return Future.failedFuture(e);
     }
     return verifyTransactionExistence(transaction.getId(), client)
-      .compose(v -> processAllOrNothing(transaction, client, operation));
+      .compose(v -> processAllOrNothing(transaction, transactionSummaryId, client, operation));
   }
 
-  private Future<Void> processAllOrNothing(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
-    return transactionSummaryService.getAndCheckTransactionSummary(transaction, client)
-      .compose(summary -> collectTempTransactions(transaction, client)
-        .compose(transactions -> {
-          if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
+  private Future<Void> processAllOrNothing(Transaction transaction, String transactionSummaryId, DBClient client,
+      ProcessTransactionsFunction operation) {
+    return transactionSummaryService.getAndCheckTransactionSummary(transactionSummaryId, client)
+      .compose(summary -> collectTempTransactions(transaction, transactionSummaryId, client)
+        .compose(tempTransactions -> {
+          if (tempTransactions.size() == transactionSummaryService.getNumTransactions(summary)) {
+            List<Transaction> newTransactions = tempTransactions.stream()
+              .map(tmpTransaction -> tmpTransaction.withTransactionSummaryId(null))
+              .map(tmpTransaction -> JsonObject.mapFrom(tmpTransaction).mapTo(Transaction.class))
+              .collect(Collectors.toList());
             return client.startTx()
               // handle create or update
-              .compose(dbClient -> operation.apply(transactions, dbClient))
+              .compose(dbClient -> operation.apply(newTransactions, transactionSummaryId, dbClient))
               .compose(ok -> finishAllOrNothing(summary, client))
               .compose(ok -> client.endTx())
               .onComplete(result -> {
@@ -104,11 +111,11 @@ public class AllOrNothingTransactionService {
    *                            permanent one.
    * @return completed future
    */
-  Future<List<Transaction>> collectTempTransactions(Transaction transaction, DBClient client) {
+  Future<List<TempTransaction>> collectTempTransactions(Transaction transaction, String transactionSummaryId, DBClient client) {
     try {
-      return addTempTransactionSequentially(transaction, client)
+      return addTempTransactionSequentially(transaction, transactionSummaryId, client)
         .compose(transactions -> {
-          Promise<List<Transaction>> promise = Promise.promise();
+          Promise<List<TempTransaction>> promise = Promise.promise();
           try {
             promise.complete(transactions);
           } catch (Exception e) {
@@ -138,11 +145,11 @@ public class AllOrNothingTransactionService {
       .compose(tr -> transactionSummaryService.setTransactionsSummariesProcessed(summary, client)) ;
   }
 
-  private Future<List<Transaction>> addTempTransactionSequentially(Transaction transaction, DBClient client) {
-    Promise<List<Transaction>> promise = Promise.promise();
+  private Future<List<TempTransaction>> addTempTransactionSequentially(Transaction transaction, String summaryId,
+      DBClient client) {
+    Promise<List<TempTransaction>> promise = Promise.promise();
     SharedData sharedData = client.getVertx().sharedData();
     // define unique lockName based on combination of transactions type and summary id
-    final String summaryId = transactionSummaryService.getSummaryId(transaction);
     String lockName = transaction.getTransactionType() + summaryId;
 
     sharedData.getLock(lockName, lockResult -> {

@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -99,9 +100,10 @@ public class BudgetTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()));
 
     String orderId = UUID.randomUUID().toString();
+    String summaryId = UUID.randomUUID().toString();
 
     OrderTransactionSummary sample = new JsonObject(getFile(ORDERS_SUMMARY_SAMPLE)).mapTo(OrderTransactionSummary.class);
-    sample.setId(orderId);
+    sample.setId(summaryId);
     postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
       .encodePrettily(), BUDGET_TENANT_HEADER).as(OrderTransactionSummary.class);
 
@@ -109,7 +111,8 @@ public class BudgetTest extends TestBase {
     Transaction transaction = new JsonObject(getFile(ENCUMBR_SAMPLE)).mapTo(Transaction.class);
     transaction.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
-    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(transaction).encodePrettily(), BUDGET_TENANT_HEADER)
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
+    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(transaction).encodePrettily(), BUDGET_TENANT_HEADER, queryParams)
       .then()
       .statusCode(201);
 

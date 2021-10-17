@@ -63,7 +63,7 @@ public class AllocationServiceTest {
     jsonTx.remove("toFundId");
     jsonTx.remove("fromFundId");
     Transaction transactionSample = jsonTx.mapTo(Transaction.class);
-    testContext.assertFailure(allocationService.createTransaction(transactionSample, requestContext))
+    testContext.assertFailure(allocationService.createTransaction(transactionSample, null, requestContext))
       .onFailure(thrown -> {
         testContext.verify(() -> {
           assertThat(thrown, instanceOf(HttpException.class));
@@ -79,7 +79,7 @@ public class AllocationServiceTest {
     JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     Transaction transactionSample = jsonTx.mapTo(Transaction.class);
     transactionSample.setAmount(-10d);
-    testContext.assertFailure(allocationService.createTransaction(transactionSample, requestContext))
+    testContext.assertFailure(allocationService.createTransaction(transactionSample, null, requestContext))
       .onFailure(thrown -> {
         testContext.verify(() -> {
           assertThat(thrown, instanceOf(HttpException.class));
@@ -115,7 +115,7 @@ public class AllocationServiceTest {
     when(budgetService.updateBatchBudgets(any(), any())).thenReturn(Future.succeededFuture(1));
     when(dbClient.endTx()).thenReturn(Future.succeededFuture());
 
-    testContext.assertComplete(allocationService.createTransaction(transactionSample, requestContext))
+    testContext.assertComplete(allocationService.createTransaction(transactionSample, null, requestContext))
       .onSuccess(transaction -> {
         testContext.verify(() -> {
           ArgumentCaptor<Budget> argumentCaptor = ArgumentCaptor.forClass(Budget.class);

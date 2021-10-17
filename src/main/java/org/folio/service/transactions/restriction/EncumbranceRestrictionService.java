@@ -3,7 +3,6 @@ package org.folio.service.transactions.restriction;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
 import org.folio.rest.jaxrs.model.Budget;
-import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Ledger;
@@ -14,7 +13,6 @@ import org.javamoney.moneta.Money;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
@@ -57,10 +55,10 @@ public class EncumbranceRestrictionService extends BaseTransactionRestrictionSer
   }
 
   @Override
-  public Void handleValidationError(Transaction transaction) {
+  public Void handleValidationError(Transaction transaction, String transactionSummaryId) {
     List<Error> errors = new ArrayList<>();
 
-    errors.addAll(buildNullValidationError(getSummaryId(transaction), "encumbrance"));
+    errors.addAll(buildNullValidationError(transactionSummaryId, "transactionSummaryId"));
     errors.addAll(buildNullValidationError(transaction.getFromFundId(), "fromFundId"));
 
     if (isNotEmpty(errors)) {
@@ -69,12 +67,6 @@ public class EncumbranceRestrictionService extends BaseTransactionRestrictionSer
         .encode());
     }
     return null;
-  }
-
-  private String getSummaryId(Transaction transaction) {
-    return Optional.ofNullable(transaction.getEncumbrance())
-      .map(Encumbrance::getSourcePurchaseOrderId)
-      .orElse(null);
   }
 
 }

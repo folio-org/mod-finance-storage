@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.net.MalformedURLException;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -66,14 +67,13 @@ public class PaymentsCreditsTest extends TestBase {
 
     String invoiceId = UUID.randomUUID().toString();
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 2);
-    createInvoiceSummary(invoiceId, 2);
+    String orderSummaryId = createOrderSummary(2);
+    String invoiceSummaryId = createInvoiceSummary(2);
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
 
     Transaction paymentEncumbranceBefore = jsonTx.mapTo(Transaction.class);
-    paymentEncumbranceBefore.getEncumbrance()
-      .setSourcePurchaseOrderId(orderId);
+    paymentEncumbranceBefore.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
     Transaction creditEncumbranceBefore = jsonTx.mapTo(Transaction.class);
     creditEncumbranceBefore.getEncumbrance()
@@ -88,8 +88,9 @@ public class PaymentsCreditsTest extends TestBase {
     String budgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
 
     // create 1st Encumbrance, expected number is 2
+    Map<String, String> orderQueryParams = Map.of("transaction_summary_id", orderSummaryId);
     String paymentEncumbranceId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(paymentEncumbranceBefore)
-      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .encodePrettily(), TRANSACTION_TENANT_HEADER, orderQueryParams).then()
         .statusCode(201)
         .extract()
         .as(Transaction.class)
@@ -97,7 +98,7 @@ public class PaymentsCreditsTest extends TestBase {
 
     // create 2nd Encumbrance
     String creditEncumbranceId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(creditEncumbranceBefore)
-      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .encodePrettily(), TRANSACTION_TENANT_HEADER, orderQueryParams).then()
         .statusCode(201)
         .extract()
         .as(Transaction.class)
@@ -146,9 +147,12 @@ public class PaymentsCreditsTest extends TestBase {
         .withReleaseEncumbrance(false)
         .withEncumbranceId(creditEncumbranceId));
 
-    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(pendingPaymentForPayment).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> invoiceQueryParams = Map.of("transaction_summary_id", invoiceSummaryId);
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(pendingPaymentForPayment).encodePrettily(),
+        TRANSACTION_TENANT_HEADER, invoiceQueryParams).then()
       .statusCode(201);
-    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(pendingPaymentForCredit).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(pendingPaymentForCredit).encodePrettily(),
+        TRANSACTION_TENANT_HEADER, invoiceQueryParams).then()
       .statusCode(201);
 
 
@@ -166,27 +170,27 @@ public class PaymentsCreditsTest extends TestBase {
     Budget budgetBefore = getBudgetAndValidate(budgetEndpointWithQueryParams);
 
     String paymentId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
-      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-        .statusCode(201)
-        .extract()
-        .as(Transaction.class)
-        .getId();
+        .encodePrettily(), TRANSACTION_TENANT_HEADER, invoiceQueryParams).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class)
+      .getId();
 
     // payment does not appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(404);
 
     String creditId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit)
-      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-        .statusCode(201)
-        .extract()
-        .as(Transaction.class)
-        .getId();
+        .encodePrettily(), TRANSACTION_TENANT_HEADER, invoiceQueryParams).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class)
+      .getId();
 
     postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit)
-      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-        .statusCode(400)
-        .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
+        .encodePrettily(), TRANSACTION_TENANT_HEADER, invoiceQueryParams).then()
+      .statusCode(400)
+      .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
     // 2 transactions(each for a payment and credit) appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
@@ -254,7 +258,7 @@ public class PaymentsCreditsTest extends TestBase {
   void testCreatePaymentsCreditsAllOrNothingWithNoEncumbrances() throws MalformedURLException {
 
     String invoiceId = UUID.randomUUID().toString();
-    createInvoiceSummary(invoiceId, 3);
+    String summaryId = createInvoiceSummary(3);
 
     JsonObject paymentJsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
     paymentJsonTx.remove("id");
@@ -272,8 +276,9 @@ public class PaymentsCreditsTest extends TestBase {
 
     Budget paymentBudgetBefore = getBudgetAndValidate(paymentBudgetEndpointWithQueryParams);
 
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
     String paymentId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
-      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .encodePrettily(), TRANSACTION_TENANT_HEADER, queryParams).then()
         .statusCode(201)
         .extract()
         .as(Transaction.class)
@@ -296,14 +301,14 @@ public class PaymentsCreditsTest extends TestBase {
     Budget creditBudgetBefore = getBudgetAndValidate(creditBudgetEndpointWithQueryParams);
 
     String creditId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit)
-      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .encodePrettily(), TRANSACTION_TENANT_HEADER, queryParams).then()
         .statusCode(201)
         .extract()
         .as(Transaction.class)
         .getId();
 
     String creditId1 = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit.withSourceInvoiceLineId(UUID.randomUUID().toString()))
-      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+        .encodePrettily(), TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class)
@@ -360,7 +365,7 @@ public class PaymentsCreditsTest extends TestBase {
       .encodePrettily();
 
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400);
+      .statusCode(422);
 
   }
 
@@ -371,14 +376,14 @@ public class PaymentsCreditsTest extends TestBase {
     Transaction encumbrance = encumbranceJson.mapTo(Transaction.class);
     String encumbranceSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
-    createOrderSummary(encumbrance.getEncumbrance().getSourcePurchaseOrderId(), 1);
+    String orderSummaryID = createOrderSummary(1);
 
-    postData(TRANSACTION.getEndpoint(), encumbranceSample, TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> orderQueryParams = Map.of("transaction_summary_id", orderSummaryID);
+    postData(TRANSACTION.getEndpoint(), encumbranceSample, TRANSACTION_TENANT_HEADER, orderQueryParams).then()
       .statusCode(201).extract().as(Transaction.class);
 
-    String invoiceId = UUID.randomUUID()
-      .toString();
-    createInvoiceSummary(invoiceId, 2);
+    String invoiceId = UUID.randomUUID().toString();
+    String invoiceSummaryId = createInvoiceSummary(2);
 
     JsonObject jsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
     jsonTx.remove("id");
@@ -389,13 +394,14 @@ public class PaymentsCreditsTest extends TestBase {
       .encodePrettily();
 
     // to support retrying a payment , just id is updated and a duplicate entry is not created
-    String id = postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> invoiceQueryParams = Map.of("transaction_summary_id", invoiceSummaryId);
+    String id = postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER, invoiceQueryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class)
       .getId();
 
-    String retryId = postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+    String retryId = postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER, invoiceQueryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class)
@@ -408,9 +414,8 @@ public class PaymentsCreditsTest extends TestBase {
   @Test
   void testPaymentsWithInvalidPaymentEncumbranceInTemporaryTable() throws MalformedURLException {
 
-    String invoiceId = UUID.randomUUID()
-      .toString();
-    createInvoiceSummary(invoiceId, 2);
+    String invoiceId = UUID.randomUUID().toString();
+    String summaryId = createInvoiceSummary(2);
 
     JsonObject jsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
     jsonTx.remove("id");
@@ -422,7 +427,8 @@ public class PaymentsCreditsTest extends TestBase {
     String transactionSample = JsonObject.mapFrom(payment)
       .encodePrettily();
 
-    postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
+    postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(400);
 
   }
@@ -431,7 +437,7 @@ public class PaymentsCreditsTest extends TestBase {
   void testCreatePaymentWithRestrictedLedgerAndNotEnoughMoney() throws MalformedURLException {
 
     String invoiceId = UUID.randomUUID().toString();
-    createInvoiceSummary(invoiceId, 1);
+    String summaryId = createInvoiceSummary(1);
 
     JsonObject paymentJsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
     paymentJsonTx.remove("id");
@@ -441,8 +447,9 @@ public class PaymentsCreditsTest extends TestBase {
     payment.setPaymentEncumbranceId(null);
     payment.setAmount((double) Integer.MAX_VALUE);
 
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
     postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
-      .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+        .encodePrettily(), TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(400)
       .body(containsString(FUND_CANNOT_BE_PAID));
 
@@ -457,15 +464,12 @@ public class PaymentsCreditsTest extends TestBase {
       .getTotalRecords();
 
     String invoiceId = UUID.randomUUID().toString();
-    createInvoiceSummary(invoiceId, numberOfPayments);
+    String summaryId = createInvoiceSummary(numberOfPayments);
 
     JsonObject paymentJsonTx = new JsonObject(getFile(PAYMENT_SAMPLE));
     paymentJsonTx.remove("id");
 
-    Transaction payment = paymentJsonTx.mapTo(Transaction.class);
-    payment.setSourceInvoiceId(invoiceId);
-    payment.setPaymentEncumbranceId(null);
-    payment.setAmount(1d);
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
     Stream.generate(() -> paymentJsonTx.mapTo(Transaction.class)
                             .withSourceInvoiceId(invoiceId)
                             .withPaymentEncumbranceId(null)
@@ -475,8 +479,8 @@ public class PaymentsCreditsTest extends TestBase {
       .parallel()
       .forEach(transaction -> {
         try {
-          postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(transaction)
-            .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+          postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(transaction).encodePrettily(),
+              TRANSACTION_TENANT_HEADER, queryParams).then()
             .statusCode(201);
         } catch (MalformedURLException e) {
           logger.error(e.getMessage());
@@ -492,16 +496,20 @@ public class PaymentsCreditsTest extends TestBase {
       String.format("initialNum = %s, newNum = %s", initialNumberOfTransactions, newNumberOfTransactions));
   }
 
-  protected void createOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
-    OrderTransactionSummary summary = new OrderTransactionSummary().withId(orderId).withNumTransactions(encumbranceNumber);
+  protected String createOrderSummary(int encumbranceNumber) throws MalformedURLException {
+    String summaryId = UUID.randomUUID().toString();
+    OrderTransactionSummary summary = new OrderTransactionSummary().withId(summaryId).withNumTransactions(encumbranceNumber);
     postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
+    return summaryId;
   }
 
-  protected void createInvoiceSummary(String invoiceId, int numPaymentsCredits) throws MalformedURLException {
-    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numPaymentsCredits).withNumPendingPayments(numPaymentsCredits);
+  protected String createInvoiceSummary(int numPaymentsCredits) throws MalformedURLException {
+    String summaryId = UUID.randomUUID().toString();
+    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(summaryId).withNumPaymentsCredits(numPaymentsCredits).withNumPendingPayments(numPaymentsCredits);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
+    return summaryId;
   }
 
   protected Budget getBudgetAndValidate(String endpoint) throws MalformedURLException {

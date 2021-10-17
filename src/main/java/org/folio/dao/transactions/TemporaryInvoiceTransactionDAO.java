@@ -2,9 +2,6 @@ package org.folio.dao.transactions;
 
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
-import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.Criteria.Criterion;
-
 public class TemporaryInvoiceTransactionDAO extends BaseTemporaryTransactionsDAO implements TemporaryTransactionDAO {
 
   public static final String TEMPORARY_INVOICE_TRANSACTIONS = "temporary_invoice_transactions";
@@ -22,11 +19,6 @@ public class TemporaryInvoiceTransactionDAO extends BaseTemporaryTransactionsDAO
 
   protected String createTempTransactionQuery(String tenantId) {
     return String.format(INSERT_TEMPORARY_TRANSACTIONS, getFullTableName(tenantId, getTableName()));
-  }
-
-  @Override
-  protected Criterion getSummaryIdCriteria(String summaryId) {
-    return new CriterionBuilder().with("sourceInvoiceId", summaryId).build();
   }
 
 }

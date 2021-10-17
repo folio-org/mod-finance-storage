@@ -36,9 +36,9 @@ public class EncumbranceService implements TransactionManagingStrategy {
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
 
-  public static final String SELECT_BUDGETS_BY_ORDER_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+  public static final String SELECT_BUDGETS_BY_SUMMARY_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId "
-    + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = $1";
+    + "WHERE transactions.jsonb ->> 'transactionSummaryId' = $1";
   public static final String FOR_UPDATE = "FOR_UPDATE";
   public static final String FOR_CREATE = "FOR_CREATE";
   public static final String EXISTING = "EXISTING";
@@ -56,15 +56,15 @@ public class EncumbranceService implements TransactionManagingStrategy {
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
+  public Future<Transaction> createTransaction(Transaction transaction, String transactionSummaryId, RequestContext requestContext) {
     DBClient client = new DBClient(requestContext);
-    return allOrNothingEncumbranceService.createTransaction(transaction, client, this::processEncumbrances);
+    return allOrNothingEncumbranceService.createTransaction(transaction, transactionSummaryId, client, this::processEncumbrances);
   }
 
   @Override
-  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
+  public Future<Void> updateTransaction(Transaction transaction, String transactionSummaryId, RequestContext requestContext) {
     DBClient client = new DBClient(requestContext);
-    return allOrNothingEncumbranceService.updateTransaction(transaction, client, this::processEncumbrances);
+    return allOrNothingEncumbranceService.updateTransaction(transaction, transactionSummaryId, client, this::processEncumbrances);
   }
 
   private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> existingTransactions, List<Budget> budgets) {
@@ -73,7 +73,7 @@ public class EncumbranceService implements TransactionManagingStrategy {
   }
 
   private String getSelectBudgetsQuery(String tenantId) {
-    return String.format(SELECT_BUDGETS_BY_ORDER_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS));
+    return String.format(SELECT_BUDGETS_BY_SUMMARY_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS));
   }
 
   public Transaction.TransactionType getStrategyName() {
@@ -83,9 +83,9 @@ public class EncumbranceService implements TransactionManagingStrategy {
   /**
    * To prevent partial encumbrance transactions for an order, all the encumbrances must be created following All or nothing
    */
-  public Future<Void> processEncumbrances(List<Transaction> tmpTransactions, DBClient client) {
+  public Future<Void> processEncumbrances(List<Transaction> tmpTransactions, String summaryId, DBClient client) {
     return getTransactionsForCreateAndUpdate(tmpTransactions, client)
-      .compose(transactionsForCreateAndUpdate -> updateBudgetsTotals(transactionsForCreateAndUpdate, tmpTransactions, client)
+      .compose(transactionsForCreateAndUpdate -> updateBudgetsTotals(transactionsForCreateAndUpdate, summaryId, client)
         .map(v -> excludeReleasedEncumbrancesExceptToUnrelease(transactionsForCreateAndUpdate.get(FOR_UPDATE),
           transactionsForCreateAndUpdate.get(EXISTING)))
         .compose(transactions -> transactionDAO.updatePermanentTransactions(transactions, client))
@@ -165,10 +165,9 @@ public class EncumbranceService implements TransactionManagingStrategy {
       .collect(Collectors.toList());
   }
 
-  private Future<Integer> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, List<Transaction> newTransactions,
-                                           DBClient client) {
+  private Future<Integer> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, String summaryId, DBClient client) {
 
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId()), client)
+    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(summaryId), client)
       .compose(oldBudgets -> {
 
         List<Budget> updatedBudgets = updateBudgetsTotalsForCreatingTransactions(groupedTransactions.get(FOR_CREATE), oldBudgets);

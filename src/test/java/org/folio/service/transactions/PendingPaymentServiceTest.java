@@ -2,7 +2,7 @@ package org.folio.service.transactions;
 
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
-import static org.folio.service.transactions.PendingPaymentService.SELECT_BUDGETS_BY_INVOICE_ID;
+import static org.folio.service.transactions.PendingPaymentService.SELECT_BUDGETS_BY_SUMMARY_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -144,7 +144,7 @@ public class PendingPaymentServiceTest {
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.createTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, summaryId, client);
 
     assertTrue(result.succeeded());
 
@@ -161,7 +161,7 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+    String sql = String.format(SELECT_BUDGETS_BY_SUMMARY_ID,
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
@@ -217,7 +217,7 @@ public class PendingPaymentServiceTest {
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.createTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, summaryId, client);
 
     assertTrue(result.succeeded());
 
@@ -234,7 +234,7 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+    String sql = String.format(SELECT_BUDGETS_BY_SUMMARY_ID,
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
@@ -288,7 +288,7 @@ public class PendingPaymentServiceTest {
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.createTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, summaryId, client);
 
     assertTrue(result.succeeded());
 
@@ -305,7 +305,7 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+    String sql = String.format(SELECT_BUDGETS_BY_SUMMARY_ID,
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
@@ -361,7 +361,7 @@ public class PendingPaymentServiceTest {
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.createTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, summaryId, client);
 
     assertTrue(result.succeeded());
 
@@ -378,7 +378,7 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+    String sql = String.format(SELECT_BUDGETS_BY_SUMMARY_ID,
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
@@ -424,7 +424,7 @@ public class PendingPaymentServiceTest {
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    spyService.createTransactions(transactions, client)
+    spyService.createTransactions(transactions, summaryId, client)
       .onComplete(res -> assertTrue(res.succeeded()));
 
 
@@ -433,7 +433,7 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+    String sql = String.format(SELECT_BUDGETS_BY_SUMMARY_ID,
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
@@ -480,7 +480,7 @@ public class PendingPaymentServiceTest {
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    spyService.createTransactions(transactions, client)
+    spyService.createTransactions(transactions, summaryId, client)
       .onComplete(res -> assertTrue(res.succeeded()));
 
 
@@ -489,7 +489,7 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+    String sql = String.format(SELECT_BUDGETS_BY_SUMMARY_ID,
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
@@ -538,13 +538,13 @@ public class PendingPaymentServiceTest {
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    spyService.updateTransactions(transactions, client)
+    spyService.updateTransactions(transactions, summaryId, client)
       .onComplete(res -> assertTrue(res.succeeded()));
 
     verify(transactionsDAO).getTransactions(anyList(), any());
     verify(transactionsDAO).updatePermanentTransactions(anyList(), any());
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+    String sql = String.format(SELECT_BUDGETS_BY_SUMMARY_ID,
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
@@ -607,7 +607,7 @@ public class PendingPaymentServiceTest {
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.updateTransactions(transactions, client);
+    Future<Void> result = spyService.updateTransactions(transactions, summaryId, client);
 
     assertTrue(result.succeeded());
 
@@ -634,7 +634,7 @@ public class PendingPaymentServiceTest {
 
     assertThat(updatedPendingPayment.getAmount(), is(newAmount.doubleValue()));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+    String sql = String.format(SELECT_BUDGETS_BY_SUMMARY_ID,
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 
@@ -689,13 +689,13 @@ public class PendingPaymentServiceTest {
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    spyService.updateTransactions(transactions, client)
+    spyService.updateTransactions(transactions, summaryId, client)
       .onComplete(res -> assertTrue(res.succeeded()));
 
     verify(transactionsDAO).getTransactions(anyList(), any());
     verify(transactionsDAO).updatePermanentTransactions(anyList(), any());
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
+    String sql = String.format(SELECT_BUDGETS_BY_SUMMARY_ID,
       HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
       HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
 

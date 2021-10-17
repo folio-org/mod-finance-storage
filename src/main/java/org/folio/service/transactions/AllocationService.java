@@ -37,7 +37,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction allocation, RequestContext requestContext) {
+  public Future<Transaction> createTransaction(Transaction allocation, String transactionSummaryId, RequestContext requestContext) {
     Promise<Transaction> promise = Promise.promise();
 
     try {

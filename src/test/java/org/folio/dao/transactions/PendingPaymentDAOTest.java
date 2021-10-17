@@ -7,8 +7,6 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.impl.ExpenseClassAPI.EXPENSE_CLASS_TABLE;
 import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
-import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
-import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
@@ -29,6 +27,7 @@ import org.folio.rest.jaxrs.model.ExpenseClass;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
+import org.folio.rest.jaxrs.model.TempTransaction;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
@@ -118,8 +117,8 @@ public class PendingPaymentDAOTest extends TestBase {
       .compose(v -> promise1.future())
       .compose(id1 -> promise2.future()
       .compose(id2 -> {
-        t1.withId(id1).withTransactionType(PENDING_PAYMENT);
-        t2.withId(id2).withTransactionType(ALLOCATION);
+        t1.withId(id1).withTransactionType(Transaction.TransactionType.PENDING_PAYMENT);
+        t2.withId(id2).withTransactionType(Transaction.TransactionType.ALLOCATION);
         return pendingPaymentDAO.updatePermanentTransactions(Arrays.asList(t1, t2), client);
       }))
         .compose(aVoid -> client.endTx())
@@ -131,8 +130,8 @@ public class PendingPaymentDAOTest extends TestBase {
           Map<String, Transaction> transactionMap = transactions.stream().collect(toMap(Transaction::getId, Function.identity()));
           assertThat(transactionMap.get(t1.getId()).getId(), is(t1.getId()));
           assertThat(transactionMap.get(t2.getId()).getId(), is(t2.getId()));
-          assertThat(transactionMap.get(t1.getId()).getTransactionType(), is(PENDING_PAYMENT));
-          assertThat(transactionMap.get(t2.getId()).getTransactionType(), is(ALLOCATION));
+          assertThat(transactionMap.get(t1.getId()).getTransactionType(), is(Transaction.TransactionType.PENDING_PAYMENT));
+          assertThat(transactionMap.get(t2.getId()).getTransactionType(), is(Transaction.TransactionType.ALLOCATION));
         });
         testContext.completeNow();
       });
@@ -142,10 +141,12 @@ public class PendingPaymentDAOTest extends TestBase {
   @Test
   void testSaveTransactionsToPermanentTableOnlyPendingPayments(Vertx vertx, VertxTestContext testContext) {
     String summaryId = UUID.randomUUID().toString();
-    Transaction tmpTransaction = new Transaction()
+    String sourceInvoiceId = UUID.randomUUID().toString();
+    TempTransaction tmpTransaction = new TempTransaction()
+      .withTransactionSummaryId(summaryId)
       .withId(UUID.randomUUID().toString())
-      .withTransactionType(PENDING_PAYMENT)
-      .withSourceInvoiceId(summaryId);
+      .withTransactionType(TempTransaction.TransactionType.PENDING_PAYMENT)
+      .withSourceInvoiceId(sourceInvoiceId);
 
     final DBClient client = new DBClient(vertx, TEST_TENANT);
 
@@ -161,7 +162,7 @@ public class PendingPaymentDAOTest extends TestBase {
         testContext.verify(() -> {
           assertThat(transactions, hasSize(1));
           assertThat(transactions.get(0).getId(), is(tmpTransaction.getId()));
-          assertThat(transactions.get(0).getTransactionType(), is(PENDING_PAYMENT));
+          assertThat(transactions.get(0).getTransactionType(), is(Transaction.TransactionType.PENDING_PAYMENT));
         });
         testContext.completeNow();
       });
@@ -180,10 +181,12 @@ public class PendingPaymentDAOTest extends TestBase {
       .withId(UUID.randomUUID().toString());
 
     String summaryId = UUID.randomUUID().toString();
-    Transaction tmpTransaction1 = new Transaction()
+    String sourceInvoiceId = UUID.randomUUID().toString();
+    TempTransaction tmpTransaction1 = new TempTransaction()
       .withId(UUID.randomUUID().toString())
-      .withTransactionType(PENDING_PAYMENT)
-      .withSourceInvoiceId(summaryId)
+      .withTransactionSummaryId(summaryId)
+      .withTransactionType(TempTransaction.TransactionType.PENDING_PAYMENT)
+      .withSourceInvoiceId(sourceInvoiceId)
       .withSourceInvoiceLineId(UUID.randomUUID().toString())
       .withAmount(100d)
       .withFromFundId(fund.getId())
@@ -191,10 +194,11 @@ public class PendingPaymentDAOTest extends TestBase {
       .withFiscalYearId(fiscalYear.getId());
 
 
-    Transaction tmpTransaction2 = new Transaction()
+    TempTransaction tmpTransaction2 = new TempTransaction()
       .withId(UUID.randomUUID().toString())
-      .withTransactionType(PENDING_PAYMENT)
-      .withSourceInvoiceId(summaryId)
+      .withTransactionSummaryId(summaryId)
+      .withTransactionType(TempTransaction.TransactionType.PENDING_PAYMENT)
+      .withSourceInvoiceId(sourceInvoiceId)
       .withSourceInvoiceLineId(tmpTransaction1.getSourceInvoiceLineId())
       .withAmount(tmpTransaction1.getAmount())
       .withFromFundId(tmpTransaction1.getFromFundId())
@@ -222,7 +226,7 @@ public class PendingPaymentDAOTest extends TestBase {
         testContext.verify(() -> {
           assertThat(transactions, Matchers.hasSize(1));
           assertThat(transactions.get(0).getId(), is(tmpTransaction1.getId()));
-          assertThat(transactions.get(0).getTransactionType(), is(PENDING_PAYMENT));
+          assertThat(transactions.get(0).getTransactionType(), is(Transaction.TransactionType.PENDING_PAYMENT));
           assertNull(transactions.get(0).getCurrency());
         });
         testContext.completeNow();
@@ -244,11 +248,13 @@ public class PendingPaymentDAOTest extends TestBase {
     ExpenseClass expenseClass2 = new ExpenseClass()
       .withId(UUID.randomUUID().toString());
 
+    String sourceInvoiceId = UUID.randomUUID().toString();
     String summaryId = UUID.randomUUID().toString();
-    Transaction tmpTransaction1 = new Transaction()
+    TempTransaction tmpTransaction1 = new TempTransaction()
       .withId(UUID.randomUUID().toString())
-      .withTransactionType(PENDING_PAYMENT)
-      .withSourceInvoiceId(summaryId)
+      .withTransactionSummaryId(summaryId)
+      .withTransactionType(TempTransaction.TransactionType.PENDING_PAYMENT)
+      .withSourceInvoiceId(sourceInvoiceId)
       .withSourceInvoiceLineId(UUID.randomUUID().toString())
       .withAmount(100d)
       .withFromFundId(fund.getId())
@@ -256,10 +262,11 @@ public class PendingPaymentDAOTest extends TestBase {
       .withFiscalYearId(fiscalYear.getId());
 
 
-    Transaction tmpTransaction2 = new Transaction()
+    TempTransaction tmpTransaction2 = new TempTransaction()
       .withId(UUID.randomUUID().toString())
-      .withTransactionType(PENDING_PAYMENT)
-      .withSourceInvoiceId(summaryId)
+      .withTransactionSummaryId(summaryId)
+      .withTransactionType(TempTransaction.TransactionType.PENDING_PAYMENT)
+      .withSourceInvoiceId(sourceInvoiceId)
       .withSourceInvoiceLineId(tmpTransaction1.getSourceInvoiceLineId())
       .withAmount(tmpTransaction1.getAmount())
       .withFromFundId(tmpTransaction1.getFromFundId())
@@ -291,7 +298,7 @@ public class PendingPaymentDAOTest extends TestBase {
       });
   }
 
-  private Future<String> createTmpTransaction(Transaction tmpTransaction, DBClient client) {
+  private Future<String> createTmpTransaction(TempTransaction tmpTransaction, DBClient client) {
     Promise<String> promise = Promise.promise();
     client.getPgClient().save(client.getConnection(), TEMPORARY_INVOICE_TRANSACTIONS, tmpTransaction.getId(), tmpTransaction, event -> {
       promise.complete(event.result());
@@ -299,7 +306,7 @@ public class PendingPaymentDAOTest extends TestBase {
     return promise.future();
   }
 
-  private Future<Void> deleteTmpTransaction(Transaction tmpTransaction, DBClient client) {
+  private Future<Void> deleteTmpTransaction(TempTransaction tmpTransaction, DBClient client) {
     Promise<Void> promise = Promise.promise();
     client.getPgClient().delete(client.getConnection(), TEMPORARY_INVOICE_TRANSACTIONS, tmpTransaction.getId(), event -> promise.complete());
     return promise.future();

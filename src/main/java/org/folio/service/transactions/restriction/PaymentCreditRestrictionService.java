@@ -67,9 +67,9 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
   }
 
   @Override
-  public Void handleValidationError(Transaction transaction) {
-    List<Error> errors = new ArrayList<>();
+  public Void handleValidationError(Transaction transaction, String transactionSummaryId) {
 
+    List<Error> errors = new ArrayList<>(buildNullValidationError(transactionSummaryId, "transactionSummaryId"));
     if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT) {
       errors.addAll(buildNullValidationError(transaction.getToFundId(), TO_FUND_ID));
     } else {

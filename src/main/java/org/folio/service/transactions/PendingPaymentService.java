@@ -41,9 +41,9 @@ import org.javamoney.moneta.function.MonetaryFunctions;
 
 public class PendingPaymentService implements TransactionManagingStrategy {
 
-  public static final String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+  public static final String SELECT_BUDGETS_BY_SUMMARY_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON (budgets.fundId = transactions.fromFundId  AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
+    + "WHERE transactions.transactionSummaryId = $1 AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
 
   private final AllOrNothingTransactionService allOrNothingPendingPaymentService;
   private final TransactionDAO transactionsDAO;
@@ -58,15 +58,15 @@ public class PendingPaymentService implements TransactionManagingStrategy {
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
+  public Future<Transaction> createTransaction(Transaction transaction, String transactionSummaryId, RequestContext requestContext) {
     DBClient dbClient = new DBClient(requestContext);
-    return allOrNothingPendingPaymentService.createTransaction(transaction, dbClient, this::createTransactions);
+    return allOrNothingPendingPaymentService.createTransaction(transaction, transactionSummaryId, dbClient, this::createTransactions);
   }
 
   @Override
-  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
+  public Future<Void> updateTransaction(Transaction transaction, String transactionSummaryId, RequestContext requestContext) {
     DBClient dbClient = new DBClient(requestContext);
-    return allOrNothingPendingPaymentService.updateTransaction(transaction, dbClient, this::updateTransactions);
+    return allOrNothingPendingPaymentService.updateTransaction(transaction, transactionSummaryId, dbClient, this::updateTransactions);
   }
 
   @Override
@@ -74,30 +74,28 @@ public class PendingPaymentService implements TransactionManagingStrategy {
     return PENDING_PAYMENT;
   }
 
-  public Future<Void> createTransactions(List<Transaction> transactions, DBClient client) {
+  public Future<Void> createTransactions(List<Transaction> transactions, String summaryId, DBClient client) {
 
-    return processPendingPayments(transactions, client)
-      .compose(aVoid -> transactionsDAO.saveTransactionsToPermanentTable(transactions.get(0).getSourceInvoiceId(), client))
+    return processPendingPayments(transactions, summaryId, client)
+      .compose(aVoid -> transactionsDAO.saveTransactionsToPermanentTable(summaryId, client))
       .mapEmpty();
   }
 
-  public Future<Void> updateTransactions(List<Transaction> tmpTransactions, DBClient client) {
+  public Future<Void> updateTransactions(List<Transaction> tmpTransactions, String summaryId, DBClient client) {
 
     return getTransactions(tmpTransactions, client)
       .map(transactionsFromDB -> createDifferenceTransactions(tmpTransactions, transactionsFromDB))
-      .compose(transactions -> processPendingPayments(transactions, client))
+      .compose(transactions -> processPendingPayments(transactions, summaryId, client))
       .compose(transactions -> transactionsDAO.updatePermanentTransactions(tmpTransactions, client));
   }
 
-  private Future<List<Transaction>> processPendingPayments(List<Transaction> transactions, DBClient client) {
+  private Future<List<Transaction>> processPendingPayments(List<Transaction> transactions, String summaryId, DBClient client) {
     List<Transaction> linkedToEncumbrance = transactions.stream()
       .filter(transaction -> Objects.nonNull(transaction.getAwaitingPayment()) && Objects.nonNull(transaction.getAwaitingPayment().getEncumbranceId()))
       .collect(Collectors.toList());
     List<Transaction> notLinkedToEncumbrance = transactions.stream()
       .filter(transaction -> Objects.isNull(transaction.getAwaitingPayment()) || Objects.isNull(transaction.getAwaitingPayment().getEncumbranceId()))
       .collect(Collectors.toList());
-
-    String summaryId = getSummaryId(transactions.get(0));
 
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)
       .compose(oldBudgets -> processLinkedPendingPayments(linkedToEncumbrance, oldBudgets, client)
@@ -281,12 +279,8 @@ public class PendingPaymentService implements TransactionManagingStrategy {
 
   }
 
-  public String getSummaryId(Transaction transaction) {
-    return transaction.getSourceInvoiceId();
-  }
-
   private String getSelectBudgetsQuery(String tenantId) {
-    return String.format(SELECT_BUDGETS_BY_INVOICE_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
+    return String.format(SELECT_BUDGETS_BY_SUMMARY_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
   }
 
 }

@@ -11,6 +11,7 @@ types:
   errors: !include raml-util/schemas/errors.schema
   transaction: !include acq-models/mod-finance/schemas/transaction.json
   transaction-collection: !include acq-models/mod-finance/schemas/transaction_collection.json
+  temp-transaction: !include acq-models/mod-finance/schemas/temporary_transaction.json
   UUID:
     type: string
     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
@@ -20,6 +21,7 @@ traits:
   searchable: !include raml-util/traits/searchable.raml
   language: !include raml-util/traits/language.raml
   validate: !include raml-util/traits/validation.raml
+  transaction_summary_id: !include raml-util/traits/transaction_summary_id.raml
 
 resourceTypes:
   collection: !include raml-util/rtypes/collection.raml
@@ -34,7 +36,10 @@ resourceTypes:
       schemaCollection: transaction-collection
       schemaItem: transaction
   post:
-    is: [validate]
+    is: [
+      validate,
+      transaction_summary_id
+    ]
   get:
     description: Get list of transactions
     is: [
@@ -51,4 +56,7 @@ resourceTypes:
         exampleItem: !include acq-models/mod-finance/examples/transaction.sample
         schema: transaction
     put:
-      is: [validate]
+      is: [
+        validate,
+        transaction_summary_id
+      ]

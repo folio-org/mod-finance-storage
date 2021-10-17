@@ -38,12 +38,12 @@ public class PaymentCreditService extends AbstractTransactionService implements 
 
   private static final String TRANSACTIONS_TABLE = "transaction";
 
-  public static final String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+  public static final String SELECT_BUDGETS_BY_SUMMARY_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
+    + "WHERE transactions.transactionSummaryId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
 
   public static final String SELECT_PERMANENT_TRANSACTIONS = "SELECT DISTINCT ON (permtransactions.id) permtransactions.jsonb FROM %s AS permtransactions INNER JOIN %s AS transactions "
-    + "ON transactions.paymentEncumbranceId = permtransactions.id WHERE transactions.sourceInvoiceId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
+    + "ON transactions.paymentEncumbranceId = permtransactions.id WHERE transactions.transactionSummaryId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
   public static final String TRANSACTION_TYPE = "transactionType";
   public static final String SOURCE_INVOICE_ID = "sourceInvoiceId";
 
@@ -64,31 +64,28 @@ public class PaymentCreditService extends AbstractTransactionService implements 
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
+  public Future<Transaction> createTransaction(Transaction transaction, String transactionSummaryId, RequestContext requestContext) {
     DBClient client = new DBClient(requestContext);
-    return allOrNothingPaymentCreditService.createTransaction(transaction, client, this::createTransactions);
+    return allOrNothingPaymentCreditService.createTransaction(transaction, transactionSummaryId, client, this::createTransactions);
   }
 
   /**
    * Before the temporary transaction can be moved to permanent transaction table, the corresponding fields in encumbrances and
    * budgets for payments/credits must be recalculated. To avoid partial transactions, all payments and credits will be done in a
    * database transaction
-   *
-   * @param transactions to be processed
-   * @param client
    */
 
-  public Future<Void> createTransactions(List<Transaction> transactions, DBClient client) {
-    String summaryId = getSummaryId(transactions.get(0));
-    return updateEncumbranceTotals(transactions, client)
-      .compose(dbc -> updateBudgetsTotals(transactions, client))
+  public Future<Void> createTransactions(List<Transaction> transactions, String summaryId, DBClient client) {
+    String sourceInvoiceId = transactions.get(0).getSourceInvoiceId();
+    return updateEncumbranceTotals(transactions, summaryId, client)
+      .compose(dbc -> updateBudgetsTotals(transactions, summaryId, client))
       .compose(dbc -> transactionsDAO.saveTransactionsToPermanentTable(summaryId, client))
-      .compose(integer -> deletePendingPayments(summaryId, client));
+      .compose(integer -> deletePendingPayments(sourceInvoiceId, client));
   }
 
-  private Future<Void> deletePendingPayments(String summaryId, DBClient client) {
+  private Future<Void> deletePendingPayments(String sourceInvoiceId, DBClient client) {
     CriterionBuilder criterionBuilder = new CriterionBuilder();
-    criterionBuilder.withJson(SOURCE_INVOICE_ID, "=", summaryId)
+    criterionBuilder.withJson(SOURCE_INVOICE_ID, "=", sourceInvoiceId)
       .withJson(TRANSACTION_TYPE, "=", PENDING_PAYMENT.value());
     return transactionsDAO.deleteTransactions(criterionBuilder.build(), client);
   }
@@ -96,11 +93,8 @@ public class PaymentCreditService extends AbstractTransactionService implements 
   /**
    * Update the Encumbrance transaction attached to the payment/Credit(from paymentEncumbranceID)
    * in a transaction
-   *
-   * @param transactions
-   * @param client : the list of payments and credits
    */
-  private Future<DBClient> updateEncumbranceTotals(List<Transaction> transactions, DBClient client) {
+  private Future<DBClient> updateEncumbranceTotals(List<Transaction> transactions, String summaryId, DBClient client) {
     boolean noEncumbrances = transactions
       .stream()
       .allMatch(transaction -> StringUtils.isBlank(transaction.getPaymentEncumbranceId()));
@@ -108,7 +102,6 @@ public class PaymentCreditService extends AbstractTransactionService implements 
     if (noEncumbrances) {
       return Future.succeededFuture(client);
     }
-    String summaryId = getSummaryId(transactions.get(0));
     return getAllEncumbrances(summaryId, client).map(encumbrances -> encumbrances.stream()
       .collect(toMap(Transaction::getId, identity())))
       .map(encumbrancesMap -> applyPayments(transactions, encumbrancesMap))
@@ -120,8 +113,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
 
   }
 
-  private Future<Integer> updateBudgetsTotals(List<Transaction> transactions, DBClient client) {
-    String summaryId = getSummaryId(transactions.get(0));
+  private Future<Integer> updateBudgetsTotals(List<Transaction> transactions, String summaryId, DBClient client) {
     String sql = getSelectBudgetsQuery(client.getTenantId());
     return budgetService.getBudgets(sql, Tuple.of(UUID.fromString(summaryId)), client)
       .map(budgets -> budgets.stream().collect(toMap(Budget::getFundId, Function.identity())))
@@ -275,15 +267,11 @@ public class PaymentCreditService extends AbstractTransactionService implements 
   }
 
   private String getSelectBudgetsQuery(String tenantId){
-    return String.format(SELECT_BUDGETS_BY_INVOICE_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
+    return String.format(SELECT_BUDGETS_BY_SUMMARY_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
   }
 
   public Transaction.TransactionType getStrategyName() {
     return PAYMENT;
   }
 
-
-  public String getSummaryId(Transaction transaction) {
-    return transaction.getSourceInvoiceId();
-  }
 }

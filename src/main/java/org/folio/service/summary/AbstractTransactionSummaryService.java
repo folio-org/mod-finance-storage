@@ -7,7 +7,6 @@ import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.summary.TransactionSummaryDao;
-import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 
@@ -26,8 +25,8 @@ public abstract class AbstractTransactionSummaryService implements TransactionSu
   }
 
   @Override
-  public Future<JsonObject> getAndCheckTransactionSummary(Transaction transaction, DBClient client) {
-    return this.getTransactionSummary(transaction, client)
+  public Future<JsonObject> getAndCheckTransactionSummary(String summaryId, DBClient client) {
+    return this.getTransactionSummary(summaryId, client)
       .map(summary -> {
         if ((isProcessed(summary))) {
           logger.debug("Expected number of transactions for summary with id={} already processed", summary.getString(HelperUtils.ID_FIELD_NAME));
@@ -39,9 +38,8 @@ public abstract class AbstractTransactionSummaryService implements TransactionSu
   }
 
   @Override
-  public Future<JsonObject> getTransactionSummary(Transaction transaction, DBClient client) {
-    logger.debug("Get summary={}", getSummaryId(transaction));
-    String summaryId = getSummaryId(transaction);
+  public Future<JsonObject> getTransactionSummary(String summaryId, DBClient client) {
+    logger.debug("Get summary={}", summaryId);
 
     return transactionSummaryDao.getSummaryById(summaryId, client);
   }

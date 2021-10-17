@@ -507,6 +507,11 @@
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
           "targetTable": "order_transaction_summaries",
+          "tOps": "DELETE"
+        },
+        {
+          "fieldName": "transactionSummaryId",
+          "targetTable": "order_transaction_summaries",
           "tOps": "ADD"
         },
         {
@@ -548,6 +553,11 @@
       "foreignKeys": [
         {
           "fieldName": "sourceInvoiceId",
+          "targetTable": "invoice_transaction_summaries",
+          "tOps": "DELETE"
+        },
+        {
+          "fieldName": "transactionSummaryId",
           "targetTable": "invoice_transaction_summaries",
           "tOps": "ADD"
         },

@@ -33,7 +33,7 @@ public class TransferService extends AbstractTransactionService implements Trans
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transfer, RequestContext requestContext) {
+  public Future<Transaction> createTransaction(Transaction transfer, String transactionSummaryId, RequestContext requestContext) {
     Promise<Transaction> promise = Promise.promise();
 
     try {

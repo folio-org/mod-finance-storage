@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.MalformedURLException;
+import java.util.Map;
 import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.Budget;
@@ -76,7 +77,7 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201).extract().as(Budget.class).getId();
 
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 2);
+    String summaryId = createOrderSummary(2);
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
 
     Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
@@ -86,9 +87,11 @@ public class EncumbrancesTest extends TestBase {
     encumbrance2.getEncumbrance().setSourcePurchaseOrderId(orderId);
     encumbrance2.getEncumbrance().setSourcePoLineId(UUID.randomUUID().toString());
 
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
 
     // create 1st Encumbrance, expected number is 2
-    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance1).encodePrettily(),
+        TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -97,7 +100,8 @@ public class EncumbrancesTest extends TestBase {
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(404);
 
     // create 2nd Encumbrance
-    String encumbrance2Id = postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance2).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    String encumbrance2Id = postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance2).encodePrettily(),
+        TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -125,7 +129,8 @@ public class EncumbrancesTest extends TestBase {
     verifyBudgetTotalsAfter(budgetAfter);
 
     //create same encumbrances again
-    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER,
+        queryParams).then()
       .statusCode(400)
       .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
@@ -151,15 +156,16 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201).extract().as(Budget.class);
 
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
+    String summaryId = createOrderSummary(1);
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
 
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
     encumbrance.setAmount(1000000d);
     encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
     // create Encumbrance
-    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(400)
       .body(containsString(FUND_CANNOT_BE_PAID));
 
@@ -177,15 +183,16 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201).extract().as(Budget.class);
 
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
+    String summaryId = createOrderSummary(1);
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
 
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
     encumbrance.setAmount((double) Integer.MAX_VALUE);
     encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
     // create Encumbrance
-    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(400)
       .body(containsString(BUDGET_IS_INACTIVE));
 
@@ -205,7 +212,7 @@ public class EncumbrancesTest extends TestBase {
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
     postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400);
+      .statusCode(422);
 
   }
 
@@ -217,7 +224,7 @@ public class EncumbrancesTest extends TestBase {
     String fundId = createFund(ledgerId);
 
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 2);
+    String summaryId = createOrderSummary(2);
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
 
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
@@ -227,31 +234,35 @@ public class EncumbrancesTest extends TestBase {
 
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
-    postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
+    postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(400).body(containsString(BUDGET_NOT_FOUND_FOR_TRANSACTION));
 
   }
 
-  protected void createOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
-    OrderTransactionSummary summary = new OrderTransactionSummary().withId(orderId).withNumTransactions(encumbranceNumber);
+  protected String createOrderSummary(int encumbranceNumber) throws MalformedURLException {
+    String summaryId = UUID.randomUUID().toString();
+    OrderTransactionSummary summary = new OrderTransactionSummary().withId(summaryId).withNumTransactions(encumbranceNumber);
     postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
+    return summaryId;
   }
 
-  protected void updateOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
-    OrderTransactionSummary summary = getDataById(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, orderId, TRANSACTION_TENANT_HEADER)
+  protected void updateOrderSummary(String summaryId, int encumbranceNumber) throws MalformedURLException {
+    OrderTransactionSummary summary = getDataById(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, summaryId, TRANSACTION_TENANT_HEADER)
       .as(OrderTransactionSummary.class);
     summary.setNumTransactions(encumbranceNumber);
-    putData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, orderId, JsonObject.mapFrom(summary).encodePrettily(), TRANSACTION_TENANT_HEADER)
+    putData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, summaryId, JsonObject.mapFrom(summary).encodePrettily(), TRANSACTION_TENANT_HEADER)
       .then()
         .statusCode(204);
-
   }
 
-  protected void createInvoiceSummary(String invoiceId, int numEncumbrances) throws MalformedURLException {
-    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numEncumbrances).withNumPendingPayments(numEncumbrances);
+  protected String createInvoiceSummary(int numEncumbrances) throws MalformedURLException {
+    String summaryId = UUID.randomUUID().toString();
+    InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(summaryId).withNumPaymentsCredits(numEncumbrances).withNumPendingPayments(numEncumbrances);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
+    return summaryId;
   }
 
   @Test
@@ -285,7 +296,7 @@ public class EncumbrancesTest extends TestBase {
 
     String orderId = UUID.randomUUID().toString();
 
-    createOrderSummary(orderId, 2);
+    String summaryId = createOrderSummary(2);
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
     Transaction encumbrance = jsonTx.mapTo(Transaction.class);
 
@@ -293,14 +304,16 @@ public class EncumbrancesTest extends TestBase {
 
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
-    String encumbranceId = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
+
+    String encumbranceId = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(201).extract().as(Transaction.class).getId();
 
     // encumbrance do not appear in transaction table
     getDataById(TRANSACTION.getEndpointWithId(), encumbranceId, TRANSACTION_TENANT_HEADER).then().statusCode(404);
 
     // create encumbrance again
-    postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(201);
 
     // encumbrance do not appear in transaction table
@@ -321,7 +334,7 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201).extract().as(Budget.class);
 
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId,  2);
+    String summaryId = createOrderSummary(2);
 
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
     Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
@@ -333,8 +346,10 @@ public class EncumbrancesTest extends TestBase {
 
     String transactionSample1 = JsonObject.mapFrom(encumbrance1).encodePrettily();
 
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
+
     // create 1st Encumbrance, expected number is 2
-    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample1, TRANSACTION_TENANT_HEADER).then()
+    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample1, TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -345,7 +360,7 @@ public class EncumbrancesTest extends TestBase {
     String transactionSample2 = JsonObject.mapFrom(encumbrance2).encodePrettily();
 
     // create 2nd Encumbrance
-    String encumbrance2Id = postData(TRANSACTION.getEndpoint(), transactionSample2, TRANSACTION_TENANT_HEADER).then()
+    String encumbrance2Id = postData(TRANSACTION.getEndpoint(), transactionSample2, TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -354,7 +369,7 @@ public class EncumbrancesTest extends TestBase {
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
     getDataById(TRANSACTION.getEndpointWithId(), encumbrance2Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
-    postData(TRANSACTION.getEndpoint(), transactionSample1, TRANSACTION_TENANT_HEADER).then()
+    postData(TRANSACTION.getEndpoint(), transactionSample1, TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(400)
       .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
@@ -373,7 +388,7 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201).extract().as(Budget.class).getId();
 
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 3);
+    String summaryId = createOrderSummary(3);
 
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fundId);
     Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
@@ -392,9 +407,9 @@ public class EncumbrancesTest extends TestBase {
 
     String transactionSample = JsonObject.mapFrom(encumbrance1).encodePrettily();
 
-
+    Map<String, String> createQueryParams = Map.of("transaction_summary_id", summaryId);
     // create 1st Encumbrance, expected number is 2
-    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, createQueryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -405,19 +420,19 @@ public class EncumbrancesTest extends TestBase {
     transactionSample = JsonObject.mapFrom(encumbrance2).encodePrettily();
 
     // create 2nd Encumbrance
-    String encumbrance2Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    String encumbrance2Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, createQueryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
 
     // create 3rd Encumbrance
     transactionSample = JsonObject.mapFrom(encumbrance3).encodePrettily();
-    String encumbrance3Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    String encumbrance3Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, createQueryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
 
-    postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, createQueryParams).then()
       .statusCode(400)
       .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
@@ -436,19 +451,24 @@ public class EncumbrancesTest extends TestBase {
 
     encumbrance2.getEncumbrance().setStatus(Encumbrance.Status.UNRELEASED);
 
-    updateOrderSummary(orderId, 3);
+    updateOrderSummary(summaryId, 3);
+    Map<String, String> updateQueryParams = Map.of("transaction_summary_id", summaryId);
     // First encumbrance update, save to temp table, changes won't get to transaction table
-    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
-    Transaction transaction1FromStorage = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance1).encodePrettily(),
+      TRANSACTION_TENANT_HEADER, updateQueryParams).then().statusCode(204);
+    Transaction transaction1FromStorage = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id,
+      TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
     assertEquals(Encumbrance.Status.UNRELEASED, transaction1FromStorage.getEncumbrance().getStatus());
     assertEquals(transaction1FromStorage.getAmount(), releasedAmount);
 
     // Second encumbrance update, changes won't get to transaction table
-    putData(TRANSACTION.getEndpointWithId(), encumbrance2Id, JsonObject.mapFrom(encumbrance2).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
+    putData(TRANSACTION.getEndpointWithId(), encumbrance2Id, JsonObject.mapFrom(encumbrance2).encodePrettily(),
+      TRANSACTION_TENANT_HEADER, updateQueryParams).then().statusCode(204);
 
     // Third encumbrance update with pending status, changes for three encumbrances will get to transaction table
     encumbrance3.getEncumbrance().setStatus(PENDING);
-    putData(TRANSACTION.getEndpointWithId(), encumbrance3Id, JsonObject.mapFrom(encumbrance3).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
+    putData(TRANSACTION.getEndpointWithId(), encumbrance3Id, JsonObject.mapFrom(encumbrance3).encodePrettily(),
+      TRANSACTION_TENANT_HEADER, updateQueryParams).then().statusCode(204);
 
 
     // Check all-or-nothing results
@@ -502,7 +522,7 @@ public class EncumbrancesTest extends TestBase {
 
     String orderId = UUID.randomUUID().toString();
     String invoiceId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
+    String summaryId = createOrderSummary(1);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
@@ -520,7 +540,8 @@ public class EncumbrancesTest extends TestBase {
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
     // create 1st Encumbrance, expected number is 1
-    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> createQueryParams = Map.of("transaction_summary_id", summaryId);
+    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, createQueryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -529,12 +550,14 @@ public class EncumbrancesTest extends TestBase {
     encumbrance = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
 
-    updateOrderSummary(orderId, 1);
+    updateOrderSummary(summaryId, 1);
 
     encumbrance.getEncumbrance().setAmountAwaitingPayment(5d);
     encumbrance.setAmount(2d);
 
-    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
+    Map<String, String> updateQueryParams = Map.of("transaction_summary_id", summaryId);
+    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance).encodePrettily(),
+      TRANSACTION_TENANT_HEADER, updateQueryParams).then().statusCode(204);
     Transaction transaction1FromStorage = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
     assertEquals(10d, transaction1FromStorage.getEncumbrance().getAmountAwaitingPayment());
     assertEquals(0d, transaction1FromStorage.getAmount());
@@ -557,7 +580,7 @@ public class EncumbrancesTest extends TestBase {
 
     String orderId = UUID.randomUUID().toString();
     String invoiceId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
+    String summaryId = createOrderSummary(1);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
@@ -577,7 +600,8 @@ public class EncumbrancesTest extends TestBase {
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
     // create 1st encumbrance, expected number is 1
-    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER)
+    Map<String, String> createQueryParams = Map.of("transaction_summary_id", summaryId);
+    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, createQueryParams)
       .then().statusCode(201).extract().as(Transaction.class).getId();
 
     // encumbrance appears in transaction table
@@ -589,9 +613,10 @@ public class EncumbrancesTest extends TestBase {
 
     // unrelease the encumbrance
     encumbrance.getEncumbrance().setStatus(Encumbrance.Status.UNRELEASED);
-    updateOrderSummary(orderId, 1);
+    updateOrderSummary(summaryId, 1);
     String encumbranceSerialized = JsonObject.mapFrom(encumbrance).encodePrettily();
-    putData(transactionById, encumbrance1Id, encumbranceSerialized, TRANSACTION_TENANT_HEADER)
+    Map<String, String> updateQueryParams = Map.of("transaction_summary_id", summaryId);
+    putData(transactionById, encumbrance1Id, encumbranceSerialized, TRANSACTION_TENANT_HEADER, updateQueryParams)
       .then().statusCode(204);
     Transaction transaction1FromStorage = getDataById(transactionById, encumbrance1Id, TRANSACTION_TENANT_HEADER)
       .then().statusCode(200).extract().as(Transaction.class);
@@ -621,7 +646,7 @@ public class EncumbrancesTest extends TestBase {
 
     String orderId = UUID.randomUUID().toString();
     String invoiceId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
+    String summaryId = createOrderSummary(1);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
@@ -640,7 +665,8 @@ public class EncumbrancesTest extends TestBase {
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
     // create 1st Encumbrance, expected number is 1
-    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> createQueryParams = Map.of("transaction_summary_id", summaryId);
+    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, createQueryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -650,11 +676,13 @@ public class EncumbrancesTest extends TestBase {
     encumbrance = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
 
-    updateOrderSummary(orderId, 1);
+    updateOrderSummary(summaryId, 1);
 
     encumbrance.setAmount(30d);
 
-    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
+    Map<String, String> updateQueryParams = Map.of("transaction_summary_id", summaryId);
+    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance).encodePrettily(),
+      TRANSACTION_TENANT_HEADER, updateQueryParams).then().statusCode(204);
 
     Budget fromBudgetAfterUpdate = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
 
@@ -668,7 +696,7 @@ public class EncumbrancesTest extends TestBase {
   void testUpdateEncumbranceNotFound() throws MalformedURLException {
 
     String invoiceId = UUID.randomUUID().toString();
-    createInvoiceSummary(invoiceId, 2);
+    String summaryId = createInvoiceSummary(2);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
@@ -676,7 +704,9 @@ public class EncumbrancesTest extends TestBase {
     encumbrance.setSourceInvoiceId(invoiceId);
 
     // Try to update non-existent transaction
-    putData(TRANSACTION.getEndpointWithId(), UUID.randomUUID().toString(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(404);
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
+    putData(TRANSACTION.getEndpointWithId(), UUID.randomUUID().toString(), JsonObject.mapFrom(encumbrance).encodePrettily(),
+      TRANSACTION_TENANT_HEADER, queryParams).then().statusCode(404);
 
   }
 
@@ -693,7 +723,7 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201).extract().as(Budget.class).getId();
 
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
+    String summaryId = createOrderSummary(1);
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
     jsonTx.remove("id");
@@ -709,7 +739,8 @@ public class EncumbrancesTest extends TestBase {
 
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
-    String encumbranceId = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> queryParams = Map.of("transaction_summary_id", summaryId);
+    String encumbranceId = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, queryParams).then()
       .statusCode(201).extract().as(Transaction.class).getId();
 
     // encumbrance do not appear in transaction table
@@ -743,7 +774,7 @@ public class EncumbrancesTest extends TestBase {
       .statusCode(201).extract().as(Budget.class).getId();
 
     String orderId = UUID.randomUUID().toString();
-    createOrderSummary(orderId, 1);
+    String summaryId = createOrderSummary(1);
 
     JsonObject jsonTx = prepareEncumbrance(fiscalYearId, fund1Id);
     Transaction encumbrance1 = jsonTx.mapTo(Transaction.class);
@@ -760,7 +791,8 @@ public class EncumbrancesTest extends TestBase {
     String transactionSample = JsonObject.mapFrom(encumbrance1).encodePrettily();
 
     // create 1st Encumbrance, expected number is 1
-    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
+    Map<String, String> createQueryParams = Map.of("transaction_summary_id", summaryId);
+    String encumbrance1Id = postData(TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER, createQueryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();
@@ -775,15 +807,18 @@ public class EncumbrancesTest extends TestBase {
 
     encumbrance1.getEncumbrance().setStatus(Encumbrance.Status.RELEASED);
 
-    updateOrderSummary(orderId, 2);
+    updateOrderSummary(summaryId, 2);
+    Map<String, String> updateQueryParams = Map.of("transaction_summary_id", summaryId);
     // First encumbrance update, save to temp table, changes won't get to transaction table
-    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance1).encodePrettily(), TRANSACTION_TENANT_HEADER).then().statusCode(204);
+    putData(TRANSACTION.getEndpointWithId(), encumbrance1Id, JsonObject.mapFrom(encumbrance1).encodePrettily(),
+      TRANSACTION_TENANT_HEADER, updateQueryParams).then().statusCode(204);
     Transaction transaction1FromStorage = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
     assertEquals(Encumbrance.Status.UNRELEASED, transaction1FromStorage.getEncumbrance().getStatus());
     assertEquals(transaction1FromStorage.getAmount(), releasedAmount);
 
     // Second encumbrance creation, changes won't get to transaction table
-    String encumbrance2Id = postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance2).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+    String encumbrance2Id = postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance2).encodePrettily(),
+        TRANSACTION_TENANT_HEADER, updateQueryParams).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class).getId();

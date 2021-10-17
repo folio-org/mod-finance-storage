@@ -6,6 +6,6 @@ import org.folio.rest.persist.DBClient;
 
 public interface TransactionRestrictionService {
 
-  Void handleValidationError(Transaction transaction);
+  Void handleValidationError(Transaction transaction, String transactionSummaryId);
   Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, DBClient dbClient);
 }

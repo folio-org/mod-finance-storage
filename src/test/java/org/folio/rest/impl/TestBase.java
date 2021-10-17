@@ -10,6 +10,7 @@ import static org.junit.Assert.assertThat;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -134,6 +135,17 @@ public abstract class TestBase {
       .post(storageUrl(endpoint));
   }
 
+  Response postData(String endpoint, String input, Header header, Map<String, String> queryParams) throws MalformedURLException {
+    return given()
+      .header(header)
+      .accept(ContentType.JSON)
+      .contentType(ContentType.JSON)
+      .queryParams(queryParams)
+      .body(input)
+      .log().all()
+      .post(storageUrl(endpoint));
+  }
+
   Response getDataById(String endpoint, String id) throws MalformedURLException {
     return getDataById(endpoint, id, TENANT_HEADER);
   }
@@ -157,6 +169,16 @@ public abstract class TestBase {
 
   Response putData(String endpoint, String id, String input) throws MalformedURLException {
     return putData(endpoint, id, input, TENANT_HEADER);
+  }
+
+  Response putData(String endpoint, String id, String input, Header tenant, Map<String, String> queryParams) throws MalformedURLException {
+    return given()
+      .pathParam("id", id)
+      .header(tenant)
+      .contentType(ContentType.JSON)
+      .queryParams(queryParams)
+      .body(input)
+      .put(storageUrl(endpoint));
   }
 
   void deleteDataSuccess(String endpoint, String id) throws MalformedURLException {

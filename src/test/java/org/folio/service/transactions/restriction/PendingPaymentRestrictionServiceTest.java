@@ -51,7 +51,7 @@ public class PendingPaymentRestrictionServiceTest {
   void TestHandleValidationErrorExceptionThrown() {
     HttpException thrown = assertThrows(
       HttpException.class,
-      () -> restrictionService.handleValidationError(new Transaction()),
+      () -> restrictionService.handleValidationError(new Transaction(), UUID.randomUUID().toString()),
       "Expected handleValidationError() to throw, but it didn't"
     );
 
@@ -67,7 +67,7 @@ public class PendingPaymentRestrictionServiceTest {
 
   @Test
   void testHandleValidationErrorValidTransaction() {
-    assertNull(restrictionService.handleValidationError(new Transaction().withFromFundId(fundId)));
+    assertNull(restrictionService.handleValidationError(new Transaction().withFromFundId(fundId), UUID.randomUUID().toString()));
   }
 
   @Test
