@@ -97,7 +97,8 @@ public class BudgetService {
     Promise<Void> promise = Promise.promise();
 
     String sql ="SELECT jsonb FROM "+ getFullTableName(client.getTenantId(), TRANSACTIONS_TABLE)
-      + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() +"' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "'"
+      + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() + "' AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId()
+      + "' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "'"
       + " AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId() + "') AND ((jsonb->>'transactionType')::text<>'Allocation'"
       + " OR ((jsonb->>'transactionType')::text='Allocation' AND (jsonb->'toFundId') is not null AND (jsonb->'fromFundId') is not null))";
 
