@@ -1,3 +1,14 @@
+## 8.1.0 - Unreleased
+
+## 8.0.1 - Released
+Fixed deletion of planned budgets
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.0.0...v8.0.1)
+
+### Bug Fixes
+* [MODFISTO-270](https://issues.folio.org/browse/MODFISTO-270) DELETE Planned budget fails
+
+
 ## 8.0.0 - Released
 The primary focus of this release was to update Finance schema for combination of Fund code and Expense class,
 add validation for special character to Fund Code and Expense class code and prepare migration script
