@@ -67,11 +67,20 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
                         WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'fiscalYearId' AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
                         GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
 
-		ELSE
+		ELSEIF
+		  encumbrance_rollover->>'basedOn'='Remaining'
+		THEN
 			SELECT sum((jsonb->>'amount')::decimal) INTO total_amount
                         	        FROM ${myuniversity}_${mymodule}.transaction
                                     WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'fiscalYearId' AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
                                     GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
+
+    ELSE
+      SELECT sum((jsonb->'encumbrance'->>'initialAmountEncumbered')::decimal) INTO total_amount
+                      FROM ${myuniversity}_${mymodule}.transaction
+                        WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'fiscalYearId' AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
+                        GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
+
 		END IF;
 		total_amount:= total_amount + total_amount * (encumbrance_rollover->>'increaseBy')::decimal/100;
 		amount := total_amount * distribution_value;
