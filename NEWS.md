@@ -1,5 +1,13 @@
 ## 8.1.0 - Unreleased
 
+## 8.0.2 - Released
+This bugfix release focused on fixing Log4j vulnerability
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.0.1...v8.0.2)
+
+### Bug Fixes
+* [MODFISTO-275](https://issues.folio.org/browse/MODFISTO-275) Kiwi R3 2021 - Log4j vulnerability verification and correction
+
 ## 8.0.1 - Released
 Fixed deletion of planned budgets
 
