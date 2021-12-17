@@ -1,5 +1,13 @@
 ## 7.2.0 - Unreleased
 
+## 7.1.2 - Released
+The focus of this release was to fix Log4j vulnerability
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v7.1.1...v7.1.2)
+
+### Bug Fixes
+* [MODFISTO-276](https://issues.folio.org/browse/MODFISTO-276) - Juniper R2 2021 - Log4j vulnerability verification and correction
+
 ## 7.1.1 - Released
 The primary focus of this release was to fix a rollover issue when encumbrance amount is zero.
 
