@@ -28,7 +28,7 @@ public class GroupFundFYTest extends TestBase {
 
     // search by field from "FY"
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fiscalYear.code==NonExistent", 0, GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fiscalYear.code==FY2021", GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fiscalYear.code==FY2022", GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
 
     // search by field from "fund"
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fund.code==NonExistent", 0, GROUP_FUND_FY_TENANT_HEADER);
@@ -43,8 +43,8 @@ public class GroupFundFYTest extends TestBase {
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=ledger.name==One-time", 11, GROUP_FUND_FY_TENANT_HEADER);
 
     // search by fields from different tables
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==History and fiscalYear.code==FY2021", GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fiscalYear.periodEnd < 2022-01-01 and fund.fundStatus==Inactive and ledger.name==One-time", 1, GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==History and fiscalYear.code==FY2022", GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fiscalYear.periodEnd < 2023-01-01 and fund.fundStatus==Inactive and ledger.name==One-time", 1, GROUP_FUND_FY_TENANT_HEADER);
     verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fundType.name==Approvals and ledger.name==One-time", 1, GROUP_FUND_FY_TENANT_HEADER);
     // search with invalid cql query
     testInvalidCQLQuery(GROUP_FUND_FY.getEndpoint() + "?query=invalid-query");

@@ -64,7 +64,7 @@ public class BudgetTest extends TestBase {
     // search with fields from "ledgers"
     verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=ledger.name==Ongoing", 7, BUDGET_TENANT_HEADER);
     // complex query
-    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Active AND ledger.name==Ongoing AND fiscalYear.code==FY2021", 4, BUDGET_TENANT_HEADER);
+    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Active AND ledger.name==Ongoing AND fiscalYear.code==FY2022", 4, BUDGET_TENANT_HEADER);
 
     // search with invalid cql query
     testInvalidCQLQuery(BUDGET_ENDPOINT + "?query=invalid-query");

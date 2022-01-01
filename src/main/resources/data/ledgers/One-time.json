@@ -3,7 +3,7 @@
   "name": "One-time",
   "code": "ONETIME",
   "description": "Funds used for any non-recurring purchases",
-  "fiscalYearOneId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
+  "fiscalYearOneId": "a06a95ef-5a96-4839-a2d9-ac484a25c261",
   "ledgerStatus": "Active",
   "currency": "USD",
   "restrictEncumbrance" : false,
