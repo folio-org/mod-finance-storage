@@ -15,6 +15,7 @@ import static org.folio.utils.MoneyUtils.sumMoney;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -250,18 +251,22 @@ public class PendingPaymentService implements TransactionManagingStrategy {
   private void applyPendingPayments(List<Transaction> pendingPayments, Map<String, Budget> fundIdBudgetMap) {
     CurrencyUnit currency = Monetary.getCurrency(pendingPayments.get(0).getCurrency());
 
-     pendingPayments.forEach(transaction -> {
-       Budget budget = fundIdBudgetMap.get(transaction.getFromFundId());
-       MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
-       MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);
-       MonetaryAmount awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
-       double newEncumbered = MonetaryFunctions.max().apply(encumbered.subtract(amount), Money.zero(currency)).getNumber().doubleValue();
-       double newAwaitingPayment = awaitingPayment.add(amount).getNumber().doubleValue();
-       budget.setEncumbered(newEncumbered);
-       budget.setAwaitingPayment(newAwaitingPayment);
-       budgetService.updateBudgetMetadata(budget, transaction);
-       budgetService.clearReadOnlyFields(budget);
-     });
+    // sort pending payments by amount to apply negative amounts first
+    List<Transaction> sortedPendingPayments = pendingPayments.stream()
+      .sorted(Comparator.comparing(Transaction::getAmount))
+      .collect(toList());
+    sortedPendingPayments.forEach(transaction -> {
+      Budget budget = fundIdBudgetMap.get(transaction.getFromFundId());
+      MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
+      MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);
+      MonetaryAmount awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
+      double newEncumbered = MonetaryFunctions.max().apply(encumbered.subtract(amount), Money.zero(currency)).getNumber().doubleValue();
+      double newAwaitingPayment = awaitingPayment.add(amount).getNumber().doubleValue();
+      budget.setEncumbered(newEncumbered);
+      budget.setAwaitingPayment(newAwaitingPayment);
+      budgetService.updateBudgetMetadata(budget, transaction);
+      budgetService.clearReadOnlyFields(budget);
+    });
   }
 
   private void applyEncumbrances(List<Transaction> releasedEncumbrances, Map<String, Budget> fundIdBudgetMap) {
