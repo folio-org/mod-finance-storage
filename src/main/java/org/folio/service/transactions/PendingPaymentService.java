@@ -33,6 +33,7 @@ import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.transactions.cancel.CancelTransactionService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
@@ -46,28 +47,34 @@ public class PendingPaymentService implements TransactionManagingStrategy {
     + "ON (budgets.fundId = transactions.fromFundId  AND transactions.fiscalYearId = budgets.fiscalYearId) "
     + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
 
-  private final AllOrNothingTransactionService allOrNothingPendingPaymentService;
+  private final AllOrNothingTransactionService allOrNothingTransactionService;
   private final TransactionDAO transactionsDAO;
   private final BudgetService budgetService;
+  private final CancelTransactionService cancelTransactionService;
 
-  public PendingPaymentService(AllOrNothingTransactionService allOrNothingPendingPaymentService,
+  public PendingPaymentService(AllOrNothingTransactionService allOrNothingTransactionService,
                                TransactionDAO transactionsDAO,
-                               BudgetService budgetService) {
-    this.allOrNothingPendingPaymentService = allOrNothingPendingPaymentService;
+                               BudgetService budgetService,
+                               CancelTransactionService cancelTransactionService) {
+    this.allOrNothingTransactionService = allOrNothingTransactionService;
     this.transactionsDAO = transactionsDAO;
     this.budgetService = budgetService;
+    this.cancelTransactionService = cancelTransactionService;
   }
 
   @Override
   public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
     DBClient dbClient = new DBClient(requestContext);
-    return allOrNothingPendingPaymentService.createTransaction(transaction, dbClient, this::createTransactions);
+    return allOrNothingTransactionService.createTransaction(transaction, dbClient, this::createTransactions);
   }
 
   @Override
   public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
     DBClient dbClient = new DBClient(requestContext);
-    return allOrNothingPendingPaymentService.updateTransaction(transaction, dbClient, this::updateTransactions);
+
+    return allOrNothingTransactionService.updateTransaction(transaction, dbClient, cancelTransactionService::cancelTransactions)
+      .compose(v -> allOrNothingTransactionService.updateTransaction(transaction, dbClient, this::updateTransactions));
+
   }
 
   @Override
@@ -82,9 +89,24 @@ public class PendingPaymentService implements TransactionManagingStrategy {
       .mapEmpty();
   }
 
+  private List<Transaction> getUpdatedTransactions(List<Transaction> tmpTransactions, List<Transaction> transactionsFromDB) {
+    Map<String, Boolean> idIsCancelledMap = tmpTransactions.stream()
+      .filter(transaction -> Objects.nonNull(transaction.getInvoiceCancelled()))
+      .collect(toMap(Transaction::getId, Transaction::getInvoiceCancelled));
+
+    if (idIsCancelledMap.isEmpty()) {
+      return transactionsFromDB;
+    }
+    return transactionsFromDB.stream()
+      .filter(transaction -> Objects.nonNull(transaction.getInvoiceCancelled()))
+      .filter(transaction -> !(!transaction.getInvoiceCancelled() && idIsCancelledMap.get(transaction.getId())))
+      .collect(Collectors.toList());
+  }
+
   public Future<Void> updateTransactions(List<Transaction> tmpTransactions, DBClient client) {
 
     return getTransactions(tmpTransactions, client)
+      .map(transactionsFromDB -> getUpdatedTransactions(tmpTransactions, transactionsFromDB))
       .map(transactionsFromDB -> createDifferenceTransactions(tmpTransactions, transactionsFromDB))
       .compose(transactions -> processPendingPayments(transactions, client))
       .compose(transactions -> transactionsDAO.updatePermanentTransactions(tmpTransactions, client));

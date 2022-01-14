@@ -11,6 +11,7 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
+import org.folio.service.transactions.cancel.CancelTransactionService;
 import org.folio.utils.MoneyUtils;
 import org.folio.service.budget.BudgetService;
 
@@ -51,22 +52,33 @@ public class PaymentCreditService extends AbstractTransactionService implements 
   Predicate<Transaction> isPaymentTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.PAYMENT);
   Predicate<Transaction> isCreditTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.CREDIT);
 
-  private final AllOrNothingTransactionService allOrNothingPaymentCreditService;
+  private final AllOrNothingTransactionService allOrNothingTransactionService;
   private final TransactionDAO transactionsDAO;
   private final BudgetService budgetService;
+  private final CancelTransactionService cancelTransactionService;
 
-  public PaymentCreditService(AllOrNothingTransactionService allOrNothingPaymentCreditService,
+  public PaymentCreditService(AllOrNothingTransactionService allOrNothingTransactionService,
                               TransactionDAO transactionsDAO,
-                              BudgetService budgetService) {
-    this.allOrNothingPaymentCreditService = allOrNothingPaymentCreditService;
+                              BudgetService budgetService,
+                              CancelTransactionService cancelTransactionService) {
+    this.allOrNothingTransactionService = allOrNothingTransactionService;
     this.transactionsDAO = transactionsDAO;
     this.budgetService = budgetService;
+    this.cancelTransactionService = cancelTransactionService;
   }
 
   @Override
   public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
     DBClient client = new DBClient(requestContext);
-    return allOrNothingPaymentCreditService.createTransaction(transaction, client, this::createTransactions);
+    return allOrNothingTransactionService.createTransaction(transaction, client, this::createTransactions);
+  }
+
+  @Override
+  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
+    DBClient dbClient = new DBClient(requestContext);
+
+    return allOrNothingTransactionService.updateTransaction(transaction, dbClient, cancelTransactionService::cancelTransactions);
+    //.compose(v -> allOrNothingTransactionService.updateTransaction(transaction, dbClient, super::updateTransactions));
   }
 
   /**
