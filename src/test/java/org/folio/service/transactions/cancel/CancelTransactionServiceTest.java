@@ -1,36 +1,37 @@
 package org.folio.service.transactions.cancel;
 
-import org.folio.dao.transactions.EncumbranceDAO;
+import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-class CancelPaymentCreditServiceTest {
+class CancelTransactionServiceTest {
   private static final String TENANT_ID = "tenant";
 
   @InjectMocks
-  private CancelPaymentCreditService cancelPaymentCreditService;
-
+  CancelTransactionService cancelTransactionService;
   @Mock
-  private BudgetService budgetService;
+  TransactionDAO transactionsDAO;
   @Mock
-  private EncumbranceDAO transactionsDAO;
+  BudgetService budgetService;
   @Mock
   private DBClient client;
 
   @BeforeEach
-  public void initMocks(){
+  public void initMocks() {
     MockitoAnnotations.openMocks(this);
     when(client.getTenantId()).thenReturn(TENANT_ID);
   }
 
-  @Test void cancelTransactions() {
+  @Test
+  @DisplayName("Transactions should be closed")
+  void transactionsClosed() {
   }
 }

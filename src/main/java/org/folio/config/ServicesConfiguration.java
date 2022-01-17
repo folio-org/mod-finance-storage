@@ -36,8 +36,6 @@ import org.folio.service.transactions.TransactionManagingStrategy;
 import org.folio.service.transactions.TransactionManagingStrategyFactory;
 import org.folio.service.transactions.TransactionService;
 import org.folio.service.transactions.TransferService;
-import org.folio.service.transactions.cancel.CancelPaymentCreditService;
-import org.folio.service.transactions.cancel.CancelPendingPaymentService;
 import org.folio.service.transactions.cancel.CancelTransactionService;
 import org.folio.service.transactions.restriction.EncumbranceRestrictionService;
 import org.folio.service.transactions.restriction.PaymentCreditRestrictionService;
@@ -133,7 +131,7 @@ public class ServicesConfiguration {
   @Bean
   public CancelTransactionService cancelPendingPaymentService(TransactionDAO pendingPaymentDAO,
                                                            BudgetService budgetService) {
-    return new CancelPendingPaymentService(pendingPaymentDAO, budgetService);
+    return new CancelTransactionService(pendingPaymentDAO, budgetService);
   }
 
   @Bean
@@ -148,7 +146,7 @@ public class ServicesConfiguration {
   @Bean
   public CancelTransactionService cancelPaymentCreditService(TransactionDAO paymentCreditDAO,
                                                              BudgetService budgetService) {
-    return new CancelPaymentCreditService(paymentCreditDAO, budgetService);
+    return new CancelTransactionService(paymentCreditDAO, budgetService);
   }
 
   @Bean

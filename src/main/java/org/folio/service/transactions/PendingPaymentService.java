@@ -74,7 +74,6 @@ public class PendingPaymentService implements TransactionManagingStrategy {
 
     return allOrNothingTransactionService.updateTransaction(transaction, dbClient, cancelTransactionService::cancelTransactions)
       .compose(v -> allOrNothingTransactionService.updateTransaction(transaction, dbClient, this::updateTransactions));
-
   }
 
   @Override
