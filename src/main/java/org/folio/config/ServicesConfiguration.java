@@ -133,6 +133,7 @@ public class ServicesConfiguration {
   @Bean
   public CancelTransactionService cancelPendingPaymentService(TransactionDAO pendingPaymentDAO,
                                                            BudgetService budgetService) {
+
     return new CancelPendingPaymentService(pendingPaymentDAO, budgetService);
   }
 
