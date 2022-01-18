@@ -23,10 +23,9 @@ import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
-public class CancelTransactionService {
-
+public abstract class CancelTransactionService {
   private final TransactionDAO transactionsDAO;
-  private final BudgetService budgetService;
+  protected final BudgetService budgetService;
 
   public CancelTransactionService(TransactionDAO transactionsDAO, BudgetService budgetService) {
     this.transactionsDAO = transactionsDAO;
@@ -85,20 +84,7 @@ public class CancelTransactionService {
       .collect(toMap(identity(), budget ->  groupedTransactions.getOrDefault(budget.getFundId(), Collections.emptyList())));
   }
 
-  private Budget cancelBudget(Map.Entry<Budget, List<Transaction>> entry) {
-    Budget budget = JsonObject.mapFrom(entry.getKey()).mapTo(Budget.class);
-    if (isNotEmpty(entry.getValue())) {
-      CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
-      entry.getValue()
-        .forEach(tmpTransaction -> {
-          double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getAmount(), currency);
-          budget.setAwaitingPayment(newAwaitingPayment);
-          budgetService.updateBudgetMetadata(budget, tmpTransaction);
-          budgetService.clearReadOnlyFields(budget);
-        });
-    }
-    return budget;
-  }
+  abstract Budget cancelBudget(Map.Entry<Budget, List<Transaction>> entry);
 
   private String getSummaryId(Transaction transaction) {
     return transaction.getSourceInvoiceId();
