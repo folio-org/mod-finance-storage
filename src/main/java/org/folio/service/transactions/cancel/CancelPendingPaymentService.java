@@ -5,6 +5,7 @@ import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.service.budget.BudgetService;
+import org.folio.utils.MoneyUtils;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -12,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static org.folio.utils.MoneyUtils.sumMoney;
 
 public class CancelPendingPaymentService extends CancelTransactionService{
   public CancelPendingPaymentService(TransactionDAO transactionsDAO, BudgetService budgetService) {
@@ -25,10 +25,13 @@ public class CancelPendingPaymentService extends CancelTransactionService{
       CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
       entry.getValue()
         .forEach(tmpTransaction -> {
-          double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getAmount(), currency);
-          budget.setAwaitingPayment(newAwaitingPayment);
-          budgetService.updateBudgetMetadata(budget, tmpTransaction);
-          budgetService.clearReadOnlyFields(budget);
+          double newAwaytingPayment = MoneyUtils.subtractMoney(budget.getAwaitingPayment(),
+            tmpTransaction.getAmount(), currency);
+          double newVoidedAmount = tmpTransaction.getAmount();
+
+          budget.setAwaitingPayment(newAwaytingPayment);
+          tmpTransaction.setVoidedAmount(newVoidedAmount);
+          tmpTransaction.setAmount(0.0);
         });
     }
     return budget;

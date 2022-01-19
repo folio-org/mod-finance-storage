@@ -16,10 +16,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class CancelPendingPaymentServiceTest {
+class CancelPaymentCreditServiceTest {
 
   @InjectMocks
-  private CancelPendingPaymentService cancelPendingPaymentService;
+  private CancelPaymentCreditService cancelPaymentCreditService;
 
   @Mock
   private BudgetService budgetService;
@@ -43,7 +43,7 @@ class CancelPendingPaymentServiceTest {
 
     Map.Entry<Budget, List<Transaction>> entry = Map.entry(budget, transactionList);
 
-    Budget resultBudget = cancelPendingPaymentService.cancelBudget(entry);
+    Budget resultBudget = cancelPaymentCreditService.cancelBudget(entry);
 
     assertEquals(transaction.getAmount(), 0);
     assertEquals(transaction.getVoidedAmount(), 1000);

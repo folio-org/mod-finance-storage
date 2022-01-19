@@ -5,6 +5,7 @@ import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.service.budget.BudgetService;
+import org.folio.utils.MoneyUtils;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -24,12 +25,16 @@ public class CancelPaymentCreditService extends CancelTransactionService{
     Budget budget = JsonObject.mapFrom(entry.getKey()).mapTo(Budget.class);
     if (isNotEmpty(entry.getValue())) {
       CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
+
       entry.getValue()
         .forEach(tmpTransaction -> {
-          double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getAmount(), currency);
-          budget.setAwaitingPayment(newAwaitingPayment);
-          budgetService.updateBudgetMetadata(budget, tmpTransaction);
-          budgetService.clearReadOnlyFields(budget);
+          double newExpenditures = MoneyUtils.subtractMoney(budget.getExpenditures(),
+            tmpTransaction.getAmount(), currency);
+          double newVoidedAmount = tmpTransaction.getAmount();
+
+          budget.setExpenditures(newExpenditures);
+          tmpTransaction.setVoidedAmount(newVoidedAmount);
+          tmpTransaction.setAmount(0.0);
         });
     }
     return budget;
