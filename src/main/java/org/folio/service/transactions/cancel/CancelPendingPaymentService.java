@@ -6,29 +6,29 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.service.budget.BudgetService;
 
+import javax.money.CurrencyUnit;
+import javax.money.Monetary;
 import java.util.List;
 import java.util.Map;
 
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+import static org.folio.utils.MoneyUtils.sumMoney;
 
 public class CancelPendingPaymentService extends CancelTransactionService{
   public CancelPendingPaymentService(TransactionDAO transactionsDAO, BudgetService budgetService) {
     super(transactionsDAO, budgetService);
   }
 
-  @Override
-  Budget cancelBudget(Map.Entry<Budget, List<Transaction>> entry) {
+  @Override Budget cancelBudget(Map.Entry<Budget, List<Transaction>> entry) {
     Budget budget = JsonObject.mapFrom(entry.getKey()).mapTo(Budget.class);
     if (isNotEmpty(entry.getValue())) {
+      CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
       entry.getValue()
         .forEach(tmpTransaction -> {
-          double newExpenditures = budget.getExpenditures() - tmpTransaction.getAmount();
-          double newVoidedAmount = tmpTransaction.getAmount();
-
-          budget.setExpenditures(newExpenditures);
-          tmpTransaction.setVoidedAmount(newVoidedAmount);
-          tmpTransaction.setAmount(0.0);
+          double newAwaitingPayment = sumMoney(budget.getAwaitingPayment(), tmpTransaction.getAmount(), currency);
+          budget.setAwaitingPayment(newAwaitingPayment);
           budgetService.updateBudgetMetadata(budget, tmpTransaction);
+          budgetService.clearReadOnlyFields(budget);
         });
     }
     return budget;
