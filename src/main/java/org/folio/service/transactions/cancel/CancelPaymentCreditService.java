@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
-import static org.folio.utils.MoneyUtils.sumMoney;
 
-public class CancelPaymentCreditService extends CancelTransactionService{
+public class CancelPaymentCreditService extends CancelTransactionService {
+
   public CancelPaymentCreditService(TransactionDAO transactionsDAO, BudgetService budgetService) {
     super(transactionsDAO, budgetService);
   }

@@ -36,12 +36,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class CancelTransactionServiceTest {
-  private static final String TENANT_ID = "tenant";
+public class CancelTransactionServiceTest {
 
   @InjectMocks
   private PendingPaymentService pendingPaymentService;
 
+  CancelTransactionService cancelPaymentCreditService;
   CancelTransactionService cancelPendingPaymentService;
 
   @Mock
@@ -51,12 +51,13 @@ class CancelTransactionServiceTest {
   @Mock
   private DBClient client;
 
+  private static final String TENANT_ID = "tenant";
   private final String summaryId = UUID.randomUUID().toString();
-  private final String encumbranceId = UUID.randomUUID().toString();
   private final String fundId = UUID.randomUUID().toString();
   private final String fiscalYearId = UUID.randomUUID().toString();
   private final String currency = "USD";
   private Transaction transaction;
+  private Transaction transactionFromDB;
   private Budget budget;
 
   @BeforeEach
@@ -64,15 +65,28 @@ class CancelTransactionServiceTest {
     MockitoAnnotations.openMocks(this);
     when(client.getTenantId()).thenReturn(TENANT_ID);
     cancelPendingPaymentService = new CancelPendingPaymentService(transactionsDAO, budgetService);
+    cancelPaymentCreditService = new CancelPaymentCreditService(transactionsDAO, budgetService);
   }
 
   @BeforeEach
   public void prepareData(){
     transaction = new Transaction()
+      .withId(UUID.randomUUID().toString())
       .withSourceInvoiceId(summaryId)
       .withFromFundId(fundId)
       .withFiscalYearId(fiscalYearId)
       .withCurrency(currency)
+      .withAmount(10.0)
+      .withTransactionType(Transaction.TransactionType.PENDING_PAYMENT);
+
+    transactionFromDB = new Transaction()
+      .withId(transaction.getId())
+      .withSourceInvoiceId(summaryId)
+      .withFromFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withCurrency(currency)
+      .withAmount(10.0)
+      .withInvoiceCancelled(false)
       .withTransactionType(Transaction.TransactionType.PENDING_PAYMENT);
 
     budget = new Budget()
@@ -86,16 +100,11 @@ class CancelTransactionServiceTest {
   }
 
   @Test
-  @DisplayName("Transactions should be closed")
-  void transactionsClosed() {
-  }
-
-  @Test
   void cancelPendingPaymentTransaction() {
     BigDecimal amount = BigDecimal.valueOf(9.1);
     transaction.withAmount(amount.doubleValue());
 
-    List<Transaction> transactions = Collections.singletonList(transaction);
+    List<Transaction> transactions = List.of(transaction);
 
     BigDecimal awaitingPayment = BigDecimal.valueOf(100d);
     BigDecimal available = BigDecimal.valueOf(90d);
@@ -113,6 +122,8 @@ class CancelTransactionServiceTest {
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(List.of(transactionFromDB)));
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     spyService.createTransactions(transactions, client)
       .onComplete(res -> assertTrue(res.succeeded()));
@@ -127,6 +138,46 @@ class CancelTransactionServiceTest {
     verify(transactionsDAO).getTransactions(listArgumentCaptor.capture(), eq(client));
     final List<String> idsArgument = listArgumentCaptor.getValue();
     assertThat(idsArgument, contains(transaction.getId()));
+  }
 
+  @Test
+  void cancelPaymentCreditTransaction() {
+    BigDecimal amount = BigDecimal.valueOf(9.1);
+    transaction.withAmount(amount.doubleValue());
+
+    List<Transaction> transactions = List.of(transaction);
+
+    BigDecimal awaitingPayment = BigDecimal.valueOf(100d);
+    BigDecimal available = BigDecimal.valueOf(90d);
+    BigDecimal encumbered = BigDecimal.valueOf(10d);
+    BigDecimal unavailable = BigDecimal.valueOf(10d);
+    budget.withAwaitingPayment(awaitingPayment.doubleValue())
+      .withAvailable(available.doubleValue())
+      .withEncumbered(encumbered.doubleValue())
+      .withUnavailable(unavailable.doubleValue());
+    List<Budget> budgets = Collections.singletonList(budget);
+
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+
+    PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
+
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(List.of(transactionFromDB)));
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+
+    spyService.createTransactions(transactions, client)
+      .onComplete(res -> assertTrue(res.succeeded()));
+
+    transaction.withInvoiceCancelled(true);
+
+    CancelTransactionService cancelTransactionService = Mockito.spy(cancelPaymentCreditService);
+    Future<Void> cancelResult = cancelTransactionService.cancelTransactions(transactions, client);
+    assertTrue(cancelResult.succeeded());
+
+    final ArgumentCaptor<List<String>> listArgumentCaptor = ArgumentCaptor.forClass(List.class);
+    verify(transactionsDAO).getTransactions(listArgumentCaptor.capture(), eq(client));
+    final List<String> idsArgument = listArgumentCaptor.getValue();
+    assertThat(idsArgument, contains(transaction.getId()));
   }
 }

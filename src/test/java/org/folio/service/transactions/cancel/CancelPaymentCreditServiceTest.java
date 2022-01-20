@@ -16,13 +16,15 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class CancelPaymentCreditServiceTest {
+public class CancelPaymentCreditServiceTest {
 
   @InjectMocks
   private CancelPaymentCreditService cancelPaymentCreditService;
 
   @Mock
   private BudgetService budgetService;
+
+  private final String currency = "USD";
 
   @BeforeEach
   public void initMocks() {
@@ -34,7 +36,8 @@ class CancelPaymentCreditServiceTest {
   void budgetShouldBeCanceled() {
     Transaction transaction = new Transaction()
       .withId(UUID.randomUUID().toString())
-      .withAmount(1000.0);
+      .withAmount(1000.0)
+      .withCurrency(currency);
     List<Transaction> transactionList = List.of(transaction);
 
     Budget budget = new Budget()
@@ -42,12 +45,10 @@ class CancelPaymentCreditServiceTest {
       .withExpenditures(2000.0);
 
     Map.Entry<Budget, List<Transaction>> entry = Map.entry(budget, transactionList);
-
     Budget resultBudget = cancelPaymentCreditService.cancelBudget(entry);
 
     assertEquals(transaction.getAmount(), 0);
     assertEquals(transaction.getVoidedAmount(), 1000);
     assertEquals(resultBudget.getExpenditures(), 1000);
   }
-
 }

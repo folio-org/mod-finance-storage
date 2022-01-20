@@ -14,12 +14,13 @@ import java.util.Map;
 
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
-public class CancelPendingPaymentService extends CancelTransactionService{
+public class CancelPendingPaymentService extends CancelTransactionService {
   public CancelPendingPaymentService(TransactionDAO transactionsDAO, BudgetService budgetService) {
     super(transactionsDAO, budgetService);
   }
 
-  @Override Budget cancelBudget(Map.Entry<Budget, List<Transaction>> entry) {
+  @Override
+  Budget cancelBudget(Map.Entry<Budget, List<Transaction>> entry) {
     Budget budget = JsonObject.mapFrom(entry.getKey()).mapTo(Budget.class);
     if (isNotEmpty(entry.getValue())) {
       CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
