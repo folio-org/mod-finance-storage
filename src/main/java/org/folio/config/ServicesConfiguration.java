@@ -149,6 +149,7 @@ public class ServicesConfiguration {
   @Bean
   public CancelTransactionService cancelPaymentCreditService(TransactionDAO paymentCreditDAO,
                                                              BudgetService budgetService) {
+
     return new CancelPaymentCreditService(paymentCreditDAO, budgetService);
   }
 

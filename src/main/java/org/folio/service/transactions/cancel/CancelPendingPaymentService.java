@@ -15,6 +15,7 @@ import java.util.Map;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class CancelPendingPaymentService extends CancelTransactionService {
+
   public CancelPendingPaymentService(TransactionDAO transactionsDAO, BudgetService budgetService) {
     super(transactionsDAO, budgetService);
   }
@@ -26,11 +27,11 @@ public class CancelPendingPaymentService extends CancelTransactionService {
       CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
       entry.getValue()
         .forEach(tmpTransaction -> {
-          double newAwaytingPayment = MoneyUtils.subtractMoney(budget.getAwaitingPayment(),
+          double newAwaitingPayment = MoneyUtils.subtractMoney(budget.getAwaitingPayment(),
             tmpTransaction.getAmount(), currency);
           double newVoidedAmount = tmpTransaction.getAmount();
 
-          budget.setAwaitingPayment(newAwaytingPayment);
+          budget.setAwaitingPayment(newAwaitingPayment);
           tmpTransaction.setVoidedAmount(newVoidedAmount);
           tmpTransaction.setAmount(0.0);
         });

@@ -25,7 +25,6 @@ public class CancelPaymentCreditService extends CancelTransactionService {
     Budget budget = JsonObject.mapFrom(entry.getKey()).mapTo(Budget.class);
     if (isNotEmpty(entry.getValue())) {
       CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
-
       entry.getValue()
         .forEach(tmpTransaction -> {
           double newExpenditures = MoneyUtils.subtractMoney(budget.getExpenditures(),

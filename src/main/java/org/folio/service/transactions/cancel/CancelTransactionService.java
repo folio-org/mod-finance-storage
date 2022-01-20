@@ -18,6 +18,7 @@ import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
 public abstract class CancelTransactionService {
+
   private final TransactionDAO transactionsDAO;
   protected final BudgetService budgetService;
 
@@ -87,5 +88,4 @@ public abstract class CancelTransactionService {
   private String getSelectBudgetsQuery(String tenantId) {
     return String.format(SELECT_BUDGETS_BY_INVOICE_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
   }
-
 }
