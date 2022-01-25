@@ -1,4 +1,13 @@
-## 8.1.0 - Unreleased
+## 8.1.4 - Unreleased
+
+## 8.0.3 - Released
+This bugfix release focused on fixing encumbrance calculation
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.0.2...v8.0.3)
+
+### Bug Fixes
+* [MODFISTO-280](https://issues.folio.org/browse/MODFISTO-280) Budget encumbrance calculation can be wrong with negative pending payments
+
 
 ## 8.0.2 - Released
 This bugfix release focused on fixing Log4j vulnerability
