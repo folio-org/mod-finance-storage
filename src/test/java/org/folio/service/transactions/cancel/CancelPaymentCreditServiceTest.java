@@ -32,12 +32,13 @@ public class CancelPaymentCreditServiceTest {
   }
 
   @Test
-  @DisplayName("Budget should be canceled")
-  void budgetShouldBeCanceled() {
+  @DisplayName("Credit should be canceled")
+  void creditShouldBeCanceled() {
     Transaction transaction = new Transaction()
       .withId(UUID.randomUUID().toString())
-      .withAmount(1000.0)
-      .withCurrency(currency);
+      .withAmount(-1000.0)
+      .withCurrency(currency)
+      .withTransactionType(Transaction.TransactionType.CREDIT);
     List<Transaction> transactionList = List.of(transaction);
 
     Budget budget = new Budget()
@@ -45,10 +46,32 @@ public class CancelPaymentCreditServiceTest {
       .withExpenditures(2000.0);
 
     Map.Entry<Budget, List<Transaction>> entry = Map.entry(budget, transactionList);
-    Budget resultBudget = cancelPaymentCreditService.cancelBudget(entry);
+    Budget resultBudget = cancelPaymentCreditService.budgetMoneyBack(entry);
 
-    assertEquals(transaction.getAmount(), 0);
-    assertEquals(transaction.getVoidedAmount(), 1000);
-    assertEquals(resultBudget.getExpenditures(), 1000);
+    assertEquals(transaction.getAmount(), 0.0);
+    assertEquals(transaction.getVoidedAmount(), -1000.0);
+    assertEquals(resultBudget.getExpenditures(), 1000.0);
+  }
+
+  @Test
+  @DisplayName("Payment should be canceled")
+  void paymentShouldBeCanceled() {
+    Transaction transaction = new Transaction()
+      .withId(UUID.randomUUID().toString())
+      .withAmount(1000.0)
+      .withCurrency(currency)
+      .withTransactionType(Transaction.TransactionType.PAYMENT);
+    List<Transaction> transactionList = List.of(transaction);
+
+    Budget budget = new Budget()
+      .withId(UUID.randomUUID().toString())
+      .withExpenditures(2000.0);
+
+    Map.Entry<Budget, List<Transaction>> entry = Map.entry(budget, transactionList);
+    Budget resultBudget = cancelPaymentCreditService.budgetMoneyBack(entry);
+
+    assertEquals(transaction.getAmount(), 0.0);
+    assertEquals(transaction.getVoidedAmount(), 1000.0);
+    assertEquals(resultBudget.getExpenditures(), 1000.0);
   }
 }

@@ -21,16 +21,22 @@ public class CancelPaymentCreditService extends CancelTransactionService {
   }
 
   @Override
-  Budget cancelBudget(Map.Entry<Budget, List<Transaction>> entry) {
+  Budget budgetMoneyBack(Map.Entry<Budget, List<Transaction>> entry) {
     Budget budget = JsonObject.mapFrom(entry.getKey()).mapTo(Budget.class);
     if (isNotEmpty(entry.getValue())) {
       CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
       entry.getValue()
         .forEach(tmpTransaction -> {
-          double newExpenditures = MoneyUtils.subtractMoney(budget.getExpenditures(),
-            tmpTransaction.getAmount(), currency);
-          double newVoidedAmount = tmpTransaction.getAmount();
+          double newExpenditures;
+          if (tmpTransaction.getTransactionType().equals(Transaction.TransactionType.CREDIT)) {
+            newExpenditures = MoneyUtils.sumMoney(budget.getExpenditures(),
+              tmpTransaction.getAmount(), currency);
+          } else {
+            newExpenditures = MoneyUtils.subtractMoney(budget.getExpenditures(),
+              tmpTransaction.getAmount(), currency);
+          }
 
+          double newVoidedAmount = tmpTransaction.getAmount();
           budget.setExpenditures(newExpenditures);
           tmpTransaction.setVoidedAmount(newVoidedAmount);
           tmpTransaction.setAmount(0.0);

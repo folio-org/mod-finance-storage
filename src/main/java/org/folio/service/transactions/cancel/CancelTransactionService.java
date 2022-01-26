@@ -28,14 +28,14 @@ public abstract class CancelTransactionService {
   }
 
   String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
-    + "ON (budgets.fundId = transactions.fromFundId  AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
+    + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
+    + "WHERE transactions.sourceInvoiceId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
 
   public Future<Void> cancelTransactions(List<Transaction> tmpTransactions, DBClient client) {
     return getTransactions(tmpTransactions, client)
       .map(transactions -> getVoidedTransactions(tmpTransactions, transactions))
       .compose(transactions -> cancel(transactions, client))
-      .compose(transactions -> transactionsDAO.updatePermanentTransactions(tmpTransactions, client));
+      .compose(transactions -> transactionsDAO.updatePermanentTransactions(transactions, client));
   }
 
   private Future<List<Transaction>> getTransactions(List<Transaction> tmpTransactions, DBClient client) {
@@ -51,8 +51,7 @@ public abstract class CancelTransactionService {
       .filter(transaction -> Objects.nonNull(transaction.getInvoiceCancelled()))
       .collect(toMap(Transaction::getId, Transaction::getInvoiceCancelled));
     return transactionsFromDB.stream()
-      .filter(transaction -> Objects.nonNull(transaction.getInvoiceCancelled()))
-      .filter(transaction -> !transaction.getInvoiceCancelled() && idIsCancelledMap.get(transaction.getId()))
+      .filter(transaction -> !Boolean.TRUE.equals(transaction.getInvoiceCancelled()) && idIsCancelledMap.get(transaction.getId()))
       .collect(Collectors.toList());
   }
 
@@ -60,26 +59,34 @@ public abstract class CancelTransactionService {
     String summaryId = getSummaryId(transactions.get(0));
 
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)
-      .map(budgets -> cancelBudgets(transactions, budgets))
+      .map(budgets -> budgetsMoneyBack(transactions, budgets))
       .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client))
       .map(transactions);
   }
 
-  private List<Budget> cancelBudgets(List<Transaction> tempTransactions, List<Budget> budgets) {
+  private List<Budget> budgetsMoneyBack(List<Transaction> tempTransactions, List<Budget> budgets) {
     Map<Budget, List<Transaction>> tempGrouped = groupTransactionsByBudget(tempTransactions, budgets);
     return tempGrouped.entrySet().stream()
-      .map(this::cancelBudget)
+      .map(this::budgetMoneyBack)
       .collect(toList());
   }
 
   private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> existingTransactions, List<Budget> budgets) {
-    Map<String, List<Transaction>> groupedTransactions = existingTransactions.stream().collect(groupingBy(Transaction::getFromFundId));
+    Map<String, List<Transaction>> groupedTransactions = new HashMap<>();
+
+    existingTransactions.forEach(transaction -> {
+      if (transaction.getFromFundId() != null) {
+        groupedTransactions.put(transaction.getFromFundId(), existingTransactions);
+      } else {
+        groupedTransactions.put(transaction.getToFundId(), existingTransactions);
+      }
+    });
 
     return budgets.stream()
       .collect(toMap(identity(), budget ->  groupedTransactions.getOrDefault(budget.getFundId(), Collections.emptyList())));
   }
 
-  abstract Budget cancelBudget(Map.Entry<Budget, List<Transaction>> entry);
+  abstract Budget budgetMoneyBack(Map.Entry<Budget, List<Transaction>> entry);
 
   private String getSummaryId(Transaction transaction) {
     return transaction.getSourceInvoiceId();

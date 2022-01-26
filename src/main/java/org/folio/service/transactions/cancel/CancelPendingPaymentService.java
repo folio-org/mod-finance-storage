@@ -21,7 +21,7 @@ public class CancelPendingPaymentService extends CancelTransactionService {
   }
 
   @Override
-  Budget cancelBudget(Map.Entry<Budget, List<Transaction>> entry) {
+  Budget budgetMoneyBack(Map.Entry<Budget, List<Transaction>> entry) {
     Budget budget = JsonObject.mapFrom(entry.getKey()).mapTo(Budget.class);
     if (isNotEmpty(entry.getValue())) {
       CurrencyUnit currency = Monetary.getCurrency(entry.getValue().get(0).getCurrency());
