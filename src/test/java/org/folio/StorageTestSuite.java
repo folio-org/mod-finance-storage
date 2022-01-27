@@ -40,6 +40,7 @@ import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.AllocationServiceTest;
+import org.folio.service.transactions.PaymentCreditServiceTest;
 import org.folio.service.transactions.PendingPaymentServiceTest;
 import org.folio.service.transactions.cancel.CancelPaymentCreditServiceTest;
 import org.folio.service.transactions.cancel.CancelTransactionServiceTest;
@@ -172,6 +173,10 @@ public class StorageTestSuite {
 
   @Nested
   class PaymentsCreditsTestNested extends PaymentsCreditsTest {
+  }
+
+  @Nested
+  class PaymentCreditServiceTestNested extends PaymentCreditServiceTest {
   }
 
   @Nested
