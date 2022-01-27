@@ -32,6 +32,7 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.transactions.cancel.CancelTransactionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -53,6 +54,8 @@ public class PendingPaymentServiceTest {
 
   @Mock
   private BudgetService budgetService;
+  @Mock
+  private CancelTransactionService cancelTransactionService;
   @Mock
   private EncumbranceDAO transactionsDAO;
   @Mock
@@ -538,7 +541,7 @@ public class PendingPaymentServiceTest {
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    spyService.updateTransactions(transactions, client)
+    spyService.cancelAndUpdateTransactions(transactions, client)
       .onComplete(res -> assertTrue(res.succeeded()));
 
     verify(transactionsDAO).getTransactions(anyList(), any());
@@ -607,7 +610,7 @@ public class PendingPaymentServiceTest {
 
     when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.updateTransactions(transactions, client);
+    Future<Void> result = spyService.cancelAndUpdateTransactions(transactions, client);
 
     assertTrue(result.succeeded());
 
@@ -689,7 +692,7 @@ public class PendingPaymentServiceTest {
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    spyService.updateTransactions(transactions, client)
+    spyService.cancelAndUpdateTransactions(transactions, client)
       .onComplete(res -> assertTrue(res.succeeded()));
 
     verify(transactionsDAO).getTransactions(anyList(), any());
@@ -719,6 +722,31 @@ public class PendingPaymentServiceTest {
     assertThat(updatedBudget.getAwaitingPayment(), is(expectedAwaitingPayment.doubleValue()));
     assertThat(updatedBudget.getEncumbered(), is(encumbered.doubleValue()));
 
+  }
+
+  @Test
+  void testCancelTransactions() {
+    Transaction newTransaction = JsonObject.mapFrom(notLinkedTransaction).mapTo(Transaction.class)
+      .withId(UUID.randomUUID().toString())
+      .withAmount(2d)
+      .withInvoiceCancelled(true);
+    List<Transaction> newTransactions = Collections.singletonList(newTransaction);
+    Transaction existingTransaction = JsonObject.mapFrom(newTransaction).mapTo(Transaction.class)
+      .withInvoiceCancelled(false);
+    List<Transaction> existingTransactions = Collections.singletonList(existingTransaction);
+
+    when(transactionsDAO.getTransactions(anyList(), any())).thenReturn(Future.succeededFuture(existingTransactions));
+    when(cancelTransactionService.cancelTransactions(anyList(), any())).thenReturn(Future.succeededFuture(newTransactions));
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+
+    PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
+
+    spyService.cancelAndUpdateTransactions(newTransactions, client)
+      .onComplete(res -> assertTrue(res.succeeded()));
+
+    verify(transactionsDAO).getTransactions(anyList(), any());
+    verify(cancelTransactionService, times(1)).cancelTransactions(anyList(), eq(client));
+    verify(transactionsDAO, times(1)).updatePermanentTransactions(anyList(), eq(client));
   }
 
 }

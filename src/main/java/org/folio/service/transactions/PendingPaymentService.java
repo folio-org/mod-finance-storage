@@ -1,5 +1,7 @@
 package org.folio.service.transactions;
 
+import static io.vertx.core.Future.succeededFuture;
+import static java.lang.Boolean.TRUE;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -71,8 +73,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
   @Override
   public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
     DBClient dbClient = new DBClient(requestContext);
-    return allOrNothingTransactionService.updateTransaction(transaction, dbClient, cancelTransactionService::cancelTransactions)
-      .compose(v -> allOrNothingTransactionService.updateTransaction(transaction, dbClient, this::updateTransactions));
+    return allOrNothingTransactionService.updateTransaction(transaction, dbClient, this::cancelAndUpdateTransactions);
   }
 
   @Override
@@ -87,27 +88,43 @@ public class PendingPaymentService implements TransactionManagingStrategy {
       .mapEmpty();
   }
 
-  private List<Transaction> getUpdatedTransactions(List<Transaction> tmpTransactions, List<Transaction> transactionsFromDB) {
-    Map<String, Boolean> idIsCancelledMap = tmpTransactions.stream()
-      .filter(transaction -> Objects.nonNull(transaction.getInvoiceCancelled()))
-      .collect(toMap(Transaction::getId, Transaction::getInvoiceCancelled));
-
-    if (idIsCancelledMap.isEmpty()) {
-      return transactionsFromDB;
-    }
-    return transactionsFromDB.stream()
-      .filter(transaction -> Objects.nonNull(transaction.getInvoiceCancelled()))
-      .filter(transaction -> !(!transaction.getInvoiceCancelled() && idIsCancelledMap.get(transaction.getId())))
-      .collect(Collectors.toList());
+  public Future<Void> cancelAndUpdateTransactions(List<Transaction> tmpTransactions, DBClient client) {
+    return getTransactions(tmpTransactions, client)
+      .compose(existingTransactions -> {
+        List<String> idsToCancel = tmpTransactions.stream()
+          .filter(tr -> TRUE.equals(tr.getInvoiceCancelled()))
+          .map(Transaction::getId)
+          .filter(id -> existingTransactions.stream().anyMatch(
+            tr -> tr.getId().equals(id) && !TRUE.equals(tr.getInvoiceCancelled())))
+          .collect(toList());
+        List<Transaction> tmpTransactionsToCancel = tmpTransactions.stream()
+          .filter(tr -> idsToCancel.contains(tr.getId()))
+          .collect(toList());
+        List<Transaction> tmpTransactionsToUpdate = tmpTransactions.stream()
+          .filter(tr -> !idsToCancel.contains(tr.getId()))
+          .collect(toList());
+        List<Transaction> existingTransactionsToUpdate = existingTransactions.stream()
+          .filter(tr -> !idsToCancel.contains(tr.getId()))
+          .collect(toList());
+        return cancelTransactions(tmpTransactionsToCancel, client)
+          .compose(v -> updateTransactions(tmpTransactionsToUpdate, existingTransactionsToUpdate, client))
+          .compose(v -> transactionsDAO.updatePermanentTransactions(tmpTransactions, client));
+    });
   }
 
-  public Future<Void> updateTransactions(List<Transaction> tmpTransactions, DBClient client) {
+  private Future<Void> cancelTransactions(List<Transaction> tmpTransactions, DBClient client) {
+    if (tmpTransactions.size() == 0)
+      return succeededFuture();
+    return cancelTransactionService.cancelTransactions(tmpTransactions, client)
+      .map(voidedTransactions -> null);
+  }
 
-    return getTransactions(tmpTransactions, client)
-      .map(transactionsFromDB -> getUpdatedTransactions(tmpTransactions, transactionsFromDB))
-      .map(transactionsFromDB -> createDifferenceTransactions(tmpTransactions, transactionsFromDB))
-      .compose(transactions -> processPendingPayments(transactions, client))
-      .compose(transactions -> transactionsDAO.updatePermanentTransactions(tmpTransactions, client));
+  private Future<Void> updateTransactions(List<Transaction> tmpTransactions, List<Transaction> existingTransactions, DBClient client) {
+    if (tmpTransactions.size() == 0)
+      return succeededFuture();
+    List<Transaction> transactions = createDifferenceTransactions(tmpTransactions, existingTransactions);
+    return processPendingPayments(transactions, client)
+      .map(processedTransactions -> null);
   }
 
   private Future<List<Transaction>> processPendingPayments(List<Transaction> transactions, DBClient client) {
@@ -202,7 +219,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
             .map(newBudgets);
         });
     }
-    return Future.succeededFuture(oldBudgets);
+    return succeededFuture(oldBudgets);
   }
 
   private List<Transaction> updateEncumbrancesTotals(List<Transaction> encumbrances, List<Transaction> pendingPayments) {

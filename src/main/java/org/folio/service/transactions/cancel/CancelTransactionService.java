@@ -2,14 +2,12 @@ package org.folio.service.transactions.cancel;
 
 import io.vertx.core.Future;
 import io.vertx.sqlclient.Tuple;
-import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.*;
@@ -19,43 +17,22 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
 public abstract class CancelTransactionService {
 
-  private final TransactionDAO transactionsDAO;
   protected final BudgetService budgetService;
 
-  public CancelTransactionService(TransactionDAO transactionsDAO, BudgetService budgetService) {
-    this.transactionsDAO = transactionsDAO;
+  public CancelTransactionService(BudgetService budgetService) {
     this.budgetService = budgetService;
   }
 
   String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
     + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
+    + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' IN ('Payment', 'Credit', 'Pending payment')";
 
-  public Future<Void> cancelTransactions(List<Transaction> tmpTransactions, DBClient client) {
-    return getTransactions(tmpTransactions, client)
-      .map(transactions -> getVoidedTransactions(tmpTransactions, transactions))
-      .compose(transactions -> cancel(transactions, client))
-      .compose(transactions -> transactionsDAO.updatePermanentTransactions(transactions, client));
-  }
-
-  private Future<List<Transaction>> getTransactions(List<Transaction> tmpTransactions, DBClient client) {
-    List<String> ids = tmpTransactions.stream()
-      .map(Transaction::getId)
-      .collect(toList());
-
-    return transactionsDAO.getTransactions(ids, client);
-  }
-
-  private List<Transaction> getVoidedTransactions(List<Transaction> tmpTransactions, List<Transaction> transactionsFromDB) {
-    Map<String, Boolean> idIsCancelledMap = tmpTransactions.stream()
-      .filter(transaction -> Objects.nonNull(transaction.getInvoiceCancelled()))
-      .collect(toMap(Transaction::getId, Transaction::getInvoiceCancelled));
-    return transactionsFromDB.stream()
-      .filter(transaction -> !Boolean.TRUE.equals(transaction.getInvoiceCancelled()) && idIsCancelledMap.get(transaction.getId()))
-      .collect(Collectors.toList());
-  }
-
-  private Future<List<Transaction>> cancel(List<Transaction> transactions, DBClient client) {
+  /**
+   * Updates given transactions and related budgets to cancel the transactions.
+   * Saves updated budgets but does not save updated transactions.
+   * @return the voided transactions to save (the given transaction list is also updated)
+   */
+  public Future<List<Transaction>> cancelTransactions(List<Transaction> transactions, DBClient client) {
     String summaryId = getSummaryId(transactions.get(0));
 
     return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)

@@ -1,7 +1,6 @@
 package org.folio.service.transactions.cancel;
 
 import io.vertx.core.json.JsonObject;
-import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.service.budget.BudgetService;
@@ -16,8 +15,8 @@ import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class CancelPaymentCreditService extends CancelTransactionService {
 
-  public CancelPaymentCreditService(TransactionDAO transactionsDAO, BudgetService budgetService) {
-    super(transactionsDAO, budgetService);
+  public CancelPaymentCreditService(BudgetService budgetService) {
+    super(budgetService);
   }
 
   @Override

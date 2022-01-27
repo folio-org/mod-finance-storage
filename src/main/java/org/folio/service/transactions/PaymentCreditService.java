@@ -23,10 +23,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
+import static java.lang.Boolean.TRUE;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
@@ -76,7 +77,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
   @Override
   public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
     DBClient dbClient = new DBClient(requestContext);
-    return allOrNothingTransactionService.updateTransaction(transaction, dbClient, cancelTransactionService::cancelTransactions);
+    return allOrNothingTransactionService.updateTransaction(transaction, dbClient, this::updateTransactions);
   }
 
   /**
@@ -94,6 +95,24 @@ public class PaymentCreditService extends AbstractTransactionService implements 
       .compose(dbc -> updateBudgetsTotals(transactions, client))
       .compose(dbc -> transactionsDAO.saveTransactionsToPermanentTable(summaryId, client))
       .compose(integer -> deletePendingPayments(summaryId, client));
+  }
+
+  public Future<Void> updateTransactions(List<Transaction> tmpTransactions, DBClient client) {
+    return getTransactions(tmpTransactions, client)
+      .map(existingTransactions -> tmpTransactions.stream()
+        .filter(tr -> TRUE.equals(tr.getInvoiceCancelled()))
+        .filter(tr -> existingTransactions.stream().anyMatch(tr2 -> tr2.getId().equals(tr.getId()) &&
+          !TRUE.equals(tr2.getInvoiceCancelled())))
+        .collect(toList()))
+      .compose(transactionsToCancel -> cancelTransactionService.cancelTransactions(transactionsToCancel, client))
+      .compose(voidedTransactions -> transactionsDAO.updatePermanentTransactions(voidedTransactions, client));
+  }
+
+  private Future<List<Transaction>> getTransactions(List<Transaction> tmpTransactions, DBClient client) {
+    List<String> ids = tmpTransactions.stream()
+      .map(Transaction::getId)
+      .collect(toList());
+    return transactionsDAO.getTransactions(ids, client);
   }
 
   private Future<Void> deletePendingPayments(String summaryId, DBClient client) {
@@ -208,7 +227,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
 
     List<Transaction> tempCredits = tempTxns.stream()
       .filter(isCreditTransaction.and(hasEncumbrance))
-      .collect(Collectors.toList());
+      .collect(toList());
 
     if (tempCredits.isEmpty()) {
       return encumbrancesMap;
@@ -240,7 +259,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
   private Map<String, Transaction> applyPayments(List<Transaction> tempTxns, Map<String, Transaction> encumbrancesMap) {
     List<Transaction> tempPayments = tempTxns.stream()
       .filter(isPaymentTransaction.and(hasEncumbrance))
-      .collect(Collectors.toList());
+      .collect(toList());
     if (tempPayments.isEmpty()) {
       return encumbrancesMap;
     }
