@@ -36,6 +36,9 @@ import org.folio.service.transactions.TransactionManagingStrategy;
 import org.folio.service.transactions.TransactionManagingStrategyFactory;
 import org.folio.service.transactions.TransactionService;
 import org.folio.service.transactions.TransferService;
+import org.folio.service.transactions.cancel.CancelPaymentCreditService;
+import org.folio.service.transactions.cancel.CancelPendingPaymentService;
+import org.folio.service.transactions.cancel.CancelTransactionService;
 import org.folio.service.transactions.restriction.EncumbranceRestrictionService;
 import org.folio.service.transactions.restriction.PaymentCreditRestrictionService;
 import org.folio.service.transactions.restriction.PendingPaymentRestrictionService;
@@ -121,17 +124,31 @@ public class ServicesConfiguration {
   @Bean
   public TransactionService pendingPaymentService(AllOrNothingTransactionService allOrNothingPendingPaymentService,
                                                   TransactionDAO pendingPaymentDAO,
-                                                  BudgetService budgetService) {
+                                                  BudgetService budgetService,
+                                                  CancelTransactionService cancelPendingPaymentService) {
 
-    return new PendingPaymentService(allOrNothingPendingPaymentService, pendingPaymentDAO, budgetService);
+    return new PendingPaymentService(allOrNothingPendingPaymentService, pendingPaymentDAO, budgetService, cancelPendingPaymentService);
+  }
+
+  @Bean
+  public CancelTransactionService cancelPendingPaymentService(BudgetService budgetService) {
+
+    return new CancelPendingPaymentService(budgetService);
   }
 
   @Bean
   public TransactionService paymentCreditService(AllOrNothingTransactionService allOrNothingPaymentCreditService,
                                                  BudgetService budgetService,
-                                                 TransactionDAO paymentCreditDAO) {
+                                                 TransactionDAO paymentCreditDAO,
+                                                 CancelTransactionService cancelPaymentCreditService) {
 
-    return new PaymentCreditService(allOrNothingPaymentCreditService, paymentCreditDAO, budgetService);
+    return new PaymentCreditService(allOrNothingPaymentCreditService, paymentCreditDAO, budgetService, cancelPaymentCreditService);
+  }
+
+  @Bean
+  public CancelTransactionService cancelPaymentCreditService(BudgetService budgetService) {
+
+    return new CancelPaymentCreditService(budgetService);
   }
 
   @Bean

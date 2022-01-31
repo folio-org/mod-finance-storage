@@ -40,7 +40,10 @@ import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.AllocationServiceTest;
+import org.folio.service.transactions.PaymentCreditServiceTest;
 import org.folio.service.transactions.PendingPaymentServiceTest;
+import org.folio.service.transactions.cancel.CancelPaymentCreditServiceTest;
+import org.folio.service.transactions.cancel.CancelTransactionServiceTest;
 import org.folio.service.transactions.restriction.EncumbranceRestrictionServiceTest;
 import org.folio.service.transactions.restriction.PaymentCreditRestrictionServiceTest;
 import org.folio.service.transactions.restriction.PendingPaymentRestrictionServiceTest;
@@ -173,6 +176,10 @@ public class StorageTestSuite {
   }
 
   @Nested
+  class PaymentCreditServiceTestNested extends PaymentCreditServiceTest {
+  }
+
+  @Nested
   class EncumbrancesTestNested extends EncumbrancesTest {
   }
 
@@ -218,4 +225,10 @@ public class StorageTestSuite {
 
   @Nested
   class AllocationServiceTestNested extends AllocationServiceTest {}
+
+  @Nested
+  class CancelPaymentCreditServiceNested extends CancelPaymentCreditServiceTest {}
+
+  @Nested
+  class CancelTransactionServiceNested extends CancelTransactionServiceTest {}
 }
