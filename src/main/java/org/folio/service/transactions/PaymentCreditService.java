@@ -104,8 +104,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
         .filter(tr -> existingTransactions.stream().anyMatch(tr2 -> tr2.getId().equals(tr.getId()) &&
           !TRUE.equals(tr2.getInvoiceCancelled())))
         .collect(toList()))
-      .compose(transactionsToCancel -> cancelTransactionService.cancelTransactions(transactionsToCancel, client))
-      .compose(voidedTransactions -> transactionsDAO.updatePermanentTransactions(voidedTransactions, client));
+      .compose(transactionsToCancel -> cancelTransactionService.cancelTransactions(transactionsToCancel, client));
   }
 
   private Future<List<Transaction>> getTransactions(List<Transaction> tmpTransactions, DBClient client) {

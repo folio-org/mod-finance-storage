@@ -2,13 +2,18 @@ package org.folio.service.transactions.cancel;
 
 import io.vertx.core.Future;
 import io.vertx.sqlclient.Tuple;
+import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
+import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.*;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
@@ -17,10 +22,14 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
 public abstract class CancelTransactionService {
 
-  protected final BudgetService budgetService;
+  private final BudgetService budgetService;
+  private final TransactionDAO paymentCreditDAO;
+  private final TransactionDAO encumbranceDAO;
 
-  public CancelTransactionService(BudgetService budgetService) {
+  public CancelTransactionService(BudgetService budgetService, TransactionDAO paymentCreditDAO, TransactionDAO encumbranceDAO) {
     this.budgetService = budgetService;
+    this.paymentCreditDAO = paymentCreditDAO;
+    this.encumbranceDAO = encumbranceDAO;
   }
 
   String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
@@ -28,42 +37,33 @@ public abstract class CancelTransactionService {
     + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' IN ('Payment', 'Credit', 'Pending payment')";
 
   /**
-   * Updates given transactions and related budgets to cancel the transactions.
-   * Saves updated budgets but does not save updated transactions.
-   * @return the voided transactions to save (the given transaction list is also updated)
+   * Updates given transactions, related encumbrances and related budgets to cancel the transactions.
+   * All transactions are supposed to be either pending payment or payment/credit.
    */
-  public Future<List<Transaction>> cancelTransactions(List<Transaction> transactions, DBClient client) {
+  public Future<Void> cancelTransactions(List<Transaction> transactions, DBClient client) {
     String summaryId = getSummaryId(transactions.get(0));
-
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)
+    return updateRelatedEncumbrances(transactions, client)
+      .compose(v -> budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()),
+        Tuple.of(UUID.fromString(summaryId)), client))
       .map(budgets -> budgetsMoneyBack(transactions, budgets))
       .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client))
-      .map(transactions);
+      .compose(n -> paymentCreditDAO.updatePermanentTransactions(transactions, client));
   }
 
-  private List<Budget> budgetsMoneyBack(List<Transaction> tempTransactions, List<Budget> budgets) {
-    Map<Budget, List<Transaction>> tempGrouped = groupTransactionsByBudget(tempTransactions, budgets);
-    return tempGrouped.entrySet().stream()
-      .map(this::budgetMoneyBack)
+  private List<Budget> budgetsMoneyBack(List<Transaction> transactions, List<Budget> budgets) {
+    Map<Budget, List<Transaction>> budgetToTransactions = groupTransactionsByBudget(transactions, budgets);
+    return budgetToTransactions.entrySet().stream()
+      .map(entry -> budgetMoneyBack(entry.getKey(), entry.getValue()))
       .collect(toList());
   }
 
-  private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> existingTransactions, List<Budget> budgets) {
-    Map<String, List<Transaction>> groupedTransactions = new HashMap<>();
-
-    existingTransactions.forEach(transaction -> {
-      if (transaction.getFromFundId() != null) {
-        groupedTransactions.put(transaction.getFromFundId(), existingTransactions);
-      } else {
-        groupedTransactions.put(transaction.getToFundId(), existingTransactions);
-      }
-    });
-
+  private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> transactions, List<Budget> budgets) {
+    Map<String, List<Transaction>> fundIdToTransactions = transactions.stream()
+      .collect(groupingBy(tr -> requireNonNullElse(tr.getFromFundId(), tr.getToFundId())));
     return budgets.stream()
-      .collect(toMap(identity(), budget ->  groupedTransactions.getOrDefault(budget.getFundId(), Collections.emptyList())));
+      .filter(budget -> fundIdToTransactions.get(budget.getFundId()) != null)
+      .collect(toMap(identity(), budget -> fundIdToTransactions.get(budget.getFundId())));
   }
-
-  abstract Budget budgetMoneyBack(Map.Entry<Budget, List<Transaction>> entry);
 
   private String getSummaryId(Transaction transaction) {
     return transaction.getSourceInvoiceId();
@@ -72,4 +72,28 @@ public abstract class CancelTransactionService {
   private String getSelectBudgetsQuery(String tenantId) {
     return String.format(SELECT_BUDGETS_BY_INVOICE_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
   }
+
+  private Future<Void> updateRelatedEncumbrances(List<Transaction> transactions, DBClient client) {
+    Map<String, List<Transaction>> encumbranceIdToTransactions = transactions.stream()
+      .filter(tr -> getEncumbranceId(tr) != null)
+      .collect(groupingBy(this::getEncumbranceId));
+    if (encumbranceIdToTransactions.isEmpty())
+      return Future.succeededFuture();
+    List<String> encumbranceIds = new ArrayList<>(encumbranceIdToTransactions.keySet());
+    return encumbranceDAO.getTransactions(encumbranceIds, client)
+      .map(tr -> updateEncumbrances(tr, encumbranceIdToTransactions))
+      .compose(encumbrances -> encumbranceDAO.updatePermanentTransactions(encumbrances, client));
+  }
+
+  private List<Transaction> updateEncumbrances(List<Transaction> encumbrances,
+      Map<String, List<Transaction>> encumbranceIdToTransactions) {
+    encumbrances.forEach(enc -> cancelEncumbrance(enc, encumbranceIdToTransactions.get(enc.getId())));
+    return encumbrances;
+  }
+
+  abstract Budget budgetMoneyBack(Budget budget, List<Transaction> transactions);
+
+  abstract String getEncumbranceId(Transaction pendingPayment);
+
+  abstract void cancelEncumbrance(Transaction encumbrance, List<Transaction> transactions);
 }
