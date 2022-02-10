@@ -11,6 +11,7 @@ import org.folio.service.budget.BudgetService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Objects.requireNonNullElse;
@@ -75,8 +76,8 @@ public abstract class CancelTransactionService {
 
   private Future<Void> updateRelatedEncumbrances(List<Transaction> transactions, DBClient client) {
     Map<String, List<Transaction>> encumbranceIdToTransactions = transactions.stream()
-      .filter(tr -> getEncumbranceId(tr) != null)
-      .collect(groupingBy(this::getEncumbranceId));
+      .filter(tr -> getEncumbranceId(tr).isPresent())
+      .collect(groupingBy(tr -> getEncumbranceId(tr).orElse(null)));
     if (encumbranceIdToTransactions.isEmpty())
       return Future.succeededFuture();
     List<String> encumbranceIds = new ArrayList<>(encumbranceIdToTransactions.keySet());
@@ -91,9 +92,9 @@ public abstract class CancelTransactionService {
     return encumbrances;
   }
 
-  abstract Budget budgetMoneyBack(Budget budget, List<Transaction> transactions);
+  protected abstract Budget budgetMoneyBack(Budget budget, List<Transaction> transactions);
 
-  abstract String getEncumbranceId(Transaction pendingPayment);
+  protected abstract Optional<String> getEncumbranceId(Transaction pendingPayment);
 
-  abstract void cancelEncumbrance(Transaction encumbrance, List<Transaction> transactions);
+  protected abstract void cancelEncumbrance(Transaction encumbrance, List<Transaction> transactions);
 }

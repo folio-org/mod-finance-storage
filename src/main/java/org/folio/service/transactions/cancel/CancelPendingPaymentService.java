@@ -10,6 +10,7 @@ import org.folio.utils.MoneyUtils;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import java.util.List;
+import java.util.Optional;
 
 public class CancelPendingPaymentService extends CancelTransactionService {
 
@@ -18,7 +19,7 @@ public class CancelPendingPaymentService extends CancelTransactionService {
   }
 
   @Override
-  Budget budgetMoneyBack(Budget budget, List<Transaction> transactions) {
+  protected Budget budgetMoneyBack(Budget budget, List<Transaction> transactions) {
     Budget newBudget = JsonObject.mapFrom(budget).mapTo(Budget.class);
     CurrencyUnit currency = Monetary.getCurrency(transactions.get(0).getCurrency());
     transactions.forEach(tmpTransaction -> {
@@ -34,14 +35,14 @@ public class CancelPendingPaymentService extends CancelTransactionService {
   }
 
   @Override
-  String getEncumbranceId(Transaction pendingPayment) {
+  protected Optional<String> getEncumbranceId(Transaction pendingPayment) {
     if (pendingPayment.getAwaitingPayment() == null)
-      return null;
-    return pendingPayment.getAwaitingPayment().getEncumbranceId();
+      return Optional.empty();
+    return Optional.ofNullable(pendingPayment.getAwaitingPayment().getEncumbranceId());
   }
 
   @Override
-  void cancelEncumbrance(Transaction encumbrance, List<Transaction> pendingPayments) {
+  protected void cancelEncumbrance(Transaction encumbrance, List<Transaction> pendingPayments) {
     CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
     double newAmount = encumbrance.getEncumbrance().getAmountAwaitingPayment();
     for (Transaction pendingPayment : pendingPayments) {
