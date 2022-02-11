@@ -1,10 +1,9 @@
 package org.folio.utils;
 
-import org.folio.rest.jaxrs.model.Budget;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static org.junit.Assert.assertEquals;
+import org.folio.rest.jaxrs.model.Budget;
+import org.junit.jupiter.api.Test;
 
 public class CalculationUtilsTest {
 
@@ -18,7 +17,22 @@ public class CalculationUtilsTest {
 
         CalculationUtils.calculateBudgetSummaryFields(budget);
 
-        Assertions.assertEquals(8d, budget.getOverExpended(), 0d);
+        assertEquals(8d, budget.getOverExpended(), 0d);
 
     }
+
+  @Test
+  void overEncumberedShouldBeGreaterThenZeroWhenEncumberedGreaterThatTotalFunding() {
+    Budget budget = new Budget()
+      .withInitialAllocation(1800d)
+      .withNetTransfers(200d)
+      .withExpenditures(1500d)
+      .withAwaitingPayment(500d)
+      .withEncumbered(200d);
+
+    CalculationUtils.calculateBudgetSummaryFields(budget);
+
+    assertEquals(200d, budget.getOverEncumbrance(), 0d);
+
+  }
 }

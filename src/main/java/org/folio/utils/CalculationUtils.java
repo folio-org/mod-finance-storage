@@ -51,8 +51,13 @@ public final class CalculationUtils {
     BigDecimal totalFunding = allocated.add(netTransfers);
     BigDecimal cashBalance = totalFunding.subtract(expended);
     BigDecimal available = totalFunding.subtract(unavailable).max(BigDecimal.ZERO);
-    BigDecimal overEncumbered = encumbered.subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
     BigDecimal overExpended = expended.add(awaitingPayment).subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
+
+    BigDecimal overEncumbered = BigDecimal.ZERO;
+    BigDecimal overFunding = unavailable.subtract(totalFunding);
+    if (overFunding.compareTo(BigDecimal.ZERO) > 0) {
+      overEncumbered = overFunding.subtract(overExpended).max(BigDecimal.ZERO);
+    }
 
     budget.setAllocated(allocated.doubleValue());
     budget.setAvailable(available.doubleValue());
