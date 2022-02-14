@@ -45,8 +45,7 @@ public class CancelPaymentCreditServiceTest {
       .withId(UUID.randomUUID().toString())
       .withExpenditures(2000.0);
 
-    Map.Entry<Budget, List<Transaction>> entry = Map.entry(budget, transactionList);
-    Budget resultBudget = cancelPaymentCreditService.budgetMoneyBack(entry);
+    Budget resultBudget = cancelPaymentCreditService.budgetMoneyBack(budget, transactionList);
 
     assertEquals(transaction.getAmount(), 0.0);
     assertEquals(transaction.getVoidedAmount(), -1000.0);
@@ -67,8 +66,7 @@ public class CancelPaymentCreditServiceTest {
       .withId(UUID.randomUUID().toString())
       .withExpenditures(2000.0);
 
-    Map.Entry<Budget, List<Transaction>> entry = Map.entry(budget, transactionList);
-    Budget resultBudget = cancelPaymentCreditService.budgetMoneyBack(entry);
+    Budget resultBudget = cancelPaymentCreditService.budgetMoneyBack(budget, transactionList);
 
     assertEquals(transaction.getAmount(), 0.0);
     assertEquals(transaction.getVoidedAmount(), 1000.0);

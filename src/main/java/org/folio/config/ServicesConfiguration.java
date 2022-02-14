@@ -131,9 +131,11 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public CancelTransactionService cancelPendingPaymentService(BudgetService budgetService) {
+  public CancelTransactionService cancelPendingPaymentService(BudgetService budgetService,
+                                                                 TransactionDAO paymentCreditDAO,
+                                                                 TransactionDAO encumbranceDAO) {
 
-    return new CancelPendingPaymentService(budgetService);
+    return new CancelPendingPaymentService(budgetService, paymentCreditDAO, encumbranceDAO);
   }
 
   @Bean
@@ -146,9 +148,11 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public CancelTransactionService cancelPaymentCreditService(BudgetService budgetService) {
+  public CancelTransactionService cancelPaymentCreditService(BudgetService budgetService,
+                                                               TransactionDAO paymentCreditDAO,
+                                                               TransactionDAO encumbranceDAO) {
 
-    return new CancelPaymentCreditService(budgetService);
+    return new CancelPaymentCreditService(budgetService, paymentCreditDAO, encumbranceDAO);
   }
 
   @Bean

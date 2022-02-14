@@ -107,8 +107,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
           .filter(tr -> !idsToCancel.contains(tr.getId()))
           .collect(toList());
         return cancelTransactions(tmpTransactionsToCancel, client)
-          .compose(v -> updateTransactions(tmpTransactionsToUpdate, existingTransactionsToUpdate, client))
-          .compose(v -> transactionsDAO.updatePermanentTransactions(tmpTransactions, client));
+          .compose(v -> updateTransactions(tmpTransactionsToUpdate, existingTransactionsToUpdate, client));
     });
   }
 
@@ -124,7 +123,8 @@ public class PendingPaymentService implements TransactionManagingStrategy {
       return succeededFuture();
     List<Transaction> transactions = createDifferenceTransactions(tmpTransactions, existingTransactions);
     return processPendingPayments(transactions, client)
-      .map(processedTransactions -> null);
+      .map(processedTransactions -> null)
+      .compose(v -> transactionsDAO.updatePermanentTransactions(tmpTransactions, client));
   }
 
   private Future<List<Transaction>> processPendingPayments(List<Transaction> transactions, DBClient client) {

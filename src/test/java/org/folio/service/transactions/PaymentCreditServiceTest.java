@@ -72,7 +72,6 @@ public class PaymentCreditServiceTest {
 
     when(transactionsDAO.getTransactions(anyList(), any())).thenReturn(Future.succeededFuture(existingTransactions));
     when(cancelTransactionService.cancelTransactions(anyList(), any())).then(args -> Future.succeededFuture(args.getArgument(0)));
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
 
     PaymentCreditService spyService = Mockito.spy(paymentCreditService);
 
@@ -81,7 +80,6 @@ public class PaymentCreditServiceTest {
 
     verify(transactionsDAO, times(1)).getTransactions(anyList(), eq(client));
     verify(cancelTransactionService, times(1)).cancelTransactions(argThat(list -> list.size() == 2), eq(client));
-    verify(transactionsDAO, times(1)).updatePermanentTransactions(argThat(list -> list.size() == 2), eq(client));
   }
 
 }

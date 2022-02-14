@@ -736,8 +736,7 @@ public class PendingPaymentServiceTest {
     List<Transaction> existingTransactions = Collections.singletonList(existingTransaction);
 
     when(transactionsDAO.getTransactions(anyList(), any())).thenReturn(Future.succeededFuture(existingTransactions));
-    when(cancelTransactionService.cancelTransactions(anyList(), any())).thenReturn(Future.succeededFuture(newTransactions));
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(cancelTransactionService.cancelTransactions(anyList(), any())).thenReturn(Future.succeededFuture(null));
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
@@ -746,7 +745,6 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).getTransactions(anyList(), any());
     verify(cancelTransactionService, times(1)).cancelTransactions(anyList(), eq(client));
-    verify(transactionsDAO, times(1)).updatePermanentTransactions(anyList(), eq(client));
   }
 
 }
