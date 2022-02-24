@@ -53,7 +53,7 @@ public final class CalculationUtils {
     BigDecimal available = totalFunding.subtract(unavailable).max(BigDecimal.ZERO);
     BigDecimal overExpended = expended.add(awaitingPayment).subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
 
-    BigDecimal overEncumbered = calculateOverEncumbered(encumbered, unavailable, totalFunding, overExpended);
+    BigDecimal overEncumbered = calculateOverEncumbered(encumbered, unavailable, totalFunding, overExpended, awaitingPayment, expended);
 
     budget.setAllocated(allocated.doubleValue());
     budget.setAvailable(available.doubleValue());
@@ -62,18 +62,16 @@ public final class CalculationUtils {
     budget.setOverExpended(overExpended.doubleValue());
     budget.setTotalFunding(totalFunding.doubleValue());
     budget.setCashBalance(cashBalance.doubleValue());
-  }
+   }
 
   private static BigDecimal calculateOverEncumbered(BigDecimal encumbered, BigDecimal unavailable,
-            BigDecimal totalFunding, BigDecimal overExpended) {
-    BigDecimal overFunding = unavailable.subtract(totalFunding);
-    if (overExpended.compareTo(BigDecimal.ZERO) > 0) {
-      return encumbered;
-    } else if (overFunding.compareTo(BigDecimal.ZERO) >= 0) {
-      if (encumbered.subtract(totalFunding.max(BigDecimal.ZERO)).compareTo(BigDecimal.ZERO) < 0) {
-        return overFunding;
-      } else {
-        return encumbered.subtract(totalFunding.max(BigDecimal.ZERO));
+            BigDecimal totalFunding, BigDecimal overExpended, BigDecimal awaitingPayment, BigDecimal expended) {
+    BigDecimal overCommitted = unavailable.subtract(totalFunding);
+    if (overCommitted.compareTo(BigDecimal.ZERO) > 0) {
+      if (encumbered.compareTo(BigDecimal.ZERO) == 0) {
+        return awaitingPayment;
+      } else if (awaitingPayment.compareTo(BigDecimal.ZERO) >= 0) {
+        return overCommitted.subtract(overExpended);
       }
     }
     return BigDecimal.ZERO;
