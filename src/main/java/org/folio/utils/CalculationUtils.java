@@ -68,7 +68,7 @@ public final class CalculationUtils {
             BigDecimal totalFunding, BigDecimal overExpended, BigDecimal awaitingPayment) {
     BigDecimal overCommitted = unavailable.subtract(totalFunding);
     if (overCommitted.compareTo(BigDecimal.ZERO) > 0) {
-      if (encumbered.compareTo(BigDecimal.ZERO) == 0) {
+      if (encumbered.compareTo(BigDecimal.ZERO) == 0 || totalFunding.compareTo(encumbered) == 0) {
         return awaitingPayment;
       } else if (awaitingPayment.compareTo(BigDecimal.ZERO) >= 0) {
         return overCommitted.subtract(overExpended);
