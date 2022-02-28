@@ -831,9 +831,6 @@ public class EncumbrancesTest extends TestBase {
 
 
   private void verifyBudgetTotalsAfter(Budget budget) {
-    double expectedOverEncumbrance = max(0, subtractValues(budget.getEncumbered(),
-      max(0, budget.getTotalFunding())));
-    assertEquals(expectedOverEncumbrance, budget.getOverEncumbrance());
     assertTrue(budget.getUnavailable() >= 0);
     double expectedUnavailable = sumValues(budget.getEncumbered(), budget.getAwaitingPayment(), budget.getExpenditures());
     assertEquals(expectedUnavailable, budget.getUnavailable());
