@@ -4,8 +4,10 @@ import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
 import java.math.BigDecimal;
+
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
+
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 
@@ -53,7 +55,7 @@ public final class CalculationUtils {
     BigDecimal available = totalFunding.subtract(unavailable).max(BigDecimal.ZERO);
     BigDecimal overExpended = expended.add(awaitingPayment).subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
 
-    BigDecimal overEncumbered = calculateOverEncumbered(encumbered, unavailable, totalFunding, overExpended, awaitingPayment);
+    BigDecimal overEncumbered = calculateOverEncumbered(encumbered, unavailable, totalFunding, overExpended, awaitingPayment, expended);
 
     budget.setAllocated(allocated.doubleValue());
     budget.setAvailable(available.doubleValue());
@@ -65,10 +67,12 @@ public final class CalculationUtils {
    }
 
   private static BigDecimal calculateOverEncumbered(BigDecimal encumbered, BigDecimal unavailable,
-            BigDecimal totalFunding, BigDecimal overExpended, BigDecimal awaitingPayment) {
+            BigDecimal totalFunding, BigDecimal overExpended, BigDecimal awaitingPayment, BigDecimal expended) {
     BigDecimal overCommitted = unavailable.subtract(totalFunding);
     if (overCommitted.compareTo(BigDecimal.ZERO) > 0) {
       if (encumbered.compareTo(BigDecimal.ZERO) == 0 || totalFunding.compareTo(encumbered) == 0) {
+        return awaitingPayment;
+      } else if (encumbered.compareTo(BigDecimal.ZERO) == 0 && expended.compareTo(totalFunding) == 0) {
         return awaitingPayment;
       } else if (awaitingPayment.compareTo(BigDecimal.ZERO) >= 0) {
         return overCommitted.subtract(overExpended);
