@@ -1,3 +1,20 @@
+## 8.2.0 - Unreleased
+
+## 8.1.0 - Released
+The primary focus of this release was to voiding transactions support and fix encumbrance calculations
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.0.0...v8.1.0)
+
+### Stories
+* [MODFISTO-274](https://issues.folio.org/browse/MODFISTO-274) Extend transaction schema with voidedAmount field
+* [MODFISTO-273](https://issues.folio.org/browse/MODFISTO-273) Voided transactions will no longer count towards budgets and budget totals
+* [MODFISTO-269](https://issues.folio.org/browse/MODFISTO-269) Allow user to base encumbrance on "Initial encumbrance" during rollover
+
+### Bug Fixes
+* [MODFISTO-284](https://issues.folio.org/browse/MODFISTO-284) Cancel invoice does not update the encumbrance correctly
+* [MODFISTO-283](https://issues.folio.org/browse/MODFISTO-283) Over encumbrance calculation not aligned with encumbrance limit calculation
+
+
 ## 8.0.0 - Released
 The primary focus of this release was to update Finance schema for combination of Fund code and Expense class,
 add validation for special character to Fund Code and Expense class code and prepare migration script
