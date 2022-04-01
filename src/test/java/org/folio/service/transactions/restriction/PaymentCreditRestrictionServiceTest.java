@@ -50,4 +50,16 @@ public class PaymentCreditRestrictionServiceTest {
     assertThat(amount.getNumber().doubleValue(), is(26d));
   }
 
+  @Test
+  void testGetBudgetRemainingAmountForEncumbranceWhenUnavailableGreaterThanTotalFunding() {
+    budget.withNetTransfers(0d)
+      .withAllowableExpenditure(100d)
+      .withEncumbered(100d)
+      .withAwaitingPayment(10d)
+      .withExpenditures(0d)
+      .withAllocated(100d);
+    MonetaryAmount amount = restrictionService.getBudgetRemainingAmount(budget, currency, new Transaction().withAmount(10d));
+    assertThat(amount.getNumber().doubleValue(), is(10d));
+  }
+
 }
