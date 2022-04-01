@@ -57,6 +57,10 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
     Money totalFunding = allocated.add(netTransfers);
     Money unavailable = encumbered.add(awaitingPayment).add(expended);
 
+    if (unavailable.isGreaterThan(totalFunding) && relatedAwaitingPayment.isLessThan(unavailable)) {
+      return totalFunding.multiply(allowableExpenditure).subtract(unavailable.subtract(relatedAwaitingPayment)).add(relatedAwaitingPayment);
+    }
+
     return totalFunding.multiply(allowableExpenditure).subtract(unavailable).add(relatedAwaitingPayment);
   }
 
