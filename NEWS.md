@@ -1,7 +1,15 @@
 ## 8.2.0 - Unreleased
 
+## 8.1.1 - Released
+The primary focus of this release was to fix encumbrance calculations
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.1.0...v8.1.1)
+
+### Bug Fixes
+* [MODFISTO-294](https://issues.folio.org/browse/MODFISTO-294) FOLIO thinks no money can be expended when fully encumbered
+
 ## 8.1.0 - Released
-The primary focus of this release was to voiding transactions support and fix encumbrance calculations
+The primary focus of this release was to add voiding transactions support and fix encumbrance calculations
 
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.0.0...v8.1.0)
 
