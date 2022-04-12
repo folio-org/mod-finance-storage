@@ -1,5 +1,14 @@
 ## 8.2.0 - Unreleased
 
+## 8.1.2 - Released
+The primary focus of this release was to fix transactions processing
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.1.1...v8.1.2)
+
+### Bug Fixes
+* [MODFISTO-293](https://issues.folio.org/browse/MODFISTO-293) Error All expected transactions already processed
+
+
 ## 8.1.1 - Released
 The primary focus of this release was to fix encumbrance calculations
 
