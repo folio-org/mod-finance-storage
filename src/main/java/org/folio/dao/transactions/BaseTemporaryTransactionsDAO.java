@@ -92,6 +92,21 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
     return promise.future();
   }
 
+  public Future<Integer> deleteTempTransactionsWithNewConn(String summaryId, DBClient client) {
+    Promise<Integer> promise = Promise.promise();
+    Criterion criterion = getSummaryIdCriteria(summaryId);
+
+    client.getPgClient()
+      .delete(getTableName(), criterion, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete(reply.result().rowCount());
+        }
+      });
+    return promise.future();
+  }
+
   public String getTableName() {
     return tableName;
   }
