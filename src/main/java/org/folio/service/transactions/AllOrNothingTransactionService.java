@@ -78,9 +78,11 @@ public class AllOrNothingTransactionService {
 
   private Future<Void> cleanupTempTransactions(Transaction transaction, DBClient client) {
     final String summaryId = transactionSummaryService.getSummaryId(transaction);
-    return client.startTx()
-      .compose(dbClient -> temporaryTransactionDAO.deleteTempTransactions(summaryId, client))
-      .compose(n -> client.endTx());
+    return temporaryTransactionDAO.deleteTempTransactionsWithNewConn(summaryId, client)
+                                  .compose(count -> Future.succeededFuture(null), t -> {
+                                    log.error("Can't delete temporary transaction for {}", summaryId);
+                                    return Future.succeededFuture(null);
+                                  });
   }
 
   private Future<Void> processAllOrNothing(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
