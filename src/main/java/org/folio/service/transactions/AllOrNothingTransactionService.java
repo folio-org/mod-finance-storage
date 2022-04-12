@@ -48,26 +48,41 @@ public class AllOrNothingTransactionService {
     this.transactionRestrictionService = transactionRestrictionService;
   }
 
-  public Future<Transaction> createTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
-    try {
-      transactionRestrictionService.handleValidationError(transaction);
-    } catch (HttpException e) {
-      return  Future.failedFuture(e);
-    }
-
-    return transactionRestrictionService.verifyBudgetHasEnoughMoney(transaction, client)
+  public Future<Transaction> createTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>,
+      DBClient, Future<Void>> operation) {
+    return validateTransactionAsFuture(transaction)
+      .compose(v -> transactionRestrictionService.verifyBudgetHasEnoughMoney(transaction, client))
       .compose(v -> processAllOrNothing(transaction, client, operation))
-      .map(transaction);
+      .map(transaction)
+      .recover(throwable -> cleanupTempTransactions(transaction, client)
+        .compose(v -> Future.failedFuture(throwable), v -> Future.failedFuture(throwable)));
   }
 
-  public Future<Void> updateTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
+  public Future<Void> updateTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>,
+      DBClient, Future<Void>> operation) {
+    return validateTransactionAsFuture(transaction)
+      .compose(v -> verifyTransactionExistence(transaction.getId(), client))
+      .compose(v -> processAllOrNothing(transaction, client, operation))
+      .recover(throwable -> cleanupTempTransactions(transaction, client)
+        .compose(v -> Future.failedFuture(throwable), v -> Future.failedFuture(throwable)));
+  }
+
+  private Future<Void> validateTransactionAsFuture(Transaction transaction) {
     try {
       transactionRestrictionService.handleValidationError(transaction);
+      return Future.succeededFuture();
     } catch (HttpException e) {
       return Future.failedFuture(e);
     }
-    return verifyTransactionExistence(transaction.getId(), client)
-      .compose(v -> processAllOrNothing(transaction, client, operation));
+  }
+
+  private Future<Void> cleanupTempTransactions(Transaction transaction, DBClient client) {
+    final String summaryId = transactionSummaryService.getSummaryId(transaction);
+    return temporaryTransactionDAO.deleteTempTransactionsWithNewConn(summaryId, client)
+                                  .compose(count -> Future.succeededFuture(null), t -> {
+                                    log.error("Can't delete temporary transaction for {}", summaryId);
+                                    return Future.failedFuture(t);
+                                  });
   }
 
   private Future<Void> processAllOrNothing(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
