@@ -81,7 +81,7 @@ public class AllOrNothingTransactionService {
     return temporaryTransactionDAO.deleteTempTransactionsWithNewConn(summaryId, client)
                                   .compose(count -> Future.succeededFuture(null), t -> {
                                     log.error("Can't delete temporary transaction for {}", summaryId);
-                                    return Future.succeededFuture(null);
+                                    return Future.failedFuture(t);
                                   });
   }
 
