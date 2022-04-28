@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.refEq;
@@ -18,11 +19,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.jaxrs.model.EncumbranceRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.persist.DBClient;
@@ -238,8 +241,9 @@ public class LedgerRolloverServiceTest {
 
   @Test
   void shouldUpdateProgressOrdersRolloverStatusWithErrorStatusWhenRolloverPostEmptyResponseFailed(VertxTestContext testContext) {
-    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withId(UUID.randomUUID()
-      .toString());
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
+      .withId(UUID.randomUUID().toString())
+      .withEncumbrancesRollover(List.of(new EncumbranceRollover()));
     LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
 
     Exception e = new IllegalArgumentException("Test");
@@ -262,6 +266,33 @@ public class LedgerRolloverServiceTest {
         testContext.verify(() -> {
           assertThat(event.cause(), is(e));
         });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  void shouldSkipOrderRollover(VertxTestContext testContext) {
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withId(UUID.randomUUID()
+      .toString());
+    LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
+
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+    when(rolloverProgressService.updateRolloverProgress(
+      argThat(progress -> progress.getFinancialRolloverStatus().equals(IN_PROGRESS)), eq(dbClient)))
+      .thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.calculateAndUpdateFinancialProgressStatus(
+      argThat(progress -> progress.getOrdersRolloverStatus().equals(IN_PROGRESS)), eq(dbClient)))
+      .thenReturn(Future.succeededFuture());
+    when(rolloverProgressService.calculateAndUpdateOverallProgressStatus(
+      argThat(progress -> progress.getOrdersRolloverStatus().equals(SUCCESS)), eq(dbClient)))
+      .thenReturn(Future.succeededFuture());
+    when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
+      .thenReturn(Future.succeededFuture());
+
+    testContext.assertComplete(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() ->
+          assertThat(initialProgress, hasProperty("ordersRolloverStatus", is(SUCCESS))));
         testContext.completeNow();
       });
   }
