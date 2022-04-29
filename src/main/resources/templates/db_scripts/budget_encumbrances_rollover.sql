@@ -59,6 +59,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
 			SELECT INTO encumbrance_rollover (er::jsonb) FROM jsonb_array_elements(_rollover_record->'encumbrancesRollover') er WHERE er->>'orderType'='One-time';
 		END IF;
 
+    IF
+      encumbrance_rollover IS NULL
+    THEN
+      RETURN 0.0;
+    END IF;
+
 		IF
 			encumbrance_rollover->>'basedOn'='Expended'
 		THEN

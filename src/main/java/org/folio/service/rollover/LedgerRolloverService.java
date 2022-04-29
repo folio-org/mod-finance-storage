@@ -129,6 +129,10 @@ public class LedgerRolloverService {
   private Future<Void> startOrdersRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
       RequestContext requestContext) {
     DBClient client = requestContext.toDBClient();
+    if (rollover.getEncumbrancesRollover().isEmpty()) {
+      log.info("Orders rollover skipped for Ledger {}", rollover.getLedgerId());
+      return rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress.withOrdersRolloverStatus(SUCCESS), client);
+    }
     log.info("Orders rollover started for Ledger {}", rollover.getLedgerId());
     return orderRolloverRestClient.postEmptyResponse(rollover, requestContext)
         .recover(t -> {
