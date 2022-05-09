@@ -1,5 +1,15 @@
 ## 8.1.4 - Unreleased
 
+## 8.0.4 - Released
+This bugfix release focused on fixing issues with processing transactions and rollover
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.0.3...v8.0.4)
+
+### Bug Fixes
+* [MODFISTO-302](https://issues.folio.org/browse/MODFISTO-302) Kiwi (R3 2021) Hot Fix #3 - Unable to access adjustment ledger
+* [MODFISTO-301](https://issues.folio.org/browse/MODFISTO-301) R3 Kiwi (2021) Hotfix #3 - Error All expected transactions already processed
+
+
 ## 8.0.3 - Released
 This bugfix release focused on fixing encumbrance calculation
 
