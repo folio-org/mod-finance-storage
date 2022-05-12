@@ -23,6 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
 import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.TenantJob;
@@ -181,6 +182,29 @@ public class BudgetTest extends TestBase {
 
     deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then().statusCode(204);
 
+
+    purge(BUDGET_TENANT_HEADER);
+  }
+
+  @Test
+  void testUpdateBudgetConflict() throws Exception {
+    tenantJob = prepareTenant(BUDGET_TENANT_HEADER, false, true);
+
+    givenTestData(BUDGET_TENANT_HEADER,
+      Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
+      Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
+      Pair.of(FUND, FUND.getPathToSampleFile()),
+      Pair.of(BUDGET, BUDGET.getPathToSampleFile()));
+
+    Budget budget1 = getDataById(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).as(Budget.class);
+    Budget budget2 = getDataById(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).as(Budget.class);
+
+    budget1.setAllowableEncumbrance(100.0);
+
+    putData(BUDGET.getEndpointWithId(), BUDGET.getId(), JsonObject.mapFrom(budget1).encodePrettily(), BUDGET_TENANT_HEADER);
+    putData(BUDGET.getEndpointWithId(), BUDGET.getId(), JsonObject.mapFrom(budget2).encodePrettily(), BUDGET_TENANT_HEADER)
+      .then()
+      .statusCode(409);
 
     purge(BUDGET_TENANT_HEADER);
   }
