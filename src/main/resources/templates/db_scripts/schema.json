@@ -91,6 +91,7 @@
     {
       "tableName": "expense_class",
       "fromModuleVersion": "mod-finance-storage-6.0.0",
+      "withOptimisticLocking": "failOnConflict",
       "uniqueIndex": [
         {
           "fieldName": "name",
@@ -106,6 +107,7 @@
       "tableName": "fiscal_year",
       "fromModuleVersion": "mod-finance-storage-5.0.0",
       "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
       "index": [
         {
           "fieldName" : "periodEnd",
@@ -147,6 +149,7 @@
       "tableName": "ledger",
       "fromModuleVersion": "mod-finance-storage-5.0.0",
       "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
       "foreignKeys": [
         {
           "fieldName": "fiscalYearOneId",
@@ -194,6 +197,7 @@
     {
       "tableName": "fund_type",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "withOptimisticLocking": "failOnConflict",
       "uniqueIndex": [
         {
           "fieldName": "name",
@@ -205,6 +209,7 @@
       "tableName": "fund",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
@@ -262,6 +267,7 @@
       "tableName": "budget",
       "fromModuleVersion": "mod-finance-storage-4.1.2",
       "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
       "foreignKeys": [
         {
           "fieldName": "fundId",
@@ -314,6 +320,7 @@
     {
       "tableName": "budget_expense_class",
       "fromModuleVersion": "mod-finance-storage-6.0.0",
+      "withOptimisticLocking": "failOnConflict",
       "uniqueIndex": [
         {
           "fieldName": "budgetId_expenseClassId",
@@ -348,6 +355,7 @@
       "tableName": "transaction",
       "fromModuleVersion": "mod-finance-storage-7.1.0",
       "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
       "customSnippetPath": "transactions.sql",
       "uniqueIndex": [
         {
@@ -408,6 +416,7 @@
       "tableName": "groups",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
       "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
       "ginIndex": [
         {
           "fieldName": "status",
@@ -442,6 +451,7 @@
     {
       "tableName": "group_fund_fiscal_year",
       "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "withOptimisticLocking": "failOnConflict",
       "foreignKeys": [
         {
           "fieldName": "budgetId",
@@ -587,6 +597,7 @@
       "tableName": "ledger_fiscal_year_rollover",
       "fromModuleVersion": "mod-finance-storage-7.0.0",
       "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
       "foreignKeys": [
         {
           "fieldName": "ledgerId",

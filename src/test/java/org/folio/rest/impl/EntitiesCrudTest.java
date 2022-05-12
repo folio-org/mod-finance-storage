@@ -141,7 +141,10 @@ public class EntitiesCrudTest extends TestBase {
   void testGetById(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Fetching %s with ID: %s", testEntity.name(), testEntity.name(),
         testEntity.getId()));
-    testEntitySuccessfullyFetched(testEntity.getEndpointWithId(), testEntity.getId());
+    Response response = testEntitySuccessfullyFetched(testEntity.getEndpointWithId(), testEntity.getId());
+    Integer version = response.then().extract().path("_version");
+    if (version != null)
+      testEntity.setVersion(version);
   }
 
   @ParameterizedTest
@@ -152,6 +155,8 @@ public class EntitiesCrudTest extends TestBase {
         testEntity.getId()));
     JsonObject catJSON = new JsonObject(getSample(testEntity.getSampleFileName()));
     catJSON.put("id", testEntity.getId());
+    if (testEntity.getVersion() != null)
+      catJSON.put("_version", testEntity.getVersion());
     catJSON.put(testEntity.getUpdatedFieldName(), testEntity.getUpdatedFieldValue());
     testEntityEdit(testEntity.getEndpointWithId(), catJSON.toString(), testEntity.getId());
   }

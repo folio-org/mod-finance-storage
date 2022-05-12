@@ -4,7 +4,7 @@
   "provides": [
     {
       "id": "finance-storage.budgets",
-      "version": "2.3",
+      "version": "3.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -40,7 +40,7 @@
     },
     {
       "id": "finance-storage.expense-classes",
-      "version": "2.0",
+      "version": "3.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -71,7 +71,7 @@
     },
     {
       "id": "finance-storage.budget-expense-classes",
-      "version": "1.0",
+      "version": "2.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -102,7 +102,7 @@
     },
     {
       "id": "finance-storage.fiscal-years",
-      "version": "2.1",
+      "version": "3.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -133,7 +133,7 @@
     },
     {
       "id": "finance-storage.fund-types",
-      "version": "1.0",
+      "version": "2.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -164,7 +164,7 @@
     },
     {
       "id": "finance-storage.funds",
-      "version": "3.0",
+      "version": "4.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -195,7 +195,7 @@
     },
     {
       "id": "finance-storage.groups",
-      "version": "1.1",
+      "version": "2.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -251,7 +251,7 @@
     },
     {
       "id": "finance-storage.ledgers",
-      "version": "3.0",
+      "version": "4.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -282,7 +282,7 @@
     },
     {
       "id": "finance-storage.ledger-rollovers",
-      "version": "1.0",
+      "version": "2.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -376,7 +376,7 @@
     },
     {
       "id": "finance-storage.transactions",
-      "version": "3.2",
+      "version": "4.0",
       "handlers": [
         {
           "methods": ["GET"],
