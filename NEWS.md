@@ -1,5 +1,14 @@
 ## 8.1.4 - Unreleased
 
+## 8.0.5 - Released
+This bugfix release focused on fixing issues with processing transactions during rollover
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.0.4...v8.0.5)
+
+### Bug Fixes
+* [MODFISTO-305](https://issues.folio.org/browse/MODFISTO-305) Kiwi (R3 2021) Hot Fix #3 - Budgets not created during FYRO for some ledgers
+
+
 ## 8.0.4 - Released
 This bugfix release focused on fixing issues with processing transactions and rollover
 
