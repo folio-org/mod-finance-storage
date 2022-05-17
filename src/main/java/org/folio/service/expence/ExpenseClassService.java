@@ -66,6 +66,7 @@ public class ExpenseClassService {
     if (group.getId() == null) {
       group.setId(UUID.randomUUID().toString());
     }
+    group.setVersion(1);
     pgClient.save(EXPENSE_CLASS_TABLE, group.getId(), group, reply -> {
       if (reply.failed()) {
         promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, ExpenseClass.class));

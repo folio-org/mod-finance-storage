@@ -116,14 +116,18 @@ public class PendingPaymentDAOTest extends TestBase {
     testContext.assertComplete(
       client.startTx()
       .compose(v -> promise1.future())
-      .compose(id1 -> promise2.future()
-      .compose(id2 -> {
-        t1.withId(id1).withTransactionType(PENDING_PAYMENT);
-        t2.withId(id2).withTransactionType(ALLOCATION);
-        return pendingPaymentDAO.updatePermanentTransactions(Arrays.asList(t1, t2), client);
-      }))
-        .compose(aVoid -> client.endTx())
-      .compose(o -> pendingPaymentDAO.getTransactions(new Criterion(), new DBClient(vertx, TEST_TENANT))))
+      .compose(id1 -> promise2.future())
+      .compose(id2 -> pendingPaymentDAO.getTransactions(new Criterion(), client))
+      .compose(transactions -> {
+        assertThat(transactions, hasSize(2));
+        t1.setId(transactions.get(0).getId());
+        t2.setId(transactions.get(1).getId());
+        transactions.get(0).withTransactionType(PENDING_PAYMENT);
+        transactions.get(1).withTransactionType(ALLOCATION);
+        return pendingPaymentDAO.updatePermanentTransactions(transactions, client);
+      })
+      .compose(aVoid -> client.endTx())
+      .compose(o -> pendingPaymentDAO.getTransactions(new Criterion(), client)))
       .onComplete(event -> {
         List<Transaction> transactions = event.result();
         testContext.verify(() -> {

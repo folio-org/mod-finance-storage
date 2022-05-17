@@ -36,6 +36,10 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
     if (transaction.getId() == null) {
       transaction.setId(UUID.randomUUID().toString());
     }
+    if (transaction.getVersion() != null)
+      transaction.setVersion(transaction.getVersion());
+    else
+      transaction.setVersion(1);
 
     logger.debug("Creating new transaction with id={}", transaction.getId());
 

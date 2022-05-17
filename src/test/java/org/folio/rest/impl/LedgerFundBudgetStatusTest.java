@@ -39,6 +39,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
 
     Fund fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class).withLedgerId(ledgerId).withId(null).withFundTypeId(null);
     String fundId = createEntity(FUND.getEndpoint(), fund.withCode("first").withName(fund.getCode()).withFundStatus(Fund.FundStatus.ACTIVE));
+    fund = getDataById(FUND.getEndpointWithId(), fundId).then().statusCode(200).extract().as(Fund.class);
 
     FiscalYear fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class).withId(null);
     fiscalYear.withCode("FY2019").withName(fiscalYear.getCode())
@@ -93,6 +94,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
 
     Fund fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class).withLedgerId(ledgerId).withId(null).withFundTypeId(null);
     String fundId = createEntity(FUND.getEndpoint(), fund.withCode("first").withName(fund.getCode()).withFundStatus(Fund.FundStatus.ACTIVE));
+    fund = getDataById(FUND.getEndpointWithId(), fundId).then().statusCode(200).extract().as(Fund.class);
     fund.setFundStatus(FROZEN);
 
     putData(FUND.getEndpointWithId(), fundId, JsonObject.mapFrom(fund).encodePrettily()).then().statusCode(204);
@@ -112,6 +114,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
 
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withLedgerStatus(Ledger.LedgerStatus.ACTIVE).withId(null);
     String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(fiscalYearOneId));
+    ledger = getDataById(LEDGER.getEndpointWithId(), ledgerId).then().statusCode(200).extract().as(Ledger.class);
 
     Fund fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class)
       .withLedgerId(ledgerId).withId(null)
@@ -178,6 +181,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
 
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withLedgerStatus(Ledger.LedgerStatus.ACTIVE).withId(null);
     String ledgerId = createEntity(LEDGER.getEndpoint(), ledger.withCode("first").withName(ledger.getCode()).withFiscalYearOneId(fiscalYearOneId));
+    ledger = getDataById(LEDGER.getEndpointWithId(), ledgerId).then().statusCode(200).extract().as(Ledger.class);
 
     putData(LEDGER.getEndpointWithId(), ledgerId, JsonObject.mapFrom(ledger.withLedgerStatus(Ledger.LedgerStatus.INACTIVE)).encodePrettily()).then().statusCode(204);
     Ledger ledgerFromDB = getDataById(LEDGER.getEndpointWithId(), ledgerId).as(Ledger.class);

@@ -36,6 +36,7 @@ public enum TestEntities {
   private String endpoint;
   private String sampleFileName;
   private String sampleId;
+  private Integer version;
   private String pathToSamples;
   private String updatedFieldName;
   private String updatedFieldValue;
@@ -77,8 +78,15 @@ public enum TestEntities {
     return sampleId;
   }
 
-
   public void setId(String id) {
     this.sampleId = id;
+  }
+
+  public Integer getVersion() {
+    return version;
+  }
+
+  public void setVersion(Integer version) {
+    this.version = version;
   }
 }

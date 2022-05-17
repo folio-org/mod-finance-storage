@@ -76,9 +76,10 @@ public class TransferService extends AbstractTransactionService implements Trans
 
   public Future<Transaction> createTransfer(Transaction transaction, DBClient dbClient) {
     Promise<Transaction> promise = Promise.promise();
-      if (StringUtils.isEmpty(transaction.getId())) {
-          transaction.setId(UUID.randomUUID().toString());
-      }
+    if (StringUtils.isEmpty(transaction.getId())) {
+      transaction.setId(UUID.randomUUID().toString());
+    }
+    transaction.setVersion(1);
     dbClient.getPgClient()
       .save(dbClient.getConnection(), TRANSACTION_TABLE, transaction.getId(), transaction, event -> {
         if (event.succeeded()) {

@@ -72,6 +72,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
       transaction.setId(UUID.randomUUID()
         .toString());
     }
+    transaction.setVersion(1);
 
     client.getPgClient()
       .save(client.getConnection(), TRANSACTION_TABLE, transaction.getId(), transaction, event -> {

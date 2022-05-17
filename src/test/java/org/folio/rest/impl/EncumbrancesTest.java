@@ -422,9 +422,12 @@ public class EncumbrancesTest extends TestBase {
       .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
     // 3 encumbrances appear in transaction table
-     getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
-     getDataById(TRANSACTION.getEndpointWithId(), encumbrance2Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
-     getDataById(TRANSACTION.getEndpointWithId(), encumbrance3Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    encumbrance1 = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER)
+      .then().statusCode(200).extract().as(Transaction.class);
+    encumbrance2 = getDataById(TRANSACTION.getEndpointWithId(), encumbrance2Id, TRANSACTION_TENANT_HEADER)
+      .then().statusCode(200).extract().as(Transaction.class);
+    encumbrance3 = getDataById(TRANSACTION.getEndpointWithId(), encumbrance3Id, TRANSACTION_TENANT_HEADER)
+      .then().statusCode(200).extract().as(Transaction.class);
     Budget fromBudgetBeforeUpdate = getDataById(BUDGET.getEndpointWithId(), budgetId, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
 
     verifyBudgetTotalsAfter(fromBudgetBeforeUpdate);
@@ -766,7 +769,7 @@ public class EncumbrancesTest extends TestBase {
       .as(Transaction.class).getId();
 
     // encumbrance appears in transaction table
-    getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
+    encumbrance1 = getDataById(TRANSACTION.getEndpointWithId(), encumbrance1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Transaction.class);
 
     Budget fromBudget1BeforeUpdate = getDataById(BUDGET.getEndpointWithId(), budget1Id, TRANSACTION_TENANT_HEADER).then().statusCode(200).extract().as(Budget.class);
 

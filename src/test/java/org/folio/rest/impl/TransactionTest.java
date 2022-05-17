@@ -16,11 +16,14 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.MalformedURLException;
+import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
+import org.folio.rest.jaxrs.model.Encumbrance;
+import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.junit.jupiter.api.AfterAll;
@@ -35,6 +38,7 @@ import io.vertx.core.json.JsonObject;
 public class TransactionTest extends TestBase {
 
   protected static final String TRANSACTION_ENDPOINT = TRANSACTION.getEndpoint();
+  protected static final String TRANSACTION_ENDPOINT_BY_ID = TRANSACTION.getEndpointWithId();
   protected static final String TRANSACTION_TEST_TENANT = "transaction_test_tenant";
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
@@ -51,6 +55,8 @@ public class TransactionTest extends TestBase {
   public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets/CANLATHIST-FY22-closed.json";
   public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets/ANZHIST-FY22.json";
   public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations/allocation_CANLATHIST-FY22.json";
+  private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
+  private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
   private static TenantJob tenantJob;
 
   @BeforeEach
@@ -279,6 +285,65 @@ public class TransactionTest extends TestBase {
       .body(BUDGETS, hasSize(1))
       .extract()
       .as(BudgetCollection.class).getBudgets().get(0);
+  }
+
+  @Test
+  void testUpdateEncumbranceConflict() throws MalformedURLException {
+    givenTestData(TRANSACTION_TENANT_HEADER,
+      Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
+      Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
+      Pair.of(FUND, FUND.getPathToSampleFile()),
+      Pair.of(BUDGET, BUDGET.getPathToSampleFile()));
+
+    String orderId = UUID.randomUUID().toString();
+    String orderLineId = UUID.randomUUID().toString();
+    OrderTransactionSummary postSummary = new OrderTransactionSummary()
+      .withId(orderId)
+      .withNumTransactions(1);
+    postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(postSummary).encodePrettily(), TRANSACTION_TENANT_HEADER)
+      .then().statusCode(201);
+
+    String encumbranceId = UUID.randomUUID().toString();
+    Transaction encumbrance = new Transaction()
+      .withId(encumbranceId)
+      .withCurrency("USD")
+      .withFromFundId(FUND.getId())
+      .withTransactionType(Transaction.TransactionType.ENCUMBRANCE)
+      .withAmount(10.0)
+      .withFiscalYearId(FISCAL_YEAR.getId())
+      .withSource(Transaction.Source.PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withOrderType(Encumbrance.OrderType.ONE_TIME)
+        .withOrderStatus(Encumbrance.OrderStatus.OPEN)
+        .withSourcePurchaseOrderId(orderId)
+        .withSourcePoLineId(orderLineId)
+        .withInitialAmountEncumbered(10d)
+        .withSubscription(false)
+        .withReEncumber(false));
+    postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER)
+      .then().statusCode(201);
+
+    Transaction encumbrance2 = JsonObject.mapFrom(encumbrance).mapTo(Transaction.class)
+      .withAmount(9.0);
+    OrderTransactionSummary putSummary1 = new OrderTransactionSummary()
+      .withId(orderId)
+      .withNumTransactions(1);
+    putData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, orderId, JsonObject.mapFrom(putSummary1).encodePrettily(),
+        TRANSACTION_TENANT_HEADER)
+      .then().statusCode(204);
+    putData(TRANSACTION_ENDPOINT_BY_ID, encumbranceId, JsonObject.mapFrom(encumbrance2).encodePrettily(), TRANSACTION_TENANT_HEADER)
+      .then().statusCode(204);
+
+    Transaction encumbrance3 = JsonObject.mapFrom(encumbrance).mapTo(Transaction.class)
+      .withAmount(8.0);
+    OrderTransactionSummary putSummary2 = new OrderTransactionSummary()
+      .withId(orderId)
+      .withNumTransactions(1);
+    putData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, orderId, JsonObject.mapFrom(putSummary2).encodePrettily(),
+        TRANSACTION_TENANT_HEADER)
+      .then().statusCode(204);
+    putData(TRANSACTION_ENDPOINT_BY_ID, encumbranceId, JsonObject.mapFrom(encumbrance3).encodePrettily(), TRANSACTION_TENANT_HEADER)
+      .then().statusCode(409);
   }
 
 }

@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.pgclient.PgException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.persist.DBClient;
@@ -61,6 +62,12 @@ public class ResponseUtils {
 
   public static <T, V> void handleFailure(Promise<T> promise, AsyncResult<V> reply) {
     Throwable cause = reply.cause();
+    if (cause instanceof PgException && "23F09".equals(((PgException)cause).getCode())) {
+      String message = "Conflict when updating a record in table " + ((PgException)cause).getTable() + ": " +
+        ((PgException)cause).getErrorMessage();
+      promise.fail(new HttpException(Response.Status.CONFLICT.getStatusCode(), message));
+      return;
+    }
     String badRequestMessage = PgExceptionUtil.badRequestMessage(cause);
     if (badRequestMessage != null) {
       promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), badRequestMessage));
