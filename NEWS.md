@@ -1,5 +1,14 @@
 ## 8.2.0 - Unreleased
 
+## 8.1.3 - Released
+This bugfix release was focused on fixing issues with processing transactions during rollover
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.1.2...v8.1.3)
+
+### Bug Fixes
+* [MODFISTO-310](https://issues.folio.org/browse/MODFISTO-310) R1 Lotus HF#1 - Budgets not created during FYRO for some ledgers
+
+
 ## 8.1.2 - Released
 The primary focus of this release was to fix transactions processing
 
