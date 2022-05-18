@@ -1,5 +1,14 @@
 ## 8.2.0 - Unreleased
 
+## 8.1.4 - Released
+This bugfix release was focused on fixing issues with accessing adjustment ledger
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.1.3...v8.1.4)
+
+### Bug Fixes
+* [MODFISTO-308](https://issues.folio.org/browse/MODFISTO-308) R1 Lotus HF#1 - Unable to access adjustment ledger
+
+
 ## 8.1.3 - Released
 This bugfix release was focused on fixing issues with processing transactions during rollover
 
