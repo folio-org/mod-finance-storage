@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.folio</groupId>
   <artifactId>mod-finance-storage</artifactId>
-  <version>v8.0.5-SNAPSHOT</version>
+  <version>8.0.5</version>
   <packaging>jar</packaging>
 
   <licenses>
@@ -498,7 +498,7 @@
     <url>https://github.com/folio-org/mod-finance-storage</url>
     <connection>scm:git:git://github.com/folio-org/mod-finance-storage.git</connection>
     <developerConnection>scm:git:git@github.com:folio-org/mod-finance-storage.git</developerConnection>
-    <tag>v8.0.0</tag>
+    <tag>v8.0.5</tag>
   </scm>
 
 </project>
