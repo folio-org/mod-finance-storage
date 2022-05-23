@@ -23,6 +23,15 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
 public abstract class CancelTransactionService {
 
+  private static final String SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE =
+    "SELECT b.jsonb FROM %s b INNER JOIN (SELECT DISTINCT budgets.id FROM %s budgets INNER JOIN %s transactions "
+      + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND "
+      + "transactions.fiscalYearId = budgets.fiscalYearId) "
+      + "WHERE transactions.sourceInvoiceId = $1 AND "
+      + "transactions.jsonb ->> 'transactionType' IN ('Payment', 'Credit', 'Pending payment')) "
+      + "sub ON sub.id = b.id "
+      + "FOR UPDATE OF b";
+
   private final BudgetService budgetService;
   private final TransactionDAO paymentCreditDAO;
   private final TransactionDAO encumbranceDAO;
@@ -32,15 +41,6 @@ public abstract class CancelTransactionService {
     this.paymentCreditDAO = paymentCreditDAO;
     this.encumbranceDAO = encumbranceDAO;
   }
-
-  String SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE =
-    "SELECT b.jsonb FROM %s b INNER JOIN (SELECT DISTINCT budgets.id FROM %s budgets INNER JOIN %s transactions "
-    + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND "
-    + "transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = $1 AND "
-    + "transactions.jsonb ->> 'transactionType' IN ('Payment', 'Credit', 'Pending payment')) "
-    + "sub ON sub.id = b.id "
-    + "FOR UPDATE OF b";
 
   /**
    * Updates given transactions, related encumbrances and related budgets to cancel the transactions.
