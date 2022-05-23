@@ -45,9 +45,12 @@ import org.javamoney.moneta.function.MonetaryFunctions;
 
 public class PendingPaymentService implements TransactionManagingStrategy {
 
-  public static final String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+  public static final String SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE =
+    "SELECT b.jsonb FROM %s b INNER JOIN (SELECT DISTINCT budgets.id FROM %s budgets INNER JOIN %s transactions "
     + "ON (budgets.fundId = transactions.fromFundId  AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' = 'Pending payment'";
+    + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' = 'Pending payment') "
+    + "sub ON sub.id = b.id "
+    + "FOR UPDATE OF b";
 
   private final AllOrNothingTransactionService allOrNothingTransactionService;
   private final TransactionDAO transactionsDAO;
@@ -137,7 +140,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
 
     String summaryId = getSummaryId(transactions.get(0));
 
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)
+    return budgetService.getBudgets(getSelectBudgetsQueryForUpdate(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), client)
       .compose(oldBudgets -> processLinkedPendingPayments(linkedToEncumbrance, oldBudgets, client)
         .map(budgets -> processNotLinkedPendingPayments(notLinkedToEncumbrance, budgets))
         .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client)))
@@ -327,8 +330,10 @@ public class PendingPaymentService implements TransactionManagingStrategy {
     return transaction.getSourceInvoiceId();
   }
 
-  private String getSelectBudgetsQuery(String tenantId) {
-    return String.format(SELECT_BUDGETS_BY_INVOICE_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
+  private String getSelectBudgetsQueryForUpdate(String tenantId) {
+    String budgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
+    String transactionTableName = getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS);
+    return String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
   }
 
 }

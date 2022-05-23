@@ -46,6 +46,10 @@ public class BudgetService {
   public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
   public static final String BUDGET_NOT_FOUND_FOR_TRANSACTION = "Budget not found for pair fiscalYear-fundId";
 
+  public static final String SELECT_BUDGETS_BY_FY_AND_FUND_FOR_UPDATE = "SELECT jsonb FROM %s "
+    + "WHERE jsonb->>'fiscalYearId' = $1 AND jsonb->>'fundId' = $2"
+    + "FOR UPDATE";
+
   private final Logger logger = LogManager.getLogger(this.getClass());
 
   private BudgetDAO budgetDAO;
@@ -158,6 +162,26 @@ public class BudgetService {
     return promise.future();
   }
 
+  public Future<Budget> getBudgetByFiscalYearIdAndFundIdForUpdate(String fiscalYearId, String fundId, DBClient dbClient) {
+    Promise<Budget> promise = Promise.promise();
+
+    String sql = getSelectBudgetQueryByFyAndFundForUpdate(dbClient.getTenantId());
+
+    budgetDAO.getBudgets(sql, Tuple.of(fiscalYearId, fundId), dbClient)
+      .onComplete(reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else if (reply.result().isEmpty()) {
+          logger.error(BUDGET_NOT_FOUND_FOR_TRANSACTION);
+          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_NOT_FOUND_FOR_TRANSACTION));
+        } else {
+          promise.complete(reply.result().get(0));
+        }
+      });
+
+    return promise.future();
+  }
+
   public Future<Integer> updateBatchBudgets(Collection<Budget> budgets, DBClient client) {
     budgets.forEach(this::clearReadOnlyFields);
     return budgetDAO.updateBatchBudgets(buildUpdateBudgetsQuery(budgets, client.getTenantId()), client);
@@ -233,6 +257,11 @@ public class BudgetService {
 
     return budgetDAO.updateBatchBudgets(sql, client)
       .map(integer -> null);
+  }
+
+  private String getSelectBudgetQueryByFyAndFundForUpdate(String tenantId){
+    String budgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
+    return String.format(SELECT_BUDGETS_BY_FY_AND_FUND_FOR_UPDATE, budgetTableName);
   }
 
 }

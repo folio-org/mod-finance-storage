@@ -36,9 +36,11 @@ public class EncumbranceService implements TransactionManagingStrategy {
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
 
-  public static final String SELECT_BUDGETS_BY_ORDER_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
+  public static final String SELECT_BUDGETS_BY_ORDER_ID_FOR_UPDATE =
+    "SELECT b.jsonb FROM %s b INNER JOIN (SELECT DISTINCT budgets.id FROM %s budgets INNER JOIN %s transactions "
     + "ON transactions.fromFundId = budgets.fundId AND transactions.fiscalYearId = budgets.fiscalYearId "
-    + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = $1";
+    + "WHERE transactions.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = $1) sub ON sub.id = b.id "
+    + "FOR UPDATE OF b";
   public static final String FOR_UPDATE = "FOR_UPDATE";
   public static final String FOR_CREATE = "FOR_CREATE";
   public static final String EXISTING = "EXISTING";
@@ -72,8 +74,10 @@ public class EncumbranceService implements TransactionManagingStrategy {
     return budgets.stream().collect(toMap(identity(), budget -> groupedTransactions.getOrDefault(budget.getFundId(), Collections.emptyList())));
   }
 
-  private String getSelectBudgetsQuery(String tenantId) {
-    return String.format(SELECT_BUDGETS_BY_ORDER_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS));
+  private String getSelectBudgetsQueryForUpdate(String tenantId) {
+    String budgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
+    String transactionTableName = getFullTableName(tenantId, TEMPORARY_ORDER_TRANSACTIONS);
+    return String.format(SELECT_BUDGETS_BY_ORDER_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
   }
 
   public Transaction.TransactionType getStrategyName() {
@@ -168,7 +172,8 @@ public class EncumbranceService implements TransactionManagingStrategy {
   private Future<Integer> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, List<Transaction> newTransactions,
                                            DBClient client) {
 
-    return budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()), Tuple.of(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId()), client)
+    return budgetService.getBudgets(getSelectBudgetsQueryForUpdate(client.getTenantId()),
+        Tuple.of(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId()), client)
       .compose(oldBudgets -> {
 
         List<Budget> updatedBudgets = updateBudgetsTotalsForCreatingTransactions(groupedTransactions.get(FOR_CREATE), oldBudgets);
