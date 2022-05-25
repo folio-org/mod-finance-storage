@@ -2,20 +2,29 @@ package org.folio.builders.error;
 
 import static org.folio.rest.util.ErrorCodes.GENERIC_ERROR_CODE;
 
+import java.text.MessageFormat;
 import java.util.Optional;
 
 import javax.ws.rs.core.Response;
 
 import io.vertx.ext.web.handler.HttpException;
+import io.vertx.pgclient.PgException;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgExceptionUtil;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.json.JsonObject;
+import org.folio.rest.util.ErrorCodes;
 
 public class NameCodeConstraintErrorBuilder {
 
   public  <T> HttpException buildException(AsyncResult<T> reply, Class<?> clazz ) {
+    Throwable cause = reply.cause();
+    if (cause instanceof PgException && "23F09".equals(((PgException)cause).getCode())) {
+      String message = MessageFormat.format(ErrorCodes.CONFLICT.getDescription(), ((PgException)cause).getTable(),
+        ((PgException)cause).getErrorMessage());
+      return new HttpException(Response.Status.CONFLICT.getStatusCode(), message);
+    }
     String error = convertExceptionToStringError(reply, clazz);
     if (GENERIC_ERROR_CODE.getCode().equals(error)) {
       return new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), error);
