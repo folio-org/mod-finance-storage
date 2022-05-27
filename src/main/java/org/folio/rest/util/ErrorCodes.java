@@ -9,7 +9,8 @@ public enum ErrorCodes {
   NOT_ENOUGH_MONEY_FOR_ALLOCATION("notEnoughMoneyForAllocationError", "Allocation was not successful. There is not enough money Available in the budget to complete this Allocation."),
   BUDGET_EXPENSE_CLASS_REFERENCE_ERROR("budgetExpenseClassReferenceError", "Can't delete budget that referenced with expense class"),
   MISSING_FUND_ID("missingFundId", "One of the fields toFundId or fromFundId must be specified"),
-  MUST_BE_POSITIVE("mustBePositive", "Value must be greater than zero");
+  MUST_BE_POSITIVE("mustBePositive", "Value must be greater than zero"),
+  CONFLICT("conflict", "Conflict when updating a record in table {0}: {1}");
 
   private final String code;
   private final String description;
