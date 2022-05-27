@@ -469,7 +469,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
          -- #2 Create allocations
         INSERT INTO ${myuniversity}_${mymodule}.transaction
              (
-                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER8', budget.jsonb->>'id', _rollover_record->>'id')),
+                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER8', budget.jsonb->>'id')),
                     jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Allocation',
                     'source', 'User', 'currency', toFiscalYear->>'currency', 'amount', (budget.jsonb->>'initialAllocation')::decimal+
                         (budget.jsonb->>'allocationTo')::decimal-
@@ -488,7 +488,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         -- #3 Create transfers
         INSERT INTO ${myuniversity}_${mymodule}.transaction
               (
-                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER9', budget.jsonb->>'id', _rollover_record->>'id')), jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Rollover transfer',
+                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER9', budget.jsonb->>'id')), jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Rollover transfer',
                                                                'source', 'User', 'currency', toFiscalYear->>'currency', 'amount', (budget.jsonb->>'netTransfers')::decimal-sum(COALESCE((tr_to.jsonb->>'amount')::decimal, 0.00))+sum(COALESCE((tr_from.jsonb->>'amount')::decimal, 0.00)),
                                                                'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text))
                  FROM ${myuniversity}_${mymodule}.budget AS budget
