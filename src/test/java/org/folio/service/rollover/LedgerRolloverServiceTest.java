@@ -1,5 +1,7 @@
 package org.folio.service.rollover;
 
+import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.FINANCIAL_ROLLOVER;
+import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.ORDER_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.NOT_STARTED;
@@ -16,7 +18,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -59,6 +63,9 @@ public class LedgerRolloverServiceTest {
 
   @Mock
   private RolloverProgressService rolloverProgressService;
+
+  @Mock
+  private RolloverErrorService rolloverErrorService;
 
   @Mock
   private BudgetService budgetService;
@@ -214,8 +221,9 @@ public class LedgerRolloverServiceTest {
   @Test
   void shouldUpdateProgressFinancialRolloverStatusWithErrorStatusWhenRunBudgetEncumbrancesRolloverScriptFailed(
       VertxTestContext testContext) {
-    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withId(UUID.randomUUID()
-      .toString());
+    LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
+      .withId(UUID.randomUUID().toString())
+      .withLedgerId(UUID.randomUUID().toString());
     LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
     Exception e = new IllegalArgumentException("Test");
     when(requestContext.toDBClient()).thenReturn(dbClient);
@@ -226,6 +234,9 @@ public class LedgerRolloverServiceTest {
       .thenReturn(Future.succeededFuture());
     when(rolloverProgressService.updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(ERROR)
       .withOverallRolloverStatus(ERROR), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverErrorService.createRolloverError(any(), any())).thenReturn(Future.succeededFuture());
+    when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
+    when(dbClient.endTx()).thenReturn(Future.succeededFuture());
     when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
       .thenReturn(Future.failedFuture(e));
 
@@ -234,6 +245,11 @@ public class LedgerRolloverServiceTest {
         testContext.verify(() -> {
           assertThat(event.cause(), is(e));
           verify(orderRolloverRestClient, never()).postEmptyResponse(any(), any());
+          // We can't verify the parameters used with verify because the progress object is modified after the first call.
+          verify(rolloverProgressService, times(2)).updateRolloverProgress(any(), any());
+          verify(rolloverErrorService, times(1))
+            .createRolloverError(argThat(error -> error.getErrorType() == FINANCIAL_ROLLOVER), eq(dbClient));
+          verifyNoMoreInteractions(rolloverErrorService);
         });
         testContext.completeNow();
       });
@@ -243,6 +259,7 @@ public class LedgerRolloverServiceTest {
   void shouldUpdateProgressOrdersRolloverStatusWithErrorStatusWhenRolloverPostEmptyResponseFailed(VertxTestContext testContext) {
     LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
       .withId(UUID.randomUUID().toString())
+      .withLedgerId(UUID.randomUUID().toString())
       .withEncumbrancesRollover(List.of(new EncumbranceRollover()));
     LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
 
@@ -256,6 +273,9 @@ public class LedgerRolloverServiceTest {
     when(rolloverProgressService.updateRolloverProgress(refEq(getInitialProgress(rollover).withFinancialRolloverStatus(SUCCESS)
       .withOrdersRolloverStatus(ERROR)
       .withOverallRolloverStatus(ERROR), "id"), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverErrorService.createRolloverError(any(), any())).thenReturn(Future.succeededFuture());
+    when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
+    when(dbClient.endTx()).thenReturn(Future.succeededFuture());
 
     when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
       .thenReturn(Future.succeededFuture());
@@ -265,6 +285,9 @@ public class LedgerRolloverServiceTest {
       .onComplete(event -> {
         testContext.verify(() -> {
           assertThat(event.cause(), is(e));
+          verify(rolloverProgressService, times(2)).updateRolloverProgress(any(), any());
+          verify(rolloverErrorService, times(1))
+            .createRolloverError(argThat(error -> error.getErrorType() == ORDER_ROLLOVER), eq(dbClient));
         });
         testContext.completeNow();
       });

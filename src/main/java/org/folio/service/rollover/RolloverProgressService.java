@@ -2,7 +2,6 @@ package org.folio.service.rollover;
 
 import io.vertx.core.Future;
 import io.vertx.ext.web.handler.HttpException;
-import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -11,13 +10,13 @@ import org.folio.rest.persist.DBClient;
 
 public class RolloverProgressService {
 
-    public static final String LEDGER_ROLLOVER_ID = "ledgerRolloverId";
-    private final RolloverProgressDAO rolloverProgressDAO;
-  private final RolloverErrorDAO rolloverErrorDAO;
+  public static final String LEDGER_ROLLOVER_ID = "ledgerRolloverId";
+  private final RolloverProgressDAO rolloverProgressDAO;
+  private final RolloverErrorService rolloverErrorService;
 
-  public RolloverProgressService(RolloverProgressDAO rolloverProgressDAO, RolloverErrorDAO rolloverErrorDAO) {
+  public RolloverProgressService(RolloverProgressDAO rolloverProgressDAO, RolloverErrorService rolloverErrorService) {
     this.rolloverProgressDAO = rolloverProgressDAO;
-    this.rolloverErrorDAO = rolloverErrorDAO;
+    this.rolloverErrorService = rolloverErrorService;
   }
 
   public Future<Void> createRolloverProgress(LedgerFiscalYearRolloverProgress progress, DBClient client) {
@@ -44,7 +43,7 @@ public class RolloverProgressService {
   public Future<Void> calculateAndUpdateFinancialProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
     Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, progress.getLedgerRolloverId())
       .build();
-    return rolloverErrorDAO.get(criterion, client)
+    return rolloverErrorService.getRolloverErrors(criterion, client)
       .compose(rolloverErrors -> {
         if (rolloverErrors.isEmpty()) {
           progress.setFinancialRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS);
@@ -58,7 +57,7 @@ public class RolloverProgressService {
   public Future<Void> calculateAndUpdateOverallProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
     Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, progress.getLedgerRolloverId())
       .build();
-    return rolloverErrorDAO.get(criterion, client)
+    return rolloverErrorService.getRolloverErrors(criterion, client)
       .compose(rolloverErrors -> {
         if (rolloverErrors.isEmpty()) {
           progress.setOverallRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS);
@@ -71,10 +70,5 @@ public class RolloverProgressService {
 
   public Future<Void> deleteRolloverProgress(String rolloverId, DBClient client) {
     return rolloverProgressDAO.delete(rolloverId, client);
-  }
-
-  public Future<Void> deleteRolloverErrors(String ledgerRolloverId, DBClient client) {
-    Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, ledgerRolloverId).build();
-    return rolloverErrorDAO.deleteByQuery(criterion, client);
   }
 }

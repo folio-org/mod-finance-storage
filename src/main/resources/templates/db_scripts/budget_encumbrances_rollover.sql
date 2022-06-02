@@ -523,7 +523,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER3', _rollover_record->>'id')), jsonb_build_object
                 (
                   'ledgerRolloverId', _rollover_record->>'id',
-                  'errorType', 'Fund',
+                  'errorType', 'Other',
                   'failedAction', exceptionText,
                   'errorMessage', exceptionDetails
                 );

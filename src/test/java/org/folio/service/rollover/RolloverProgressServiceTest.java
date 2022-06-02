@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 
-import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
@@ -34,7 +33,7 @@ public class RolloverProgressServiceTest {
   @Mock
   private RolloverProgressDAO rolloverProgressDAO;
   @Mock
-  private RolloverErrorDAO rolloverErrorDAO;
+  private RolloverErrorService rolloverErrorService;
   @Mock
   private DBClient client;
 
@@ -50,7 +49,8 @@ public class RolloverProgressServiceTest {
       .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
 
     LedgerFiscalYearRolloverError error = new LedgerFiscalYearRolloverError();
-    when(rolloverErrorDAO.get(any(), any())).thenReturn(Future.succeededFuture(Collections.singletonList(error)));
+    when(rolloverErrorService.getRolloverErrors(any(), any()))
+      .thenReturn(Future.succeededFuture(Collections.singletonList(error)));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))
@@ -70,7 +70,8 @@ public class RolloverProgressServiceTest {
     LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
       .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
 
-    when(rolloverErrorDAO.get(any(), any())).thenReturn(Future.succeededFuture(Collections.emptyList()));
+    when(rolloverErrorService.getRolloverErrors(any(), any()))
+      .thenReturn(Future.succeededFuture(Collections.emptyList()));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))
@@ -91,7 +92,8 @@ public class RolloverProgressServiceTest {
       .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
 
     LedgerFiscalYearRolloverError error = new LedgerFiscalYearRolloverError();
-    when(rolloverErrorDAO.get(any(), any())).thenReturn(Future.succeededFuture(Collections.singletonList(error)));
+    when(rolloverErrorService.getRolloverErrors(any(), any()))
+      .thenReturn(Future.succeededFuture(Collections.singletonList(error)));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))
@@ -111,7 +113,8 @@ public class RolloverProgressServiceTest {
     LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
       .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
 
-    when(rolloverErrorDAO.get(any(), any())).thenReturn(Future.succeededFuture(Collections.emptyList()));
+    when(rolloverErrorService.getRolloverErrors(any(), any()))
+      .thenReturn(Future.succeededFuture(Collections.emptyList()));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))

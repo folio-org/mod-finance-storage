@@ -17,7 +17,6 @@ public class RolloverErrorDAO {
 
   public Future<List<LedgerFiscalYearRolloverError>> get(Criterion filter, DBClient client) {
     Promise<List<LedgerFiscalYearRolloverError>> promise = Promise.promise();
-
     client.getPgClient()
       .get(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, LedgerFiscalYearRolloverError.class, filter, true, reply -> {
         if (reply.failed()) {
@@ -26,7 +25,19 @@ public class RolloverErrorDAO {
           promise.complete(reply.result().getResults());
         }
       });
+    return promise.future();
+  }
 
+  public Future<Void> create(LedgerFiscalYearRolloverError rolloverError, DBClient client) {
+    Promise<Void> promise = Promise.promise();
+    client.getPgClient()
+      .save(client.getConnection(), LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, rolloverError.getId(), rolloverError, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete();
+        }
+      });
     return promise.future();
   }
 
