@@ -14,7 +14,6 @@ import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
-import org.folio.rest.jaxrs.model.Details;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType;
