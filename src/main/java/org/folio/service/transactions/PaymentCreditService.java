@@ -40,9 +40,14 @@ public class PaymentCreditService extends AbstractTransactionService implements 
 
   private static final String TRANSACTIONS_TABLE = "transaction";
 
-  public static final String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
-    + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
+  public static final String SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE =
+    "SELECT b.jsonb FROM %s b INNER JOIN (SELECT DISTINCT budgets.id FROM %s budgets INNER JOIN %s transactions "
+    + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND "
+    + "transactions.fiscalYearId = budgets.fiscalYearId) "
+    + "WHERE transactions.sourceInvoiceId = $1 AND "
+    + "(transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')) "
+    + "sub ON sub.id = b.id "
+    + "FOR UPDATE OF b";
 
   public static final String SELECT_PERMANENT_TRANSACTIONS = "SELECT DISTINCT ON (permtransactions.id) permtransactions.jsonb FROM %s AS permtransactions INNER JOIN %s AS transactions "
     + "ON transactions.paymentEncumbranceId = permtransactions.id WHERE transactions.sourceInvoiceId = $1 AND (transactions.jsonb ->> 'transactionType' = 'Payment' OR transactions.jsonb ->> 'transactionType' = 'Credit')";
@@ -150,7 +155,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
 
   private Future<Integer> updateBudgetsTotals(List<Transaction> transactions, DBClient client) {
     String summaryId = getSummaryId(transactions.get(0));
-    String sql = getSelectBudgetsQuery(client.getTenantId());
+    String sql = getSelectBudgetsQueryForUpdate(client.getTenantId());
     return budgetService.getBudgets(sql, Tuple.of(UUID.fromString(summaryId)), client)
       .map(budgets -> budgets.stream().collect(toMap(Budget::getFundId, Function.identity())))
       .map(groupedBudgets -> calculatePaymentBudgetsTotals(transactions, groupedBudgets))
@@ -302,8 +307,10 @@ public class PaymentCreditService extends AbstractTransactionService implements 
         getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
   }
 
-  private String getSelectBudgetsQuery(String tenantId){
-    return String.format(SELECT_BUDGETS_BY_INVOICE_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
+  private String getSelectBudgetsQueryForUpdate(String tenantId){
+    String budgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
+    String transactionTableName = getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS);
+    return String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
   }
 
   public Transaction.TransactionType getStrategyName() {

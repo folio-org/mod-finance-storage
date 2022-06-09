@@ -108,7 +108,7 @@ public class AllocationServiceTest {
       return null;
     }).when(pgClient)
       .save(any(), any(), any(), any(), any(Handler.class));
-    when(budgetService.getBudgetByFundIdAndFiscalYearId(anyString(), anyString(), any()))
+    when(budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(anyString(), anyString(), any()))
       .thenReturn(Future.succeededFuture(new Budget().withInitialAllocation(50d)));
     doNothing().when(budgetService)
       .updateBudgetMetadata(any(), any());

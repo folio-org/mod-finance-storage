@@ -89,7 +89,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
     if (StringUtils.isEmpty(allocation.getToFundId())) {
       return Future.succeededFuture();
     }
-    return budgetService.getBudgetByFundIdAndFiscalYearId(allocation.getFiscalYearId(), allocation.getToFundId(), client)
+    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(allocation.getFiscalYearId(), allocation.getToFundId(), client)
       .map(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo)
           .mapTo(Budget.class);
@@ -105,7 +105,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
     if (StringUtils.isEmpty(allocation.getFromFundId())) {
       return Future.succeededFuture();
     }
-    return budgetService.getBudgetByFundIdAndFiscalYearId(allocation.getFiscalYearId(), allocation.getFromFundId(), client)
+    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(allocation.getFiscalYearId(), allocation.getFromFundId(), client)
       .map(budgetFrom -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFrom)
           .mapTo(Budget.class);

@@ -73,6 +73,7 @@ public class ResponseUtils {
     if (badRequestMessage != null) {
       promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), badRequestMessage));
     } else {
+      logger.error(cause.getMessage());
       promise.fail(new HttpException(INTERNAL_SERVER_ERROR.getStatusCode(), cause.getMessage()));
     }
   }
