@@ -2,7 +2,7 @@ package org.folio.service.transactions;
 
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
-import static org.folio.service.transactions.PendingPaymentService.SELECT_BUDGETS_BY_INVOICE_ID;
+import static org.folio.service.transactions.PendingPaymentService.SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -164,9 +164,9 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
-      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
-      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
+    String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
@@ -237,9 +237,9 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
-      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
-      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
+    String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
@@ -308,9 +308,9 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
-      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
-      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
+    String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
@@ -381,9 +381,9 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
-      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
-      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
+    String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
@@ -436,9 +436,9 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
-      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
-      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
+    String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
@@ -492,9 +492,9 @@ public class PendingPaymentServiceTest {
 
     verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
-      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
-      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
+    String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
@@ -547,9 +547,9 @@ public class PendingPaymentServiceTest {
     verify(transactionsDAO).getTransactions(anyList(), any());
     verify(transactionsDAO).updatePermanentTransactions(anyList(), any());
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
-      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
-      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
+    String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
@@ -637,9 +637,9 @@ public class PendingPaymentServiceTest {
 
     assertThat(updatedPendingPayment.getAmount(), is(newAmount.doubleValue()));
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
-      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
-      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
+    String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
@@ -698,9 +698,9 @@ public class PendingPaymentServiceTest {
     verify(transactionsDAO).getTransactions(anyList(), any());
     verify(transactionsDAO).updatePermanentTransactions(anyList(), any());
 
-    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID,
-      HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE),
-      HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
+    String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
+    String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
     verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));

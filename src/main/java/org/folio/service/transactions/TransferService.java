@@ -92,7 +92,7 @@ public class TransferService extends AbstractTransactionService implements Trans
   }
 
   private Future<Void> updateBudgetsTransferFrom(Transaction transfer, DBClient dbClient) {
-    return budgetService.getBudgetByFundIdAndFiscalYearId(transfer.getFiscalYearId(), transfer.getFromFundId(), dbClient)
+    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(transfer.getFiscalYearId(), transfer.getFromFundId(), dbClient)
       .map(budgetFromOld -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFromOld).mapTo(Budget.class);
         CalculationUtils.recalculateBudgetTransfer(budgetFromNew, transfer, transfer.getAmount());
@@ -103,7 +103,7 @@ public class TransferService extends AbstractTransactionService implements Trans
   }
 
   private Future<Void> updateBudgetsTransferTo(Transaction transfer, DBClient dbClient) {
-    return budgetService.getBudgetByFundIdAndFiscalYearId(transfer.getFiscalYearId(), transfer.getToFundId(), dbClient)
+    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(transfer.getFiscalYearId(), transfer.getToFundId(), dbClient)
       .map(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo).mapTo(Budget.class);
         CalculationUtils.recalculateBudgetTransfer(budgetToNew, transfer, -transfer.getAmount());

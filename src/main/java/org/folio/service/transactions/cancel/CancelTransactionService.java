@@ -23,6 +23,15 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
 public abstract class CancelTransactionService {
 
+  private static final String SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE =
+    "SELECT b.jsonb FROM %s b INNER JOIN (SELECT DISTINCT budgets.id FROM %s budgets INNER JOIN %s transactions "
+      + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND "
+      + "transactions.fiscalYearId = budgets.fiscalYearId) "
+      + "WHERE transactions.sourceInvoiceId = $1 AND "
+      + "transactions.jsonb ->> 'transactionType' IN ('Payment', 'Credit', 'Pending payment')) "
+      + "sub ON sub.id = b.id "
+      + "FOR UPDATE OF b";
+
   private final BudgetService budgetService;
   private final TransactionDAO paymentCreditDAO;
   private final TransactionDAO encumbranceDAO;
@@ -32,10 +41,6 @@ public abstract class CancelTransactionService {
     this.paymentCreditDAO = paymentCreditDAO;
     this.encumbranceDAO = encumbranceDAO;
   }
-
-  String SELECT_BUDGETS_BY_INVOICE_ID = "SELECT DISTINCT ON (budgets.id) budgets.jsonb FROM %s AS budgets INNER JOIN %s AS transactions "
-    + "ON ((budgets.fundId = transactions.fromFundId OR budgets.fundId = transactions.toFundId) AND transactions.fiscalYearId = budgets.fiscalYearId) "
-    + "WHERE transactions.sourceInvoiceId = $1 AND transactions.jsonb ->> 'transactionType' IN ('Payment', 'Credit', 'Pending payment')";
 
   /**
    * Updates given transactions, related encumbrances and related budgets to cancel the transactions.
@@ -71,7 +76,9 @@ public abstract class CancelTransactionService {
   }
 
   private String getSelectBudgetsQuery(String tenantId) {
-    return String.format(SELECT_BUDGETS_BY_INVOICE_ID, getFullTableName(tenantId, BUDGET_TABLE), getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS));
+    String budgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
+    String transactionTableName = getFullTableName(tenantId, TEMPORARY_INVOICE_TRANSACTIONS);
+    return String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
   }
 
   private Future<Void> updateRelatedEncumbrances(List<Transaction> transactions, DBClient client) {
