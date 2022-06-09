@@ -8,6 +8,7 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 
 import javax.ws.rs.core.Response;
 
@@ -63,8 +64,8 @@ public class ResponseUtils {
   public static <T, V> void handleFailure(Promise<T> promise, AsyncResult<V> reply) {
     Throwable cause = reply.cause();
     if (cause instanceof PgException && "23F09".equals(((PgException)cause).getCode())) {
-      String message = "Conflict when updating a record in table " + ((PgException)cause).getTable() + ": " +
-        ((PgException)cause).getErrorMessage();
+      String message = MessageFormat.format(ErrorCodes.CONFLICT.getDescription(), ((PgException)cause).getTable(),
+        ((PgException)cause).getErrorMessage());
       promise.fail(new HttpException(Response.Status.CONFLICT.getStatusCode(), message));
       return;
     }
