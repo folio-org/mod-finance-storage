@@ -13,7 +13,7 @@
   </licenses>
 
   <properties>
-    <aspectj.version>1.9.6</aspectj.version>
+    <aspectj.version>1.9.7</aspectj.version>
     <module_name>mod-finance-storage</module_name>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
