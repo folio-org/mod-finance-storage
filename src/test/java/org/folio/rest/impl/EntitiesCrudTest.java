@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverErrorCollection;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgressCollection;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.Assertions;
@@ -104,6 +105,15 @@ public class EntitiesCrudTest extends TestBase {
               .log()
               .ifValidationFails()
               .statusCode(204);
+      // A rollover error will be generated because the order rollover cannot proceed, this is cleaning it up:
+      LedgerFiscalYearRolloverErrorCollection errorCollection = getData(
+        LEDGER_FISCAL_YEAR_ROLLOVER_ERROR.getEndpoint() + "?query=ledgerRolloverId==" +
+          testEntity.getId()).as(LedgerFiscalYearRolloverErrorCollection.class);
+      String errorId = errorCollection.getLedgerFiscalYearRolloverErrors().get(0).getId();
+      deleteData(LEDGER_FISCAL_YEAR_ROLLOVER_ERROR.getEndpointWithId(), errorId).then()
+        .log()
+        .ifValidationFails()
+        .statusCode(204);
     }
   }
 
