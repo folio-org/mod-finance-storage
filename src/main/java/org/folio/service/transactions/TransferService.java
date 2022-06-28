@@ -96,6 +96,7 @@ public class TransferService extends AbstractTransactionService implements Trans
       .map(budgetFromOld -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFromOld).mapTo(Budget.class);
         CalculationUtils.recalculateBudgetTransfer(budgetFromNew, transfer, transfer.getAmount());
+        budgetService.updateBudgetMetadata(budgetFromNew, transfer);
         return budgetFromNew;
       })
       .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), dbClient))
