@@ -82,7 +82,7 @@ public class TenantReferenceAPI extends TenantAPI {
         .add("budget-expense-classes", getUriPath(FinanceStorageBudgetExpenseClasses.class))
         .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
         .add("transactions/allocations", getUriPath(FinanceStorageTransactions.class))
-        .withPostOnly() // Payments and credits don't support PUT
+        .withPostIgnore() // Payments and credits don't support PUT
         .add("transactions/transfers", getUriPath(FinanceStorageTransactions.class));
       loadData = true;
     }
