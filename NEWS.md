@@ -1,4 +1,22 @@
-## 8.2.0 - Unreleased
+## 8.3.0 - Unreleased
+
+## 8.2.0 - Released (Morning Glory R2 2022)
+The primary focus of this release was to fix rollover issues
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.1.0...v8.2.0)
+
+### Stories
+* [MODFISTO-317](https://issues.folio.org/browse/MODFISTO-317) Upgrade RAML Module Builder
+* [MODFISTO-304](https://issues.folio.org/browse/MODFISTO-304) Lock budgets to update totals
+
+### Bug Fixes
+* [MODFISTO-311](https://issues.folio.org/browse/MODFISTO-311) Redundant "Rollover transfer" transactions are created during rollover for previously rolled over ledgers
+* [MODFISTO-309](https://issues.folio.org/browse/MODFISTO-309) Budgets not created during FYRO for some ledgers
+* [MODFISTO-299](https://issues.folio.org/browse/MODFISTO-299) Order and financial rollover errors are not reported
+* [MODFISTO-298](https://issues.folio.org/browse/MODFISTO-298) Unable to access adjustment ledger
+* [MODFISTO-214](https://issues.folio.org/browse/MODFISTO-214) Illegal cross-module *_mod_finance_storage.fund access on migration
+
+
 
 ## 8.1.0 - Released
 The primary focus of this release was to voiding transactions support and fix encumbrance calculations
