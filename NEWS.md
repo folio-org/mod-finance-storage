@@ -1,5 +1,12 @@
 ## 8.2.0 - Unreleased
 
+## 8.1.5 - Released Lotus R1 Hotfix 2
+This bugfix release was focused on fixing rollover issue
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.1.4...v8.1.5)
+* [MODFISTO-325](https://issues.folio.org/browse/MODFISTO-325) Encumbered amount remains in Budget summary for fiscal year #2 after rollover when fund name was changing in POL and related paid invoice exists
+
+
 ## 8.1.4 - Released
 This bugfix release was focused on fixing issues with accessing adjustment ledger
 
