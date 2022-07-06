@@ -119,7 +119,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                     (
                         'initialAmountEncumbered', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                         'amountAwaitingPayment', 0,
-                        'amountExpended', 0
+                        'amountExpended', 0,
+                        'status', 'Unreleased'
                     ),
                 'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text)
 
