@@ -90,8 +90,8 @@ public class EncumbranceService implements TransactionManagingStrategy {
   public Future<Void> processEncumbrances(List<Transaction> tmpTransactions, DBClient client) {
     return getTransactionsForCreateAndUpdate(tmpTransactions, client)
       .compose(transactionsForCreateAndUpdate -> updateBudgetsTotals(transactionsForCreateAndUpdate, tmpTransactions, client)
-        .map(v -> excludeReleasedEncumbrancesExceptToUnrelease(transactionsForCreateAndUpdate.get(FOR_UPDATE),
-          transactionsForCreateAndUpdate.get(EXISTING)))
+        .map(v -> findTransactionForUpdate(transactionsForCreateAndUpdate.get(FOR_UPDATE),
+                                                                transactionsForCreateAndUpdate.get(EXISTING)))
         .compose(transactions -> transactionDAO.updatePermanentTransactions(transactions, client))
         .compose(ok -> {
           if (!transactionsForCreateAndUpdate.get(FOR_CREATE).isEmpty()) {
@@ -155,18 +155,27 @@ public class EncumbranceService implements TransactionManagingStrategy {
     return groupedTransactions;
   }
 
-  private List<Transaction> excludeReleasedEncumbrancesExceptToUnrelease(List<Transaction> tmpTransactions, List<Transaction> existingTransactions) {
+  private List<Transaction> findTransactionForUpdate(List<Transaction> incomingTransactions, List<Transaction> existingTransactions) {
     // if nothing to update
     if (existingTransactions.isEmpty()) {
       return new ArrayList<>();
     }
-    Map<String, Transaction> groupedTransactions = existingTransactions.stream().collect(toMap(Transaction::getId, identity()));
+    Map<String, Transaction> groupedExistingTransactions = existingTransactions.stream().collect(toMap(Transaction::getId, identity()));
 
-    return tmpTransactions.stream()
+    return incomingTransactions.stream()
       // filter transactions for update
-      .filter(transaction -> groupedTransactions.containsKey(transaction.getId()))
-      .filter(transaction -> isNotFromReleasedExceptToUnreleased(transaction, groupedTransactions.get(transaction.getId())))
+      .filter(incomingTransaction -> groupedExistingTransactions.containsKey(incomingTransaction.getId()))
+      .filter(incomingTransaction -> {
+       Transaction existingTransaction = groupedExistingTransactions.get(incomingTransaction.getId());
+        return isNotFromReleasedExceptToUnreleased(incomingTransaction, existingTransaction)
+                    || isEncumbranceOrderStatusUpdated(incomingTransaction,  existingTransaction);
+      })
       .collect(Collectors.toList());
+  }
+
+  private boolean isEncumbranceOrderStatusUpdated(Transaction incomingTransaction, Transaction existingTransaction) {
+    return Encumbrance.OrderStatus.CLOSED == incomingTransaction.getEncumbrance().getOrderStatus()
+                && Encumbrance.OrderStatus.OPEN == existingTransaction.getEncumbrance().getOrderStatus();
   }
 
   private Future<Integer> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, List<Transaction> newTransactions,
