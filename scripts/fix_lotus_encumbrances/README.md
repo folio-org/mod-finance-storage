@@ -29,6 +29,7 @@ These can be set with a permission group created with the API.
 - `finance.fiscal-years.collection.get`
 - `finance.order-transaction-summaries.item.put`
 - `finance.transactions.collection.get`
+- `finance.transactions.item.get`
 - `finance-storage.budgets.item.put`
 - `orders.collection.get`
 
