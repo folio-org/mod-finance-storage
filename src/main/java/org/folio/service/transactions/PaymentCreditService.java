@@ -75,14 +75,12 @@ public class PaymentCreditService extends AbstractTransactionService implements 
 
   @Override
   public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
-    DBClient client = new DBClient(requestContext);
-    return allOrNothingTransactionService.createTransaction(transaction, client, this::createTransactions);
+    return allOrNothingTransactionService.createTransaction(transaction, requestContext, this::createTransactions);
   }
 
   @Override
   public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
-    DBClient dbClient = new DBClient(requestContext);
-    return allOrNothingTransactionService.updateTransaction(transaction, dbClient, this::updateTransactions);
+    return allOrNothingTransactionService.updateTransaction(transaction, requestContext, this::updateTransactions);
   }
 
   /**

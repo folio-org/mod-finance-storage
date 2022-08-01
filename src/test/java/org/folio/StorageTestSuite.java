@@ -41,6 +41,7 @@ import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.AllocationServiceTest;
+import org.folio.service.transactions.EncumbranceServiceTest;
 import org.folio.service.transactions.PaymentCreditServiceTest;
 import org.folio.service.transactions.PendingPaymentServiceTest;
 import org.folio.service.transactions.cancel.CancelPaymentCreditServiceTest;
@@ -236,4 +237,7 @@ public class StorageTestSuite {
 
   @Nested
   class CancelTransactionServiceNested extends CancelTransactionServiceTest {}
+
+  @Nested
+  class EncumbranceServiceTestNested extends EncumbranceServiceTest {}
 }
