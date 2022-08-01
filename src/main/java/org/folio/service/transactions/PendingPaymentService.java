@@ -69,14 +69,12 @@ public class PendingPaymentService implements TransactionManagingStrategy {
 
   @Override
   public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
-    DBClient dbClient = new DBClient(requestContext);
-    return allOrNothingTransactionService.createTransaction(transaction, dbClient, this::createTransactions);
+    return allOrNothingTransactionService.createTransaction(transaction, requestContext, this::createTransactions);
   }
 
   @Override
   public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
-    DBClient dbClient = new DBClient(requestContext);
-    return allOrNothingTransactionService.updateTransaction(transaction, dbClient, this::cancelAndUpdateTransactions);
+    return allOrNothingTransactionService.updateTransaction(transaction, requestContext, this::cancelAndUpdateTransactions);
   }
 
   @Override

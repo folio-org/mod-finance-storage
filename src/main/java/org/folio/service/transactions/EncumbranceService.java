@@ -59,14 +59,12 @@ public class EncumbranceService implements TransactionManagingStrategy {
 
   @Override
   public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
-    DBClient client = new DBClient(requestContext);
-    return allOrNothingEncumbranceService.createTransaction(transaction, client, this::processEncumbrances);
+    return allOrNothingEncumbranceService.createTransaction(transaction, requestContext, this::processEncumbrances);
   }
 
   @Override
   public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
-    DBClient client = new DBClient(requestContext);
-    return allOrNothingEncumbranceService.updateTransaction(transaction, client, this::processEncumbrances);
+    return allOrNothingEncumbranceService.updateTransaction(transaction, requestContext, this::processEncumbrances);
   }
 
   private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> existingTransactions, List<Budget> budgets) {
