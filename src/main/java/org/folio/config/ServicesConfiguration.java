@@ -13,6 +13,7 @@ import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.core.RestClient;
+import org.folio.rest.persist.DBClientFactory;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fiscalyear.FiscalYearService;
@@ -99,27 +100,38 @@ public class ServicesConfiguration {
   }
 
   @Bean
+  public DBClientFactory dbClientFactory() {
+    return new DBClientFactory();
+  }
+
+  @Bean
   public AllOrNothingTransactionService allOrNothingEncumbranceService(TransactionDAO encumbranceDAO,
                                                                        TemporaryOrderTransactionDAO orderTransactionSummaryDao,
                                                                        EncumbranceTransactionSummaryService encumbranceSummaryService,
-                                                                       EncumbranceRestrictionService encumbranceRestrictionService) {
-    return new AllOrNothingTransactionService(encumbranceDAO, orderTransactionSummaryDao, encumbranceSummaryService, encumbranceRestrictionService);
+                                                                       EncumbranceRestrictionService encumbranceRestrictionService,
+                                                                       DBClientFactory dbClientFactory) {
+    return new AllOrNothingTransactionService(encumbranceDAO, orderTransactionSummaryDao, encumbranceSummaryService,
+                                            encumbranceRestrictionService, dbClientFactory);
   }
 
   @Bean
   public AllOrNothingTransactionService allOrNothingPaymentCreditService(TransactionDAO paymentCreditDAO,
                                                                          TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO,
                                                                          PaymentCreditTransactionSummaryService paymentCreditSummaryService,
-                                                                         PaymentCreditRestrictionService paymentCreditRestrictionService) {
-    return new AllOrNothingTransactionService(paymentCreditDAO, temporaryInvoiceTransactionDAO, paymentCreditSummaryService, paymentCreditRestrictionService);
+                                                                         PaymentCreditRestrictionService paymentCreditRestrictionService,
+                                                                         DBClientFactory dbClientFactory) {
+    return new AllOrNothingTransactionService(paymentCreditDAO, temporaryInvoiceTransactionDAO, paymentCreditSummaryService,
+                                              paymentCreditRestrictionService, dbClientFactory);
   }
 
   @Bean
   public AllOrNothingTransactionService allOrNothingPendingPaymentService(TransactionDAO pendingPaymentDAO,
                                                                           TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO,
                                                                           PendingPaymentTransactionSummaryService pendingPaymentSummaryService,
-                                                                          PendingPaymentRestrictionService pendingPaymentRestrictionService) {
-    return new AllOrNothingTransactionService(pendingPaymentDAO, temporaryInvoiceTransactionDAO, pendingPaymentSummaryService, pendingPaymentRestrictionService);
+                                                                          PendingPaymentRestrictionService pendingPaymentRestrictionService,
+                                                                          DBClientFactory dbClientFactory) {
+    return new AllOrNothingTransactionService(pendingPaymentDAO, temporaryInvoiceTransactionDAO, pendingPaymentSummaryService,
+                                              pendingPaymentRestrictionService, dbClientFactory);
   }
 
   @Bean
