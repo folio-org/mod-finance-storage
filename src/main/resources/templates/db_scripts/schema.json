@@ -626,13 +626,6 @@
           "fieldName": "toFiscalYearId",
           "targetTable": "fiscal_year"
         }
-      ],
-      "uniqueIndex": [
-        {
-          "fieldName": "ledgerId_fromFiscalYearId",
-          "multiFieldNames": "ledgerId, fromFiscalYearId",
-          "tOps": "DELETE"
-        }
       ]
     },
     {
