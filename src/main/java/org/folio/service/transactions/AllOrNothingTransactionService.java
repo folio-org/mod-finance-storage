@@ -11,9 +11,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBClientFactory;
 import org.folio.service.summary.TransactionSummaryService;
 import org.folio.service.transactions.restriction.TransactionRestrictionService;
 
@@ -36,20 +38,23 @@ public class AllOrNothingTransactionService {
   private final TemporaryTransactionDAO temporaryTransactionDAO;
   private final TransactionSummaryService transactionSummaryService;
   private final TransactionRestrictionService transactionRestrictionService;
-
+  private final DBClientFactory dbClientFactory;
 
   public AllOrNothingTransactionService(TransactionDAO transactionDAO,
                                         TemporaryTransactionDAO temporaryTransactionDAO,
                                         TransactionSummaryService transactionSummaryService,
-                                        TransactionRestrictionService transactionRestrictionService) {
+                                        TransactionRestrictionService transactionRestrictionService,
+                                        DBClientFactory dbClientFactory) {
     this.transactionDAO = transactionDAO;
     this.temporaryTransactionDAO = temporaryTransactionDAO;
     this.transactionSummaryService = transactionSummaryService;
     this.transactionRestrictionService = transactionRestrictionService;
+    this.dbClientFactory = dbClientFactory;
   }
 
-  public Future<Transaction> createTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>,
-      DBClient, Future<Void>> operation) {
+  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext,
+          BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
+    DBClient client = dbClientFactory.getDbClient(requestContext);
     return validateTransactionAsFuture(transaction)
       .compose(v -> transactionRestrictionService.verifyBudgetHasEnoughMoney(transaction, client))
       .compose(v -> processAllOrNothing(transaction, client, operation))
@@ -58,8 +63,9 @@ public class AllOrNothingTransactionService {
         .compose(v -> Future.failedFuture(throwable), v -> Future.failedFuture(throwable)));
   }
 
-  public Future<Void> updateTransaction(Transaction transaction, DBClient client, BiFunction<List<Transaction>,
-      DBClient, Future<Void>> operation) {
+  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext,
+          BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
+    DBClient client = dbClientFactory.getDbClient(requestContext);
     return validateTransactionAsFuture(transaction)
       .compose(v -> verifyTransactionExistence(transaction.getId(), client))
       .compose(v -> processAllOrNothing(transaction, client, operation))

@@ -4,7 +4,6 @@ import static io.vertx.core.Future.succeededFuture;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.folio.rest.persist.PgUtil.response;
 import static org.folio.rest.util.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
@@ -28,9 +27,7 @@ import org.folio.rest.persist.interfaces.Results;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
 
@@ -41,21 +38,6 @@ public final class HelperUtils {
 
   public static String getEndpoint(Class<?> clazz) {
     return clazz.getAnnotation(Path.class).value();
-  }
-
-  public static Future<Void> deleteRecordById(String id, DBClient client, String table) {
-    Promise<Void> promise = Promise.promise();
-
-    client.getPgClient().delete(client.getConnection(), table, id, reply -> {
-      if(reply.failed()) {
-        handleFailure(promise, reply);
-      } else if (reply.result().rowCount() == 0) {
-        promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode()));
-      } else {
-        promise.complete();
-      }
-    });
-    return promise.future();
   }
 
   public static void replyWithErrorResponse(Handler<AsyncResult<Response>> asyncResultHandler, HttpException cause) {
