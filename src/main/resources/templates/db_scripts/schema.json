@@ -610,7 +610,7 @@
     },
     {
       "tableName": "ledger_fiscal_year_rollover",
-      "fromModuleVersion": "mod-finance-storage-7.0.0",
+      "fromModuleVersion": "mod-finance-storage-8.3.0",
       "withMetadata": true,
       "withOptimisticLocking": "failOnConflict",
       "foreignKeys": [
@@ -631,6 +631,31 @@
         {
           "fieldName": "ledgerId_fromFiscalYearId",
           "multiFieldNames": "ledgerId, fromFiscalYearId",
+          "tOps": "DELETE"
+        }
+      ]
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover_budget",
+      "fromModuleVersion": "mod-finance-storage-8.3.0",
+      "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
+      "foreignKeys": [
+        {
+          "fieldName": "ledgerRolloverId",
+          "targetTable": "ledger_fiscal_year_rollover",
+          "tableAlias": "ledgerFYROBudget",
+          "targetTableAlias": "ledgerFYRO",
+          "tOps": "ADD"
+        }
+      ],
+      "uniqueIndex": [
+        {
+          "fieldName": "ledgerRolloverId",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fiscalYearId",
           "tOps": "ADD"
         }
       ]
