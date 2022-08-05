@@ -12,6 +12,7 @@ import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_ERROR;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS;
+import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_BUDGET;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
 
 import java.net.MalformedURLException;
@@ -47,8 +48,8 @@ public class EntitiesCrudTest extends TestBase {
    */
   static Stream<TestEntities> deleteOrder() {
     return Stream.of(TRANSACTION, GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, FUND, FUND_TYPE,
-      LEDGER_FISCAL_YEAR_ROLLOVER_ERROR, LEDGER_FISCAL_YEAR_ROLLOVER, LEDGER, FISCAL_YEAR,
-      GROUP, EXPENSE_CLASS);
+      LEDGER_FISCAL_YEAR_ROLLOVER_BUDGET, LEDGER_FISCAL_YEAR_ROLLOVER_ERROR, LEDGER_FISCAL_YEAR_ROLLOVER, LEDGER,
+      FISCAL_YEAR, GROUP, EXPENSE_CLASS);
   }
 
   static Stream<TestEntities> deleteFailOrder() {
