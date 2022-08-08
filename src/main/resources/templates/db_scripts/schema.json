@@ -642,7 +642,7 @@
           "tOps": "ADD"
         }
       ],
-      "uniqueIndex": [
+      "index": [
         {
           "fieldName": "ledgerRolloverId",
           "tOps": "ADD"
