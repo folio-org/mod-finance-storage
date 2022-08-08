@@ -322,24 +322,9 @@
           "permissionsRequired": ["finance-storage.ledger-rollovers-budgets.collection.get"]
         },
         {
-          "methods": ["POST"],
-          "pathPattern": "/finance-storage/ledger-rollovers-budgets",
-          "permissionsRequired": ["finance-storage.ledger-rollovers-budgets.item.post"]
-        },
-        {
           "methods": ["GET"],
           "pathPattern": "/finance-storage/ledger-rollovers-budgets/{id}",
           "permissionsRequired": ["finance-storage.ledger-rollovers-budgets.item.get"]
-        },
-        {
-          "methods": ["PUT"],
-          "pathPattern": "/finance-storage/ledger-rollovers-budgets/{id}",
-          "permissionsRequired": ["finance-storage.ledger-rollovers-budgets.item.put"]
-        },
-        {
-          "methods": ["DELETE"],
-          "pathPattern": "/finance-storage/ledger-rollovers-budgets/{id}",
-          "permissionsRequired": ["finance-storage.ledger-rollovers-budgets.item.delete"]
         }
       ]
     },
@@ -853,24 +838,9 @@
       "description" : "Get collection of ledgers rollover budgets"
     },
     {
-      "permissionName" : "finance-storage.ledger-rollovers-budgets.item.post",
-      "displayName" : "ledger rollover budgets item post",
-      "description" : "Create a new ledger rollover budget"
-    },
-    {
       "permissionName" : "finance-storage.ledger-rollovers-budgets.item.get",
       "displayName" : "ledger rollover budgets item get",
       "description" : "Fetch a ledger rollover budget"
-    },
-    {
-      "permissionName" : "finance-storage.ledger-rollovers-budgets.item.put",
-      "displayName" : "ledger rollover budgets item put",
-      "description" : "Update a ledger rollover budget"
-    },
-    {
-      "permissionName" : "finance-storage.ledger-rollovers-budgets.item.delete",
-      "displayName" : "ledger rollover budgets item delete",
-      "description" : "Delete a ledger rollover budget"
     },
     {
       "permissionName" : "finance-storage.ledger-rollovers-progress.collection.get",
@@ -938,10 +908,7 @@
         "finance-storage.ledger-rollovers.item.put",
         "finance-storage.ledger-rollovers.item.delete",
         "finance-storage.ledger-rollovers-budgets.collection.get",
-        "finance-storage.ledger-rollovers-budgets.item.post",
         "finance-storage.ledger-rollovers-budgets.item.get",
-        "finance-storage.ledger-rollovers-budgets.item.put",
-        "finance-storage.ledger-rollovers-budgets.item.delete",
         "finance-storage.ledger-rollovers-progress.collection.get",
         "finance-storage.ledger-rollovers-progress.item.post",
         "finance-storage.ledger-rollovers-progress.item.get",

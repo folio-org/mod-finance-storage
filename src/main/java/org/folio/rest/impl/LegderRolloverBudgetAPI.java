@@ -26,29 +26,8 @@ public class LegderRolloverBudgetAPI implements FinanceStorageLedgerRolloversBud
 
   @Override
   @Validate
-  public void postFinanceStorageLedgerRolloversBudgets(String lang, LedgerFiscalYearRolloverBudget entity, Map<String, String> okapiHeaders,
-              Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.post(LEDGER_FISCAL_YEAR_ROLLOVER_BUDGETS_TABLE, entity, okapiHeaders, vertxContext, FinanceStorageLedgerRolloversBudgets.PostFinanceStorageLedgerRolloversBudgetsResponse.class, asyncResultHandler);
-  }
-
-  @Override
-  @Validate
   public void getFinanceStorageLedgerRolloversBudgetsById(String id, String lang, Map<String, String> okapiHeaders,
               Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(LEDGER_FISCAL_YEAR_ROLLOVER_BUDGETS_TABLE, LedgerFiscalYearRolloverBudget.class, id, okapiHeaders, vertxContext, FinanceStorageLedgerRolloversBudgets.GetFinanceStorageLedgerRolloversBudgetsByIdResponse.class, asyncResultHandler);
-  }
-
-  @Override
-  @Validate
-  public void deleteFinanceStorageLedgerRolloversBudgetsById(String id, String lang, Map<String, String> okapiHeaders,
-              Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.deleteById(LEDGER_FISCAL_YEAR_ROLLOVER_BUDGETS_TABLE, id, okapiHeaders, vertxContext, FinanceStorageLedgerRolloversBudgets.DeleteFinanceStorageLedgerRolloversBudgetsByIdResponse.class, asyncResultHandler);
-  }
-
-  @Override
-  @Validate
-  public void putFinanceStorageLedgerRolloversBudgetsById(String id, String lang, LedgerFiscalYearRolloverBudget entity,
-              Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.put(LEDGER_FISCAL_YEAR_ROLLOVER_BUDGETS_TABLE, entity, id, okapiHeaders, vertxContext, FinanceStorageLedgerRolloversBudgets.PutFinanceStorageLedgerRolloversBudgetsByIdResponse.class, asyncResultHandler);
   }
 }

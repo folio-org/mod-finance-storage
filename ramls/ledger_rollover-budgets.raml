@@ -22,13 +22,13 @@ traits:
   validate: !include raml-util/traits/validation.raml
 
 resourceTypes:
-  collection: !include raml-util/rtypes/collection.raml
-  collection-item: !include raml-util/rtypes/item-collection.raml
+  collection-get: !include raml-util/rtypes/collection-get.raml
+  collection-item-get: !include raml-util/rtypes/item-collection-get.raml
 
 
 /finance-storage/ledger-rollovers-budgets:
   type:
-    collection:
+    collection-get:
       exampleCollection: !include acq-models/mod-finance/examples/ledger_fiscal_year_rollover_budget_collection.sample
       exampleItem: !include acq-models/mod-finance/examples/ledger_fiscal_year_rollover_budget.sample
       schemaCollection: ledger_fiscal_year_rollover_budget-collection
@@ -49,7 +49,7 @@ resourceTypes:
         description: The UUID of a rollover budgets record
         type: UUID
     type:
-      collection-item:
+      collection-item-get:
         exampleItem: !include acq-models/mod-finance/examples/ledger_fiscal_year_rollover_budget.sample
         schema: ledger_fiscal_year_rollover_budget
     is: [validate]
