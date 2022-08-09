@@ -28,6 +28,7 @@ import org.folio.rest.impl.GroupBudgetTest;
 import org.folio.rest.impl.GroupFundFYTest;
 import org.folio.rest.impl.GroupTest;
 import org.folio.rest.impl.HelperUtilsTest;
+import org.folio.rest.impl.LedgerRolloverBudgetTest;
 import org.folio.rest.impl.LedgerFundBudgetStatusTest;
 import org.folio.rest.impl.PaymentsCreditsTest;
 import org.folio.rest.impl.TenantSampleDataTest;
@@ -163,6 +164,10 @@ public class StorageTestSuite {
 
   @Nested
   class LedgerFundBudgetStatusTestNested extends LedgerFundBudgetStatusTest {
+  }
+
+  @Nested
+  class LedgerRolloverBudgetTestNested extends LedgerRolloverBudgetTest {
   }
 
   @Nested
