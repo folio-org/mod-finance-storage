@@ -1,7 +1,7 @@
 ## 8.3.0 - Unreleased
 
 ## 8.2.2 - Released (Morning Glory R2 2022)
-The primary focus of this release was to fix rollover and performance issues
+The primary focus of this release was to fix running script for budget rollovers
 
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.2.1...v8.2.2)
 
