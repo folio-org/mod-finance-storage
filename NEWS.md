@@ -1,5 +1,14 @@
 ## 8.3.0 - Unreleased
 
+## 8.2.2 - Released (Morning Glory R2 2022)
+The primary focus of this release was to fix rollover and performance issues
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.2.1...v8.2.2)
+
+### Bug Fixes
+* [MODFISTO-331](https://issues.folio.org/browse/MODFISTO-331) Encumbered amount remains in Budget summary for fiscal year #2 after rollover
+
+
 ## 8.2.1 - Released (Morning Glory R2 2022)
 The primary focus of this release was to fix rollover and performance issues
 
