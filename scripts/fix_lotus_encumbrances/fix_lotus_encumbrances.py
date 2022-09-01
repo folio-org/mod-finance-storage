@@ -209,13 +209,6 @@ async def transaction_summary(order_id, num_transactions):
     url = '{}finance/order-transaction-summaries/{}'.format(okapi_url, order_id)
 
     return await put_request(url, data)
-    # try:
-    #    r = requests.put(url, headers=headers, json=data)
-    #   if r.status_code != 204:
-    #      raise_exception_for_reply(r)
-    # except Exception as err:
-    #   print('Error when setting the transaction summary for order "{}": {}'.format(order_id, err))
-    #  raise SystemExit(1)
 
 
 async def get_budget_by_fund_id(fund_id, fiscal_year_id):
