@@ -31,7 +31,7 @@ public class UniqueValidationService {
       String query = buildValidationOfUniquenessQuery(rollover, client.getTenantId());
       ledgerFiscalYearRolloverDAO.validationOfUniqueness(query, client)
         .onSuccess(isUnique -> {
-          if (isUnique) {
+          if (Boolean.TRUE.equals(isUnique)) {
             promise.complete();
           } else {
             log.error("Not unique pair ledgerId {} and fromFiscalYearId {}", rollover.getLedgerId(), rollover.getFromFiscalYearId());
