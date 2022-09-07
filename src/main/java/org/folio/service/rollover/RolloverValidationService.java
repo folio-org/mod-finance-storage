@@ -2,12 +2,12 @@ package org.folio.service.rollover;
 
 import static org.folio.dao.rollover.LedgerFiscalYearRolloverDAO.LEDGER_FISCAL_YEAR_ROLLOVER_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
+import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import javax.ws.rs.core.Response;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.persist.DBClient;
 
@@ -15,21 +15,16 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.handler.HttpException;
 
-public class UniqueValidationService {
+public class RolloverValidationService {
 
-  private static final Logger log = LogManager.getLogger(UniqueValidationService.class);
-  private final LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO;
+  private static final Logger log = LogManager.getLogger(RolloverValidationService.class);
 
-  public UniqueValidationService(LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO) {
-    this.ledgerFiscalYearRolloverDAO = ledgerFiscalYearRolloverDAO;
-  }
-
-  public Future<Void> validationOfUniqueness(LedgerFiscalYearRollover rollover, DBClient client) {
+  public Future<Void> checkRolloverExists(LedgerFiscalYearRollover rollover, DBClient client) {
     Promise<Void> promise = Promise.promise();
 
     if (rollover.getRolloverType().equals(LedgerFiscalYearRollover.RolloverType.COMMIT)) {
-      String query = buildValidationOfUniquenessQuery(rollover, client.getTenantId());
-      ledgerFiscalYearRolloverDAO.validationOfUniqueness(query, client)
+      String query = buildValidateUniquenessQuery(rollover, client.getTenantId());
+      isRolloverExists(query, client)
         .onSuccess(isUnique -> {
           if (Boolean.TRUE.equals(isUnique)) {
             promise.complete();
@@ -45,9 +40,25 @@ public class UniqueValidationService {
     return promise.future();
   }
 
-  private String buildValidationOfUniquenessQuery(LedgerFiscalYearRollover rollover, String tenantId) {
+  private String buildValidateUniquenessQuery(LedgerFiscalYearRollover rollover, String tenantId) {
     return String.format(
       "SELECT NOT EXISTS(SELECT ledgerId, fromFiscalYearId FROM %s WHERE ledgerId = '%s' AND fromFiscalYearId = '%s');",
       getFullTableName(tenantId, LEDGER_FISCAL_YEAR_ROLLOVER_TABLE), rollover.getLedgerId(), rollover.getFromFiscalYearId());
+  }
+
+  private Future<Boolean> isRolloverExists(String sql, DBClient client) {
+    Promise<Boolean> promise = Promise.promise();
+
+    client.getPgClient()
+      .execute(sql, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          reply.result()
+            .spliterator()
+            .forEachRemaining(row -> promise.complete(row.get(Boolean.class, 0)));
+        }
+      });
+    return promise.future();
   }
 }

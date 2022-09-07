@@ -38,19 +38,19 @@ public class LedgerRolloverService {
   private final RolloverProgressService rolloverProgressService;
   private final RolloverErrorService rolloverErrorService;
   private final PostgresFunctionExecutionService postgresFunctionExecutionService;
-  private final UniqueValidationService uniqueValidationService;
+  private final RolloverValidationService rolloverValidationService;
   private final RestClient orderRolloverRestClient;
 
   public LedgerRolloverService(FiscalYearService fiscalYearService, LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO,
       BudgetService budgetService, RolloverProgressService rolloverProgressService, RolloverErrorService rolloverErrorService,
-      PostgresFunctionExecutionService postgresFunctionExecutionService, UniqueValidationService uniqueValidationService, RestClient orderRolloverRestClient) {
+      PostgresFunctionExecutionService postgresFunctionExecutionService, RolloverValidationService rolloverValidationService, RestClient orderRolloverRestClient) {
     this.fiscalYearService = fiscalYearService;
     this.ledgerFiscalYearRolloverDAO = ledgerFiscalYearRolloverDAO;
     this.budgetService = budgetService;
     this.rolloverProgressService = rolloverProgressService;
     this.rolloverErrorService = rolloverErrorService;
     this.postgresFunctionExecutionService = postgresFunctionExecutionService;
-    this.uniqueValidationService = uniqueValidationService;
+    this.rolloverValidationService = rolloverValidationService;
     this.orderRolloverRestClient = orderRolloverRestClient;
   }
 
@@ -107,7 +107,7 @@ public class LedgerRolloverService {
       RequestContext requestContext) {
     DBClient client = requestContext.toDBClient();
     return client.startTx()
-      .compose(aVoid -> uniqueValidationService.validationOfUniqueness(rollover, client))
+      .compose(aVoid -> rolloverValidationService.checkRolloverExists(rollover, client))
       .compose(v -> ledgerFiscalYearRolloverDAO.create(rollover, client)
         .compose(aVoid -> rolloverProgressService.createRolloverProgress(progress, client))
         .compose(aVoid -> fiscalYearService.populateRolloverWithCurrencyFactor(rollover, requestContext))

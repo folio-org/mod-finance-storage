@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.refEq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -34,6 +35,8 @@ import org.folio.rest.jaxrs.model.EncumbranceRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.helpers.LocalRowSet;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fiscalyear.FiscalYearService;
@@ -45,10 +48,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.pgclient.impl.RowImpl;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.impl.RowDesc;
 
 @ExtendWith(VertxExtension.class)
 public class LedgerRolloverServiceTest {
@@ -69,7 +79,7 @@ public class LedgerRolloverServiceTest {
   private RolloverErrorService rolloverErrorService;
 
   @Mock
-  private UniqueValidationService uniqueValidationService;
+  private RolloverValidationService rolloverValidationService;
 
   @Mock
   private BudgetService budgetService;
@@ -82,6 +92,9 @@ public class LedgerRolloverServiceTest {
 
   @Mock
   private RequestContext requestContext;
+
+  @Mock
+  private PostgresClient postgresClient;
 
   @Mock
   private DBClient dbClient;
@@ -131,11 +144,22 @@ public class LedgerRolloverServiceTest {
     when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
     when(dbClient.endTx()).thenReturn(Future.succeededFuture());
     when(fiscalYearService.populateRolloverWithCurrencyFactor(eq(rollover), eq(requestContext))).thenReturn(Future.succeededFuture());
-    when(ledgerFiscalYearRolloverDAO.validationOfUniqueness(anyString(), eq(dbClient))).thenReturn(Future.succeededFuture(true));
     when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
-    when(uniqueValidationService.validationOfUniqueness(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverValidationService.checkRolloverExists(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(budgetService.closeBudgets(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
+
+    when(dbClient.getPgClient()).thenReturn(postgresClient);
+    doAnswer((Answer<Void>) invocation -> {
+      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(1);
+      RowDesc rowDesc = new RowDesc(List.of("foo"));
+      Row row = new RowImpl(rowDesc);
+      row.addBoolean(true);
+      RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
+
+      handler.handle(Future.succeededFuture(rows));
+      return null;
+    }).when(postgresClient).execute(anyString(), any(Handler.class));
 
     testContext.assertComplete(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
       .onComplete(event -> {
@@ -159,9 +183,20 @@ public class LedgerRolloverServiceTest {
     when(dbClient.endTx()).thenReturn(Future.succeededFuture());
     when(fiscalYearService.populateRolloverWithCurrencyFactor(eq(rollover), eq(requestContext))).thenReturn(Future.succeededFuture());
     when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
-    when(ledgerFiscalYearRolloverDAO.validationOfUniqueness(anyString(), eq(dbClient))).thenReturn(Future.succeededFuture(true));
-    when(uniqueValidationService.validationOfUniqueness(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverValidationService.checkRolloverExists(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
+
+    when(dbClient.getPgClient()).thenReturn(postgresClient);
+    doAnswer((Answer<Void>) invocation -> {
+      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(1);
+      RowDesc rowDesc = new RowDesc(List.of("foo"));
+      Row row = new RowImpl(rowDesc);
+      row.addBoolean(true);
+      RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
+
+      handler.handle(Future.succeededFuture(rows));
+      return null;
+    }).when(postgresClient).execute(anyString(), any(Handler.class));
 
     testContext.assertComplete(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
       .onComplete(event -> {
@@ -183,11 +218,22 @@ public class LedgerRolloverServiceTest {
 
     when(requestContext.toDBClient()).thenReturn(dbClient);
     when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
-    when(ledgerFiscalYearRolloverDAO.validationOfUniqueness(anyString(), eq(dbClient))).thenReturn(Future.succeededFuture(true));
-    when(uniqueValidationService.validationOfUniqueness(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverValidationService.checkRolloverExists(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(dbClient.rollbackTransaction()).thenReturn(Future.succeededFuture());
 
     when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.failedFuture(t));
+
+    when(dbClient.getPgClient()).thenReturn(postgresClient);
+    doAnswer((Answer<Void>) invocation -> {
+      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(1);
+      RowDesc rowDesc = new RowDesc(List.of("foo"));
+      Row row = new RowImpl(rowDesc);
+      row.addBoolean(true);
+      RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
+
+      handler.handle(Future.succeededFuture(rows));
+      return null;
+    }).when(postgresClient).execute(anyString(), any(Handler.class));
 
     testContext.assertFailure(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
       .onComplete(event -> {

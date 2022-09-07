@@ -45,20 +45,4 @@ public class LedgerFiscalYearRolloverDAO {
     return promise.future();
   }
 
-  public Future<Boolean> validationOfUniqueness(String sql, DBClient client) {
-    Promise<Boolean> promise = Promise.promise();
-
-    client.getPgClient()
-      .execute(sql, reply -> {
-        if (reply.failed()) {
-          handleFailure(promise, reply);
-        } else {
-          reply.result()
-            .spliterator()
-            .forEachRemaining(row -> promise.complete(row.get(Boolean.class, 0)));
-        }
-      });
-    return promise.future();
-  }
-
 }

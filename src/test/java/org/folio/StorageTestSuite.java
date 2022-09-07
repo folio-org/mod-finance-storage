@@ -28,8 +28,8 @@ import org.folio.rest.impl.GroupBudgetTest;
 import org.folio.rest.impl.GroupFundFYTest;
 import org.folio.rest.impl.GroupTest;
 import org.folio.rest.impl.HelperUtilsTest;
-import org.folio.rest.impl.LedgerRolloverBudgetTest;
 import org.folio.rest.impl.LedgerFundBudgetStatusTest;
+import org.folio.rest.impl.LedgerRolloverBudgetTest;
 import org.folio.rest.impl.PaymentsCreditsTest;
 import org.folio.rest.impl.TenantSampleDataTest;
 import org.folio.rest.impl.TransactionTest;
@@ -40,7 +40,7 @@ import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
-import org.folio.service.rollover.UniqueValidationServiceTest;
+import org.folio.service.rollover.RolloverValidationServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.AllocationServiceTest;
 import org.folio.service.transactions.EncumbranceServiceTest;
@@ -248,5 +248,5 @@ public class StorageTestSuite {
   class EncumbranceServiceTestNested extends EncumbranceServiceTest {}
 
   @Nested
-  class UniqueValidationServiceTestNested extends UniqueValidationServiceTest {}
+  class RolloverValidationServiceTestNested extends RolloverValidationServiceTest {}
 }

@@ -1,38 +1,48 @@
 package org.folio.service.rollover;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.UUID;
 
-import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.helpers.LocalRowSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.ext.web.handler.HttpException;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.pgclient.impl.RowImpl;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.impl.RowDesc;
 
 @ExtendWith(VertxExtension.class)
-public class UniqueValidationServiceTest {
+public class RolloverValidationServiceTest {
 
   @InjectMocks
-  private UniqueValidationService uniqueValidationService;
+  private RolloverValidationService rolloverValidationService;
 
   @Mock
-  private LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO;
+  private PostgresClient postgresClient;
 
   @Mock
   private DBClient dbClient;
@@ -51,11 +61,22 @@ public class UniqueValidationServiceTest {
       .withRolloverType(LedgerFiscalYearRollover.RolloverType.COMMIT);
 
     when(dbClient.getTenantId()).thenReturn(UUID.randomUUID().toString());
-    when(ledgerFiscalYearRolloverDAO.validationOfUniqueness(anyString(), eq(dbClient))).thenReturn(Future.succeededFuture(true));
+    when(dbClient.getPgClient()).thenReturn(postgresClient);
 
-    testContext.assertComplete(uniqueValidationService.validationOfUniqueness(rollover, dbClient)
+    doAnswer((Answer<Void>) invocation -> {
+      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(1);
+      RowDesc rowDesc = new RowDesc(List.of("foo"));
+      Row row = new RowImpl(rowDesc);
+      row.addBoolean(true);
+      RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
+
+      handler.handle(Future.succeededFuture(rows));
+      return null;
+    }).when(postgresClient).execute(anyString(), any(Handler.class));
+
+    testContext.assertComplete(rolloverValidationService.checkRolloverExists(rollover, dbClient)
       .onComplete(event -> {
-        testContext.verify(() -> verify(ledgerFiscalYearRolloverDAO, times(1)).validationOfUniqueness(anyString(), eq(dbClient)));
+        testContext.verify(() -> verify(postgresClient, times(1)).execute(anyString(), any(Handler.class)));
         testContext.completeNow();
       }));
   }
@@ -69,9 +90,20 @@ public class UniqueValidationServiceTest {
       .withRolloverType(LedgerFiscalYearRollover.RolloverType.COMMIT);
 
     when(dbClient.getTenantId()).thenReturn(UUID.randomUUID().toString());
-    when(ledgerFiscalYearRolloverDAO.validationOfUniqueness(anyString(), eq(dbClient))).thenReturn(Future.succeededFuture(false));
+    when(dbClient.getPgClient()).thenReturn(postgresClient);
 
-    testContext.assertFailure(uniqueValidationService.validationOfUniqueness(rollover, dbClient)
+    doAnswer((Answer<Void>) invocation -> {
+      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(1);
+      RowDesc rowDesc = new RowDesc(List.of("foo"));
+      Row row = new RowImpl(rowDesc);
+      row.addBoolean(false);
+      RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
+
+      handler.handle(Future.succeededFuture(rows));
+      return null;
+    }).when(postgresClient).execute(anyString(), any(Handler.class));
+
+    testContext.assertFailure(rolloverValidationService.checkRolloverExists(rollover, dbClient)
       .onComplete(event -> {
         HttpException exception = (HttpException) event.cause();
         testContext.verify(() -> {
@@ -90,9 +122,9 @@ public class UniqueValidationServiceTest {
       .withFromFiscalYearId(UUID.randomUUID().toString())
       .withRolloverType(LedgerFiscalYearRollover.RolloverType.PREVIEW);
 
-    testContext.assertComplete(uniqueValidationService.validationOfUniqueness(rollover, dbClient)
+    testContext.assertComplete(rolloverValidationService.checkRolloverExists(rollover, dbClient)
       .onComplete(event -> {
-        testContext.verify(() -> verify(ledgerFiscalYearRolloverDAO, never()).validationOfUniqueness(anyString(), eq(dbClient)));
+        testContext.verify(() -> verify(postgresClient, never()).execute(anyString(), any(Handler.class)));
         testContext.completeNow();
       }));
   }
