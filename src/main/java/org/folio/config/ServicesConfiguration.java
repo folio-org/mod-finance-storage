@@ -25,6 +25,7 @@ import org.folio.service.rollover.LedgerRolloverService;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.service.rollover.RolloverErrorService;
 import org.folio.service.rollover.RolloverProgressService;
+import org.folio.service.rollover.UniqueValidationService;
 import org.folio.service.summary.EncumbranceTransactionSummaryService;
 import org.folio.service.summary.PaymentCreditTransactionSummaryService;
 import org.folio.service.summary.PendingPaymentTransactionSummaryService;
@@ -208,14 +209,20 @@ public class ServicesConfiguration {
     RolloverProgressService rolloverProgressService,
     RolloverErrorService rolloverErrorService,
     PostgresFunctionExecutionService postgresFunctionExecutionService,
+    UniqueValidationService uniqueValidationService,
     RestClient orderRolloverRestClient) {
     return new LedgerRolloverService(fiscalYearService, ledgerFiscalYearRolloverDAO, budgetService, rolloverProgressService,
-      rolloverErrorService, postgresFunctionExecutionService, orderRolloverRestClient);
+      rolloverErrorService, postgresFunctionExecutionService, uniqueValidationService, orderRolloverRestClient);
   }
 
   @Bean
   public RolloverErrorService rolloverErrorService(RolloverErrorDAO rolloverErrorDAO) {
     return new RolloverErrorService(rolloverErrorDAO);
+  }
+
+  @Bean
+  public UniqueValidationService uniqueValidationService(LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO) {
+    return new UniqueValidationService(ledgerFiscalYearRolloverDAO);
   }
 
 }

@@ -8,7 +8,6 @@ import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.Overal
 
 import java.util.UUID;
 
-import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
@@ -22,11 +21,12 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRollov
 import org.folio.rest.persist.DBClient;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.fiscalyear.FiscalYearService;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
-import org.folio.service.fiscalyear.FiscalYearService;
 
 public class LedgerRolloverService {
 
@@ -38,17 +38,19 @@ public class LedgerRolloverService {
   private final RolloverProgressService rolloverProgressService;
   private final RolloverErrorService rolloverErrorService;
   private final PostgresFunctionExecutionService postgresFunctionExecutionService;
+  private final UniqueValidationService uniqueValidationService;
   private final RestClient orderRolloverRestClient;
 
   public LedgerRolloverService(FiscalYearService fiscalYearService, LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO,
       BudgetService budgetService, RolloverProgressService rolloverProgressService, RolloverErrorService rolloverErrorService,
-      PostgresFunctionExecutionService postgresFunctionExecutionService, RestClient orderRolloverRestClient) {
+      PostgresFunctionExecutionService postgresFunctionExecutionService, UniqueValidationService uniqueValidationService, RestClient orderRolloverRestClient) {
     this.fiscalYearService = fiscalYearService;
     this.ledgerFiscalYearRolloverDAO = ledgerFiscalYearRolloverDAO;
     this.budgetService = budgetService;
     this.rolloverProgressService = rolloverProgressService;
     this.rolloverErrorService = rolloverErrorService;
     this.postgresFunctionExecutionService = postgresFunctionExecutionService;
+    this.uniqueValidationService = uniqueValidationService;
     this.orderRolloverRestClient = orderRolloverRestClient;
   }
 
@@ -58,8 +60,8 @@ public class LedgerRolloverService {
       rollover.setId(UUID.randomUUID().toString());
     }
 
-    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress().withId(UUID.randomUUID()
-      .toString())
+    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
+      .withId(UUID.randomUUID().toString())
       .withLedgerRolloverId(rollover.getId())
       .withBudgetsClosingRolloverStatus(SUCCESS)
       .withOverallRolloverStatus(IN_PROGRESS)
@@ -105,15 +107,16 @@ public class LedgerRolloverService {
       RequestContext requestContext) {
     DBClient client = requestContext.toDBClient();
     return client.startTx()
-      .compose(aVoid -> ledgerFiscalYearRolloverDAO.create(rollover, client))
-      .compose(aVoid -> rolloverProgressService.createRolloverProgress(progress, client))
-      .compose(aVoid -> fiscalYearService.populateRolloverWithCurrencyFactor(rollover, requestContext))
-      .compose(aVoid -> closeBudgets(rollover, client))
-      .compose(aVoid -> client.endTx())
-      .onFailure(t -> {
-        log.error("Rollover preparation failed for Ledger {}", rollover.getLedgerId(), t);
-        client.rollbackTransaction();
-      });
+      .compose(aVoid -> uniqueValidationService.validationOfUniqueness(rollover, client))
+      .compose(v -> ledgerFiscalYearRolloverDAO.create(rollover, client)
+        .compose(aVoid -> rolloverProgressService.createRolloverProgress(progress, client))
+        .compose(aVoid -> fiscalYearService.populateRolloverWithCurrencyFactor(rollover, requestContext))
+        .compose(aVoid -> closeBudgets(rollover, client))
+        .compose(aVoid -> client.endTx())
+        .onFailure(t -> {
+          log.error("Rollover preparation failed for Ledger {}", rollover.getLedgerId(), t);
+          client.rollbackTransaction();
+        }));
   }
 
   public Future<Void> startRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
