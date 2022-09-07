@@ -24,7 +24,7 @@ public class RolloverValidationService {
 
     if (rollover.getRolloverType().equals(LedgerFiscalYearRollover.RolloverType.COMMIT)) {
       String query = buildValidateUniquenessQuery(rollover, client.getTenantId());
-      isRolloverExists(query, client)
+      isRolloverNotExists(query, client)
         .onSuccess(isUnique -> {
           if (Boolean.TRUE.equals(isUnique)) {
             promise.complete();
@@ -46,7 +46,7 @@ public class RolloverValidationService {
       getFullTableName(tenantId, LEDGER_FISCAL_YEAR_ROLLOVER_TABLE), rollover.getLedgerId(), rollover.getFromFiscalYearId());
   }
 
-  private Future<Boolean> isRolloverExists(String sql, DBClient client) {
+  private Future<Boolean> isRolloverNotExists(String sql, DBClient client) {
     Promise<Boolean> promise = Promise.promise();
 
     client.getPgClient()
