@@ -13,10 +13,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.refEq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -33,6 +35,8 @@ import org.folio.rest.jaxrs.model.EncumbranceRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.helpers.LocalRowSet;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fiscalyear.FiscalYearService;
@@ -44,10 +48,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.pgclient.impl.RowImpl;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.impl.RowDesc;
 
 @ExtendWith(VertxExtension.class)
 public class LedgerRolloverServiceTest {
@@ -66,6 +77,9 @@ public class LedgerRolloverServiceTest {
 
   @Mock
   private RolloverErrorService rolloverErrorService;
+
+  @Mock
+  private RolloverValidationService rolloverValidationService;
 
   @Mock
   private BudgetService budgetService;
@@ -128,6 +142,7 @@ public class LedgerRolloverServiceTest {
     when(dbClient.endTx()).thenReturn(Future.succeededFuture());
     when(fiscalYearService.populateRolloverWithCurrencyFactor(eq(rollover), eq(requestContext))).thenReturn(Future.succeededFuture());
     when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverValidationService.checkRolloverExists(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(budgetService.closeBudgets(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
 
@@ -153,6 +168,7 @@ public class LedgerRolloverServiceTest {
     when(dbClient.endTx()).thenReturn(Future.succeededFuture());
     when(fiscalYearService.populateRolloverWithCurrencyFactor(eq(rollover), eq(requestContext))).thenReturn(Future.succeededFuture());
     when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
+    when(rolloverValidationService.checkRolloverExists(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(rolloverProgressService.createRolloverProgress(eq(progress), eq(dbClient))).thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(ledgerRolloverService.rolloverPreparation(rollover, progress, requestContext))
@@ -175,6 +191,7 @@ public class LedgerRolloverServiceTest {
 
     when(requestContext.toDBClient()).thenReturn(dbClient);
     when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
+    when(rolloverValidationService.checkRolloverExists(eq(rollover), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(dbClient.rollbackTransaction()).thenReturn(Future.succeededFuture());
 
     when(ledgerFiscalYearRolloverDAO.create(eq(rollover), eq(dbClient))).thenReturn(Future.failedFuture(t));
@@ -286,7 +303,7 @@ public class LedgerRolloverServiceTest {
         testContext.verify(() -> {
           assertThat(event.cause(), is(e));
           verify(rolloverProgressService, times(2)).updateRolloverProgress(any(), any());
-          verify(rolloverErrorService, times(1))
+          verify(rolloverErrorService,times(1) )
             .createRolloverError(argThat(error -> error.getErrorType() == ORDER_ROLLOVER), eq(dbClient));
         });
         testContext.completeNow();

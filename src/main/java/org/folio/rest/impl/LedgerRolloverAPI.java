@@ -56,7 +56,11 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
             .onComplete(result -> {
               if (result.failed()) {
                 HttpException cause = (HttpException) result.cause();
-                log.error("Update of the fund record {} has failed", entity.getId(), cause);
+                if (Response.Status.CONFLICT.getStatusCode() == cause.getStatusCode()) {
+                  log.error("Rollover already exists with id {}", entity.getId(), cause);
+                } else {
+                  log.error("Creating rollover with id {} failed", entity.getId(), cause);
+                }
                 HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
               } else {
                 asyncResultHandler.handle(succeededFuture(buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/ledger-rollover", entity)));

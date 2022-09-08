@@ -13,25 +13,24 @@ import io.vertx.core.Promise;
 
 public class LedgerFiscalYearRolloverDAO {
 
-    public static final String LEDGER_FISCAL_YEAR_ROLLOVER_TABLE = "ledger_fiscal_year_rollover";
+  public static final String LEDGER_FISCAL_YEAR_ROLLOVER_TABLE = "ledger_fiscal_year_rollover";
 
-
-    public Future<Void> create(LedgerFiscalYearRollover rollover, DBClient client) {
-        if (StringUtils.isEmpty(rollover.getId())) {
-            rollover.setId(UUID.randomUUID()
-                    .toString());
-        }
-        Promise<Void> promise = Promise.promise();
-        client.getPgClient()
-                .save(client.getConnection(), LEDGER_FISCAL_YEAR_ROLLOVER_TABLE, rollover.getId(), rollover, reply -> {
-                    if (reply.failed()) {
-                        handleFailure(promise, reply);
-                    } else {
-                        promise.complete();
-                    }
-                });
-        return promise.future();
+  public Future<Void> create(LedgerFiscalYearRollover rollover, DBClient client) {
+    if (StringUtils.isEmpty(rollover.getId())) {
+      rollover.setId(UUID.randomUUID()
+        .toString());
     }
+    Promise<Void> promise = Promise.promise();
+    client.getPgClient()
+      .save(client.getConnection(), LEDGER_FISCAL_YEAR_ROLLOVER_TABLE, rollover.getId(), rollover, reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete();
+        }
+      });
+    return promise.future();
+  }
 
   public Future<Void> delete(String id, DBClient client) {
     Promise<Void> promise = Promise.promise();

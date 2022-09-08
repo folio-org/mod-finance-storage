@@ -8,6 +8,7 @@ import org.folio.dao.fund.FundDAO;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.dao.rollover.RolloverErrorDAO;
+import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
@@ -22,9 +23,9 @@ import org.folio.service.fund.StorageFundService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledger.StorageLedgerService;
 import org.folio.service.rollover.LedgerRolloverService;
-import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.service.rollover.RolloverErrorService;
 import org.folio.service.rollover.RolloverProgressService;
+import org.folio.service.rollover.RolloverValidationService;
 import org.folio.service.summary.EncumbranceTransactionSummaryService;
 import org.folio.service.summary.PaymentCreditTransactionSummaryService;
 import org.folio.service.summary.PendingPaymentTransactionSummaryService;
@@ -208,14 +209,20 @@ public class ServicesConfiguration {
     RolloverProgressService rolloverProgressService,
     RolloverErrorService rolloverErrorService,
     PostgresFunctionExecutionService postgresFunctionExecutionService,
+    RolloverValidationService rolloverValidationService,
     RestClient orderRolloverRestClient) {
     return new LedgerRolloverService(fiscalYearService, ledgerFiscalYearRolloverDAO, budgetService, rolloverProgressService,
-      rolloverErrorService, postgresFunctionExecutionService, orderRolloverRestClient);
+      rolloverErrorService, postgresFunctionExecutionService, rolloverValidationService, orderRolloverRestClient);
   }
 
   @Bean
   public RolloverErrorService rolloverErrorService(RolloverErrorDAO rolloverErrorDAO) {
     return new RolloverErrorService(rolloverErrorDAO);
+  }
+
+  @Bean
+  public RolloverValidationService rolloverValidationService() {
+    return new RolloverValidationService();
   }
 
 }
