@@ -44,7 +44,7 @@ public class RolloverValidationService {
   }
 
   private Tuple getParametersForValidateUniquenessQuery(LedgerFiscalYearRollover rollover) {
-    ArrayTuple params = new ArrayTuple(1);
+    ArrayTuple params = new ArrayTuple(2);
     params.addValue(rollover.getLedgerId());
     params.addValue(rollover.getFromFiscalYearId());
     return params;
