@@ -105,6 +105,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         missing_penny_with_po_line refcursor;
         missing_penny_row record;
         missing_penny_transaction_id text;
+        update_budget_amounts_query text;
     BEGIN
 
         -- #9 create encumbrances to temp table
@@ -215,7 +216,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
            								 	WHERE tr.fromFundId=budget.fundId AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId')
            						AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
                                	AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId')
-       THEN
+        THEN
            -- #11
            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER3', tr.id)), jsonb_build_object
@@ -290,21 +291,31 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 AND tr.fiscalYearId::text=_rollover_record->>'fromFiscalYearId';
         ELSE
             -- #9.2 move transactions from temp table to permanent
-            INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction;
+            IF _rollover_record->>'rolloverType' <> 'Preview' THEN
+                INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction;
+            END IF;
         END IF;
 
         -- #10 update budget amounts
-        UPDATE ${myuniversity}_${mymodule}.budget as budget
-        SET jsonb = budget.jsonb || jsonb_build_object('encumbered', (budget.jsonb->>'encumbered')::decimal + subquery.amount)
-        FROM
-            (
-                SELECT tr.jsonb->>'fromFundId' as fund_id, sum((tr.jsonb->>'amount')::decimal) AS amount
-                FROM ${myuniversity}_${mymodule}.transaction tr
-                WHERE tr.jsonb->>'fiscalYearId'=_rollover_record->>'toFiscalYearId' AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id
-                GROUP BY tr.jsonb->>'fromFundId'
-            ) AS subquery
-        LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON subquery.fund_id=fund.id::text
-        WHERE subquery.fund_id=budget.jsonb->>'fundId' AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId' AND budget.jsonb->>'fiscalYearId'=_rollover_record->>'toFiscalYearId';
+        update_budget_amounts_query := '
+            UPDATE ${myuniversity}_${mymodule}.%1$I as budget
+            SET jsonb = budget.jsonb || jsonb_build_object(''encumbered'', (budget.jsonb->>''encumbered'')::decimal + subquery.amount)
+            FROM
+                (
+                    SELECT tr.jsonb->>''fromFundId'' as fund_id, sum((tr.jsonb->>''amount'')::decimal) AS amount
+                    FROM ${myuniversity}_${mymodule}.transaction tr
+                    WHERE tr.jsonb->>''fiscalYearId''=%2$L::jsonb->>''toFiscalYearId'' AND tr.jsonb->''encumbrance''->>''sourcePurchaseOrderId''=%3$L
+                    GROUP BY tr.jsonb->>''fromFundId''
+                ) AS subquery
+            LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON subquery.fund_id=fund.id::text
+            WHERE subquery.fund_id=budget.jsonb->>''fundId'' AND fund.jsonb->>''ledgerId''=%2$L::jsonb->>''ledgerId'' AND budget.jsonb->>''fiscalYearId''=%2$L::jsonb->>''toFiscalYearId'';';
+
+        IF _rollover_record->>'rolloverType' = 'Preview' THEN
+          EXECUTE format(update_budget_amounts_query, 'ledger_fiscal_year_rollover_budget', _rollover_record, _order_id);
+        ELSE
+          EXECUTE format(update_budget_amounts_query, 'budget', _rollover_record, _order_id);
+          EXECUTE format(update_budget_amounts_query, 'ledger_fiscal_year_rollover_budget', _rollover_record, _order_id);
+        END IF;
 
         DROP TABLE IF EXISTS tmp_transaction;
     END;
@@ -422,53 +433,64 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         SELECT INTO fromFiscalYear (jsonb::jsonb) FROM ${myuniversity}_${mymodule}.fiscal_year WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'id';
 
         -- #1 Upsert budgets
-        INSERT INTO ${myuniversity}_${mymodule}.budget
+        INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
             (
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER5', budget.id, fund.id)), ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear)
                 FROM ${myuniversity}_${mymodule}.budget AS budget
                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id=budget.fundId
                 WHERE fund.jsonb->>'fundStatus'<>'Inactive' AND budget.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId' AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId'
-            )
-            ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fundId'::text)), lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fiscalYearId'::text)))
-                 DO UPDATE SET jsonb=${myuniversity}_${mymodule}.budget.jsonb || jsonb_build_object
-                    (
-                        'allocationTo', (${myuniversity}_${mymodule}.budget.jsonb->>'allocationTo')::decimal + (EXCLUDED.jsonb->>'initialAllocation')::decimal,
-                        'netTransfers', (${myuniversity}_${mymodule}.budget.jsonb->>'netTransfers')::decimal + (EXCLUDED.jsonb->>'netTransfers')::decimal,
-                        'metadata', ${myuniversity}_${mymodule}.budget.jsonb->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text));
+            );
 
-        -- #1.1 Create budget expense class relations for new budgets
-        INSERT INTO ${myuniversity}_${mymodule}.budget_expense_class
-        SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER6', oldBudget.id, fund.id, newBudget.id, exp.id)),
-               jsonb_build_object('budgetId', newBudget.id,
-                                  'expenseClassId', exp.jsonb->>'expenseClassId',
-                                  'status', exp.jsonb->>'status')
-        FROM ${myuniversity}_${mymodule}.budget AS oldBudget
-                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
-                 INNER JOIN ${myuniversity}_${mymodule}.budget AS newBudget ON newBudget.fundId = oldBudget.fundId
-                 INNER JOIN ${myuniversity}_${mymodule}.budget_expense_class AS exp ON oldBudget.id = exp.budgetid
-        WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
-          AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
-          AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
-        ON CONFLICT DO NOTHING;
+        IF _rollover_record->>'rolloverType' <> 'Preview' THEN
+            INSERT INTO ${myuniversity}_${mymodule}.budget
+                (
+                    SELECT * FROM ledger_fiscal_year_rollover_budget
+                )
+                ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fundId'::text)), lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fiscalYearId'::text)))
+                     DO UPDATE SET jsonb=${myuniversity}_${mymodule}.budget.jsonb || jsonb_build_object
+                        (
+                            'allocationTo', (${myuniversity}_${mymodule}.budget.jsonb->>'allocationTo')::decimal + (EXCLUDED.jsonb->>'initialAllocation')::decimal,
+                            'netTransfers', (${myuniversity}_${mymodule}.budget.jsonb->>'netTransfers')::decimal + (EXCLUDED.jsonb->>'netTransfers')::decimal,
+                            'metadata', ${myuniversity}_${mymodule}.budget.jsonb->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text));
+        END IF;
 
-        -- #1.2 Create budget groups relation for new budgets
-        INSERT INTO ${myuniversity}_${mymodule}.group_fund_fiscal_year
-        SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER7', oldBudget.id, fund.id, newBudget.id, gr.id)),
-               jsonb_build_object('budgetId', newBudget.id,
-                                  'groupId', gr.jsonb->>'groupId',
-                                  'fiscalYearId', _rollover_record->>'toFiscalYearId',
-                                  'fundId', gr.jsonb->>'fundId')
-        FROM ${myuniversity}_${mymodule}.budget AS oldBudget
-                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
-                 INNER JOIN ${myuniversity}_${mymodule}.budget AS newBudget ON newBudget.fundId = oldBudget.fundId
-                 INNER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year AS gr ON oldBudget.id = gr.budgetid
-        WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
-          AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
-          AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
-        ON CONFLICT DO NOTHING;
+        IF _rollover_record->>'rolloverType' <> 'Preview' THEN
+            -- #1.1 Create budget expense class relations for new budgets
+            INSERT INTO ${myuniversity}_${mymodule}.budget_expense_class
+            SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER6', oldBudget.id, fund.id, newBudget.id, exp.id)),
+                   jsonb_build_object('budgetId', newBudget.id,
+                                      'expenseClassId', exp.jsonb->>'expenseClassId',
+                                      'status', exp.jsonb->>'status')
+            FROM ${myuniversity}_${mymodule}.budget AS oldBudget
+                     INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
+                     INNER JOIN ${myuniversity}_${mymodule}.budget AS newBudget ON newBudget.fundId = oldBudget.fundId
+                     INNER JOIN ${myuniversity}_${mymodule}.budget_expense_class AS exp ON oldBudget.id = exp.budgetid
+            WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
+              AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
+              AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
+            ON CONFLICT DO NOTHING;
+
+            -- #1.2 Create budget groups relation for new budgets
+            INSERT INTO ${myuniversity}_${mymodule}.group_fund_fiscal_year
+            SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER7', oldBudget.id, fund.id, newBudget.id, gr.id)),
+                   jsonb_build_object('budgetId', newBudget.id,
+                                      'groupId', gr.jsonb->>'groupId',
+                                      'fiscalYearId', _rollover_record->>'toFiscalYearId',
+                                      'fundId', gr.jsonb->>'fundId')
+            FROM ${myuniversity}_${mymodule}.budget AS oldBudget
+                     INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
+                     INNER JOIN ${myuniversity}_${mymodule}.budget AS newBudget ON newBudget.fundId = oldBudget.fundId
+                     INNER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year AS gr ON oldBudget.id = gr.budgetid
+            WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
+              AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
+              AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
+            ON CONFLICT DO NOTHING;
+        END IF;
+
+        CREATE TEMPORARY TABLE tmp_transaction(LIKE ${myuniversity}_${mymodule}.transaction);
 
          -- #2 Create allocations
-        INSERT INTO ${myuniversity}_${mymodule}.transaction
+        INSERT INTO tmp_transaction
              (
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER8', budget.jsonb->>'id')),
                     jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Allocation',
@@ -487,7 +509,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
              );
 
         -- #3 Create transfers
-        INSERT INTO ${myuniversity}_${mymodule}.transaction
+        INSERT INTO tmp_transaction
               (
                  SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER9', budget.jsonb->>'id')), jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Rollover transfer',
                                                                'source', 'User', 'currency', toFiscalYear->>'currency', 'amount', (budget.jsonb->>'netTransfers')::decimal-sum(COALESCE((tr_to.jsonb->>'amount')::decimal, 0.00))+sum(COALESCE((tr_from.jsonb->>'amount')::decimal, 0.00)),
@@ -500,6 +522,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                  GROUP BY budget.jsonb
                  HAVING (budget.jsonb->>'netTransfers')::decimal-sum(COALESCE((tr_to.jsonb->>'amount')::decimal, 0.00))+sum(COALESCE((tr_from.jsonb->>'amount')::decimal, 0.00)) <> 0
               );
+
+        IF _rollover_record->>'rolloverType' <> 'Preview' THEN
+            INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction;
+        END IF;
+
+        DROP TABLE IF EXISTS tmp_transaction;
 
         -- #4 sort order ids
         FOR temprow IN
