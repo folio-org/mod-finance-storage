@@ -59,7 +59,7 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
                 if (Response.Status.CONFLICT.getStatusCode() == cause.getStatusCode()) {
                   log.error("Rollover already exists with id {}", entity.getId(), cause);
                 } else {
-                  log.error("Update of the fund record {} has failed", entity.getId(), cause);
+                  log.error("Creating rollover with id {} failed", entity.getId(), cause);
                 }
                 HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
               } else {
