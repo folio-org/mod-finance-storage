@@ -221,7 +221,7 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public RolloverValidationService uniqueValidationService() {
+  public RolloverValidationService rolloverValidationService() {
     return new RolloverValidationService();
   }
 

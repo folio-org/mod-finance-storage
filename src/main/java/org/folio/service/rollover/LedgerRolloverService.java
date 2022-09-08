@@ -108,15 +108,15 @@ public class LedgerRolloverService {
     DBClient client = requestContext.toDBClient();
     return client.startTx()
       .compose(aVoid -> rolloverValidationService.checkRolloverExists(rollover, client))
-      .compose(v -> ledgerFiscalYearRolloverDAO.create(rollover, client)
-        .compose(aVoid -> rolloverProgressService.createRolloverProgress(progress, client))
-        .compose(aVoid -> fiscalYearService.populateRolloverWithCurrencyFactor(rollover, requestContext))
-        .compose(aVoid -> closeBudgets(rollover, client))
-        .compose(aVoid -> client.endTx())
-        .onFailure(t -> {
-          log.error("Rollover preparation failed for Ledger {}", rollover.getLedgerId(), t);
-          client.rollbackTransaction();
-        }));
+      .compose(aVoid -> ledgerFiscalYearRolloverDAO.create(rollover, client))
+      .compose(aVoid -> rolloverProgressService.createRolloverProgress(progress, client))
+      .compose(aVoid -> fiscalYearService.populateRolloverWithCurrencyFactor(rollover, requestContext))
+      .compose(aVoid -> closeBudgets(rollover, client))
+      .compose(aVoid -> client.endTx())
+      .onFailure(t -> {
+        log.error("Rollover preparation failed for Ledger {}", rollover.getLedgerId(), t);
+        client.rollbackTransaction();
+      });
   }
 
   public Future<Void> startRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
