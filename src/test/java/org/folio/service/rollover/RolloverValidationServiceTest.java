@@ -65,10 +65,10 @@ public class RolloverValidationServiceTest {
     when(dbClient.getTenantId()).thenReturn("test");
 
     doAnswer((Answer<Void>) invocation -> {
-      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(1);
+      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(2);
       RowDesc rowDesc = new RowDesc(List.of("foo"));
       Row row = new RowImpl(rowDesc);
-      row.addBoolean(true);
+      row.addBoolean(false);
       RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
 
       handler.handle(Future.succeededFuture(rows));
@@ -94,10 +94,10 @@ public class RolloverValidationServiceTest {
     when(dbClient.getPgClient()).thenReturn(postgresClient);
 
     doAnswer((Answer<Void>) invocation -> {
-      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(1);
+      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(2);
       RowDesc rowDesc = new RowDesc(List.of("foo"));
       Row row = new RowImpl(rowDesc);
-      row.addBoolean(false);
+      row.addBoolean(true);
       RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
 
       handler.handle(Future.succeededFuture(rows));
