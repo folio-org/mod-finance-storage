@@ -517,6 +517,16 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             PERFORM ${myuniversity}_${mymodule}.rollover_order(temprow.order_id::text, _rollover_record);
         END LOOP;
 
+        -- #5 update planned budget status to active
+        UPDATE ${myuniversity}_${mymodule}.budget as budget
+        SET jsonb = budget.jsonb || jsonb_build_object('budgetStatus', 'Active')
+        FROM ${myuniversity}_${mymodule}.fund as fund
+        WHERE budget.jsonb->>'fundId'=fund.id::text
+            AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId'
+            AND budget.jsonb->>'fiscalYearId'=_rollover_record->>'toFiscalYearId'
+            AND budget.jsonb ? 'budgetStatus'
+            AND budget.jsonb ->> 'budgetStatus'='Planned';
+
         EXCEPTION WHEN OTHERS THEN
             GET STACKED DIAGNOSTICS exceptionText = MESSAGE_TEXT,
                                     exceptionDetails = PG_EXCEPTION_DETAIL;
