@@ -520,11 +520,11 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         -- #5 update planned budget status to active
         UPDATE ${myuniversity}_${mymodule}.budget as budget
         SET jsonb = budget.jsonb || jsonb_build_object('budgetStatus', 'Active')
-        FROM ${myuniversity}_${mymodule}.fund fund
+        FROM ${myuniversity}_${mymodule}.fund as fund
         WHERE budget.jsonb->>'fundId'=fund.id::text
             AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId'
             AND budget.jsonb->>'fiscalYearId'=_rollover_record->>'toFiscalYearId'
-            AND NOT budget.jsonb ? 'budgetStatus'
+            AND budget.jsonb ? 'budgetStatus'
             AND budget.jsonb ->> 'budgetStatus'='Planned';
 
         EXCEPTION WHEN OTHERS THEN
