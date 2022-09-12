@@ -72,10 +72,6 @@ public class EntitiesCrudTest extends TestBase {
     return Stream.of(BUDGET_EXPENSE_CLASS, BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
   }
 
-  static Stream<TestEntities> entitiesWithOptimisticLockingDisabled() {
-    return Stream.of(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS, LEDGER_FISCAL_YEAR_ROLLOVER_ERROR);
-  }
-
 
   @ParameterizedTest
   @Order(1)
