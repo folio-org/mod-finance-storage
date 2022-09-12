@@ -7,6 +7,7 @@ import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.dao.fund.FundDAO;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
+import org.folio.dao.rollover.RolloverBudgetDAO;
 import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
@@ -23,6 +24,7 @@ import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledger.StorageLedgerService;
 import org.folio.service.rollover.LedgerRolloverService;
 import org.folio.dao.rollover.RolloverProgressDAO;
+import org.folio.service.rollover.RolloverBudgetService;
 import org.folio.service.rollover.RolloverErrorService;
 import org.folio.service.rollover.RolloverProgressService;
 import org.folio.service.summary.EncumbranceTransactionSummaryService;
@@ -207,15 +209,21 @@ public class ServicesConfiguration {
     BudgetService budgetService,
     RolloverProgressService rolloverProgressService,
     RolloverErrorService rolloverErrorService,
+    RolloverBudgetService rolloverBudgetService,
     PostgresFunctionExecutionService postgresFunctionExecutionService,
     RestClient orderRolloverRestClient) {
     return new LedgerRolloverService(fiscalYearService, ledgerFiscalYearRolloverDAO, budgetService, rolloverProgressService,
-      rolloverErrorService, postgresFunctionExecutionService, orderRolloverRestClient);
+      rolloverErrorService, rolloverBudgetService, postgresFunctionExecutionService, orderRolloverRestClient);
   }
 
   @Bean
   public RolloverErrorService rolloverErrorService(RolloverErrorDAO rolloverErrorDAO) {
     return new RolloverErrorService(rolloverErrorDAO);
+  }
+
+  @Bean
+  public RolloverBudgetService rolloverBudgetService(RolloverBudgetDAO rolloverBudgetDAO) {
+    return new RolloverBudgetService(rolloverBudgetDAO);
   }
 
 }

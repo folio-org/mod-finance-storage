@@ -1,9 +1,11 @@
 package org.folio.utils;
 
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -12,6 +14,14 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 
 public final class CalculationUtils {
+
+  private static final String ALLOCATED = "allocated";
+  private static final String AVAILABLE = "available";
+  private static final String UNAVAILABLE = "unavailable";
+  private static final String OVER_ENCUMBERED = "overEncumbered";
+  private static final String OVER_EXPENDED = "overExpended";
+  private static final String TOTAL_FUNDING = "totalFunding";
+  private static final String CACHE_BALANCE = "cacheBalance";
 
   private CalculationUtils() {}
 
@@ -39,14 +49,58 @@ public final class CalculationUtils {
   }
 
   public static void calculateBudgetSummaryFields(Budget budget) {
-    BigDecimal initialAllocation = BigDecimal.valueOf(budget.getInitialAllocation());
-    BigDecimal allocationFrom = BigDecimal.valueOf(budget.getAllocationFrom());
-    BigDecimal allocationTo = BigDecimal.valueOf(budget.getAllocationTo());
+    Map<String, BigDecimal> result = calculate(budget.getInitialAllocation(),
+      budget.getAllocationFrom(),
+      budget.getAllocationTo(),
+      budget.getNetTransfers(),
+      budget.getExpenditures(),
+      budget.getEncumbered(),
+      budget.getAwaitingPayment()
+    );
 
-    BigDecimal netTransfers = BigDecimal.valueOf(budget.getNetTransfers());
-    BigDecimal expended = BigDecimal.valueOf(budget.getExpenditures());
-    BigDecimal encumbered = BigDecimal.valueOf(budget.getEncumbered());
-    BigDecimal awaitingPayment = BigDecimal.valueOf(budget.getAwaitingPayment());
+    budget.setAllocated(result.get(ALLOCATED).doubleValue());
+    budget.setAvailable(result.get(AVAILABLE).doubleValue());
+    budget.setUnavailable(result.get(UNAVAILABLE).doubleValue());
+    budget.setOverEncumbrance(result.get(OVER_ENCUMBERED).doubleValue());
+    budget.setOverExpended(result.get(OVER_EXPENDED).doubleValue());
+    budget.setTotalFunding(result.get(TOTAL_FUNDING).doubleValue());
+    budget.setCashBalance(result.get(CACHE_BALANCE).doubleValue());
+  }
+
+  public static void calculateBudgetSummaryFields(LedgerFiscalYearRolloverBudget rolloverBudget) {
+    Map<String, BigDecimal> result = calculate(rolloverBudget.getInitialAllocation(),
+      rolloverBudget.getAllocationFrom(),
+      rolloverBudget.getAllocationTo(),
+      rolloverBudget.getNetTransfers(),
+      rolloverBudget.getExpenditures(),
+      rolloverBudget.getEncumbered(),
+      rolloverBudget.getAwaitingPayment()
+    );
+
+    rolloverBudget.setAllocated(result.get(ALLOCATED).doubleValue());
+    rolloverBudget.setAvailable(result.get(AVAILABLE).doubleValue());
+    rolloverBudget.setUnavailable(result.get(UNAVAILABLE).doubleValue());
+    rolloverBudget.setOverEncumbrance(result.get(OVER_ENCUMBERED).doubleValue());
+    rolloverBudget.setOverExpended(result.get(OVER_EXPENDED).doubleValue());
+    rolloverBudget.setTotalFunding(result.get(TOTAL_FUNDING).doubleValue());
+    rolloverBudget.setCashBalance(result.get(CACHE_BALANCE).doubleValue());
+  }
+
+  private static Map<String, BigDecimal> calculate(Double dInitialAllocation,
+                                            Double dAllocationFrom,
+                                            Double dAllocationTo,
+                                            Double dNetTransfers,
+                                            Double dExpenditures,
+                                            Double dEncumbered,
+                                            Double dAwaitingPayment) {
+    BigDecimal initialAllocation = BigDecimal.valueOf(dInitialAllocation);
+    BigDecimal allocationFrom = BigDecimal.valueOf(dAllocationFrom);
+    BigDecimal allocationTo = BigDecimal.valueOf(dAllocationTo);
+
+    BigDecimal netTransfers = BigDecimal.valueOf(dNetTransfers);
+    BigDecimal expended = BigDecimal.valueOf(dExpenditures);
+    BigDecimal encumbered = BigDecimal.valueOf(dEncumbered);
+    BigDecimal awaitingPayment = BigDecimal.valueOf(dAwaitingPayment);
 
     BigDecimal allocated = initialAllocation.add(allocationTo).subtract(allocationFrom);
     BigDecimal unavailable = encumbered.add(awaitingPayment).add(expended);
@@ -57,14 +111,14 @@ public final class CalculationUtils {
 
     BigDecimal overEncumbered = calculateOverEncumbered(encumbered, unavailable, totalFunding, overExpended, awaitingPayment, expended);
 
-    budget.setAllocated(allocated.doubleValue());
-    budget.setAvailable(available.doubleValue());
-    budget.setUnavailable(unavailable.doubleValue());
-    budget.setOverEncumbrance(overEncumbered.doubleValue());
-    budget.setOverExpended(overExpended.doubleValue());
-    budget.setTotalFunding(totalFunding.doubleValue());
-    budget.setCashBalance(cashBalance.doubleValue());
-   }
+    return Map.of(ALLOCATED, allocated,
+      UNAVAILABLE, unavailable,
+      TOTAL_FUNDING, totalFunding,
+      CACHE_BALANCE, cashBalance,
+      AVAILABLE, available,
+      OVER_EXPENDED, overExpended,
+      OVER_ENCUMBERED, overEncumbered);
+  }
 
   private static BigDecimal calculateOverEncumbered(BigDecimal encumbered, BigDecimal unavailable,
             BigDecimal totalFunding, BigDecimal overExpended, BigDecimal awaitingPayment, BigDecimal expended) {

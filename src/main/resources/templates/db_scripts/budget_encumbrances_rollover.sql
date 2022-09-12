@@ -435,7 +435,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         -- #1 Upsert budgets
         INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
             (
-                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER5', budget.id, fund.id)), ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear)
+                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER5', budget.id, fund.id)),
+                 ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear) || jsonb_build_object('ledgerRolloverId', _rollover_record->>'id')
                 FROM ${myuniversity}_${mymodule}.budget AS budget
                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id=budget.fundId
                 WHERE fund.jsonb->>'fundStatus'<>'Inactive' AND budget.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId' AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId'
