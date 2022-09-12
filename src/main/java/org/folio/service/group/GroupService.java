@@ -67,7 +67,7 @@ public class GroupService {
     if (group.getId() == null) {
       group.setId(UUID.randomUUID().toString());
     }
-    group.setVersion(1);
+
     pgClient.save(GROUPS_TABLE, group.getId(), group, reply -> {
       if (reply.failed()) {
         promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, Group.class));
