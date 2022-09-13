@@ -19,6 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import io.restassured.response.ExtractableResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverErrorCollection;
@@ -151,10 +152,14 @@ public class EntitiesCrudTest extends TestBase {
   void testGetById(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Fetching %s with ID: %s", testEntity.name(), testEntity.name(),
         testEntity.getId()));
-    Response response = testEntitySuccessfullyFetched(testEntity.getEndpointWithId(), testEntity.getId());
-    Integer version = response.then().extract().path("_version");
-    if (version != null)
-      testEntity.setVersion(version);
+    ExtractableResponse<Response> response = testEntitySuccessfullyFetched(testEntity.getEndpointWithId(), testEntity.getId()).then().extract();
+    Integer version = response.path("_version");
+    if (testEntity.getOptimisticLockingEnabledValue()) {
+      Assertions.assertNotNull(version);
+    }
+    else
+      Assertions.assertNull(version);
+
   }
 
   @ParameterizedTest
@@ -164,9 +169,11 @@ public class EntitiesCrudTest extends TestBase {
     logger.info(String.format("--- mod-finance-storage %s test: Editing %s with ID: %s", testEntity.name(), testEntity.name(),
         testEntity.getId()));
     JsonObject catJSON = new JsonObject(getSample(testEntity.getSampleFileName()));
-    catJSON.put("id", testEntity.getId());
-    if (testEntity.getVersion() != null)
-      catJSON.put("_version", testEntity.getVersion());
+    if (testEntity.getOptimisticLockingEnabledValue()) {
+      String strResp = getDataById(testEntity.getEndpointWithId(), testEntity.getId()).asString();
+      var version = new JsonObject(strResp).getInteger("_version");
+      catJSON.put("_version", version);
+    }
     catJSON.put(testEntity.getUpdatedFieldName(), testEntity.getUpdatedFieldValue());
     testEntityEdit(testEntity.getEndpointWithId(), catJSON.toString(), testEntity.getId());
   }
@@ -175,8 +182,7 @@ public class EntitiesCrudTest extends TestBase {
   @Order(7)
   @EnumSource(TestEntities.class)
   void testVerifyPut(TestEntities testEntity) throws MalformedURLException {
-    logger.info(String.format("--- mod-finance-storage %s test: Fetching updated %s with ID: %s", testEntity.name(),
-        testEntity.name(), testEntity.getId()));
+    logger.info(String.format("--- mod-finance-storage %s test: Fetching updated %s with ID: %s", testEntity.name(), testEntity.name(), testEntity.getId()));
     testFetchingUpdatedEntity(testEntity.getId(), testEntity);
   }
 

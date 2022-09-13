@@ -324,7 +324,8 @@ public class TransactionTest extends TestBase {
       .then().statusCode(201);
 
     Transaction encumbrance2 = JsonObject.mapFrom(encumbrance).mapTo(Transaction.class)
-      .withAmount(9.0);
+      .withAmount(9.0)
+      .withVersion(1);
     OrderTransactionSummary putSummary1 = new OrderTransactionSummary()
       .withId(orderId)
       .withNumTransactions(1);
