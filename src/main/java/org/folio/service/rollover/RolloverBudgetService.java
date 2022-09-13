@@ -27,8 +27,7 @@ public class RolloverBudgetService {
     return rolloverBudgetDAO.updateBatch(budgets, client);
   }
 
-  public Future<Void> deleteRolloverErrors(String ledgerRolloverId, DBClient client) {
-    // todo check
+  public Future<Void> deleteRolloverBudgets(String ledgerRolloverId, DBClient client) {
     Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, ledgerRolloverId).build();
     return rolloverBudgetDAO.deleteByQuery(criterion, client);
   }

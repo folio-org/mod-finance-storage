@@ -88,6 +88,7 @@ public class LedgerRolloverService {
     return client.startTx()
       .compose(aVoid -> rolloverProgressService.deleteRolloverProgress(rolloverProgress.getId(), client))
       .compose(aVoid -> rolloverErrorService.deleteRolloverErrors(rolloverProgress.getLedgerRolloverId(), client))
+      .compose(aVoid -> rolloverBudgetService.deleteRolloverBudgets(rolloverProgress.getLedgerRolloverId(), client))
       .compose(aVoid -> ledgerFiscalYearRolloverDAO.delete(rolloverProgress.getLedgerRolloverId(), client))
       .compose(aVoid -> client.endTx())
       .onFailure(t -> {
