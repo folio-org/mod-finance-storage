@@ -1,7 +1,5 @@
 package org.folio.service.rollover;
 
-import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover.RolloverType;
-import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.FINANCIAL_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.ORDER_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR;
@@ -17,6 +15,8 @@ import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover.RolloverType;
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType;
@@ -25,11 +25,11 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRollov
 import org.folio.rest.persist.DBClient;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.fiscalyear.FiscalYearService;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.handler.HttpException;
-import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.utils.CalculationUtils;
 
 public class LedgerRolloverService {
@@ -43,11 +43,13 @@ public class LedgerRolloverService {
   private final RolloverErrorService rolloverErrorService;
   private final RolloverBudgetService rolloverBudgetService;
   private final PostgresFunctionExecutionService postgresFunctionExecutionService;
+  private final RolloverValidationService rolloverValidationService;
   private final RestClient orderRolloverRestClient;
 
   public LedgerRolloverService(FiscalYearService fiscalYearService, LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO,
       BudgetService budgetService, RolloverProgressService rolloverProgressService, RolloverErrorService rolloverErrorService,
-      RolloverBudgetService rolloverBudgetService, PostgresFunctionExecutionService postgresFunctionExecutionService, RestClient orderRolloverRestClient) {
+      RolloverBudgetService rolloverBudgetService,PostgresFunctionExecutionService postgresFunctionExecutionService,
+      RolloverValidationService rolloverValidationService, RestClient orderRolloverRestClient) {
     this.fiscalYearService = fiscalYearService;
     this.ledgerFiscalYearRolloverDAO = ledgerFiscalYearRolloverDAO;
     this.budgetService = budgetService;
@@ -55,6 +57,7 @@ public class LedgerRolloverService {
     this.rolloverErrorService = rolloverErrorService;
     this.rolloverBudgetService = rolloverBudgetService;
     this.postgresFunctionExecutionService = postgresFunctionExecutionService;
+    this.rolloverValidationService = rolloverValidationService;
     this.orderRolloverRestClient = orderRolloverRestClient;
   }
 
@@ -64,8 +67,8 @@ public class LedgerRolloverService {
       rollover.setId(UUID.randomUUID().toString());
     }
 
-    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress().withId(UUID.randomUUID()
-      .toString())
+    LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
+      .withId(UUID.randomUUID().toString())
       .withLedgerRolloverId(rollover.getId())
       .withBudgetsClosingRolloverStatus(SUCCESS)
       .withOverallRolloverStatus(IN_PROGRESS)
@@ -112,6 +115,7 @@ public class LedgerRolloverService {
       RequestContext requestContext) {
     DBClient client = requestContext.toDBClient();
     return client.startTx()
+      .compose(aVoid -> rolloverValidationService.checkRolloverExists(rollover, client))
       .compose(aVoid -> ledgerFiscalYearRolloverDAO.create(rollover, client))
       .compose(aVoid -> rolloverProgressService.createRolloverProgress(progress, client))
       .compose(aVoid -> fiscalYearService.populateRolloverWithCurrencyFactor(rollover, requestContext))
