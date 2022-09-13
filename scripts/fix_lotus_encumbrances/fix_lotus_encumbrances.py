@@ -17,7 +17,7 @@ headers = {}
 client = httpx.AsyncClient()
 
 # request timeout in seconds
-ASYNC_CLIENT_TIMEOUT = 30
+ASYNC_CLIENT_TIMEOUT = 60
 # limit number of the active futures
 MAX_ACTIVE_THREADS = 10
 
@@ -254,7 +254,7 @@ async def unrelease_order_encumbrances(order_id, encumbrances):
     for encumbrance in encumbrances:
         encumbrance['encumbrance']['status'] = 'Unreleased'
         url = '{}finance/encumbrances/{}'.format(okapi_url, encumbrance['id'])
-        enc_futures.append(put_request(url, encumbrance))
+        enc_futures.append(asyncio.ensure_future(put_request(url, encumbrance)))
     await asyncio.gather(*enc_futures)
 
     # the encumbrance amounts get modified (and the version in MG), so we need to get a fresh version

@@ -79,7 +79,7 @@ public class TransferService extends AbstractTransactionService implements Trans
     if (StringUtils.isEmpty(transaction.getId())) {
       transaction.setId(UUID.randomUUID().toString());
     }
-    transaction.setVersion(1);
+
     dbClient.getPgClient()
       .save(dbClient.getConnection(), TRANSACTION_TABLE, transaction.getId(), transaction, event -> {
         if (event.succeeded()) {
