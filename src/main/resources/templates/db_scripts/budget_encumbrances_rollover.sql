@@ -445,7 +445,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
             INSERT INTO ${myuniversity}_${mymodule}.budget
                 (
-                    SELECT * FROM ledger_fiscal_year_rollover_budget
+                    SELECT * FROM ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
                 )
                 ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fundId'::text)), lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fiscalYearId'::text)))
                      DO UPDATE SET jsonb=${myuniversity}_${mymodule}.budget.jsonb || jsonb_build_object
