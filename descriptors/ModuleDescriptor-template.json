@@ -1,6 +1,12 @@
 {
   "id": "${artifactId}-${version}",
   "name": "Finance CRUD module",
+  "requires": [
+    {
+      "id" : "invoice-storage.invoices",
+      "version" : "5.0"
+    }
+  ],
   "provides": [
     {
       "id": "finance-storage.budgets",
