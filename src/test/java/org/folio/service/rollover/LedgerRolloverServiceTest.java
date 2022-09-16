@@ -1,5 +1,6 @@
 package org.folio.service.rollover;
 
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.FINANCIAL_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.ORDER_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR;
@@ -13,12 +14,11 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.refEq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,8 +35,6 @@ import org.folio.rest.jaxrs.model.EncumbranceRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.helpers.LocalRowSet;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fiscalyear.FiscalYearService;
@@ -48,17 +46,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.stubbing.Answer;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.pgclient.impl.RowImpl;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.impl.RowDesc;
 
 @ExtendWith(VertxExtension.class)
 public class LedgerRolloverServiceTest {
@@ -77,6 +68,9 @@ public class LedgerRolloverServiceTest {
 
   @Mock
   private RolloverErrorService rolloverErrorService;
+
+  @Mock
+  private RolloverBudgetService rolloverBudgetService;
 
   @Mock
   private RolloverValidationService rolloverValidationService;
@@ -217,6 +211,10 @@ public class LedgerRolloverServiceTest {
     when(rolloverProgressService.updateRolloverProgress(eq(initialProgress), eq(dbClient))).thenReturn(Future.succeededFuture());
     when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
       .thenReturn(Future.succeededFuture());
+    when(rolloverBudgetService.getRolloverBudgets(rollover.getId(), dbClient))
+      .thenReturn(Future.succeededFuture(List.of(new LedgerFiscalYearRolloverBudget())));
+    when(rolloverBudgetService.updateBatch(anyList(), eq(dbClient)))
+      .thenReturn(Future.succeededFuture());
     when(rolloverProgressService.calculateAndUpdateFinancialProgressStatus(eq(initialProgress), eq(dbClient)))
       .thenReturn(Future.succeededFuture());
     when(rolloverProgressService.calculateAndUpdateOverallProgressStatus(eq(initialProgress), eq(dbClient)))
@@ -296,6 +294,10 @@ public class LedgerRolloverServiceTest {
 
     when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
       .thenReturn(Future.succeededFuture());
+    when(rolloverBudgetService.getRolloverBudgets(rollover.getId(), dbClient))
+      .thenReturn(Future.succeededFuture(List.of(new LedgerFiscalYearRolloverBudget())));
+    when(rolloverBudgetService.updateBatch(anyList(), eq(dbClient)))
+      .thenReturn(Future.succeededFuture());
     when(orderRolloverRestClient.postEmptyResponse(eq(rollover), eq(requestContext))).thenReturn(Future.failedFuture(e));
 
     testContext.assertFailure(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))
@@ -328,6 +330,10 @@ public class LedgerRolloverServiceTest {
       .thenReturn(Future.succeededFuture());
     when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
       .thenReturn(Future.succeededFuture());
+    when(rolloverBudgetService.getRolloverBudgets(rollover.getId(), dbClient))
+      .thenReturn(Future.succeededFuture(List.of(new LedgerFiscalYearRolloverBudget())));
+    when(rolloverBudgetService.updateBatch(anyList(), eq(dbClient)))
+      .thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))
       .onComplete(event -> {
@@ -355,6 +361,10 @@ public class LedgerRolloverServiceTest {
       argThat(progress -> progress.getOrdersRolloverStatus().equals(SUCCESS)), eq(dbClient)))
       .thenReturn(Future.succeededFuture());
     when(postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, dbClient))
+      .thenReturn(Future.succeededFuture());
+    when(rolloverBudgetService.getRolloverBudgets(rollover.getId(), dbClient))
+      .thenReturn(Future.succeededFuture(List.of(new LedgerFiscalYearRolloverBudget())));
+    when(rolloverBudgetService.updateBatch(anyList(), eq(dbClient)))
       .thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext))

@@ -20,7 +20,8 @@ public class RolloverBudgetService {
   }
 
   public Future<List<LedgerFiscalYearRolloverBudget>> getRolloverBudgets(String rolloverId, DBClient client) {
-    return rolloverBudgetDAO.getRolloverBudgets(rolloverId, client);
+    Criterion filter = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, rolloverId).build();
+    return rolloverBudgetDAO.getRolloverBudgets(filter, client);
   }
 
   public Future<List<LedgerFiscalYearRolloverBudget>> updateBatch(List<LedgerFiscalYearRolloverBudget> budgets, DBClient client) {
