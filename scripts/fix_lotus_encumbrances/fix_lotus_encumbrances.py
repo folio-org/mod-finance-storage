@@ -17,7 +17,7 @@ headers = {}
 client = httpx.AsyncClient()
 
 # request timeout in seconds
-ASYNC_CLIENT_TIMEOUT = 60
+ASYNC_CLIENT_TIMEOUT = 300
 # limit number of the active futures
 MAX_ACTIVE_THREADS = 10
 
@@ -56,7 +56,7 @@ async def get_request(url: str, query: str) -> httpx.Response:
             print('Error getting records by {} ?query= "{}": \n{} '.format(url, query, resp.text))
             raise SystemExit(1)
     except Exception as err:
-        print('Error getting records by {} ?query= "{}": \n{} '.format(url, query, err))
+        print(f'Error getting records by {url}?query={query}: {err=}')
         raise SystemExit(1)
 
 
@@ -69,7 +69,7 @@ async def post_request(url: str, data) -> httpx.Response:
             print('Error creating record {} \n "{}": \n{} '.format(url, data, resp.text))
             raise SystemExit(1)
     except Exception as err:
-        print('Error getting fiscal year ids with query "{}": {}'.format(data, err))
+        print(f'Error creating record {url} "{data}": {err=}')
         raise SystemExit(1)
 
 
@@ -83,7 +83,22 @@ async def put_request(url: str, data) -> httpx.Response:
             raise SystemExit(1)
 
     except Exception as err:
-        print('Error updating record {} "{}": {}'.format(url, data, err))
+        print(f'Error updating record {url} "{data}": {err=}')
+        raise SystemExit(1)
+
+
+async def put_request_with_semaphore(url: str, data, sem) -> httpx.Response:
+    try:
+        resp = await client.put(url, headers=headers, data=json.dumps(data))
+        sem.release()
+        if resp.status_code == HTTPStatus.NO_CONTENT:
+            return resp
+        else:
+            print('Error updating record {} "{}": {}'.format(url, data, resp.text))
+            raise SystemExit(1)
+
+    except Exception as err:
+        print(f'Error updating record {url} "{data}": {err=}')
         raise SystemExit(1)
 
 
@@ -194,7 +209,7 @@ async def put_encumbrance(encumbrance):
         if r.status_code != 204:
             raise_exception_for_reply(r)
     except Exception as err:
-        print('Error putting encumbrance "{}": {}'.format(encumbrance, err))
+        print(f'Error putting encumbrance "{encumbrance}": {err=}')
         raise SystemExit(1)
 
 
@@ -299,7 +314,7 @@ async def fix_order_status_and_release_encumbrances(order_id, encumbrances):
             encumbrance['encumbrance']['status'] = 'Released'
             encumbrance['encumbrance']['orderStatus'] = 'Closed'
             url = '{}finance/encumbrances/{}'.format(okapi_url, encumbrance['id'])
-            enc_futures.append(put_request(url, encumbrance))
+            enc_futures.append(asyncio.ensure_future(put_request(url, encumbrance)))
 
     except Exception as err:
         print('Error when fixing order status in encumbrances for order {}:'.format(order_id), err)
@@ -332,7 +347,8 @@ async def fix_encumbrance_order_status_for_closed_order(order_id, fiscal_year_id
 async def fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id):
     print('Fixing encumbrance order status for closed orders...')
     fix_encumbrance_futures = []
-    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    max_active_order_threads = 5
+    sem = asyncio.Semaphore(max_active_order_threads)
     for order_id in closed_orders_ids:
         await sem.acquire()
         fixed_encumbrance_future = asyncio.ensure_future(fix_encumbrance_order_status_for_closed_order(order_id, fiscal_year_id, sem))
@@ -350,21 +366,26 @@ async def unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id,
     transactions_response = await get_request(okapi_url + 'finance/transactions', query)
 
     order_encumbrances = transactions_response['transactions']
-    sem.release()
     # unrelease encumbrances by order id
     if len(order_encumbrances) != 0:
         await unrelease_encumbrances(order_id, order_encumbrances)
+
+    sem.release()
     return len(order_encumbrances)
 
 
 async def unrelease_encumbrances(order_id, encumbrances):
-    await  transaction_summary(order_id, len(encumbrances))
+    print('  Unreleasing {} encumbrances for the order {}'.format(len(encumbrances), order_id))
+
+    await transaction_summary(order_id, len(encumbrances))
     enc_futures = []
 
+    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
     for encumbrance in encumbrances:
+        await sem.acquire()
         encumbrance['encumbrance']['status'] = 'Unreleased'
         url = '{}finance/encumbrances/{}'.format(okapi_url, encumbrance['id'])
-        enc_futures.append(put_request(url, encumbrance))
+        enc_futures.append(asyncio.ensure_future(put_request_with_semaphore(url, encumbrance, sem)))
 
     await asyncio.gather(*enc_futures)
 
@@ -388,7 +409,7 @@ async def unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id
 async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_id):
     # Recalculate the encumbered property for all the budgets related to these encumbrances
     # Take closed orders into account because we might have to set a budget encumbered to 0
-    print('Recalculating budget encumbered...')
+    print('Recalculating budget encumbered for {} orders ...'.format(len(open_and_closed_orders_ids)))
     encumbered_for_fund = {}
     enc_future = []
     sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
@@ -408,14 +429,15 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
 
     update_budget_futures = []
     for fund_id, encumbered in encumbered_for_fund.items():
-        update_budget_futures.append(update_budgets(str(encumbered), fund_id, fiscal_year_id))
+        await sem.acquire()
+        update_budget_futures.append(asyncio.ensure_future(update_budgets(str(encumbered), fund_id, fiscal_year_id, sem)))
     nb_modified = sum(await asyncio.gather(*update_budget_futures))
 
     print('  Edited {} budget(s).'.format(nb_modified))
     print('  Done recalculating budget encumbered.')
 
 
-async def update_budgets(encumbered, fund_id, fiscal_year_id):
+async def update_budgets(encumbered, fund_id, fiscal_year_id, sem):
     nb_modified = 0
     budget = await get_budget_by_fund_id(fund_id, fiscal_year_id)
 
@@ -428,18 +450,21 @@ async def update_budgets(encumbered, fund_id, fiscal_year_id):
         url = '{}finance-storage/budgets/{}'.format(okapi_url, budget['id'])
         await put_request(url, budget)
         nb_modified = 1
+    sem.release()
     return nb_modified
 
 
 # ---------------------------------------------------
 # Release unreleased encumbrances for closed orders
 async def release_encumbrances(order_id, encumbrances):
+    print('  Releasing {} encumbrances for the order {}'.format(len(encumbrances), order_id))
+
     await transaction_summary(order_id, len(encumbrances))
     enc_futures = []
     for encumbrance in encumbrances:
         encumbrance['encumbrance']['status'] = 'Released'
         url = '{}finance/encumbrances/{}'.format(okapi_url, encumbrance['id'])
-        enc_futures.append(put_request(url, encumbrance))
+        enc_futures.append(asyncio.ensure_future(put_request(url, encumbrance)))
     await asyncio.gather(*enc_futures)
     return len(enc_futures)
 
