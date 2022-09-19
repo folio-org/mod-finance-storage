@@ -21,7 +21,7 @@ mvn clean install
 
 To run the module in standalone mode (i.e. without involving Okapi):
 ```
-DB_HOST=localhost DB_PORT=5432 DB_USERNAME=myuser DB_PASSWORD=mypass \
+DB_HOST=localhost DB_PORT=5432 DB_USERNAME=myuser DB_PASSWORD=mypass DB_DATABASE=mydb \
  java -jar target/mod-finance-fat.jar -Dhttp.port=8081
 ```
 
