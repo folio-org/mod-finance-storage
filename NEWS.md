@@ -1,4 +1,11 @@
-## 8.3.0 - Unreleased
+## 8.2.3 - Released (Morning Glory R2 2022)
+The primary focus of this release was to remove a migration script that may fail enabling or migrating a tenant.
+
+### Bug Fixes
+* [MODFISTO-345](https://issues.folio.org/browse/MODFISTO-345) Remove update\_encumbrances\_order\_status.ftl (cross module)
+* [MODFISTO-343](https://issues.folio.org/browse/MODFISTO-343) Tenant init fails on 2nd time
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.2.2...v8.2.3)
 
 ## 8.2.2 - Released (Morning Glory R2 2022)
 The primary focus of this release was to fix running script for budget rollovers
