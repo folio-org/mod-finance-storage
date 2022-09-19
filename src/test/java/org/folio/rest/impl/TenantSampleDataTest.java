@@ -9,29 +9,16 @@ import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.StorageTestSuite;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.TenantJob;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
@@ -45,16 +32,6 @@ public class TenantSampleDataTest extends TestBase {
   private static final Header ANOTHER_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "new_tenant");
 
   private static TenantJob tenantJob;
-
-  @BeforeAll
-  static void createPurchaseOrderTable() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-    InputStream tableInput = TenantSampleDataTest.class.getClassLoader().getResourceAsStream("cross_module_migrations_schemas.sql");
-    String sqlFile = IOUtils.toString(Objects.requireNonNull(tableInput), StandardCharsets.UTF_8);
-    CompletableFuture<Void> schemaCreated = new CompletableFuture<>();
-    PostgresClient.getInstance(StorageTestSuite.getVertx()).runSQLFile(sqlFile, false)
-      .onComplete(listAsyncResult -> schemaCreated.complete(null));
-    schemaCreated.get(60, TimeUnit.SECONDS);
-  }
 
   @AfterAll
   public static void after() {
