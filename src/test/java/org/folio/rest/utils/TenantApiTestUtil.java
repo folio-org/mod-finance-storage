@@ -35,7 +35,7 @@ public class TenantApiTestUtil {
     parameters.add(new Parameter().withKey("loadSample").withValue(isLoadSampleData.toString()));
     parameters.add(new Parameter().withKey(LOAD_SYNC_PARAMETER).withValue("true"));
 
-    tenantAttributes.withModuleTo(ModuleName.getModuleName()).withParameters(parameters);
+    tenantAttributes.withModuleTo(ModuleName.getModuleName() + "-5.0.0").withParameters(parameters);
 
     return tenantAttributes;
   }
