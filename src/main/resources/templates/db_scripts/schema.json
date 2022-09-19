@@ -43,11 +43,6 @@
     },
     {
       "run": "after",
-      "snippetPath": "migration/pending_payment_cross_module.ftl",
-      "fromModuleVersion": "mod-finance-storage-5.0.0"
-    },
-    {
-      "run": "after",
       "snippetPath": "migration/fill_budget_net_transfer.sql",
       "fromModuleVersion": "mod-finance-storage-6.0.0"
     },
@@ -60,11 +55,6 @@
       "run": "after",
       "snippetPath": "migration/update_order_encumbrance.sql",
       "fromModuleVersion": "mod-finance-storage-7.0.0"
-    },
-    {
-      "run": "after",
-      "snippetPath": "migration/update_encumbrances_order_status.ftl",
-      "fromModuleVersion": "mod-finance-storage-7.0.3"
     },
     {
       "run": "after",

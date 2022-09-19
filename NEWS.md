@@ -1,4 +1,12 @@
-## 8.2.0 - Unreleased
+## 8.1.7 - Released Lotus R1 Hotfix 4
+The focus of this release was to remove a migration scripts that may fail enabling or migrating a tenant.
+
+### Bug Fixes
+* [MODFISTO-345](https://issues.folio.org/browse/MODFISTO-345) Remove update\_encumbrances\_order\_status.ftl (cross module)
+* [MODFISTO-343](https://issues.folio.org/browse/MODFISTO-343) Tenant init fails on 2nd time
+* [MODFISTO-214](https://issues.folio.org/browse/MODFISTO-214) Illegal cross-module \*\_mod\_finance\_storage.fund access on migration
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.1.6...v8.1.7)
 
 ## 8.1.6 - Released Lotus R1 Hotfix 2
 This bugfix release was focused on updating rollover script
