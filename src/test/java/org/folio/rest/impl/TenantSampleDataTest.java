@@ -116,19 +116,15 @@ public class TenantSampleDataTest extends TestBase {
   }
 
   private TenantAttributes prepareUpgradeTenantBody(boolean isLoadSampleData, boolean isLoadReferenceData) {
-    String moduleName = "mod-finance-storage";
+    String moduleName = ModuleName.getModuleName();
 
     List<Parameter> parameters = new ArrayList<>();
     parameters.add(new Parameter().withKey("loadReference").withValue(String.valueOf(isLoadReferenceData)));
     parameters.add(new Parameter().withKey("loadSample").withValue(String.valueOf(isLoadSampleData)));
-    JsonObject jsonBody = new JsonObject();
-    jsonBody.put("module_to", ModuleName.getModuleName());
-    jsonBody.put("module_from", String.format("%s-%s", moduleName, "5.0.0"));
-    jsonBody.put("parameters", parameters);
 
     return new TenantAttributes()
-            .withModuleTo(ModuleName.getModuleName())
-            .withModuleFrom(String.format("%s-%s", moduleName, "5.0.0"))
+            .withModuleTo(moduleName + "-5.0.1")
+            .withModuleFrom(moduleName + "-5.0.0")
             .withParameters(parameters);
   }
 }
