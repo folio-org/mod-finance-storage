@@ -432,20 +432,27 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         SELECT INTO toFiscalYear (jsonb::jsonb) FROM ${myuniversity}_${mymodule}.fiscal_year WHERE _rollover_record->>'toFiscalYearId'=jsonb->>'id';
         SELECT INTO fromFiscalYear (jsonb::jsonb) FROM ${myuniversity}_${mymodule}.fiscal_year WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'id';
 
+        CREATE TEMPORARY TABLE tmp_budget(LIKE ${myuniversity}_${mymodule}.budget);
+
         -- #1 Upsert budgets
-        INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
+        INSERT INTO tmp_budget
             (
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER5', budget.id, fund.id)),
-                 ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear) || jsonb_build_object('ledgerRolloverId', _rollover_record->>'id')
+                 ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear)
                 FROM ${myuniversity}_${mymodule}.budget AS budget
                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id=budget.fundId
                 WHERE fund.jsonb->>'fundStatus'<>'Inactive' AND budget.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId' AND fund.jsonb->>'ledgerId'=_rollover_record->>'ledgerId'
             );
 
+        INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
+            (
+                SELECT id, jsonb || jsonb_build_object('ledgerRolloverId', _rollover_record->>'id') FROM tmp_budget
+            );
+
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
             INSERT INTO ${myuniversity}_${mymodule}.budget
                 (
-                    SELECT * FROM ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
+                    SELECT id, jsonb FROM tmp_budget
                 )
                 ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fundId'::text)), lower(${myuniversity}_${mymodule}.f_unaccent(jsonb ->> 'fiscalYearId'::text)))
                      DO UPDATE SET jsonb=${myuniversity}_${mymodule}.budget.jsonb || jsonb_build_object
@@ -454,6 +461,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                             'netTransfers', (${myuniversity}_${mymodule}.budget.jsonb->>'netTransfers')::decimal + (EXCLUDED.jsonb->>'netTransfers')::decimal,
                             'metadata', ${myuniversity}_${mymodule}.budget.jsonb->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text));
         END IF;
+
+        DROP TABLE IF EXISTS tmp_budget;
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
             -- #1.1 Create budget expense class relations for new budgets
