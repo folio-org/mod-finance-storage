@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
+import org.folio.rest.jaxrs.model.RolloverType;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.helpers.LocalRowSet;
@@ -59,7 +60,7 @@ public class RolloverValidationServiceTest {
       .withId(UUID.randomUUID().toString())
       .withLedgerId(UUID.randomUUID().toString())
       .withFromFiscalYearId(UUID.randomUUID().toString())
-      .withRolloverType(LedgerFiscalYearRollover.RolloverType.COMMIT);
+      .withRolloverType(RolloverType.COMMIT);
 
     when(dbClient.getPgClient()).thenReturn(postgresClient);
     when(dbClient.getTenantId()).thenReturn("test");
@@ -88,7 +89,7 @@ public class RolloverValidationServiceTest {
       .withId(UUID.randomUUID().toString())
       .withLedgerId(UUID.randomUUID().toString())
       .withFromFiscalYearId(UUID.randomUUID().toString())
-      .withRolloverType(LedgerFiscalYearRollover.RolloverType.COMMIT);
+      .withRolloverType(RolloverType.COMMIT);
 
     when(dbClient.getTenantId()).thenReturn("test");
     when(dbClient.getPgClient()).thenReturn(postgresClient);
@@ -121,7 +122,7 @@ public class RolloverValidationServiceTest {
       .withId(UUID.randomUUID().toString())
       .withLedgerId(UUID.randomUUID().toString())
       .withFromFiscalYearId(UUID.randomUUID().toString())
-      .withRolloverType(LedgerFiscalYearRollover.RolloverType.PREVIEW);
+      .withRolloverType(RolloverType.PREVIEW);
 
     testContext.assertComplete(rolloverValidationService.checkRolloverExists(rollover, dbClient)
       .onComplete(event -> {
