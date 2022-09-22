@@ -10,6 +10,7 @@ import static org.folio.rest.utils.TestEntities.GROUP;
 import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER;
+import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_LOG;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_ERROR;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
@@ -83,7 +84,9 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(2)
-  @EnumSource(value = TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testPostData(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... ", testEntity.name(), testEntity.name()));
     sample = getSample(testEntity.getSampleFileName());
@@ -115,6 +118,8 @@ public class EntitiesCrudTest extends TestBase {
         .log()
         .ifValidationFails()
         .statusCode(204);
+      // Because the rollover log is combined using the view, we have to assign a rollover id.
+      LEDGER_FISCAL_YEAR_ROLLOVER_LOG.setId(testEntity.getId());
     }
   }
 
@@ -159,12 +164,13 @@ public class EntitiesCrudTest extends TestBase {
     }
     else
       Assertions.assertNull(version);
-
   }
 
   @ParameterizedTest
   @Order(6)
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testPutById(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Editing %s with ID: %s", testEntity.name(), testEntity.name(),
         testEntity.getId()));
@@ -180,7 +186,9 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(7)
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testVerifyPut(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Fetching updated %s with ID: %s", testEntity.name(), testEntity.name(), testEntity.getId()));
     testFetchingUpdatedEntity(testEntity.getId(), testEntity);
@@ -212,7 +220,9 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(10)
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testVerifyDelete(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storages %s test: Verify %s is deleted with ID: %s", testEntity.name(),
         testEntity.name(), testEntity.getId()));
@@ -239,7 +249,9 @@ public class EntitiesCrudTest extends TestBase {
   }
 
   @ParameterizedTest
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testEditEntityWithNonExistedId(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s put by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),
         NON_EXISTED_ID));
@@ -251,7 +263,9 @@ public class EntitiesCrudTest extends TestBase {
   }
 
   @ParameterizedTest
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testDeleteEntityWithNonExistedId(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s delete by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),
         NON_EXISTED_ID));
