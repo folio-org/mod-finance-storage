@@ -119,6 +119,26 @@ public class RolloverBudgetDAOTest {
   }
 
   @Test
+  public void shouldNotUpdateBudgetsIfNoFound(VertxTestContext testContext) {
+    when(dbClient.getPgClient()).thenReturn(postgresClient);
+    when(dbClient.getConnection()).thenReturn(connectionAsyncResult);
+
+    doAnswer((Answer<Void>) invocation -> {
+      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(2);
+      handler.handle(Future.succeededFuture(null));
+      return null;
+    }).when(postgresClient)
+      .updateBatch(eq(ROLLOVER_BUDGET_TABLE), anyList(), any(Handler.class));
+
+    testContext.assertComplete(rolloverBudgetDAO.updateBatch(Collections.emptyList(), dbClient))
+      .onComplete(event -> {
+        testContext.verify(() -> assertThat(event.result(), hasSize(0)));
+
+        testContext.completeNow();
+      });
+  }
+
+  @Test
   public void shouldDeleteBudget(VertxTestContext testContext) {
     when(dbClient.getPgClient()).thenReturn(postgresClient);
     when(dbClient.getConnection()).thenReturn(connectionAsyncResult);
