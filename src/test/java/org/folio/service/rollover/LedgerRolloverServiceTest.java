@@ -3,10 +3,10 @@ package org.folio.service.rollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.FINANCIAL_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.ORDER_ROLLOVER;
-import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR;
-import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS;
-import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.NOT_STARTED;
-import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS;
+import static org.folio.rest.jaxrs.model.RolloverStatus.ERROR;
+import static org.folio.rest.jaxrs.model.RolloverStatus.IN_PROGRESS;
+import static org.folio.rest.jaxrs.model.RolloverStatus.NOT_STARTED;
+import static org.folio.rest.jaxrs.model.RolloverStatus.SUCCESS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasProperty;
@@ -31,6 +31,7 @@ import java.util.UUID;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.jaxrs.model.RolloverType;
 import org.folio.rest.jaxrs.model.EncumbranceRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
@@ -347,7 +348,7 @@ public class LedgerRolloverServiceTest {
   void shouldSkipOrderRolloverAndClosingBudgetsForPreview(VertxTestContext testContext) {
     LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
       .withId(UUID.randomUUID().toString())
-      .withRolloverType(LedgerFiscalYearRollover.RolloverType.PREVIEW);
+      .withRolloverType(RolloverType.PREVIEW);
     LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
 
     when(requestContext.toDBClient()).thenReturn(dbClient);
