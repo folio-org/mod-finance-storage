@@ -313,6 +313,22 @@
       ]
     },
     {
+      "id": "finance-storage.ledger-rollovers-logs",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/ledger-rollovers-logs",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-logs.collection.get"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/ledger-rollovers-logs/{id}",
+          "permissionsRequired": ["finance-storage.ledger-rollovers-logs.item.get"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.ledger-rollovers-budgets",
       "version": "1.0",
       "handlers": [
@@ -833,6 +849,16 @@
       "description" : "Delete a ledger rollover"
     },
     {
+      "permissionName" : "finance-storage.ledger-rollovers-logs.collection.get",
+      "displayName" : "ledger rollover logs collection get",
+      "description" : "Get collection of ledgers rollover logs"
+    },
+    {
+      "permissionName" : "finance-storage.ledger-rollovers-logs.item.get",
+      "displayName" : "ledger rollover logs item get",
+      "description" : "Fetch a ledger rollover log"
+    },
+    {
       "permissionName" : "finance-storage.ledger-rollovers-budgets.collection.get",
       "displayName" : "ledger rollover budgets collection get",
       "description" : "Get collection of ledgers rollover budgets"
@@ -907,6 +933,8 @@
         "finance-storage.ledger-rollovers.item.get",
         "finance-storage.ledger-rollovers.item.put",
         "finance-storage.ledger-rollovers.item.delete",
+        "finance-storage.ledger-rollovers-logs.collection.get",
+        "finance-storage.ledger-rollovers-logs.item.get",
         "finance-storage.ledger-rollovers-budgets.collection.get",
         "finance-storage.ledger-rollovers-budgets.item.get",
         "finance-storage.ledger-rollovers-progress.collection.get",

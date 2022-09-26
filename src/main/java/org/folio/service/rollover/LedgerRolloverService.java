@@ -2,9 +2,9 @@ package org.folio.service.rollover;
 
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.FINANCIAL_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.ORDER_ROLLOVER;
-import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR;
-import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS;
-import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS;
+import static org.folio.rest.jaxrs.model.RolloverStatus.ERROR;
+import static org.folio.rest.jaxrs.model.RolloverStatus.IN_PROGRESS;
+import static org.folio.rest.jaxrs.model.RolloverStatus.SUCCESS;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,13 +15,13 @@ import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
-import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover.RolloverType;
+import org.folio.rest.jaxrs.model.RolloverType;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
-import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus;
+import org.folio.rest.jaxrs.model.RolloverStatus;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
@@ -102,7 +102,7 @@ public class LedgerRolloverService {
 
   private Future<Void> checkCanDeleteRollover(LedgerFiscalYearRolloverProgress rolloverProgress) {
     Promise<Void> promise = Promise.promise();
-    OverallRolloverStatus ordersRolloverStatus = rolloverProgress.getOrdersRolloverStatus();
+    RolloverStatus ordersRolloverStatus = rolloverProgress.getOrdersRolloverStatus();
     if (ordersRolloverStatus.equals(IN_PROGRESS)) {
       promise.fail(new HttpException(422, "Can't delete in progress rollover"));
     } else {

@@ -9,6 +9,7 @@ import org.folio.rest.persist.DBClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
@@ -38,9 +39,11 @@ public class RolloverBudgetDAO {
           handleFailure(promise, reply);
         } else {
           List<LedgerFiscalYearRolloverBudget> budgets = new ArrayList<>();
-          reply.result()
-            .spliterator()
-            .forEachRemaining(row -> budgets.add(row.get(JsonObject.class, 0).mapTo(LedgerFiscalYearRolloverBudget.class)));
+          if (Objects.nonNull(reply.result())) {
+            reply.result()
+              .spliterator()
+              .forEachRemaining(row -> budgets.add(row.get(JsonObject.class, 0).mapTo(LedgerFiscalYearRolloverBudget.class)));
+          }
           promise.complete(budgets);
         }
     });
