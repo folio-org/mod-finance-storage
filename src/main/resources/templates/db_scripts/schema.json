@@ -640,6 +640,20 @@
           "tableAlias": "ledgerFYROBudget",
           "targetTableAlias": "ledgerFYRO",
           "tOps": "ADD"
+        },
+        {
+          "fieldName": "fundId",
+          "targetTable": "fund",
+          "tableAlias": "ledgerFYROBudget",
+          "targetTableAlias": "fund",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fiscalYearId",
+          "targetTable": "fiscal_year",
+          "tableAlias": "ledgerFYROBudget",
+          "targetTableAlias": "fiscalYear",
+          "tOps": "ADD"
         }
       ],
       "index": [
