@@ -1,7 +1,7 @@
 package org.folio.service.rollover;
 
-import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR;
-import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS;
+import static org.folio.rest.jaxrs.model.RolloverStatus.ERROR;
+import static org.folio.rest.jaxrs.model.RolloverStatus.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.refEq;
@@ -12,6 +12,7 @@ import java.util.Collections;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
+import org.folio.rest.jaxrs.model.RolloverStatus;
 import org.folio.rest.persist.DBClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ public class RolloverProgressServiceTest {
   void shouldUpdateRolloverProgressWithErrorOverallStatusWhenThereAreRolloverErrors(VertxTestContext testContext) {
 
     LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
-      .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
+      .withOrdersRolloverStatus(RolloverStatus.IN_PROGRESS);
 
     LedgerFiscalYearRolloverError error = new LedgerFiscalYearRolloverError();
     when(rolloverErrorService.getRolloverErrors(any(), any()))
@@ -68,7 +69,7 @@ public class RolloverProgressServiceTest {
   void shouldUpdateRolloverProgressWithSuccessOverallStatusWhenThereAreNoRolloverErrors(VertxTestContext testContext) {
 
     LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
-      .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
+      .withOrdersRolloverStatus(RolloverStatus.IN_PROGRESS);
 
     when(rolloverErrorService.getRolloverErrors(any(), any()))
       .thenReturn(Future.succeededFuture(Collections.emptyList()));
@@ -89,7 +90,7 @@ public class RolloverProgressServiceTest {
   void shouldUpdateRolloverProgressWithErrorFinancialStatusWhenThereAreRolloverErrors(VertxTestContext testContext) {
 
     LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
-      .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
+      .withOrdersRolloverStatus(RolloverStatus.IN_PROGRESS);
 
     LedgerFiscalYearRolloverError error = new LedgerFiscalYearRolloverError();
     when(rolloverErrorService.getRolloverErrors(any(), any()))
@@ -111,7 +112,7 @@ public class RolloverProgressServiceTest {
   void shouldUpdateRolloverProgressWithSuccessFinancialStatusWhenThereAreNoRolloverErrors(VertxTestContext testContext) {
 
     LedgerFiscalYearRolloverProgress progress = new LedgerFiscalYearRolloverProgress()
-      .withOrdersRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.IN_PROGRESS);
+      .withOrdersRolloverStatus(RolloverStatus.IN_PROGRESS);
 
     when(rolloverErrorService.getRolloverErrors(any(), any()))
       .thenReturn(Future.succeededFuture(Collections.emptyList()));

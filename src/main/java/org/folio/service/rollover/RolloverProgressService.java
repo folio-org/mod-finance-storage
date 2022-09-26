@@ -4,6 +4,7 @@ import io.vertx.core.Future;
 import io.vertx.ext.web.handler.HttpException;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
+import org.folio.rest.jaxrs.model.RolloverStatus;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
@@ -46,9 +47,9 @@ public class RolloverProgressService {
     return rolloverErrorService.getRolloverErrors(criterion, client)
       .compose(rolloverErrors -> {
         if (rolloverErrors.isEmpty()) {
-          progress.setFinancialRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS);
+          progress.setFinancialRolloverStatus(RolloverStatus.SUCCESS);
         } else {
-          progress.setFinancialRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR);
+          progress.setFinancialRolloverStatus(RolloverStatus.ERROR);
         }
         return rolloverProgressDAO.update(progress, client);
       });
@@ -60,9 +61,9 @@ public class RolloverProgressService {
     return rolloverErrorService.getRolloverErrors(criterion, client)
       .compose(rolloverErrors -> {
         if (rolloverErrors.isEmpty()) {
-          progress.setOverallRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.SUCCESS);
+          progress.setOverallRolloverStatus(RolloverStatus.SUCCESS);
         } else {
-          progress.setOverallRolloverStatus(LedgerFiscalYearRolloverProgress.OverallRolloverStatus.ERROR);
+          progress.setOverallRolloverStatus(RolloverStatus.ERROR);
         }
         return rolloverProgressDAO.update(progress, client);
       });
