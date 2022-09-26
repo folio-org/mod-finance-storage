@@ -294,6 +294,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         ELSE
             -- #9.2 move transactions from temp table to permanent
             IF _rollover_record->>'rolloverType' = 'Preview' THEN
+                -- tmp_transaction table always contains only one record, because function rollover_order() invokes for each order
+                -- tmp_encumbered_transactions contains data for all orders with updated encumbered field
                 INSERT INTO tmp_encumbered_transactions SELECT * FROM tmp_transaction;
             ELSE
                 INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction;
