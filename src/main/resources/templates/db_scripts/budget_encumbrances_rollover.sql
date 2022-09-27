@@ -458,7 +458,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             (
                 SELECT budget.id, budget.jsonb || jsonb_build_object(
                     'ledgerRolloverId', _rollover_record->>'id',
-                    'fund', jsonb_build_object(
+                    'fundDetails', jsonb_build_object(
                         'id', fund.id,
                         'name', fund.jsonb->>'name',
                         'code', fund.jsonb->>'code',
