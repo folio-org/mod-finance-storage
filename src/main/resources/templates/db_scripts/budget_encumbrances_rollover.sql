@@ -456,7 +456,23 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
 
         INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
             (
-                SELECT id, jsonb || jsonb_build_object('ledgerRolloverId', _rollover_record->>'id') FROM tmp_budget
+                SELECT budget.id, budget.jsonb || jsonb_build_object(
+                    'ledgerRolloverId', _rollover_record->>'id',
+                    'fund', jsonb_build_object(
+                                'id', fund.id,
+                                'name', fund.jsonb->>'name',
+                                'code', fund.jsonb->>'code',
+                                'fundStatus', fund.jsonb->>'fundStatus',
+                                'fundTypeId', fund.jsonb->>'fundTypeId',
+                                'fundTypeName', fund_type.jsonb->>'name',
+                                'acqunitIds', fund.jsonb->>'acqUnitIds',
+                                'allocatedFromIds', fund.jsonb->>'allocatedFromIds',
+                                'allocatedToIds', fund.jsonb->>'allocatedToIds',
+                                'externalAccountNo', fund.jsonb->>'externalAccountNo',
+                                'description', fund.jsonb->>'description'))
+                FROM tmp_budget AS budget
+                LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = budget.fundId
+                LEFT JOIN ${myuniversity}_${mymodule}.fund_type AS fund_type ON fund.jsonb->>'fundTypeId' = fund_type.id::text
             );
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
