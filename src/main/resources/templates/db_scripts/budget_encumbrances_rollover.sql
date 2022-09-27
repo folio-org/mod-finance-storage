@@ -468,7 +468,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                                 'acqunitIds', fund.jsonb->>'acqUnitIds',
                                 'allocatedFromIds', fund.jsonb->>'allocatedFromIds',
                                 'allocatedToIds', fund.jsonb->>'allocatedToIds',
-                                'externalAccountNo', fund.jsonb->>'externalAccountNo',
+                                'externalAccountNumberId', fund.jsonb->>'externalAccountNo',
                                 'description', fund.jsonb->>'description'))
                 FROM tmp_budget AS budget
                 LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = budget.fundId
