@@ -484,7 +484,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                         WHERE (fund.jsonb->'allocatedToIds')::jsonb ? inner_fund.id::text
                     ) AS allocatedToNames
                     FROM tmp_budget AS budget
-                    LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = budget.jsonb->'fundId'
+                    LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id::text = budget.jsonb->>'fundId'
                     LEFT JOIN ${myuniversity}_${mymodule}.fund_type AS fund_type ON fund_type.id = fund.fundTypeId
                 ) AS subquery
             );
