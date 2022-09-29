@@ -14,8 +14,11 @@ import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_LOG;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_ERROR;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS;
 import static org.folio.rest.utils.TestEntities.TRANSACTION;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import java.net.MalformedURLException;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -24,7 +27,9 @@ import io.restassured.response.ExtractableResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverErrorCollection;
+import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgressCollection;
+import org.folio.rest.jaxrs.model.RolloverStatus;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
@@ -104,6 +109,12 @@ public class EntitiesCrudTest extends TestBase {
     if (testEntity == LEDGER_FISCAL_YEAR_ROLLOVER) {
       LedgerFiscalYearRolloverProgressCollection collection = getData(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS.getEndpoint() + "?query=ledgerRolloverId==" + testEntity.getId() + " AND id<>" + LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS.getId()).as(LedgerFiscalYearRolloverProgressCollection.class);
       String progressId = collection.getLedgerFiscalYearRolloverProgresses().get(0).getId();
+
+      await().atMost(5, TimeUnit.SECONDS).until(() -> {
+        LedgerFiscalYearRolloverProgress progress = getDataById(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS.getEndpointWithId(), progressId).as(LedgerFiscalYearRolloverProgress.class);
+        return Objects.equals(progress.getOverallRolloverStatus(), RolloverStatus.ERROR);
+      });
+
       deleteData(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS.getEndpointWithId(), progressId).then()
               .log()
               .ifValidationFails()
