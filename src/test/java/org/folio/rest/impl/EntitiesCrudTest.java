@@ -86,6 +86,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
     mode = EnumSource.Mode.EXCLUDE)
+
   void testPostData(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... ", testEntity.name(), testEntity.name()));
     sample = getSample(testEntity.getSampleFileName());
