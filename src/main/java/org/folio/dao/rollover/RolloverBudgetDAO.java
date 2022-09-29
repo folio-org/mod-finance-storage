@@ -39,7 +39,7 @@ public class RolloverBudgetDAO {
           handleFailure(promise, reply);
         } else {
           List<LedgerFiscalYearRolloverBudget> budgets = new ArrayList<>();
-          if (Objects.nonNull(reply.result())) {
+          if (Objects.nonNull(reply.result()) && reply.result().size() > 0) {
             reply.result()
               .spliterator()
               .forEachRemaining(row -> budgets.add(row.get(JsonObject.class, 0).mapTo(LedgerFiscalYearRolloverBudget.class)));
