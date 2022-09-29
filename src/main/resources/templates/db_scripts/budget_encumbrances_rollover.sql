@@ -432,10 +432,10 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollover(_rollover_record jsonb) RETURNS VOID as $$
     DECLARE
             toFiscalYear					jsonb;
-            fromFiscalYear					jsonb;
-            temprow 						record;
-            exceptionText 					text;
-            exceptionDetails				text;
+            fromFiscalYear				jsonb;
+            temprow 						  record;
+            exceptionText 			  text;
+            exceptionDetails			text;
     BEGIN
 
 
@@ -456,23 +456,37 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
 
         INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
             (
-                SELECT budget.id, budget.jsonb || jsonb_build_object(
+                SELECT id, budget || jsonb_build_object(
                     'ledgerRolloverId', _rollover_record->>'id',
                     'fundDetails', jsonb_build_object(
-                        'id', fund.id,
-                        'name', fund.jsonb->>'name',
-                        'code', fund.jsonb->>'code',
-                        'fundStatus', fund.jsonb->>'fundStatus',
-                        'fundTypeId', fund.jsonb->>'fundTypeId',
-                        'fundTypeName', fund_type.jsonb->>'name',
-                        'acqunitIds', fund.jsonb->>'acqUnitIds',
-                        'allocatedFromIds', fund.jsonb->>'allocatedFromIds',
-                        'allocatedToIds', fund.jsonb->>'allocatedToIds',
-                        'externalAccountNo', fund.jsonb->>'externalAccountNo',
-                        'description', fund.jsonb->>'description'))
-                FROM tmp_budget AS budget
-                LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = budget.fundId
-                LEFT JOIN ${myuniversity}_${mymodule}.fund_type AS fund_type ON fund.jsonb->>'fundTypeId' = fund_type.id::text
+                        'id', fund->'id',
+                        'name', fund->'name',
+                        'code', fund->'code',
+                        'fundStatus', fund->'fundStatus',
+                        'fundTypeId', fund->'fundTypeId',
+                        'fundTypeName', fund_type->'name',
+                        'acqUnitIds', fund->'acqUnitIds',
+                        'allocatedFromIds', fund->'allocatedFromIds',
+                        'allocatedFromNames', allocatedFromNames,
+                        'allocatedToIds', fund->'allocatedToIds',
+                        'allocatedToNames', allocatedToNames,
+                        'externalAccountNo', fund->'externalAccountNo',
+                        'description', fund->'description'))
+            FROM
+                (
+                    SELECT budget.id AS id, budget.jsonb AS budget, fund.jsonb AS fund, fund_type.jsonb AS fund_type,
+                    (
+                        SELECT json_agg(inner_fund.jsonb->>'name') FROM ${myuniversity}_${mymodule}.fund AS inner_fund
+                        WHERE (fund.jsonb->'allocatedFromIds')::jsonb ? inner_fund.id::text
+                    ) AS allocatedFromNames,
+                    (
+                        SELECT json_agg(inner_fund.jsonb->>'name') FROM ${myuniversity}_${mymodule}.fund AS inner_fund
+                        WHERE (fund.jsonb->'allocatedToIds')::jsonb ? inner_fund.id::text
+                    ) AS allocatedToNames
+                    FROM tmp_budget AS budget
+                    LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id::text = budget.jsonb->>'fundId'
+                    LEFT JOIN ${myuniversity}_${mymodule}.fund_type AS fund_type ON fund_type.id::text = fund.jsonb->>'fundTypeId'
+                ) AS subquery
             );
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
