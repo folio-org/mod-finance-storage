@@ -456,7 +456,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
 
         INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
             (
-                SELECT public.gen_random_uuid(), budget || jsonb_build_object(
+                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER5', id, _rollover_record->>'id')), budget || jsonb_build_object(
                     'ledgerRolloverId', _rollover_record->>'id',
                     'fundDetails', jsonb_build_object(
                         'id', fund->'id',
