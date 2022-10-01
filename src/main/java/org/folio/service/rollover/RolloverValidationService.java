@@ -52,7 +52,7 @@ public class RolloverValidationService {
   }
 
   private String buildValidateUniquenessQuery(String tenantId) {
-    return String.format("SELECT EXISTS(SELECT ledgerId, fromFiscalYearId FROM %s WHERE ledgerId = $1 AND fromFiscalYearId = $2);",
+    return String.format("SELECT EXISTS(SELECT ledgerId, fromFiscalYearId FROM %s WHERE ledgerId = $1 AND fromFiscalYearId = $2 AND jsonb->>'rolloverType' = 'Commit');",
       getFullTableName(tenantId, LEDGER_FISCAL_YEAR_ROLLOVER_TABLE));
   }
 
