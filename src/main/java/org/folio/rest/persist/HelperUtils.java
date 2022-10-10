@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -19,6 +20,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.Future;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Parameter;
@@ -144,6 +146,12 @@ public final class HelperUtils {
       return Collections.singletonList(error);
     }
     return Collections.emptyList();
+  }
+
+  public static <T, R> Future<R> chainCall(List<T> list, Function<T, Future<R>> method){
+    return list.stream().reduce(Future.succeededFuture(),
+      (acc, item) -> acc.compose(v -> method.apply(item)),
+      (a,b) -> Future.succeededFuture());
   }
 
 }

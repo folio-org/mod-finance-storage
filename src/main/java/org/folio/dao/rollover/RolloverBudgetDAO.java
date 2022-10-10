@@ -50,6 +50,19 @@ public class RolloverBudgetDAO {
     return promise.future();
   }
 
+  public Future<LedgerFiscalYearRolloverBudget> updateRolloverBudget(LedgerFiscalYearRolloverBudget rolloverBudget, DBClient client) {
+    Promise<LedgerFiscalYearRolloverBudget> promise = Promise.promise();
+    client.getPgClient().
+      update(ROLLOVER_BUDGET_TABLE, JsonObject.mapFrom(rolloverBudget), rolloverBudget.getId(), reply -> {
+        if (reply.failed()) {
+          handleFailure(promise, reply);
+        } else {
+          promise.complete(rolloverBudget);
+        }
+      });
+    return promise.future();
+  }
+
   public Future<Void> deleteByQuery(Criterion filter, DBClient client) {
     Promise<Void> promise = Promise.promise();
     client.getPgClient()

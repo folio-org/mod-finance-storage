@@ -1,7 +1,11 @@
 package org.folio.config;
 
 import org.folio.dao.budget.BudgetDAO;
+import org.folio.dao.budget.BudgetExpenseClassDAO;
+import org.folio.dao.budget.BudgetExpenseClassPostgresDAO;
 import org.folio.dao.budget.BudgetPostgresDAO;
+import org.folio.dao.expense.ExpenseClassDAO;
+import org.folio.dao.expense.ExpenseClassPostgresDAO;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.dao.fiscalyear.FiscalYearPostgresDAO;
 import org.folio.dao.fund.FundDAO;
@@ -18,6 +22,7 @@ import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.dao.transactions.EncumbranceDAO;
 import org.folio.dao.transactions.PaymentCreditDAO;
 import org.folio.dao.transactions.PendingPaymentDAO;
+import org.folio.dao.transactions.TemporaryEncumbranceTransactionDAO;
 import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
@@ -66,6 +71,11 @@ public class DAOConfiguration {
   }
 
   @Bean
+  public TemporaryEncumbranceTransactionDAO temporaryEncumbranceTransactionDAO() {
+    return new TemporaryEncumbranceTransactionDAO();
+  }
+
+  @Bean
   public TransactionDAO encumbranceDAO() {
     return new EncumbranceDAO();
   }
@@ -98,5 +108,15 @@ public class DAOConfiguration {
   @Bean
   public RolloverBudgetDAO rolloverBudgetDAO() {
     return new RolloverBudgetDAO();
+  }
+
+  @Bean
+  public ExpenseClassDAO expenseClassDAO() {
+    return new ExpenseClassPostgresDAO();
+  }
+
+  @Bean
+  public BudgetExpenseClassDAO budgetExpenseClassDAO() {
+    return new BudgetExpenseClassPostgresDAO();
   }
 }

@@ -164,14 +164,20 @@ public class LedgerRolloverService {
       DBClient client) {
     return rolloverProgressService.updateRolloverProgress(progress.withFinancialRolloverStatus(IN_PROGRESS), client)
       .compose(aVoid -> runRolloverScript(rollover, client))
-      .recover(t -> handleFinancialRolloverError(t, rollover, progress, client))
       .compose(aVoid -> updateRolloverBudgetsWithCalculatedAmounts(rollover.getId(), client))
+      .compose(aVoid -> updateRolloverBudgetsWithExpenseClassTotals(rollover.getId(), client))
+      .recover(t -> handleFinancialRolloverError(t, rollover, progress, client))
       .compose(aVoid -> rolloverProgressService.calculateAndUpdateFinancialProgressStatus(progress.withOrdersRolloverStatus(IN_PROGRESS), client));
   }
 
   private Future<Void> runRolloverScript(LedgerFiscalYearRollover rollover, DBClient client) {
     return postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, client)
       .onFailure(t -> log.error("Budget encumbrances rollover failed for Ledger {}:", rollover.getLedgerId(), t));
+  }
+
+  private Future<Void> updateRolloverBudgetsWithExpenseClassTotals(String rolloverId, DBClient dbClient) {
+    return rolloverBudgetService.getRolloverBudgets(rolloverId, dbClient)
+      .compose(budgets -> rolloverBudgetService.updateRolloverBudgetsExpenseClassTotals(budgets, dbClient));
   }
 
   private Future<List<LedgerFiscalYearRolloverBudget>> updateRolloverBudgetsWithCalculatedAmounts(String rolloverId, DBClient dbClient) {
