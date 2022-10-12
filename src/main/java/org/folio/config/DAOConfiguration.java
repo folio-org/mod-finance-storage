@@ -2,10 +2,10 @@ package org.folio.config;
 
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.budget.BudgetExpenseClassDAO;
-import org.folio.dao.budget.BudgetExpenseClassPostgresDAO;
+import org.folio.dao.budget.BudgetExpenseClassDAOImpl;
 import org.folio.dao.budget.BudgetPostgresDAO;
 import org.folio.dao.expense.ExpenseClassDAO;
-import org.folio.dao.expense.ExpenseClassPostgresDAO;
+import org.folio.dao.expense.ExpenseClassDAOImpl;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.dao.fiscalyear.FiscalYearPostgresDAO;
 import org.folio.dao.fund.FundDAO;
@@ -112,11 +112,11 @@ public class DAOConfiguration {
 
   @Bean
   public ExpenseClassDAO expenseClassDAO() {
-    return new ExpenseClassPostgresDAO();
+    return new ExpenseClassDAOImpl();
   }
 
   @Bean
   public BudgetExpenseClassDAO budgetExpenseClassDAO() {
-    return new BudgetExpenseClassPostgresDAO();
+    return new BudgetExpenseClassDAOImpl();
   }
 }

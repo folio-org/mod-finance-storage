@@ -12,12 +12,17 @@ import java.util.List;
 
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
-public class BudgetExpenseClassPostgresDAO implements BudgetExpenseClassDAO{
+public class BudgetExpenseClassDAOImpl implements BudgetExpenseClassDAO{
+  public static final String TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE = "tmp_budget_expense_class";
 
-  public Future<List<BudgetExpenseClass>> getBudgetExpenseClasses(String sql, Tuple params, DBClient client) {
+  private static final String SELECT_BUDGET_EXPENSE_CLASSES_BY_BUDGET_ID = "SELECT budget_expense_class.jsonb "
+    + "FROM %s AS budget_expense_class "
+    + "WHERE budget_expense_class.budgetid = $1";
+
+  public Future<List<BudgetExpenseClass>> getTemporaryBudgetExpenseClasses(String budgetId, DBClient client) {
     Promise<List<BudgetExpenseClass>> promise = Promise.promise();
     client.getPgClient()
-      .select(sql, params, reply -> {
+      .select(getSelectExpenseClassQueryByBudgetId(), Tuple.of(budgetId), reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else {
@@ -28,6 +33,10 @@ public class BudgetExpenseClassPostgresDAO implements BudgetExpenseClassDAO{
         }
       });
     return promise.future();
+  }
+
+  private String getSelectExpenseClassQueryByBudgetId(){
+    return String.format(SELECT_BUDGET_EXPENSE_CLASSES_BY_BUDGET_ID, TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE);
   }
 
 }

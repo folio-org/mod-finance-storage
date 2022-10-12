@@ -1,12 +1,12 @@
 package org.folio.service.rollover;
 
+import static org.folio.dao.budget.BudgetExpenseClassDAOImpl.TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE;
 import static org.folio.dao.transactions.TemporaryEncumbranceTransactionDAO.TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.FINANCIAL_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.ORDER_ROLLOVER;
 import static org.folio.rest.jaxrs.model.RolloverStatus.ERROR;
 import static org.folio.rest.jaxrs.model.RolloverStatus.IN_PROGRESS;
 import static org.folio.rest.jaxrs.model.RolloverStatus.SUCCESS;
-import static org.folio.service.budget.BudgetExpenseClassService.TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE;
 
 import java.util.List;
 import java.util.UUID;
