@@ -1,10 +1,12 @@
 package org.folio.service.rollover;
 
+import static org.folio.dao.transactions.TemporaryEncumbranceTransactionDAO.TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.FINANCIAL_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.ORDER_ROLLOVER;
 import static org.folio.rest.jaxrs.model.RolloverStatus.ERROR;
 import static org.folio.rest.jaxrs.model.RolloverStatus.IN_PROGRESS;
 import static org.folio.rest.jaxrs.model.RolloverStatus.SUCCESS;
+import static org.folio.service.budget.BudgetExpenseClassService.TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE;
 
 import java.util.List;
 import java.util.UUID;
@@ -164,9 +166,10 @@ public class LedgerRolloverService {
       DBClient client) {
     return rolloverProgressService.updateRolloverProgress(progress.withFinancialRolloverStatus(IN_PROGRESS), client)
       .compose(aVoid -> runRolloverScript(rollover, client))
+      .recover(t -> handleFinancialRolloverError(t, rollover, progress, client))
       .compose(aVoid -> updateRolloverBudgetsWithCalculatedAmounts(rollover.getId(), client))
       .compose(aVoid -> updateRolloverBudgetsWithExpenseClassTotals(rollover.getId(), client))
-      .recover(t -> handleFinancialRolloverError(t, rollover, progress, client))
+      .compose(aVoid -> dropRolloverTemporaryTables(client))
       .compose(aVoid -> rolloverProgressService.calculateAndUpdateFinancialProgressStatus(progress.withOrdersRolloverStatus(IN_PROGRESS), client));
   }
 
@@ -175,17 +178,22 @@ public class LedgerRolloverService {
       .onFailure(t -> log.error("Budget encumbrances rollover failed for Ledger {}:", rollover.getLedgerId(), t));
   }
 
-  private Future<Void> updateRolloverBudgetsWithExpenseClassTotals(String rolloverId, DBClient dbClient) {
-    return rolloverBudgetService.getRolloverBudgets(rolloverId, dbClient)
-      .compose(budgets -> rolloverBudgetService.updateRolloverBudgetsExpenseClassTotals(budgets, dbClient));
-  }
-
   private Future<List<LedgerFiscalYearRolloverBudget>> updateRolloverBudgetsWithCalculatedAmounts(String rolloverId, DBClient dbClient) {
     return rolloverBudgetService.getRolloverBudgets(rolloverId, dbClient)
       .compose(budgets -> {
         budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
         return rolloverBudgetService.updateBatch(budgets, dbClient);
       });
+  }
+
+  private Future<Void> updateRolloverBudgetsWithExpenseClassTotals(String rolloverId, DBClient dbClient) {
+    return rolloverBudgetService.getRolloverBudgets(rolloverId, dbClient)
+      .compose(budgets -> rolloverBudgetService.updateRolloverBudgetsExpenseClassTotals(budgets, dbClient));
+  }
+
+  private Future<Void> dropRolloverTemporaryTables(DBClient dbClient) {
+    return postgresFunctionExecutionService.dropTable(TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE, true, dbClient)
+      .compose(aVoid -> postgresFunctionExecutionService.dropTable(TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE, true, dbClient));
   }
 
   private Future<Void> handleOrderRolloverError(Throwable t, LedgerFiscalYearRollover rollover,

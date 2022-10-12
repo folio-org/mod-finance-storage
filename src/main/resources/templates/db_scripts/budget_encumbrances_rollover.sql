@@ -437,6 +437,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             temprow 						  record;
             exceptionText 			  text;
             exceptionDetails			text;
+            create_expense_classes_query text;
     BEGIN
 
 
@@ -516,20 +517,25 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
 
         -- #1.1 Create budget expense class relations for new budgets
         CREATE TEMPORARY TABLE tmp_budget_expense_class(LIKE ${myuniversity}_${mymodule}.budget_expense_class);
-        INSERT INTO tmp_budget_expense_class
-            SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER6', oldBudget.id, fund.id, newBudget.id, exp.id)),
-                   jsonb_build_object('budgetId', newBudget.id,
-                                      'expenseClassId', exp.jsonb->>'expenseClassId',
-                                      'status', exp.jsonb->>'status')
+
+        create_expense_classes_query := '
+            INSERT INTO tmp_budget_expense_class
+            SELECT public.uuid_generate_v5(public.uuid_nil(), concat(''BER6'', oldBudget.id, fund.id, newBudget.id, exp.id)),
+                   jsonb_build_object(''budgetId'', newBudget.id,
+                                      ''expenseClassId'', exp.jsonb->>''expenseClassId'',
+                                      ''status'', exp.jsonb->>''status'')
             FROM ${myuniversity}_${mymodule}.budget AS oldBudget
                      INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
-                     INNER JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget AS newBudget ON newBudget.fundId = oldBudget.fundId
+                     INNER JOIN ${myuniversity}_${mymodule}.%1$I AS newBudget ON newBudget.fundId = oldBudget.fundId
                      INNER JOIN ${myuniversity}_${mymodule}.budget_expense_class AS exp ON oldBudget.id = exp.budgetid
-            WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
-              AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
-              AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId';
+            WHERE oldBudget.jsonb ->> ''fiscalYearId'' = %2$L::jsonb->>''fromFiscalYearId''
+              AND fund.jsonb ->> ''ledgerId'' = %2$L::jsonb->>''ledgerId''
+              AND newBudget.jsonb->>''fiscalYearId'' = %2$L::jsonb->>''toFiscalYearId''
+            ON CONFLICT DO NOTHING;';
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
+            EXECUTE format(create_expense_classes_query, 'budget', _rollover_record);
+
             INSERT INTO ${myuniversity}_${mymodule}.budget_expense_class(SELECT id, jsonb FROM tmp_budget_expense_class)
                 ON CONFLICT DO NOTHING;
 
@@ -548,6 +554,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
               AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
               AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
             ON CONFLICT DO NOTHING;
+        ELSE
+            EXECUTE format(create_expense_classes_query, 'ledger_fiscal_year_rollover_budget', _rollover_record);
         END IF;
 
         CREATE TEMPORARY TABLE tmp_transaction(LIKE ${myuniversity}_${mymodule}.transaction);

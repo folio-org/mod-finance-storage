@@ -16,11 +16,11 @@ import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 public class TemporaryEncumbranceTransactionDAO extends BaseTemporaryTransactionsDAO{
 
-  private static final String TEMPORARY_ENCUMBRANCE_TRANSACTIONS = "tmp_encumbered_transactions";
+  public static final String TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE = "tmp_encumbered_transactions";
   private static final String TEMPORARY_ENCUMBRANCE_TRANSACTIONS_QUERY = "SELECT jsonb FROM tmp_encumbered_transactions WHERE %s ";
 
   public TemporaryEncumbranceTransactionDAO() {
-    super(TEMPORARY_ENCUMBRANCE_TRANSACTIONS);
+    super(TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE);
   }
 
   @Override

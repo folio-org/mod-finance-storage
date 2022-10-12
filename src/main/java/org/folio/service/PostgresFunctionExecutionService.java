@@ -7,6 +7,7 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PostgresClient;
 
+import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 public class PostgresFunctionExecutionService {
@@ -26,6 +27,22 @@ public class PostgresFunctionExecutionService {
             handleFailure(promise, event);
           }
         });
+    return promise.future();
+  }
+
+  public Future<Void> dropTable(String tableName, boolean isTemporary, DBClient client) {
+    Promise<Void> promise = Promise.promise();
+    String preparedTableName = isTemporary ? tableName : getFullTableName(client.getTenantId(), tableName);
+    String sql = "DROP TABLE IF EXISTS %s;";
+
+    client.getPgClient()
+      .execute(String.format(sql, preparedTableName), event -> {
+        if (event.succeeded()) {
+          promise.complete();
+        } else {
+          handleFailure(promise, event);
+        }
+      });
     return promise.future();
   }
 }
