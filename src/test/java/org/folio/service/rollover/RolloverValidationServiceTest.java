@@ -16,6 +16,7 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.RolloverType;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.helpers.LocalRowDesc;
 import org.folio.rest.persist.helpers.LocalRowSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +68,7 @@ public class RolloverValidationServiceTest {
 
     doAnswer((Answer<Void>) invocation -> {
       Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(2);
-      RowDesc rowDesc = new RowDesc(List.of("foo"));
+      RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
       Row row = new RowImpl(rowDesc);
       row.addBoolean(false);
       RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
@@ -96,7 +97,7 @@ public class RolloverValidationServiceTest {
 
     doAnswer((Answer<Void>) invocation -> {
       Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(2);
-      RowDesc rowDesc = new RowDesc(List.of("foo"));
+      RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
       Row row = new RowImpl(rowDesc);
       row.addBoolean(true);
       RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
