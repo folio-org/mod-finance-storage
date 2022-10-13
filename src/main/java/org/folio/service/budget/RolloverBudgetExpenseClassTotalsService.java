@@ -35,10 +35,10 @@ public class RolloverBudgetExpenseClassTotalsService {
   }
 
   public Future<LedgerFiscalYearRolloverBudget> getBudgetWithUpdatedExpenseClassTotals(LedgerFiscalYearRolloverBudget budget, DBClient dbClient) {
-    return budgetExpenseClassService.getExpenseClassesByTemporaryBudgetId(budget.getId(), dbClient)
+    return budgetExpenseClassService.getExpenseClassesByTemporaryBudgetId(budget.getBudgetId(), dbClient)
       .compose(expenseClasses -> temporaryTransactionService.getTransactions(budget, dbClient)
         .map(transactions -> buildBudgetExpenseClassesTotals(expenseClasses, transactions, budget)))
-      .compose(budgetExpenseClassTotals -> budgetExpenseClassService.getTempBudgetExpenseClasses(budget.getId(), dbClient)
+      .compose(budgetExpenseClassTotals -> budgetExpenseClassService.getTempBudgetExpenseClasses(budget.getBudgetId(), dbClient)
         .map(budgetExpenseClasses -> updateExpenseClassStatus(budgetExpenseClassTotals, budgetExpenseClasses)))
       .map(budget::withExpenseClassDetails);
   }
