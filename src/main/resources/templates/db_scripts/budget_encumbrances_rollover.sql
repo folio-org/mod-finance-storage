@@ -328,6 +328,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             EXECUTE format(update_budget_amounts_query, 'ledger_fiscal_year_rollover_budget', _rollover_record, _order_id);
         END IF;
 
+        INSERT INTO tmp_encumbered_transactions SELECT * FROM tmp_transaction
+        ON CONFLICT DO NOTHING;
+
         DROP TABLE IF EXISTS tmp_transaction;
     END;
 

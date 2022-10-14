@@ -13,7 +13,7 @@ import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.GROUP;
 import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
 import static org.folio.rest.utils.TestEntities.LEDGER;
-import static org.folio.rest.utils.TestEntities.TRANSACTION;
+import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
 import static org.folio.service.budget.BudgetService.TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -81,7 +81,7 @@ public class BudgetTest extends TestBase {
       Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
       Pair.of(FUND, FUND.getPathToSampleFile()),
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
-      Pair.of(TRANSACTION, TRANSACTION.getPathToSampleFile()));
+      Pair.of(ALLOCATION_TRANSACTION, ALLOCATION_TRANSACTION.getPathToSampleFile()));
 
     deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then()
       .statusCode(204);
@@ -110,7 +110,7 @@ public class BudgetTest extends TestBase {
     Transaction transaction = new JsonObject(getFile(ENCUMBR_SAMPLE)).mapTo(Transaction.class);
     transaction.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
-    postData(TRANSACTION.getEndpoint(), JsonObject.mapFrom(transaction).encodePrettily(), BUDGET_TENANT_HEADER)
+    postData(ALLOCATION_TRANSACTION.getEndpoint(), JsonObject.mapFrom(transaction).encodePrettily(), BUDGET_TENANT_HEADER)
       .then()
       .statusCode(201);
 

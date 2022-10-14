@@ -13,10 +13,13 @@ import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_LOG;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_ERROR;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS;
-import static org.folio.rest.utils.TestEntities.TRANSACTION;
+import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
+import static org.folio.rest.utils.TestEntities.ENCUMBRANCE_TRANSACTION;
+import static org.folio.rest.utils.TestEntities.ORDER_SUMMARY;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import java.net.MalformedURLException;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -30,6 +33,7 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverErrorCollection;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgressCollection;
 import org.folio.rest.jaxrs.model.RolloverStatus;
+import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
@@ -53,7 +57,7 @@ public class EntitiesCrudTest extends TestBase {
    *
    */
   static Stream<TestEntities> deleteOrder() {
-    return Stream.of(TRANSACTION, GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, LEDGER_FISCAL_YEAR_ROLLOVER_ERROR,
+    return Stream.of(ORDER_SUMMARY, ALLOCATION_TRANSACTION, ENCUMBRANCE_TRANSACTION, GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, LEDGER_FISCAL_YEAR_ROLLOVER_ERROR,
       LEDGER_FISCAL_YEAR_ROLLOVER, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
   }
 
@@ -80,7 +84,9 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(1)
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"ORDER_SUMMARY"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testVerifyCollection(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Verifying database's initial state ... ", testEntity.name()));
     verifyCollectionQuantity(testEntity.getEndpoint(), 0);
@@ -154,10 +160,16 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(4)
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"ORDER_SUMMARY"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testVerifyCollectionQuantity(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Verifying only 1 adjustment was created ... ", testEntity.name()));
-    verifyCollectionQuantity(testEntity.getEndpoint(), 1);
+    int quantity = 1;
+    if(List.of(ALLOCATION_TRANSACTION, ENCUMBRANCE_TRANSACTION).contains(testEntity)) {
+      quantity = 3;
+    }
+    verifyCollectionQuantity(testEntity.getEndpoint(), quantity);
 
   }
 
@@ -197,7 +209,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(7)
   @EnumSource(value = TestEntities.class,
-    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG", "ORDER_SUMMARY"},
     mode = EnumSource.Mode.EXCLUDE)
   void testVerifyPut(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Fetching updated %s with ID: %s", testEntity.name(), testEntity.name(), testEntity.getId()));
@@ -226,6 +238,17 @@ public class EntitiesCrudTest extends TestBase {
       .log()
       .ifValidationFails()
       .statusCode(204);
+
+    if(testEntity == ENCUMBRANCE_TRANSACTION) {
+      TransactionCollection transactionCollection = getData(
+        ENCUMBRANCE_TRANSACTION.getEndpoint() + "?query=transactionType==Encumbrance")
+        .as(TransactionCollection.class);
+      String transactionId = transactionCollection.getTransactions().get(0).getId();
+      deleteData(testEntity.getEndpointWithId(), transactionId).then()
+        .log()
+        .ifValidationFails()
+        .statusCode(204);
+    }
   }
 
   @ParameterizedTest
@@ -286,7 +309,9 @@ public class EntitiesCrudTest extends TestBase {
   }
 
   @ParameterizedTest
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"ORDER_SUMMARY"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testGetEntitiesWithInvalidCQLQuery(TestEntities testEntity) throws MalformedURLException {
     logger.info(String.format("--- mod-finance-storage %s test: Invalid CQL query", testEntity.name()));
     testInvalidCQLQuery(testEntity.getEndpoint() + "?query=invalid-query");
