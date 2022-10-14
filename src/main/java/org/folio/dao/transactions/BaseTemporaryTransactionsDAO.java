@@ -57,16 +57,13 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
     return promise.future();
   }
 
-
   @Override
-  public Future<List<Transaction>> getTempTransactionsBySummaryId(String summaryId, DBClient client) {
+  public Future<List<Transaction>> getTempTransactions(Criterion criterion, DBClient client) {
     Promise<List<Transaction>> promise = Promise.promise();
-
-    Criterion criterion = getSummaryIdCriteria(summaryId);
 
     client.getPgClient().get(tableName, Transaction.class, criterion, false, false, reply -> {
       if (reply.failed()) {
-        logger.error("Failed to extract temporary transaction by summary id={}", summaryId, reply.cause());
+        logger.error("Failed to extract temporary transaction by criteria = {}", criterion, reply.cause());
         handleFailure(promise, reply);
       } else {
         List<Transaction> transactions = reply.result().getResults();
@@ -76,6 +73,10 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
     return promise.future();
   }
 
+  @Override
+  public Future<List<Transaction>> getTempTransactionsBySummaryId(String summaryId, DBClient client) {
+    return getTempTransactions(getSummaryIdCriteria(summaryId), client);
+  }
 
   public Future<Integer> deleteTempTransactions(String summaryId, DBClient client) {
     Promise<Integer> promise = Promise.promise();

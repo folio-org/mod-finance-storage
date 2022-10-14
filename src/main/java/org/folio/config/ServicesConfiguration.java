@@ -3,6 +3,8 @@ package org.folio.config;
 import java.util.Set;
 
 import org.folio.dao.budget.BudgetDAO;
+import org.folio.dao.budget.BudgetExpenseClassDAO;
+import org.folio.dao.expense.ExpenseClassDAO;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.dao.fund.FundDAO;
 import org.folio.dao.ledger.LedgerDAO;
@@ -13,18 +15,20 @@ import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
+import org.folio.dao.transactions.TemporaryEncumbranceTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.service.PostgresFunctionExecutionService;
+import org.folio.service.budget.BudgetExpenseClassService;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.budget.RolloverBudgetExpenseClassTotalsService;
 import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledger.StorageLedgerService;
 import org.folio.service.rollover.LedgerRolloverService;
-import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.service.rollover.RolloverBudgetService;
 import org.folio.service.rollover.RolloverErrorService;
 import org.folio.service.rollover.RolloverProgressService;
@@ -41,6 +45,7 @@ import org.folio.service.transactions.PendingPaymentService;
 import org.folio.service.transactions.TransactionManagingStrategy;
 import org.folio.service.transactions.TransactionManagingStrategyFactory;
 import org.folio.service.transactions.TransactionService;
+import org.folio.service.transactions.TemporaryTransactionService;
 import org.folio.service.transactions.TransferService;
 import org.folio.service.transactions.cancel.CancelPaymentCreditService;
 import org.folio.service.transactions.cancel.CancelPendingPaymentService;
@@ -215,8 +220,8 @@ public class ServicesConfiguration {
     PostgresFunctionExecutionService postgresFunctionExecutionService,
     RolloverValidationService rolloverValidationService,
     RestClient orderRolloverRestClient) {
-    return new LedgerRolloverService(fiscalYearService, ledgerFiscalYearRolloverDAO, budgetService, rolloverProgressService,
-      rolloverErrorService, rolloverBudgetService, postgresFunctionExecutionService, rolloverValidationService, orderRolloverRestClient);
+    return new LedgerRolloverService(fiscalYearService, ledgerFiscalYearRolloverDAO, budgetService, rolloverProgressService, rolloverErrorService,
+      rolloverBudgetService, postgresFunctionExecutionService, rolloverValidationService, orderRolloverRestClient);
   }
 
   @Bean
@@ -225,12 +230,27 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public RolloverBudgetService rolloverBudgetService(RolloverBudgetDAO rolloverBudgetDAO) {
-    return new RolloverBudgetService(rolloverBudgetDAO);
+  public RolloverBudgetService rolloverBudgetService(RolloverBudgetDAO rolloverBudgetDAO, RolloverBudgetExpenseClassTotalsService rolloverBudgetExpenseClassTotalsService) {
+    return new RolloverBudgetService(rolloverBudgetDAO, rolloverBudgetExpenseClassTotalsService);
   }
 
   @Bean
   public RolloverValidationService rolloverValidationService() {
     return new RolloverValidationService();
+  }
+
+  @Bean
+  BudgetExpenseClassService budgetExpenseClassService(BudgetExpenseClassDAO budgetExpenseClassDAO, ExpenseClassDAO expenseClassDAO) {
+    return new BudgetExpenseClassService(expenseClassDAO, budgetExpenseClassDAO);
+  }
+
+  @Bean
+  TemporaryTransactionService temporaryTransactionService(TemporaryEncumbranceTransactionDAO temporaryEncumbranceTransactionDAO) {
+    return new TemporaryTransactionService(temporaryEncumbranceTransactionDAO);
+  }
+
+  @Bean
+  RolloverBudgetExpenseClassTotalsService rolloverBudgetExpenseClassTotalsService(BudgetExpenseClassService budgetExpenseClassService, TemporaryTransactionService temporaryTransactionService) {
+    return new RolloverBudgetExpenseClassTotalsService(budgetExpenseClassService, temporaryTransactionService);
   }
 }

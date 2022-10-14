@@ -10,7 +10,7 @@ import static org.folio.rest.utils.TestEntities.BUDGET;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
-import static org.folio.rest.utils.TestEntities.TRANSACTION;
+import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,8 +37,8 @@ import io.vertx.core.json.JsonObject;
 
 public class TransactionTest extends TestBase {
 
-  protected static final String TRANSACTION_ENDPOINT = TRANSACTION.getEndpoint();
-  protected static final String TRANSACTION_ENDPOINT_BY_ID = TRANSACTION.getEndpointWithId();
+  protected static final String TRANSACTION_ENDPOINT = ALLOCATION_TRANSACTION.getEndpoint();
+  protected static final String TRANSACTION_ENDPOINT_BY_ID = ALLOCATION_TRANSACTION.getEndpointWithId();
   protected static final String TRANSACTION_TEST_TENANT = "transaction_test_tenant";
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
@@ -55,7 +55,7 @@ public class TransactionTest extends TestBase {
   public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets/CANLATHIST-FY22-closed.json";
   public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets/ANZHIST-FY22.json";
   public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations/allocation_CANLATHIST-FY22.json";
-  private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
+  public static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
   private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
   private static TenantJob tenantJob;
 
@@ -86,7 +86,7 @@ public class TransactionTest extends TestBase {
       Pair.of(FUND, ALLOCATION_FROM_FUND_SAMPLE_PATH),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH),
       Pair.of(BUDGET, ALLOCATION_FROM_BUDGET_SAMPLE_PATH),
-      Pair.of(TRANSACTION, ALLOCATION_SAMPLE_PATH));
+      Pair.of(ALLOCATION_TRANSACTION, ALLOCATION_SAMPLE_PATH));
 
     JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     jsonTx.remove("id");

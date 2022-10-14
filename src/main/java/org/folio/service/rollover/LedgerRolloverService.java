@@ -1,5 +1,7 @@
 package org.folio.service.rollover;
 
+import static org.folio.dao.budget.BudgetExpenseClassDAOImpl.TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE;
+import static org.folio.dao.transactions.TemporaryEncumbranceTransactionDAO.TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.FINANCIAL_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.ORDER_ROLLOVER;
 import static org.folio.rest.jaxrs.model.RolloverStatus.ERROR;
@@ -166,6 +168,8 @@ public class LedgerRolloverService {
       .compose(aVoid -> runRolloverScript(rollover, client))
       .recover(t -> handleFinancialRolloverError(t, rollover, progress, client))
       .compose(aVoid -> updateRolloverBudgetsWithCalculatedAmounts(rollover.getId(), client))
+      .compose(aVoid -> updateRolloverBudgetsWithExpenseClassTotals(rollover.getId(), client))
+      .compose(aVoid -> dropRolloverTemporaryTables(client))
       .compose(aVoid -> rolloverProgressService.calculateAndUpdateFinancialProgressStatus(progress.withOrdersRolloverStatus(IN_PROGRESS), client));
   }
 
@@ -180,6 +184,16 @@ public class LedgerRolloverService {
         budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
         return rolloverBudgetService.updateBatch(budgets, dbClient);
       });
+  }
+
+  private Future<Void> updateRolloverBudgetsWithExpenseClassTotals(String rolloverId, DBClient dbClient) {
+    return rolloverBudgetService.getRolloverBudgets(rolloverId, dbClient)
+      .compose(budgets -> rolloverBudgetService.updateRolloverBudgetsExpenseClassTotals(budgets, dbClient));
+  }
+
+  private Future<Void> dropRolloverTemporaryTables(DBClient dbClient) {
+    return postgresFunctionExecutionService.dropTable(TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE, true, dbClient)
+      .compose(aVoid -> postgresFunctionExecutionService.dropTable(TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE, true, dbClient));
   }
 
   private Future<Void> handleOrderRolloverError(Throwable t, LedgerFiscalYearRollover rollover,

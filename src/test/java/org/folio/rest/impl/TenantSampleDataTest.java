@@ -22,7 +22,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
-import io.vertx.core.json.JsonObject;
 
 
 public class TenantSampleDataTest extends TestBase {
@@ -58,8 +57,10 @@ public class TenantSampleDataTest extends TestBase {
     try {
       tenantJob = postTenant(ANOTHER_TENANT_HEADER, prepareTenantBody());
       for (TestEntities entity : TestEntities.values()) {
-        logger.info("Test expected quantity for " + entity.name());
-        verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), ANOTHER_TENANT_HEADER);
+        if (!entity.equals(TestEntities.ORDER_SUMMARY)) {
+          logger.info("Test expected quantity for " + entity.name());
+          verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), ANOTHER_TENANT_HEADER);
+        }
       }
     } finally {
       purge(ANOTHER_TENANT_HEADER);
@@ -78,7 +79,7 @@ public class TenantSampleDataTest extends TestBase {
 
       for (TestEntities entity : TestEntities.values()) {
         //category is the only reference data, which must be loaded
-        if (!entity.equals(TestEntities.FUND_TYPE) && !entity.equals(TestEntities.EXPENSE_CLASS)) {
+        if (!entity.equals(TestEntities.FUND_TYPE) && !entity.equals(TestEntities.EXPENSE_CLASS) && !entity.equals(TestEntities.ORDER_SUMMARY)) {
           logger.info("Test sample data not loaded for " + entity.name());
           verifyCollectionQuantity(entity.getEndpoint(), 0, ANOTHER_TENANT_HEADER);
         }
@@ -97,8 +98,10 @@ public class TenantSampleDataTest extends TestBase {
 
     TenantJob tenantJob = postTenant(ANOTHER_TENANT_HEADER, prepareUpgradeTenantBody());
     for (TestEntities entity : TestEntities.values()) {
-      logger.info("Test expected quantity for " + entity.name());
-      verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), ANOTHER_TENANT_HEADER);
+      if (!entity.equals(TestEntities.ORDER_SUMMARY)) {
+        logger.info("Test expected quantity for " + entity.name());
+        verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), ANOTHER_TENANT_HEADER);
+      }
     }
     return tenantJob;
   }
