@@ -40,6 +40,7 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.email.EmailService;
 import org.folio.service.fiscalyear.FiscalYearService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,6 +87,9 @@ public class LedgerRolloverServiceTest {
 
   @Mock
   private RestClient orderRolloverRestClient;
+
+  @Mock
+  private EmailService emailService;
 
   @Mock
   private RequestContext requestContext;

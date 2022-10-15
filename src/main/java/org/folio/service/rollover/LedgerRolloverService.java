@@ -27,6 +27,7 @@ import org.folio.rest.jaxrs.model.RolloverStatus;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
+import org.folio.service.email.EmailService;
 import org.folio.service.fiscalyear.FiscalYearService;
 
 import io.vertx.core.Future;
@@ -47,11 +48,12 @@ public class LedgerRolloverService {
   private final PostgresFunctionExecutionService postgresFunctionExecutionService;
   private final RolloverValidationService rolloverValidationService;
   private final RestClient orderRolloverRestClient;
+  private final EmailService emailService;
 
   public LedgerRolloverService(FiscalYearService fiscalYearService, LedgerFiscalYearRolloverDAO ledgerFiscalYearRolloverDAO,
       BudgetService budgetService, RolloverProgressService rolloverProgressService, RolloverErrorService rolloverErrorService,
       RolloverBudgetService rolloverBudgetService,PostgresFunctionExecutionService postgresFunctionExecutionService,
-      RolloverValidationService rolloverValidationService, RestClient orderRolloverRestClient) {
+      RolloverValidationService rolloverValidationService, RestClient orderRolloverRestClient, EmailService emailService) {
     this.fiscalYearService = fiscalYearService;
     this.ledgerFiscalYearRolloverDAO = ledgerFiscalYearRolloverDAO;
     this.budgetService = budgetService;
@@ -61,6 +63,7 @@ public class LedgerRolloverService {
     this.postgresFunctionExecutionService = postgresFunctionExecutionService;
     this.rolloverValidationService = rolloverValidationService;
     this.orderRolloverRestClient = orderRolloverRestClient;
+    this.emailService = emailService;
   }
 
   public Future<Void> rolloverLedger(LedgerFiscalYearRollover rollover, RequestContext requestContext) {
@@ -136,7 +139,8 @@ public class LedgerRolloverService {
 
     return startFinancialRollover(rollover, progress, client)
       .compose(rolloverProgress -> startOrdersRollover(rollover, progress, requestContext))
-      .onSuccess(aVoid -> log.info("Rollover completed for Ledger {}", rollover.getLedgerId()));
+      .onSuccess(aVoid -> log.info("Rollover completed for Ledger {}", rollover.getLedgerId()))
+      .onSuccess(aVoid -> emailService.createAndSendEmail(requestContext, rollover));
   }
 
   private Future<Void> closeBudgets(LedgerFiscalYearRollover rollover, DBClient client) {
