@@ -38,6 +38,7 @@ import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.service.email.EmailServiceTest;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.rollover.RolloverValidationServiceTest;
@@ -249,4 +250,7 @@ public class StorageTestSuite {
 
   @Nested
   class RolloverValidationServiceTestNested extends RolloverValidationServiceTest {}
+
+  @Nested
+  class EmailServiceTestNested extends EmailServiceTest {}
 }

@@ -157,7 +157,7 @@ public class RestClient {
     try {
       return URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
     } catch (UnsupportedEncodingException e) {
-      logger.error("Error happened while attempting to encode '{}'", e, query);
+      logger.error("Error happened while attempting to encode '{}'", query);
       throw new CompletionException(e);
     }
   }

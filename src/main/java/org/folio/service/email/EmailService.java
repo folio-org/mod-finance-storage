@@ -58,21 +58,20 @@ public class EmailService {
 
   public void createAndSendEmail(RequestContext requestContext, LedgerFiscalYearRollover rollover) {
     getHostAddress(requestContext)
-      .onSuccess(hostAddressResponse -> {
-        getCurrentUser(requestContext)
-          .onSuccess(userResponse -> {
-            DBClient client = dbClientFactory.getDbClient(requestContext);
-            ledgerDAO.getLedgerById(rollover.getLedgerId(), client)
-              .onSuccess(ledger -> {
-                String hostAddress = hostAddressResponse.getJsonArray(CONFIGS_KEY).getJsonObject(0).getMap().get(VALUE_KEY).toString();
-                String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
-                Map<String, String> headers = getHeaders(requestContext);
-                EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
+      .onSuccess(hostAddressResponse -> getCurrentUser(requestContext)
+        .onSuccess(userResponse -> {
+          DBClient client = dbClientFactory.getDbClient(requestContext);
+          ledgerDAO.getLedgerById(rollover.getLedgerId(), client)
+            .onSuccess(ledger -> {
+              String hostAddress = hostAddressResponse.getJsonArray(CONFIGS_KEY).getJsonObject(0).getMap().get(VALUE_KEY).toString();
+              String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
+              Map<String, String> headers = getHeaders(requestContext);
+              EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
 
-                sentEmail(requestContext, headers, emailEntity);
-              }).onFailure(t -> logger.error("Getting ledger failed {}", t.getMessage()));
-          }).onFailure(t -> logger.error("Getting user failed {}", t.getMessage()));
-      }).onFailure(t -> logger.error("Getting host address failed {}", t.getMessage()));
+              sentEmail(requestContext, headers, emailEntity);
+            }).onFailure(t -> logger.error("Getting ledger failed {}", t.getMessage()));
+        }).onFailure(t -> logger.error("Getting user failed {}", t.getMessage())))
+      .onFailure(t -> logger.error("Getting host address failed {}", t.getMessage()));
   }
 
   private void sentEmail(RequestContext requestContext, Map<String, String> headers, EmailEntity emailEntity) {
