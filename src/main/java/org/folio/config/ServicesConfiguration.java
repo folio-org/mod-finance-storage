@@ -23,6 +23,7 @@ import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetExpenseClassService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.budget.RolloverBudgetExpenseClassTotalsService;
+import org.folio.service.email.EmailService;
 import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
@@ -219,14 +220,20 @@ public class ServicesConfiguration {
     RolloverBudgetService rolloverBudgetService,
     PostgresFunctionExecutionService postgresFunctionExecutionService,
     RolloverValidationService rolloverValidationService,
-    RestClient orderRolloverRestClient) {
+    RestClient orderRolloverRestClient,
+    EmailService emailService) {
     return new LedgerRolloverService(fiscalYearService, ledgerFiscalYearRolloverDAO, budgetService, rolloverProgressService, rolloverErrorService,
-      rolloverBudgetService, postgresFunctionExecutionService, rolloverValidationService, orderRolloverRestClient);
+      rolloverBudgetService, postgresFunctionExecutionService, rolloverValidationService, orderRolloverRestClient, emailService);
   }
 
   @Bean
   public RolloverErrorService rolloverErrorService(RolloverErrorDAO rolloverErrorDAO) {
     return new RolloverErrorService(rolloverErrorDAO);
+  }
+
+  @Bean
+  public EmailService emailService(RestClient configurationRestClient, RestClient userRestClient, DBClientFactory dbClientFactory, LedgerDAO ledgerDAO) {
+    return new EmailService(configurationRestClient, userRestClient, dbClientFactory, ledgerDAO);
   }
 
   @Bean
