@@ -293,7 +293,11 @@
           "methods": ["POST"],
           "pathPattern": "/finance-storage/ledger-rollovers",
           "permissionsRequired": ["finance-storage.ledger-rollovers.item.post"],
-          "modulePermissions": ["orders.rollover.item.post"]
+          "modulePermissions": [
+            "orders.rollover.item.post",
+            "users.item.get",
+            "email.message.post"
+          ]
         },
         {
           "methods": ["GET"],
