@@ -43,6 +43,10 @@ public class EmailService {
   private static final String VALUE_KEY = "value";
 
   private static final Logger logger = LogManager.getLogger(EmailService.class);
+  private static final String COMMIT_MESSAGE = "<p>Hi %s,<br><br>The results of your fiscal year rollover from %s " +
+    "for %s are ready for review. Click <a href=\"%s\">here</a> to review the results.<br><br>FOLIO</p>";
+  private static final String PREVIEW_MESSAGE = "<p>Hi %s,<br><br>The results of your fiscal year rollover test from %s " +
+    "for %s are ready for review. Click <a href=\"%s\">here</a> to review the results.<br><br>FOLIO</p>";
 
   private final RestClient configurationRestClient;
   private final RestClient userRestClient;
@@ -68,13 +72,13 @@ public class EmailService {
               Map<String, String> headers = getHeaders(requestContext);
               EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
 
-              sentEmail(requestContext, headers, emailEntity);
+              sendEmail(requestContext, headers, emailEntity);
             }).onFailure(t -> logger.error("Getting ledger failed {}", t.getMessage()));
         }).onFailure(t -> logger.error("Getting user failed {}", t.getMessage())))
       .onFailure(t -> logger.error("Getting host address failed {}", t.getMessage()));
   }
 
-  private void sentEmail(RequestContext requestContext, Map<String, String> headers, EmailEntity emailEntity) {
+  private void sendEmail(RequestContext requestContext, Map<String, String> headers, EmailEntity emailEntity) {
     EmailOkapiClient emailOkapiClient = new EmailOkapiClient(requestContext.getHeaders().get(OKAPI_URL), requestContext.getContext().owner(), headers);
     emailOkapiClient.sendEmail(EMAIL_ENDPOINT, JsonObject.mapFrom(emailEntity).toString());
   }
@@ -92,21 +96,11 @@ public class EmailService {
 
   private String getRolloverBody(LedgerFiscalYearRollover rollover, String linkToRolloverLedger, String ledgerName, JsonObject user) {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT_PATTERN).withZone(ZoneId.of(UTC_ZONE_ID));
-    return String.format(RolloverType.COMMIT.equals(rollover.getRolloverType()) ? getCommitMessage() : getPreviewMessage(),
+    return String.format(RolloverType.COMMIT.equals(rollover.getRolloverType()) ? COMMIT_MESSAGE : PREVIEW_MESSAGE,
       user.getString(USERNAME_KEY),
       formatter.format(rollover.getMetadata().getCreatedDate().toInstant()),
       ledgerName,
       linkToRolloverLedger);
-  }
-
-  private String getPreviewMessage() {
-    return "<p>Hi %s,<br><br>The results of your fiscal year rollover test from %s " +
-      "for %s are ready for review. Click <a href=\"%s\">here</a> to review the results.<br><br>FOLIO</p>";
-  }
-
-  private String getCommitMessage() {
-    return "<p>Hi %s,<br><br>The results of your fiscal year rollover from %s " +
-      "for %s are ready for review. Click <a href=\"%s\">here</a> to review the results.<br><br>FOLIO</p>";
   }
 
   private Map<String, String> getHeaders(RequestContext requestContext) {

@@ -47,7 +47,7 @@ public class RestClient {
   }
 
   public <T> Future<T> getById(String id, RequestContext requestContext, Class<T> responseType) {
-    String endpoint = baseEndpoint + "/" + id;
+    String endpoint = String.format("%s/%s", baseEndpoint, id);
     return get(requestContext, endpoint, responseType);
   }
 
