@@ -4,6 +4,8 @@
 ## 8.3.0 - Released (Nolana R3 2022)
 The primary focus of this release was to implementation preview rollover flow
 
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.2.0...v8.3.0)
+
 ### Stories
 * [MODFISTO-353](https://issues.folio.org/browse/MODFISTO-353) Upgrade RAML Module Builder
 * [MODFISTO-351](https://issues.folio.org/browse/MODFISTO-351) Provide expense class details in Ledger Rollover Budgets API response
@@ -23,8 +25,6 @@ The primary focus of this release was to implementation preview rollover flow
 * [MODFISTO-343](https://issues.folio.org/browse/MODFISTO-343) Tenant init fails on 2nd time
 * [MODFISTO-342](https://issues.folio.org/browse/MODFISTO-342) Tenant operation failed for module mod-finance-storage-8.1.6: SQL error
 * [MODFISTO-340](https://issues.folio.org/browse/MODFISTO-340) Invalid usage of optimistic locking
-
-[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.2.3...v8.3.0)
 
 
 ## 8.2.0 - Released (Morning Glory R2 2022)
