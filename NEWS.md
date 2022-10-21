@@ -1,4 +1,31 @@
-## 8.3.0 - Unreleased
+## 8.4.0 - Unreleased
+
+
+## 8.3.0 - Released (Nolana R3 2022)
+The primary focus of this release was to implementation preview rollover flow
+
+### Stories
+* [MODFISTO-353](https://issues.folio.org/browse/MODFISTO-353) Upgrade RAML Module Builder
+* [MODFISTO-351](https://issues.folio.org/browse/MODFISTO-351) Provide expense class details in Ledger Rollover Budgets API response
+* [MODFISTO-348](https://issues.folio.org/browse/MODFISTO-348) Fix randomly failing tests
+* [MODFISTO-338](https://issues.folio.org/browse/MODFISTO-338) Update planned budget status to active during FY rollover
+* [MODFISTO-335](https://issues.folio.org/browse/MODFISTO-335) Implement sending email and include it in the preview ledger rollover flow
+* [MODFISTO-327](https://issues.folio.org/browse/MODFISTO-327) Replace unique index in the table "ledger_fiscal_year_rollover" with uniqueness logic in the code
+* [MODFISTO-323](https://issues.folio.org/browse/MODFISTO-323) Update ledger rollover SQL script with preview rollover logic and store results in the preview rollover table
+* [MODFISTO-320](https://issues.folio.org/browse/MODFISTO-320) Define and implement Storage API : Ledger Rollover Budgets
+* [MODFISTO-319](https://issues.folio.org/browse/MODFISTO-319) Define schemas and table for storing generated Budgets and schema for showing rollover logs
+* [MODFISTO-318](https://issues.folio.org/browse/MODFISTO-318) Implement Preview rollover flow and update budgets with all calculated amounts
+
+
+### Bug Fixes
+* [MODFISTO-354](https://issues.folio.org/browse/MODFISTO-354) Encumbered amount is increased by the next test rollover Encumbered amount when run test rollover multiple times
+* [MODFISTO-345](https://issues.folio.org/browse/MODFISTO-345) Remove update_encumbrances_order_status.ftl (cross module)
+* [MODFISTO-343](https://issues.folio.org/browse/MODFISTO-343) Tenant init fails on 2nd time
+* [MODFISTO-342](https://issues.folio.org/browse/MODFISTO-342) Tenant operation failed for module mod-finance-storage-8.1.6: SQL error
+* [MODFISTO-340](https://issues.folio.org/browse/MODFISTO-340) Invalid usage of optimistic locking
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.2.3...v8.3.0)
+
 
 ## 8.2.0 - Released (Morning Glory R2 2022)
 The primary focus of this release was to fix rollover issues
@@ -15,7 +42,6 @@ The primary focus of this release was to fix rollover issues
 * [MODFISTO-299](https://issues.folio.org/browse/MODFISTO-299) Order and financial rollover errors are not reported
 * [MODFISTO-298](https://issues.folio.org/browse/MODFISTO-298) Unable to access adjustment ledger
 * [MODFISTO-214](https://issues.folio.org/browse/MODFISTO-214) Illegal cross-module *_mod_finance_storage.fund access on migration
-
 
 
 ## 8.1.0 - Released
