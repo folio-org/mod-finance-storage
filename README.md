@@ -21,25 +21,32 @@ mvn clean install
 
 To run the module in standalone mode (i.e. without involving Okapi):
 ```
-java -jar target/mod-finance-fat.jar -Dhttp.port=8081 embed_postgres=true
+DB_HOST=localhost DB_PORT=5432 DB_USERNAME=myuser DB_PASSWORD=mypass DB_DATABASE=mydb \
+ java -jar target/mod-finance-fat.jar -Dhttp.port=8081
 ```
 
->Note that the above command launches an embedded Postgres server and is accessible using the default creds found in the *Credentials* section [here](https://github.com/folio-org/raml-module-builder).
-
-## API Documentation
-
-When running in standalone mode, you may access the module's API docs through the following links:
-* [Budgets](http://localhost:8081/apidocs/index.html?raml=raml/budget.raml)
-* [Fiscal Year](http://localhost:8081/apidocs/index.html?raml=raml/fiscal_year.raml)
-* [Fund Distribution](http://localhost:8081/apidocs/index.html?raml=raml/fund_distribution.raml)
-* [Funds](http://localhost:8081/apidocs/index.html?raml=raml/funds.raml)
-* [Ledgers](http://localhost:8081/apidocs/index.html?raml=raml/ledger.raml)
-* [Transaction](http://localhost:8081/apidocs/index.html?raml=raml/transaction.raml)
-
-## Additional information
-
-### Issue tracker
+## Issue tracker
 
 See project [MODFISTO](https://issues.folio.org/browse/MODFISTO)
 at the [FOLIO issue tracker](https://dev.folio.org/guidelines/issue-tracker).
+
+## ModuleDescriptor
+
+See the [ModuleDescriptor](descriptors/ModuleDescriptor-template.json)
+for the interfaces that this module requires and provides, the permissions,
+and the additional module metadata.
+
+## API Documentation
+
+Generated [API documentation](https://dev.folio.org/reference/api/#mod-finance-storage).
+
+## Code analysis
+
+[SonarQube analysis](https://sonarcloud.io/dashboard?id=org.folio%3Amod-finance-storage).
+
+## Download and configuration
+
+The built artifacts for this module are available.
+See [configuration](https://dev.folio.org/download/artifacts) for repository access,
+and the [Docker image](https://hub.docker.com/r/folioorg/mod-finance-storage/).
 

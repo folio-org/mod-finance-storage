@@ -1,0 +1,54 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: mod-finance-storage (Ledger Rollover Logs)
+    content: <b>CRUD APIs used to manage ledger rollover logs.</b>
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+  ledger_fiscal_year_rollover_log: !include acq-models/mod-finance/schemas/ledger_fiscal_year_rollover_log.json
+  ledger_fiscal_year_rollover_log_collection: !include acq-models/mod-finance/schemas/ledger_fiscal_year_rollover_log_collection.json
+  UUID:
+    type: string
+    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+
+traits:
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  language: !include raml-util/traits/language.raml
+  validate: !include raml-util/traits/validation.raml
+
+resourceTypes:
+  collection-get: !include raml-util/rtypes/collection-get.raml
+  collection-item-get: !include raml-util/rtypes/item-collection-get.raml
+
+/finance-storage/ledger-rollovers-logs:
+  type:
+    collection-get:
+      exampleCollection: !include acq-models/mod-finance/examples/ledger_fiscal_year_rollover_log_collection.sample
+      exampleItem: !include acq-models/mod-finance/examples/ledger_fiscal_year_rollover_log.sample
+      schemaCollection: ledger_fiscal_year_rollover_log_collection
+      schemaItem: ledger_fiscal_year_rollover_log
+  is: [validate]
+  get:
+    description: Get list of rollovers logs
+    is: [
+        searchable:
+          {
+            description: "with valid searchable fields: for example 'ledgerRolloverType'", example: "[\"ledgerRolloverType\", \"Commit\", \"=\"]"
+          },
+        pageable
+    ]
+  /{id}:
+    uriParameters:
+      id:
+        description: The UUID of a ledger rollover id
+        type: UUID
+    type:
+      collection-item-get:
+        exampleItem: !include acq-models/mod-finance/examples/ledger_fiscal_year_rollover_log.sample
+        schema: ledger_fiscal_year_rollover_log
+    is: [validate]

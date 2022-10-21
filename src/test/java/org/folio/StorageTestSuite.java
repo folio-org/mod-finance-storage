@@ -29,6 +29,7 @@ import org.folio.rest.impl.GroupFundFYTest;
 import org.folio.rest.impl.GroupTest;
 import org.folio.rest.impl.HelperUtilsTest;
 import org.folio.rest.impl.LedgerFundBudgetStatusTest;
+import org.folio.rest.impl.LedgerRolloverBudgetTest;
 import org.folio.rest.impl.PaymentsCreditsTest;
 import org.folio.rest.impl.TenantSampleDataTest;
 import org.folio.rest.impl.TransactionTest;
@@ -37,8 +38,10 @@ import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.service.email.EmailServiceTest;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
+import org.folio.service.rollover.RolloverValidationServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.AllocationServiceTest;
 import org.folio.service.transactions.EncumbranceServiceTest;
@@ -166,6 +169,10 @@ public class StorageTestSuite {
   }
 
   @Nested
+  class LedgerRolloverBudgetTestNested extends LedgerRolloverBudgetTest {
+  }
+
+  @Nested
   class GroupBudgetTestNested extends GroupBudgetTest {
   }
 
@@ -240,4 +247,10 @@ public class StorageTestSuite {
 
   @Nested
   class EncumbranceServiceTestNested extends EncumbranceServiceTest {}
+
+  @Nested
+  class RolloverValidationServiceTestNested extends RolloverValidationServiceTest {}
+
+  @Nested
+  class EmailServiceTestNested extends EmailServiceTest {}
 }

@@ -11,7 +11,7 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAY
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
-import static org.folio.rest.utils.TestEntities.TRANSACTION;
+import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
 import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
 import static org.folio.service.transactions.restriction.BaseTransactionRestrictionService.FUND_CANNOT_BE_PAID;
 import static org.hamcrest.Matchers.containsString;
@@ -152,12 +152,12 @@ public class PaymentsCreditsTest extends TestBase {
       .statusCode(201);
 
 
-    Transaction paymentEncumbranceBeforePayment= getDataById(TRANSACTION.getEndpointWithId(), paymentEncumbranceId,
+    Transaction paymentEncumbranceBeforePayment= getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), paymentEncumbranceId,
             TRANSACTION_TENANT_HEADER).then()
             .statusCode(200)
             .extract()
             .as(Transaction.class);
-    Transaction creditEncumbranceBeforePayment = getDataById(TRANSACTION.getEndpointWithId(), creditEncumbranceId,
+    Transaction creditEncumbranceBeforePayment = getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), creditEncumbranceId,
             TRANSACTION_TENANT_HEADER).then()
             .statusCode(200)
             .extract()
@@ -173,7 +173,7 @@ public class PaymentsCreditsTest extends TestBase {
         .getId();
 
     // payment does not appear in transaction table
-    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
+    getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(404);
 
     String creditId = postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(credit)
@@ -189,21 +189,21 @@ public class PaymentsCreditsTest extends TestBase {
         .body(containsString(ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED));
 
     // 2 transactions(each for a payment and credit) appear in transaction table
-    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
+    getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .extract()
       .as(Transaction.class);
-    getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then()
+    getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .extract()
       .as(Transaction.class);
 
-    Transaction paymentEncumbranceAfter = getDataById(TRANSACTION.getEndpointWithId(), paymentEncumbranceId,
+    Transaction paymentEncumbranceAfter = getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), paymentEncumbranceId,
         TRANSACTION_TENANT_HEADER).then()
           .statusCode(200)
           .extract()
           .as(Transaction.class);
-    Transaction creditEncumbranceAfter = getDataById(TRANSACTION.getEndpointWithId(), creditEncumbranceId,
+    Transaction creditEncumbranceAfter = getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), creditEncumbranceId,
         TRANSACTION_TENANT_HEADER).then()
           .statusCode(200)
           .extract()
@@ -280,7 +280,7 @@ public class PaymentsCreditsTest extends TestBase {
         .getId();
 
     // payment does not appear in transaction table
-    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
+    getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(404);
 
     JsonObject creditJsonTx = new JsonObject(getFile(CREDIT_SAMPLE));
@@ -310,15 +310,15 @@ public class PaymentsCreditsTest extends TestBase {
       .getId();
 
     // 3 transactions appear in transaction table
-    getDataById(TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
+    getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), paymentId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .extract()
       .as(Transaction.class);
-    getDataById(TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then()
+    getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), creditId, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .extract()
       .as(Transaction.class);
-    getDataById(TRANSACTION.getEndpointWithId(), creditId1, TRANSACTION_TENANT_HEADER).then()
+    getDataById(ALLOCATION_TRANSACTION.getEndpointWithId(), creditId1, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .extract()
       .as(Transaction.class);
@@ -373,7 +373,7 @@ public class PaymentsCreditsTest extends TestBase {
 
     createOrderSummary(encumbrance.getEncumbrance().getSourcePurchaseOrderId(), 1);
 
-    postData(TRANSACTION.getEndpoint(), encumbranceSample, TRANSACTION_TENANT_HEADER).then()
+    postData(ALLOCATION_TRANSACTION.getEndpoint(), encumbranceSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(201).extract().as(Transaction.class);
 
     String invoiceId = UUID.randomUUID()

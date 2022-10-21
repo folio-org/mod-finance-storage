@@ -61,43 +61,69 @@ public class RestClientTest {
   void testPostShouldCreateEntity(VertxTestContext testContext) throws Exception {
     RestClient restClient = Mockito.spy(new RestClient("/orders/rollover"));
 
-    String uuid = UUID.randomUUID()
-      .toString();
+    String uuid = UUID.randomUUID().toString();
     LedgerFiscalYearRollover expTransaction = new LedgerFiscalYearRollover().withId(uuid);
     Response response = new Response();
     response.setBody(JsonObject.mapFrom(expTransaction));
     response.setCode(201);
 
-    doReturn(httpClient).when(restClient)
-      .getHttpClient(okapiHeaders);
+    doReturn(httpClient).when(restClient).getHttpClient(okapiHeaders);
     doReturn(completedFuture(response)).when(httpClient)
       .request(eq(HttpMethod.POST), any(), eq("/orders/rollover"), eq(okapiHeaders));
 
     testContext.assertComplete(restClient.postEmptyResponse(expTransaction, requestContext))
       .onComplete(event -> testContext.completeNow());
-
   }
 
   @Test
   void testShouldThrowExceptionWhenCreatingEntity(VertxTestContext testContext) throws Exception {
-
     RestClient restClient = Mockito.spy(new RestClient("/orders/rollover"));
+
     Response response = new Response();
     response.setError(JsonObject.mapFrom(GENERIC_ERROR_CODE.toError()));
     response.setCode(400);
 
-    String uuid = UUID.randomUUID()
-      .toString();
+    String uuid = UUID.randomUUID().toString();
     LedgerFiscalYearRollover expTransaction = new LedgerFiscalYearRollover().withId(uuid);
-    doReturn(httpClient).when(restClient)
-      .getHttpClient(okapiHeaders);
+    doReturn(httpClient).when(restClient).getHttpClient(okapiHeaders);
     doReturn(completedFuture(response)).when(httpClient)
             .request(eq(HttpMethod.POST), any(), eq("/orders/rollover"), eq(okapiHeaders));
 
     testContext.assertFailure(restClient.postEmptyResponse(expTransaction, requestContext))
-    .onComplete(event -> {
-      testContext.completeNow();
-    });
+    .onComplete(event -> testContext.completeNow());
+  }
 
+  @Test
+  void testGetShouldCreateEntity(VertxTestContext testContext) throws Exception {
+    RestClient restClient = Mockito.spy(new RestClient("/orders/rollover"));
+
+    String uuid = UUID.randomUUID().toString();
+    LedgerFiscalYearRollover expTransaction = new LedgerFiscalYearRollover().withId(uuid);
+    Response response = new Response();
+    response.setBody(JsonObject.mapFrom(expTransaction));
+    response.setCode(201);
+
+    doReturn(httpClient).when(restClient).getHttpClient(okapiHeaders);
+    doReturn(completedFuture(response)).when(httpClient)
+      .request(eq(HttpMethod.GET), eq("/orders/rollover?limit=1&offset=1&query=code%3D%27123%27"), eq(okapiHeaders));
+
+    testContext.assertComplete(restClient.get("code='123'", 1, 1, requestContext, LedgerFiscalYearRollover.class))
+      .onComplete(event -> testContext.completeNow());
+  }
+
+  @Test
+  void testGetShouldThrowException(VertxTestContext testContext) throws Exception {
+    RestClient restClient = Mockito.spy(new RestClient("/orders/rollover"));
+
+    Response response = new Response();
+    response.setError(JsonObject.mapFrom(GENERIC_ERROR_CODE.toError()));
+    response.setCode(404);
+
+    doReturn(httpClient).when(restClient).getHttpClient(okapiHeaders);
+    doReturn(completedFuture(response)).when(httpClient)
+      .request(eq(HttpMethod.GET), eq("/orders/rollover?limit=1&offset=1&query=code%3D%27123%27"), eq(okapiHeaders));
+
+    testContext.assertFailure(restClient.get("code='123'", 1, 1, requestContext, LedgerFiscalYearRollover.class))
+      .onComplete(event -> testContext.completeNow());
   }
 }

@@ -4,6 +4,8 @@ import static io.restassured.RestAssured.given;
 import static org.folio.StorageTestSuite.storageUrl;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.either;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -235,7 +237,8 @@ public abstract class TestBase {
     response.then()
       .log().ifValidationFails()
       .statusCode(200)
-      .body("id", equalTo(id));
+      .body("$", either(hasEntry(equalTo("id"), equalTo(id)))
+        .or(hasEntry(equalTo("ledgerRolloverId"), equalTo(id))));
     return response;
   }
 

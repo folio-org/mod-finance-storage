@@ -69,12 +69,17 @@
     {
       "run": "after",
       "snippetPath": "budget_encumbrances_rollover.sql",
-      "fromModuleVersion": "mod-finance-storage-8.2.2"
+      "fromModuleVersion": "mod-finance-storage-8.3.0"
     },
     {
       "run": "after",
       "snippetPath": "migration/restrictions_for_fund_and_ec_codes.sql",
       "fromModuleVersion": "mod-finance-storage-8.0.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "ledger_rollover_log_view.sql",
+      "fromModuleVersion": "mod-finance-storage-8.3.0"
     }
   ],
   "tables": [
@@ -605,7 +610,7 @@
     },
     {
       "tableName": "ledger_fiscal_year_rollover",
-      "fromModuleVersion": "mod-finance-storage-7.0.0",
+      "fromModuleVersion": "mod-finance-storage-8.3.0",
       "withMetadata": true,
       "withOptimisticLocking": "failOnConflict",
       "foreignKeys": [
@@ -621,11 +626,43 @@
           "fieldName": "toFiscalYearId",
           "targetTable": "fiscal_year"
         }
-      ],
-      "uniqueIndex": [
+      ]
+    },
+    {
+      "tableName": "ledger_fiscal_year_rollover_budget",
+      "fromModuleVersion": "mod-finance-storage-8.3.0",
+      "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
+      "foreignKeys": [
         {
-          "fieldName": "ledgerId_fromFiscalYearId",
-          "multiFieldNames": "ledgerId, fromFiscalYearId",
+          "fieldName": "ledgerRolloverId",
+          "targetTable": "ledger_fiscal_year_rollover",
+          "tableAlias": "ledgerFYROBudget",
+          "targetTableAlias": "ledgerFYRO",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fundId",
+          "targetTable": "fund",
+          "tableAlias": "ledgerFYROBudget",
+          "targetTableAlias": "fund",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fiscalYearId",
+          "targetTable": "fiscal_year",
+          "tableAlias": "ledgerFYROBudget",
+          "targetTableAlias": "fiscalYear",
+          "tOps": "ADD"
+        }
+      ],
+      "index": [
+        {
+          "fieldName": "ledgerRolloverId",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "fiscalYearId",
           "tOps": "ADD"
         }
       ]

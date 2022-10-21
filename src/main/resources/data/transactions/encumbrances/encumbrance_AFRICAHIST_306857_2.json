@@ -1,0 +1,22 @@
+{
+  "id": "c78fc05b-dc72-46c9-955e-89f8968c5ca9",
+  "amount": 10,
+  "currency": "USD",
+  "description": "PO_Line: History of Incas",
+  "encumbrance": {
+    "initialAmountEncumbered": 10,
+    "status": "Unreleased",
+    "orderStatus": "Open",
+    "orderType":  "Ongoing",
+    "subscription": false,
+    "reEncumber": true,
+    "sourcePurchaseOrderId": "e41e0161-2bc6-41f3-a6e7-34fc13250bf1",
+    "sourcePoLineId": "abbd1cef-a8ee-3d07-93b2-71c1387e61b1"
+  },
+  "fiscalYearId": "a06a95ef-5a96-4839-a2d9-ac484a25c261",
+  "fromFundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
+  "source": "PoLine",
+  "sourceFiscalYearId": "a06a95ef-5a96-4839-a2d9-ac484a25c261",
+  "transactionType": "Encumbrance",
+  "expenseClassId" : "1bcc3247-99bf-4dca-9b0f-7bc51a2998c2"
+}

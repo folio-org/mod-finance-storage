@@ -61,18 +61,18 @@ public class ExpenseClassService {
       }));
   }
 
-  private Future<ExpenseClass> createExpenseClass(ExpenseClass group) {
+  private Future<ExpenseClass> createExpenseClass(ExpenseClass expenseClass) {
     Promise<ExpenseClass> promise = Promise.promise();
-    if (group.getId() == null) {
-      group.setId(UUID.randomUUID().toString());
+    if (expenseClass.getId() == null) {
+      expenseClass.setId(UUID.randomUUID().toString());
     }
-    group.setVersion(1);
-    pgClient.save(EXPENSE_CLASS_TABLE, group.getId(), group, reply -> {
+
+    pgClient.save(EXPENSE_CLASS_TABLE, expenseClass.getId(), expenseClass, reply -> {
       if (reply.failed()) {
         promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, ExpenseClass.class));
       }
       else {
-        promise.complete(group);
+        promise.complete(expenseClass);
       }
     });
     return promise.future();
