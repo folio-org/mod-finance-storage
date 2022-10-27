@@ -126,4 +126,22 @@ public class RestClientTest {
     testContext.assertFailure(restClient.get("code='123'", 1, 1, requestContext, LedgerFiscalYearRollover.class))
       .onComplete(event -> testContext.completeNow());
   }
+
+  @Test
+  void testGetByIdShouldCreateEntity(VertxTestContext testContext) throws Exception {
+    RestClient restClient = Mockito.spy(new RestClient("/orders/rollover"));
+
+    String uuid = UUID.randomUUID().toString();
+    LedgerFiscalYearRollover expTransaction = new LedgerFiscalYearRollover().withId(uuid);
+    Response response = new Response();
+    response.setBody(JsonObject.mapFrom(expTransaction));
+    response.setCode(201);
+
+    doReturn(httpClient).when(restClient).getHttpClient(okapiHeaders);
+    doReturn(completedFuture(response)).when(httpClient)
+      .request(eq(HttpMethod.GET), eq("/orders/rollover/" + uuid), eq(okapiHeaders));
+
+    testContext.assertComplete(restClient.getById(uuid, requestContext, LedgerFiscalYearRollover.class))
+      .onComplete(event -> testContext.completeNow());
+  }
 }
