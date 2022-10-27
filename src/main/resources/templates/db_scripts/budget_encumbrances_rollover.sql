@@ -325,7 +325,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 GROUP BY fund_id
             ) AS subquery
             LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON subquery.fund_id=fund.id::text
-            WHERE subquery.fund_id=budget.fundId::text AND fund.ledgerId::text=%2$L::jsonb->>''ledgerId'' AND budget.fiscalYearId::text=%2$L::jsonb->>''toFiscalYearId'';';
+            WHERE subquery.fund_id=budget.fundId::text AND fund.ledgerId::text=%2$L::jsonb->>''ledgerId'' AND budget.fiscalYearId::text=%2$L::jsonb->>''toFiscalYearId''
+                AND (NOT budget.jsonb ? ''ledgerRolloverId'' OR budget.jsonb->>''ledgerRolloverId''=%2$L::jsonb->>''id'');';
 
         IF _rollover_record->>'rolloverType' = 'Preview' THEN
             EXECUTE format(update_budget_amounts_query, 'ledger_fiscal_year_rollover_budget', _rollover_record, _order_id);
@@ -510,6 +511,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                                         WHEN budget.id IS NULL THEN tmp_budget.jsonb
                                         ELSE budget.jsonb || jsonb_build_object
                                           (
+                                              'budgetStatus', 'Active',
                                               'allocationTo', (budget.jsonb->>'allocationTo')::decimal + (tmp_budget.jsonb->>'initialAllocation')::decimal,
                                               'netTransfers', (budget.jsonb->>'netTransfers')::decimal + (tmp_budget.jsonb->>'netTransfers')::decimal,
                                               'metadata', budget.jsonb->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text))
