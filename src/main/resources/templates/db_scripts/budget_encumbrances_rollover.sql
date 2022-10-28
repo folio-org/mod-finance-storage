@@ -1,6 +1,5 @@
 /*
     Entry point - budget_encumbrances_rollover(_rollover_record jsonb) function
-    #0 Reset amounts in table ledger_fiscal_year_rollover_budget to initial state to be able to run Preview rollovers multiple times
     #1 Create budgets using build_budget() function for the toFiscalYearId and every fund related to the ledger,
         if corresponding budget has already been created (ON CONFLICT) then update existed budget with new allocated, available, netTransfers, metadata values
     #1.1 Create budget expense class relations for new budgets
@@ -454,15 +453,6 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         SELECT INTO fromFiscalYear (jsonb::jsonb) FROM ${myuniversity}_${mymodule}.fiscal_year WHERE _rollover_record->>'fromFiscalYearId'=jsonb->>'id';
 
         CREATE TEMPORARY TABLE tmp_budget(LIKE ${myuniversity}_${mymodule}.budget);
-
-        -- #0 Reset amounts in table ledger_fiscal_year_rollover_budget to initial state to be able to run Preview rollovers multiple times
-        -- After resetting 'encumbered' fields 'available', 'unavailable', 'overEncumbrance' also will be updated based on 'encumbered' later in java code by CalculationUtils class
-        UPDATE ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget as budget
-        SET jsonb = budget.jsonb || jsonb_build_object('encumbered', 0)
-        FROM ${myuniversity}_${mymodule}.fund as fund
-        WHERE budget.fundId = fund.id
-            AND fund.ledgerId::text = _rollover_record->>'ledgerId'
-            AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId';
 
         -- #1 Upsert budgets
         INSERT INTO tmp_budget
