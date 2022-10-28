@@ -1,6 +1,5 @@
 /*
     Entry point - budget_encumbrances_rollover(_rollover_record jsonb) function
-    #0 Reset amounts in table ledger_fiscal_year_rollover_budget to initial state to be able to run Preview rollovers multiple times
     #1 Create budgets using build_budget() function for the toFiscalYearId and every fund related to the ledger,
         if corresponding budget has already been created (ON CONFLICT) then update existed budget with new allocated, available, netTransfers, metadata values
     #1.1 Create budget expense class relations for new budgets
