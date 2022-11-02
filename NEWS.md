@@ -1,5 +1,15 @@
 ## 8.4.0 - Unreleased
 
+## 8.3.1 - Released (Nolana R3 2022)
+The primary focus of this release was to fix preview rollover flow
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.3.0...v8.3.1)
+
+### Bug Fixes
+* [MODFISTO-359](https://issues.folio.org/browse/MODFISTO-359) Rollover fails when fund contains "Planned budget" created by user
+* [MODFISTO-355](https://issues.folio.org/browse/MODFISTO-355) "Encumbered" value is changed in repeatedly downloaded ".csv" file after the next test rollovers, "Encumbered (Exp Class)" value is doubled
+
+
 ## 8.3.0 - Released (Nolana R3 2022)
 The primary focus of this release was to implementation preview rollover flow
 
