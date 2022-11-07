@@ -551,10 +551,10 @@ async def process_order_encumbrances_relations(order_id, fiscal_year_id, all_fun
     order_sem.release()
 
 
-async def check_if_fd_needs_updates(poline_id, fd, query):
+async def check_if_fd_needs_updates(poline, fd, query):
     encumbrances = await get_encumbrances_by_query(query)
     if len(encumbrances) > 0 and encumbrances[0]['id'] != fd['encumbrance']:
-        print('Updating poline {} encumbrance {} with new value {}'.format(poline_id, fd['encumbrance'], encumbrances[0]['id']))
+        print('Updating poline {}({}) encumbrance {} with new value {}'.format(poline['id'], poline['poLineNumber'], fd['encumbrance'], encumbrances[0]['id']))
         fd['encumbrance'] = encumbrances[0]['id']
         return True
     return False
@@ -565,8 +565,8 @@ async def process_po_line_encumbrances_relations(poline, fiscal_year_id, all_fun
     for fd in poline['fundDistribution']:
         if fd.get('encumbrance') is not None:
             query = 'amount<>0.0 AND encumbrance.sourcePoLineId=={} AND fiscalYearId<>{} AND fromFundId=={}'.format(
-                poline['purchaseOrderId'], fiscal_year_id, fd.get('fundId'))
-            enc_futures.append(asyncio.ensure_future(check_if_fd_needs_updates(poline['id'], fd, query)))
+                poline['id'], fiscal_year_id, fd.get('fundId'))
+            enc_futures.append(asyncio.ensure_future(check_if_fd_needs_updates(poline, fd, query)))
     poline_needs_updates = await asyncio.gather(*enc_futures)
 
     # update poline if one or more fund distributions modified
