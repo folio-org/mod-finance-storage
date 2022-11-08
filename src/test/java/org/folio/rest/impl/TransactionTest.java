@@ -274,8 +274,7 @@ public class TransactionTest extends TestBase {
 
     // create Transfer
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400)
-      .body(containsString(TRANSFER_NOT_ENOUGH_MONEY_ERROR_TEXT));
+      .statusCode(201);
 
   }
 

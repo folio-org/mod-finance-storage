@@ -443,8 +443,7 @@ public class PaymentsCreditsTest extends TestBase {
 
     postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(payment)
       .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400)
-      .body(containsString(FUND_CANNOT_BE_PAID));
+      .statusCode(201);
 
   }
 

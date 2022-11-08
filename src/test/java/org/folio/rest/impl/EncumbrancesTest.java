@@ -159,8 +159,7 @@ public class EncumbrancesTest extends TestBase {
 
     // create Encumbrance
     postData(ALLOCATION_TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400)
-      .body(containsString(FUND_CANNOT_BE_PAID));
+      .statusCode(201);
 
   }
 
@@ -185,8 +184,7 @@ public class EncumbrancesTest extends TestBase {
 
     // create Encumbrance
     postData(ALLOCATION_TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400)
-      .body(containsString(BUDGET_IS_INACTIVE));
+      .statusCode(201);
 
   }
 
@@ -227,7 +225,7 @@ public class EncumbrancesTest extends TestBase {
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
     postData(ALLOCATION_TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400).body(containsString(BUDGET_NOT_FOUND_FOR_TRANSACTION));
+      .statusCode(201);
 
   }
 
