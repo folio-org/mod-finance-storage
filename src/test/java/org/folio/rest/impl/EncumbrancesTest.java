@@ -225,7 +225,7 @@ public class EncumbrancesTest extends TestBase {
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
     postData(ALLOCATION_TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(201);
+      .statusCode(400);
 
   }
 
