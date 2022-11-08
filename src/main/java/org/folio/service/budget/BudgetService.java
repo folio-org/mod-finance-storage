@@ -224,23 +224,23 @@ public class BudgetService {
     }
 
     return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), client).compose(budget -> {
-      if (budget.getAvailable() < transaction.getAmount()) {
-        ErrorCodes errorCode;
-        switch (transaction.getTransactionType()) {
-        case TRANSFER:
-          errorCode = NOT_ENOUGH_MONEY_FOR_TRANSFER;
-          break;
-        case ALLOCATION:
-          errorCode = NOT_ENOUGH_MONEY_FOR_ALLOCATION;
-          break;
-        default:
-          errorCode = GENERIC_ERROR_CODE;
-        }
-        logger.error(errorCode.getDescription());
-        return Future
-          .failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), JsonObject.mapFrom(errorCode.toError())
-            .encodePrettily()));
-      }
+//      if (budget.getAvailable() < transaction.getAmount()) {
+//        ErrorCodes errorCode;
+//        switch (transaction.getTransactionType()) {
+//        case TRANSFER:
+//          errorCode = NOT_ENOUGH_MONEY_FOR_TRANSFER;
+//          break;
+//        case ALLOCATION:
+//          errorCode = NOT_ENOUGH_MONEY_FOR_ALLOCATION;
+//          break;
+//        default:
+//          errorCode = GENERIC_ERROR_CODE;
+//        }
+//        logger.error(errorCode.getDescription());
+//        return Future
+//          .failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), JsonObject.mapFrom(errorCode.toError())
+//            .encodePrettily()));
+//      }
       return Future.succeededFuture();
     });
   }

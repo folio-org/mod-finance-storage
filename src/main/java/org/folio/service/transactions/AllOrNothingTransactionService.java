@@ -56,7 +56,7 @@ public class AllOrNothingTransactionService {
           BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
     DBClient client = dbClientFactory.getDbClient(requestContext);
     return validateTransactionAsFuture(transaction)
-      .compose(v -> transactionRestrictionService.verifyBudgetHasEnoughMoney(transaction, client))
+//      .compose(v -> transactionRestrictionService.verifyBudgetHasEnoughMoney(transaction, client))
       .compose(v -> processAllOrNothing(transaction, client, operation))
       .map(transaction)
       .recover(throwable -> cleanupTempTransactions(transaction, client)
