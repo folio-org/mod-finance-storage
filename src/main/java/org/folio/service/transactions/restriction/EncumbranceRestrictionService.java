@@ -22,7 +22,7 @@ import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
 public class EncumbranceRestrictionService extends BaseTransactionRestrictionService {
 
   public EncumbranceRestrictionService(BudgetService budgetService, LedgerService ledgerService) {
-    super(budgetService, ledgerService);
+    super(budgetService);
   }
 
   /**

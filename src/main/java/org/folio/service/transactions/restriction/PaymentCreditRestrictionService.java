@@ -29,7 +29,7 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
   private final TransactionDAO transactionDAO;
 
   public PaymentCreditRestrictionService(BudgetService budgetService, LedgerService ledgerService, TransactionDAO transactionDAO) {
-    super(budgetService, ledgerService);
+    super(budgetService);
     this.transactionDAO = transactionDAO;
   }
 

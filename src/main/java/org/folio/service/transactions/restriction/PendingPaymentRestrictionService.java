@@ -30,7 +30,7 @@ public class PendingPaymentRestrictionService extends BaseTransactionRestriction
   private final TransactionDAO transactionsDAO;
 
   public PendingPaymentRestrictionService(BudgetService budgetService, LedgerService ledgerService, TransactionDAO transactionsDAO) {
-    super(budgetService, ledgerService);
+    super(budgetService);
     this.transactionsDAO = transactionsDAO;
   }
 
