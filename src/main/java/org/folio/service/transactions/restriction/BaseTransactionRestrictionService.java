@@ -24,11 +24,9 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
   protected final Logger log = LogManager.getLogger(this.getClass());
 
   private final BudgetService budgetService;
-  private final LedgerService ledgerService;
 
-  public BaseTransactionRestrictionService(BudgetService budgetService, LedgerService ledgerService) {
+  public BaseTransactionRestrictionService(BudgetService budgetService) {
     this.budgetService = budgetService;
-    this.ledgerService = ledgerService;
   }
 
 
@@ -51,16 +49,6 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
 
   protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient dbClient) {
     return Future.succeededFuture(null);
-  }
-
-  private Void checkTransactionAllowed(Transaction transaction, Transaction relatedTransaction, Budget budget, Ledger ledger) {
-    if (isTransactionOverspendRestricted(ledger, budget)) {
-      Money budgetRemainingAmount = getBudgetRemainingAmount(budget, transaction.getCurrency(), relatedTransaction);
-      if (Money.of(transaction.getAmount(), transaction.getCurrency()).isGreaterThan(budgetRemainingAmount)) {
-        throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), FUND_CANNOT_BE_PAID);
-      }
-    }
-    return null;
   }
 
   abstract Money getBudgetRemainingAmount(Budget budget, String currency, Transaction relatedTransaction);
