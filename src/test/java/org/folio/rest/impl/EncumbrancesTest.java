@@ -225,7 +225,7 @@ public class EncumbrancesTest extends TestBase {
     String transactionSample = JsonObject.mapFrom(encumbrance).encodePrettily();
 
     postData(ALLOCATION_TRANSACTION.getEndpoint(), transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400);
+      .statusCode(400).body(containsString(BUDGET_NOT_FOUND_FOR_TRANSACTION));
 
   }
 

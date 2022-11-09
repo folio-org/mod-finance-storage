@@ -45,9 +45,7 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
         if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT || transaction.getAmount() <= 0) {
           return Future.succeededFuture();
         }
-        return getRelatedTransaction(transaction, dbClient)
-          .compose(relatedTransaction -> ledgerService.getLedgerByTransaction(transaction, dbClient)
-            .map(ledger -> checkTransactionAllowed(transaction, relatedTransaction, budget, ledger)));
+        return Future.succeededFuture();
       });
   }
 
