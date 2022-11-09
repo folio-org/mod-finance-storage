@@ -12,7 +12,7 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 
 ### Script arguments :
 
-- Current fiscal year code
+- **CURRENT** fiscal year code
 - Okapi URL
 - Tenant
 - Username

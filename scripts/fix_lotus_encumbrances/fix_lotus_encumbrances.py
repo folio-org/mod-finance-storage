@@ -364,8 +364,9 @@ async def fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fisc
     fix_encumbrance_futures = []
     max_active_order_threads = 5
     sem = asyncio.Semaphore(max_active_order_threads)
-    for order_id in closed_orders_ids:
+    for idx, order_id in enumerate(closed_orders_ids):
         await sem.acquire()
+        progress(idx, len(closed_orders_ids), 'Fixing encumbrance order status for closed orders')
         fixed_encumbrance_future = asyncio.ensure_future(fix_encumbrance_order_status_for_closed_order(order_id, fiscal_year_id, sem))
         fix_encumbrance_futures.append(fixed_encumbrance_future)
     nb_fixed_encumbrances = await asyncio.gather(*fix_encumbrance_futures)
@@ -409,8 +410,9 @@ async def unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id
     print('Unreleasing open orders encumbrances with non-zero amounts...')
     enc_futures = []
     sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
-    for order_id in open_orders_ids:
+    for idx, order_id in enumerate(open_orders_ids):
         await sem.acquire()
+        progress(idx, len(open_orders_ids), 'Unreleasing open orders encumbrances with non-zero amounts')
         enc_futures.append(asyncio.ensure_future(unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id, sem)))
     unreleased_encumbrances_amounts = await asyncio.gather(*enc_futures)
 
@@ -428,8 +430,10 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
     encumbered_for_fund = {}
     enc_future = []
     sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
-    for order_id in open_and_closed_orders_ids:
+    for idx, order_id in enumerate(open_and_closed_orders_ids):
         await sem.acquire()
+        progress(idx, len(open_and_closed_orders_ids), 'Recalculating budget encumbered')
+
         enc_future.append(asyncio.ensure_future(get_order_encumbrances(order_id, fiscal_year_id, sem)))
 
     encumbrances = sum(await asyncio.gather(*enc_future), [])
@@ -503,25 +507,13 @@ async def release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, f
     nb_released_encumbrance_futures = []
     sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
 
-    for order_id in closed_orders_ids:
+    for idx, order_id in enumerate(closed_orders_ids):
         await sem.acquire()
+        progress(idx, len(closed_orders_ids), 'Releasing unreleased encumbrances for closed orders')
         nb_released_encumbrance_futures.append(asyncio.ensure_future(release_order_encumbrances(order_id, fiscal_year_id, sem)))
     nb_released_encumbrances = await asyncio.gather(*nb_released_encumbrance_futures)
 
     print('  Released {} encumbrances.'.format(sum(nb_released_encumbrances)))
-
-
-def get_funds():
-    params = {'offset': '0', 'limit': ITEM_MAX}
-    try:
-        r = requests.get(okapi_url + 'finance-storage/funds', headers=headers, params=params)
-        if r.status_code != 200:
-            raise_exception_for_reply(r)
-        funds = r.json()['funds']
-    except Exception as err:
-        print('Error getting order ids with query "{}": {}'.format(query, err))
-        raise SystemExit(1)
-    return funds
 
 
 async def get_polines_by_order_id(order_id):
@@ -539,13 +531,13 @@ def lookup_fund(poline_id, code, all_funds):
     raise SystemExit(1)
 
 
-async def process_order_encumbrances_relations(order_id, fiscal_year_id, all_funds, order_sem):
+async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_sem):
     po_lines = await get_polines_by_order_id(order_id)
 
     poline_futures = []
     if len(po_lines) > 0:
         for po_line in po_lines:
-            poline_futures.append(asyncio.ensure_future(process_po_line_encumbrances_relations(po_line, fiscal_year_id, all_funds)))
+            poline_futures.append(asyncio.ensure_future(process_po_line_encumbrances_relations(po_line, fiscal_year_id)))
         await asyncio.gather(*poline_futures)
 
     order_sem.release()
@@ -560,11 +552,11 @@ async def check_if_fd_needs_updates(poline, fd, query):
     return False
 
 
-async def process_po_line_encumbrances_relations(poline, fiscal_year_id, all_funds):
+async def process_po_line_encumbrances_relations(poline, fiscal_year_id):
     enc_futures = []
     for fd in poline['fundDistribution']:
         if fd.get('encumbrance') is not None:
-            query = 'amount<>0.0 AND encumbrance.sourcePoLineId=={} AND fiscalYearId<>{} AND fromFundId=={}'.format(
+            query = 'amount<>0.0 AND encumbrance.sourcePoLineId=={} AND fiscalYearId=={} AND fromFundId=={}'.format(
                 poline['id'], fiscal_year_id, fd.get('fundId'))
             enc_futures.append(asyncio.ensure_future(check_if_fd_needs_updates(poline, fd, query)))
     poline_needs_updates = await asyncio.gather(*enc_futures)
@@ -582,13 +574,13 @@ async def process_po_line_encumbrances_relations(poline, fiscal_year_id, all_fun
         # get encumbrance by poline id and current FY<>transaction.FY and amount <> 0
         # if fd.encumbrance != transaction.id --> set new encumbrance reference
         # update poline if modified
-async def fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, all_funds):
+async def fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id):
     print('Fixing poline-encumbrance links...')
     orders_futures = []
     order_sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
     for idx, order_id in enumerate(open_orders_ids):
         await order_sem.acquire()
-        orders_futures.append(asyncio.ensure_future(process_order_encumbrances_relations(order_id, fiscal_year_id, all_funds, order_sem)))
+        orders_futures.append(asyncio.ensure_future(process_order_encumbrances_relations(order_id, fiscal_year_id, order_sem)))
         progress(idx, len(open_orders_ids), 'Fixing poline-encumbrance links')
     await asyncio.gather(*orders_futures)
 
@@ -621,14 +613,13 @@ async def main():
 
     fiscal_year_id = get_fiscal_year_id(fiscal_year_code)
 
-    all_funds = get_funds()
-
     # get open and closed order ids
     closed_orders_ids = get_closed_orders_ids()
     open_orders_ids = get_open_orders_ids()
     open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
 
-    await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, all_funds)
+    # comment the steps if needed
+    await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id)
 
     await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
 
