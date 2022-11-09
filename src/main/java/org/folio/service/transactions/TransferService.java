@@ -44,7 +44,6 @@ public class TransferService extends AbstractTransactionService implements Trans
     DBClient client = new DBClient(requestContext);
 
     client.startTx()
-      .compose(v -> budgetService.checkBudgetHaveMoneyForTransaction(transfer, client))
       .compose(v -> createTransfer(transfer, client)
         .compose(createdTransfer -> {
         if (transfer.getFromFundId() != null) {

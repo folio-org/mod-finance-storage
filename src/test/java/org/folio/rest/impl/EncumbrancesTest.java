@@ -16,7 +16,6 @@ import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
 import static org.folio.service.budget.BudgetService.BUDGET_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
 import static org.folio.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
-import static org.folio.service.transactions.restriction.BaseTransactionRestrictionService.FUND_CANNOT_BE_PAID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -184,7 +183,8 @@ public class EncumbrancesTest extends TestBase {
 
     // create Encumbrance
     postData(ALLOCATION_TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(201);
+      .statusCode(400)
+      .body(containsString(BUDGET_IS_INACTIVE));
 
   }
 

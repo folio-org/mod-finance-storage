@@ -48,7 +48,6 @@ public class AllocationService extends DefaultTransactionService implements Tran
     DBClient client = requestContext.toDBClient();
 
     client.startTx()
-      .compose(v -> budgetService.checkBudgetHaveMoneyForTransaction(allocation, client))
       .compose(v -> createAllocation(allocation, client))
       .compose(v -> updateFromBudget(allocation, client))
       .compose(v -> updateBudgetTo(allocation, client))

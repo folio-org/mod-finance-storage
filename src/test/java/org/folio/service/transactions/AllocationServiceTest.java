@@ -100,7 +100,6 @@ public class AllocationServiceTest {
 
     when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
     when(requestContext.toDBClient()).thenReturn(dbClient);
-    when(budgetService.checkBudgetHaveMoneyForTransaction(any(), any())).thenReturn(Future.succeededFuture());
     when(dbClient.getPgClient()).thenReturn(pgClient);
     doAnswer(invocation -> {
       Handler<AsyncResult<String>> handler = invocation.getArgument(4);
