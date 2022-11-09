@@ -11,7 +11,6 @@ import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.ledger.LedgerService;
 import org.javamoney.moneta.Money;
 
 import io.vertx.core.Future;
@@ -25,7 +24,7 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
 
   private final BudgetService budgetService;
 
-  public BaseTransactionRestrictionService(BudgetService budgetService) {
+  protected BaseTransactionRestrictionService(BudgetService budgetService) {
     this.budgetService = budgetService;
   }
 

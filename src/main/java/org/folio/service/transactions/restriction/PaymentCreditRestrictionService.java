@@ -12,7 +12,6 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.ledger.LedgerService;
 import org.javamoney.moneta.Money;
 
 import java.util.ArrayList;
@@ -28,7 +27,7 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
 
   private final TransactionDAO transactionDAO;
 
-  public PaymentCreditRestrictionService(BudgetService budgetService, LedgerService ledgerService, TransactionDAO transactionDAO) {
+  public PaymentCreditRestrictionService(BudgetService budgetService, TransactionDAO transactionDAO) {
     super(budgetService);
     this.transactionDAO = transactionDAO;
   }

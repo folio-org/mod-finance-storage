@@ -96,17 +96,17 @@ public class ServicesConfiguration {
 
   @Bean
   public TransactionRestrictionService encumbranceRestrictionService(BudgetService budgetService, LedgerService ledgerService) {
-    return new EncumbranceRestrictionService(budgetService, ledgerService);
+    return new EncumbranceRestrictionService(budgetService);
   }
 
   @Bean
   public TransactionRestrictionService pendingPaymentRestrictionService(BudgetService budgetService, LedgerService ledgerService, TransactionDAO pendingPaymentDAO) {
-    return new PendingPaymentRestrictionService(budgetService, ledgerService, pendingPaymentDAO);
+    return new PendingPaymentRestrictionService(budgetService, pendingPaymentDAO);
   }
 
   @Bean
   public TransactionRestrictionService paymentCreditRestrictionService(BudgetService budgetService, LedgerService ledgerService, TransactionDAO paymentCreditDAO) {
-    return new PaymentCreditRestrictionService(budgetService, ledgerService, paymentCreditDAO);
+    return new PaymentCreditRestrictionService(budgetService, paymentCreditDAO);
   }
 
   @Bean

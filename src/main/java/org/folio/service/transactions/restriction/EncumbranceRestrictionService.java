@@ -9,7 +9,6 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.ledger.LedgerService;
 import org.javamoney.moneta.Money;
 
 import java.util.ArrayList;
@@ -21,7 +20,7 @@ import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
 
 public class EncumbranceRestrictionService extends BaseTransactionRestrictionService {
 
-  public EncumbranceRestrictionService(BudgetService budgetService, LedgerService ledgerService) {
+  public EncumbranceRestrictionService(BudgetService budgetService) {
     super(budgetService);
   }
 
