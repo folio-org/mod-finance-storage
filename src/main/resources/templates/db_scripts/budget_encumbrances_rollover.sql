@@ -1,6 +1,5 @@
 /*
     Entry point - budget_encumbrances_rollover(_rollover_record jsonb) function
-    #0 Reset amounts in table ledger_fiscal_year_rollover_budget to initial state to be able to run Preview rollovers multiple times
     #1 Create budgets using build_budget() function for the toFiscalYearId and every fund related to the ledger,
         if corresponding budget has already been created (ON CONFLICT) then update existed budget with new allocated, available, netTransfers, metadata values
     #1.1 Create budget expense class relations for new budgets
@@ -216,7 +215,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
            -- #10
            EXISTS (SELECT tr.jsonb as transaction FROM ${myuniversity}_${mymodule}.transaction tr
            					 WHERE NOT EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget budget
-           								 	WHERE tr.fromFundId=budget.fundId AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId')
+           								 	WHERE tr.fromFundId=budget.fundId
+           								 	  AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId'
+           								 	  AND budget.ledgerRolloverId::text = _rollover_record->>'id')
            						AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
                                	AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId')
         THEN
@@ -238,7 +239,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                )
                FROM ${myuniversity}_${mymodule}.transaction tr
                  WHERE NOT EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget budget
-                                WHERE tr.fromFundId=budget.fundId AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId')
+                                WHERE tr.fromFundId=budget.fundId
+                                  AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId'
+                                  AND budget.ledgerRolloverId::text = _rollover_record->>'id')
                     AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
                     AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId';
         ELSEIF
@@ -249,6 +252,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                                                                               AND tr.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = _order_id
                                                                               AND tr.jsonb->>'fiscalYearId' = _rollover_record ->> 'toFiscalYearId'
                                                                               AND budget.fiscalYearId::text = _rollover_record ->> 'toFiscalYearId'
+                                                                              AND budget.ledgerRolloverId::text = _rollover_record->>'id'
                                                                             GROUP BY budget.jsonb, tr.jsonb ->> 'fromFundId'
                 HAVING sum((tr.jsonb->>'amount')::decimal) > ((budget.jsonb->>'initialAllocation')::decimal +
                                                                                                       (budget.jsonb->>'allocationTo')::decimal -
@@ -282,6 +286,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         WHERE budget.jsonb->>'allowableEncumbrance' IS NOT NULL
                             AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'toFiscalYearId'
                             AND budget.fiscalYearId::text=_rollover_record->>'toFiscalYearId'
+                            AND budget.ledgerRolloverId::text = _rollover_record->>'id'
                         GROUP BY tr.jsonb->>'fromFundId', budget.jsonb
                         HAVING sum((tr.jsonb->>'amount')::decimal) > ((budget.jsonb->>'initialAllocation')::decimal +
                                                                                                             (budget.jsonb->>'allocationTo')::decimal -
@@ -319,17 +324,18 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 GROUP BY fund_id
             ) AS subquery
             LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON subquery.fund_id=fund.id::text
-            WHERE subquery.fund_id=budget.fundId::text AND fund.ledgerId::text=%2$L::jsonb->>''ledgerId'' AND budget.fiscalYearId::text=%2$L::jsonb->>''toFiscalYearId'';';
+            WHERE subquery.fund_id=budget.fundId::text AND fund.ledgerId::text=%2$L::jsonb->>''ledgerId'' AND budget.fiscalYearId::text=%2$L::jsonb->>''toFiscalYearId''
+                AND (NOT budget.jsonb ? ''ledgerRolloverId'' OR budget.jsonb->>''ledgerRolloverId''=%2$L::jsonb->>''id'');';
 
         IF _rollover_record->>'rolloverType' = 'Preview' THEN
             EXECUTE format(update_budget_amounts_query, 'ledger_fiscal_year_rollover_budget', _rollover_record, _order_id);
         ELSE
             EXECUTE format(update_budget_amounts_query, 'budget', _rollover_record, _order_id);
             EXECUTE format(update_budget_amounts_query, 'ledger_fiscal_year_rollover_budget', _rollover_record, _order_id);
-        END IF;
 
-        INSERT INTO tmp_encumbered_transactions SELECT * FROM tmp_transaction
-        ON CONFLICT DO NOTHING;
+            INSERT INTO tmp_encumbered_transactions SELECT * FROM tmp_transaction
+            ON CONFLICT DO NOTHING;
+        END IF;
 
         DROP TABLE IF EXISTS tmp_transaction;
     END;
@@ -448,15 +454,6 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
 
         CREATE TEMPORARY TABLE tmp_budget(LIKE ${myuniversity}_${mymodule}.budget);
 
-        -- #0 Reset amounts in table ledger_fiscal_year_rollover_budget to initial state to be able to run Preview rollovers multiple times
-        -- After resetting 'encumbered' fields 'available', 'unavailable', 'overEncumbrance' also will be updated based on 'encumbered' later in java code by CalculationUtils class
-        UPDATE ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget as budget
-        SET jsonb = budget.jsonb || jsonb_build_object('encumbered', 0)
-        FROM ${myuniversity}_${mymodule}.fund as fund
-        WHERE budget.fundId = fund.id
-            AND fund.ledgerId::text = _rollover_record->>'ledgerId'
-            AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId';
-
         -- #1 Upsert budgets
         INSERT INTO tmp_budget
             (
@@ -498,7 +495,22 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                         SELECT json_agg(inner_fund.jsonb->>'name') FROM ${myuniversity}_${mymodule}.fund AS inner_fund
                         WHERE (fund.jsonb->'allocatedToIds')::jsonb ? inner_fund.id::text
                     ) AS allocatedToNames
-                    FROM tmp_budget AS budget
+                    FROM (
+                             SELECT COALESCE(budget.id, tmp_budget.id) as id,
+                                    CASE
+                                        WHEN budget.id IS NULL THEN tmp_budget.jsonb
+                                        ELSE budget.jsonb || jsonb_build_object
+                                          (
+                                              'budgetStatus', 'Active',
+                                              'allocationTo', (budget.jsonb->>'allocationTo')::decimal + (tmp_budget.jsonb->>'initialAllocation')::decimal,
+                                              'netTransfers', (budget.jsonb->>'netTransfers')::decimal + (tmp_budget.jsonb->>'netTransfers')::decimal,
+                                              'metadata', budget.jsonb->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text))
+                                    END as jsonb
+                             FROM tmp_budget as tmp_budget
+                             LEFT JOIN ${myuniversity}_${mymodule}.budget as budget
+                                 ON tmp_budget.jsonb->>'fundId' = budget.fundId::text AND tmp_budget.jsonb->>'fiscalYearId' = budget.fiscalYearId::text
+                             WHERE budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId' OR budget.id IS NULL
+                         ) as budget
                     LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id::text = budget.jsonb->>'fundId'
                     LEFT JOIN ${myuniversity}_${mymodule}.fund_type AS fund_type ON fund_type.id = fund.fundTypeId
                 ) AS subquery
@@ -519,8 +531,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             UPDATE ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget as rollover_budget
             SET jsonb = rollover_budget.jsonb || jsonb_build_object('budgetId', budget.id)
             FROM ${myuniversity}_${mymodule}.budget as budget
-            WHERE budget.jsonb ->> 'fundId' = rollover_budget.jsonb ->> 'fundId'
-                AND budget.jsonb ->> 'fiscalYearId' = rollover_budget.jsonb ->> 'fiscalYearId';
+            WHERE budget.fundId = rollover_budget.fundId
+                AND budget.fiscalYearId = rollover_budget.fiscalYearId
+                AND rollover_budget.ledgerRolloverId::text = _rollover_record->>'id';
         END IF;
 
         DROP TABLE IF EXISTS tmp_budget;
@@ -538,7 +551,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                INNER JOIN ${myuniversity}_${mymodule}.budget_expense_class AS exp ON oldBudget.id = exp.budgetid
         WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
           AND fund.jsonb ->> 'ledgerId' = _rollover_record->>'ledgerId'
-          AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId';
+          AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
+          AND newBudget.ledgerRolloverId::text = _rollover_record->>'id';
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
             INSERT INTO ${myuniversity}_${mymodule}.budget_expense_class(SELECT id, jsonb FROM tmp_budget_expense_class)
