@@ -17,7 +17,7 @@ public class BudgetExpenseClassDAOImpl implements BudgetExpenseClassDAO{
 
   private static final String SELECT_BUDGET_EXPENSE_CLASSES_BY_BUDGET_ID = "SELECT budget_expense_class.jsonb "
     + "FROM %s AS budget_expense_class "
-    + "WHERE budget_expense_class.budgetid = $1";
+    + "WHERE budget_expense_class.jsonb->>'budgetId' = $1";
 
   public Future<List<BudgetExpenseClass>> getTemporaryBudgetExpenseClasses(String budgetId, DBClient client) {
     Promise<List<BudgetExpenseClass>> promise = Promise.promise();
