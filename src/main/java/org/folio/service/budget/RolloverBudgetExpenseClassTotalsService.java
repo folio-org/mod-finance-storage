@@ -96,6 +96,7 @@ public class RolloverBudgetExpenseClassTotalsService {
     return new BudgetExpenseClassTotal()
       .withId(expenseClass.getId())
       .withExpenseClassName(expenseClass.getName())
+      .withExpenseClassCode(expenseClass.getCode())
       .withEncumbered(encumbered)
       .withAwaitingPayment(awaitingPayment)
       .withExpended(expended)
