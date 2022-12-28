@@ -1,16 +1,12 @@
 {
-  "id": "f6aea7f1-e614-4010-a2f7-913bb63d1561",
+  "id": "383c59f9-d420-4f37-87ad-c0f7ee0e0283",
   "allocated": 0.00,
   "allowableEncumbrance": 110,
   "allowableExpenditure": 100,
-  "available": 0,
-  "awaitingPayment": 0,
   "budgetStatus": "Active",
-  "encumbered": 0,
-  "expenditures": 0,
   "fiscalYearId": "a06a95ef-5a96-4839-a2d9-ac484a25c261",
-  "fundId": "fb7b70f1-b898-4924-a991-0e4b6312bb5f",
-  "name": "HIST-FY2022",
+  "fundId": "68872d8a-bf16-420b-829f-206da38f6c10",
+  "name": "CANHIST-FY2023",
   "netTransfers": 0,
   "overEncumbrance": 0
 }
