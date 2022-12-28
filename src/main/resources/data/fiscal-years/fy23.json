@@ -1,0 +1,10 @@
+{
+  "id": "a06a95ef-5a96-4839-a2d9-ac484a25c261",
+  "name": "Fiscal Year 2023",
+  "code": "FY2023",
+  "currency": "USD",
+  "description": "Fiscal year for 2023",
+  "periodStart": "2023-01-01T00:00:00Z",
+  "periodEnd": "2023-12-31T23:59:59Z",
+  "series": "FY"
+}

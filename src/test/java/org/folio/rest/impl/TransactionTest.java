@@ -11,6 +11,7 @@ import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -42,7 +43,8 @@ public class TransactionTest extends TestBase {
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
   private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";
-  public static final String ALLOCATION_SAMPLE = "data/transactions/zallocation_AFRICAHIST-FY22_ANZHIST-FY22.json";
+  public static final String ALLOCATION_SAMPLE = "data/transactions/zallocation_AFRICAHIST-FY23_ANZHIST-FY23.json";
+  public static final String TRANSFER_NOT_ENOUGH_MONEY_ERROR_TEXT = "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer";
 
   static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
   static final String BUDGETS = "budgets";
@@ -50,9 +52,9 @@ public class TransactionTest extends TestBase {
   public static final String LEDGER_MAIN_LIBRARY_SAMPLE_PATH = "data/ledgers/MainLibrary.json";
   public static final String ALLOCATION_FROM_FUND_SAMPLE_PATH = "data/funds/CANLATHIST.json";
   public static final String ALLOCATION_TO_FUND_SAMPLE_PATH = "data/funds/ANZHIST.json";
-  public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets/CANLATHIST-FY22-closed.json";
-  public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets/ANZHIST-FY22.json";
-  public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations/allocation_CANLATHIST-FY22.json";
+  public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets/CANLATHIST-FY23-closed.json";
+  public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets/ANZHIST-FY23.json";
+  public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations/allocation_CANLATHIST-FY23.json";
   public static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
   private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
   private static TenantJob tenantJob;
@@ -191,7 +193,7 @@ public class TransactionTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
 
-    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation_AFRICAHIST-FY22.json"));
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation_AFRICAHIST-FY23.json"));
     jsonAllocation.remove("id");
     String allocationSample = jsonAllocation.toString();
 
@@ -256,7 +258,7 @@ public class TransactionTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
 
-    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation_AFRICAHIST-FY22.json"));
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations/allocation_AFRICAHIST-FY23.json"));
     jsonAllocation.remove("id");
     String allocationSample = jsonAllocation.toString();
 

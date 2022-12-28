@@ -1,12 +1,12 @@
 {
-  "id": "34fe0c8b-2b99-4fe2-81a5-4ed6872a32e6",
+  "id": "47144c36-7180-4840-aff4-bc9788c78d89",
   "allocated": 0.00,
-  "allowableEncumbrance": 110,
+  "allowableEncumbrance": 100,
   "allowableExpenditure": 100,
   "budgetStatus": "Active",
   "fiscalYearId": "a06a95ef-5a96-4839-a2d9-ac484a25c261",
-  "fundId": "e9285a1c-1dfc-4380-868c-e74073003f43",
-  "name": "EUROHIST-FY2022",
+  "fundId": "1714f71f-b845-444b-a79e-a577487a6f7d",
+  "name": "ENDOW-SUBN-FY2023",
   "netTransfers": 0,
   "overEncumbrance": 0
 }
