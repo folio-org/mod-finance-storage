@@ -224,8 +224,8 @@ public class BudgetService {
 
     return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), client).compose(budget -> {
       if (budget.getAvailable() < transaction.getAmount()) {
-        ErrorCodes errorCode =
-          transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION ? NOT_ENOUGH_MONEY_FOR_ALLOCATION : GENERIC_ERROR_CODE;
+        ErrorCodes errorCode = transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION ?
+          NOT_ENOUGH_MONEY_FOR_ALLOCATION : GENERIC_ERROR_CODE;
         logger.error(errorCode.getDescription());
         return Future
           .failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), JsonObject.mapFrom(errorCode.toError())
