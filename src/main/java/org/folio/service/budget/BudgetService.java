@@ -7,7 +7,6 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.getQueryValues;
 import static org.folio.rest.util.ErrorCodes.GENERIC_ERROR_CODE;
 import static org.folio.rest.util.ErrorCodes.NOT_ENOUGH_MONEY_FOR_ALLOCATION;
-import static org.folio.rest.util.ErrorCodes.NOT_ENOUGH_MONEY_FOR_TRANSFER;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
@@ -219,23 +218,14 @@ public class BudgetService {
   }
 
   public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBClient client) {
-    if (transaction.getFromFundId() == null) {
+    if (transaction.getFromFundId() == null || transaction.getTransactionType() == Transaction.TransactionType.TRANSFER) {
       return Future.succeededFuture();
     }
 
     return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), client).compose(budget -> {
       if (budget.getAvailable() < transaction.getAmount()) {
-        ErrorCodes errorCode;
-        switch (transaction.getTransactionType()) {
-        case TRANSFER:
-          errorCode = NOT_ENOUGH_MONEY_FOR_TRANSFER;
-          break;
-        case ALLOCATION:
-          errorCode = NOT_ENOUGH_MONEY_FOR_ALLOCATION;
-          break;
-        default:
-          errorCode = GENERIC_ERROR_CODE;
-        }
+        ErrorCodes errorCode =
+          transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION ? NOT_ENOUGH_MONEY_FOR_ALLOCATION : GENERIC_ERROR_CODE;
         logger.error(errorCode.getDescription());
         return Future
           .failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), JsonObject.mapFrom(errorCode.toError())

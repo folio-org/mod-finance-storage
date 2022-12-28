@@ -11,7 +11,7 @@ import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
-import static org.hamcrest.CoreMatchers.containsString;
+//import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -44,7 +44,7 @@ public class TransactionTest extends TestBase {
 
   private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";
   public static final String ALLOCATION_SAMPLE = "data/transactions/zallocation_AFRICAHIST-FY22_ANZHIST-FY22.json";
-  public static final String TRANSFER_NOT_ENOUGH_MONEY_ERROR_TEXT = "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer";
+//  public static final String TRANSFER_NOT_ENOUGH_MONEY_ERROR_TEXT = "Transfer was not successful. There is not enough money Available in the budget to complete this Transfer";
 
   static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
   static final String BUDGETS = "budgets";
@@ -246,7 +246,7 @@ public class TransactionTest extends TestBase {
 
 
   @Test
-  void testCreateTransferThatDoesNotHaveEnoughMoney() throws MalformedURLException {
+  void testCreateTransferThatAvailableNegativeNumberOfBudget() throws MalformedURLException {
 
     givenTestData(TRANSACTION_TENANT_HEADER,
       Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
@@ -274,8 +274,9 @@ public class TransactionTest extends TestBase {
 
     // create Transfer
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400)
-      .body(containsString(TRANSFER_NOT_ENOUGH_MONEY_ERROR_TEXT));
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class);
 
   }
 
