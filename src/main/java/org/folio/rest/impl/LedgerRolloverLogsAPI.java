@@ -17,13 +17,13 @@ public class LedgerRolloverLogsAPI implements FinanceStorageLedgerRolloversLogs 
   public static final String LEDGER_ROLLOVER_LOGS_VIEW = "ledger_rollover_logs_view";
 
   @Override
-  public void getFinanceStorageLedgerRolloversLogs(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageLedgerRolloversLogs(String query, String totalRecords, int offset, int limit, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(LEDGER_ROLLOVER_LOGS_VIEW, LedgerFiscalYearRolloverLog.class, LedgerFiscalYearRolloverLogCollection.class, query,
       offset, limit, okapiHeaders, vertxContext, FinanceStorageLedgerRolloversLogs.GetFinanceStorageLedgerRolloversLogsResponse.class, asyncResultHandler);
   }
 
   @Override
-  public void getFinanceStorageLedgerRolloversLogsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageLedgerRolloversLogsById(String id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(LEDGER_ROLLOVER_LOGS_VIEW, LedgerFiscalYearRolloverLog.class, id, okapiHeaders, vertxContext, FinanceStorageLedgerRolloversLogs.GetFinanceStorageLedgerRolloversLogsByIdResponse.class, asyncResultHandler);
   }
 }

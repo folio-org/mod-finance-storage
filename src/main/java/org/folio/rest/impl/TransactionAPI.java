@@ -40,15 +40,7 @@ public class TransactionAPI implements FinanceStorageTransactions {
 
   @Override
   @Validate
-  public void getFinanceStorageTransactions(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.get(TRANSACTION_TABLE, Transaction.class, TransactionCollection.class, query, offset, limit, okapiHeaders, vertxContext,
-        GetFinanceStorageTransactionsResponse.class, asyncResultHandler);
-  }
-
-  @Override
-  @Validate
-  public void postFinanceStorageTransactions(String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void postFinanceStorageTransactions(Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     getTransactionService(transaction).createTransaction(transaction, new RequestContext(vertxContext, okapiHeaders))
       .onComplete(event -> {
         if (event.succeeded()) {
@@ -57,38 +49,42 @@ public class TransactionAPI implements FinanceStorageTransactions {
           asyncResultHandler.handle(buildErrorResponse(event.cause()));
         }
       });
-
   }
 
   @Override
   @Validate
-  public void getFinanceStorageTransactionsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageTransactions(String query, String totalRecords, int offset, int limit, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.get(TRANSACTION_TABLE, Transaction.class, TransactionCollection.class, query, offset, limit, okapiHeaders, vertxContext,
+      GetFinanceStorageTransactionsResponse.class, asyncResultHandler);
+  }
+
+  @Override
+  @Validate
+  public void putFinanceStorageTransactionsById(String id, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    transaction.setId(id);
+    getTransactionService(transaction).updateTransaction(transaction, new RequestContext(vertxContext, okapiHeaders))
+      .onComplete(event -> {
+        if (event.succeeded()) {
+          asyncResultHandler.handle(buildNoContentResponse());
+        } else {
+          asyncResultHandler.handle(buildErrorResponse(event.cause()));
+        }
+      });
+  }
+
+  @Override
+  @Validate
+  public void getFinanceStorageTransactionsById(String id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(TRANSACTION_TABLE, Transaction.class, id, okapiHeaders, vertxContext, GetFinanceStorageTransactionsByIdResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void deleteFinanceStorageTransactionsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void deleteFinanceStorageTransactionsById(String id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(TRANSACTION_TABLE, id, okapiHeaders, vertxContext, DeleteFinanceStorageTransactionsByIdResponse.class, asyncResultHandler);
-  }
-
-  @Override
-  @Validate
-  public void putFinanceStorageTransactionsById(String id, String lang, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    transaction.setId(id);
-    getTransactionService(transaction).updateTransaction(transaction, new RequestContext(vertxContext, okapiHeaders))
-    .onComplete(event -> {
-      if (event.succeeded()) {
-        asyncResultHandler.handle(buildNoContentResponse());
-      } else {
-        asyncResultHandler.handle(buildErrorResponse(event.cause()));
-      }
-    });
   }
 
   private TransactionService getTransactionService(Transaction transaction) {
     return managingServiceFactory.findStrategy(transaction.getTransactionType());
   }
-
-
 }

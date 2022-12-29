@@ -23,7 +23,7 @@ public class LegderRolloverBudgetAPI implements FinanceStorageLedgerRolloversBud
 
   @Override
   @Validate
-  public void getFinanceStorageLedgerRolloversBudgets(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
+  public void getFinanceStorageLedgerRolloversBudgets(String query, String totalRecords, int offset, int limit, Map<String, String> okapiHeaders,
               Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(LEDGER_FISCAL_YEAR_ROLLOVER_BUDGETS_TABLE, LedgerFiscalYearRolloverBudget.class, LedgerFiscalYearRolloverBudgetCollection.class, query,
       offset, limit, okapiHeaders, vertxContext, FinanceStorageLedgerRolloversBudgets.GetFinanceStorageLedgerRolloversBudgetsResponse.class, asyncResultHandler);
@@ -31,7 +31,7 @@ public class LegderRolloverBudgetAPI implements FinanceStorageLedgerRolloversBud
 
   @Override
   @Validate
-  public void getFinanceStorageLedgerRolloversBudgetsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void getFinanceStorageLedgerRolloversBudgetsById(String id, Map<String, String> okapiHeaders,
               Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(LEDGER_FISCAL_YEAR_ROLLOVER_BUDGETS_TABLE, LedgerFiscalYearRolloverBudget.class, id, okapiHeaders, vertxContext, FinanceStorageLedgerRolloversBudgets.GetFinanceStorageLedgerRolloversBudgetsByIdResponse.class, asyncResultHandler);
   }

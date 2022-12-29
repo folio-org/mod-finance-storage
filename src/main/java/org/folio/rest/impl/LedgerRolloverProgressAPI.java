@@ -20,37 +20,32 @@ public class LedgerRolloverProgressAPI implements FinanceStorageLedgerRolloversP
 
   @Override
   @Validate
-  public void getFinanceStorageLedgerRolloversProgress(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
-              Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageLedgerRolloversProgress(String query, String totalRecords, int offset, int limit, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE, LedgerFiscalYearRolloverProgress.class, LedgerFiscalYearRolloverProgressCollection.class, query,
-        offset, limit, okapiHeaders, vertxContext, GetFinanceStorageLedgerRolloversProgressResponse.class, asyncResultHandler);
+      offset, limit, okapiHeaders, vertxContext, GetFinanceStorageLedgerRolloversProgressResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void postFinanceStorageLedgerRolloversProgress(String lang, LedgerFiscalYearRolloverProgress entity, Map<String, String> okapiHeaders,
-             Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void postFinanceStorageLedgerRolloversProgress(LedgerFiscalYearRolloverProgress entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.post(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageLedgerRolloversProgressResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void getFinanceStorageLedgerRolloversProgressById(String id, String lang, Map<String, String> okapiHeaders,
-              Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageLedgerRolloversProgressById(String id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE, LedgerFiscalYearRolloverProgress.class, id, okapiHeaders, vertxContext, GetFinanceStorageLedgerRolloversProgressByIdResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void deleteFinanceStorageLedgerRolloversProgressById(String id, String lang, Map<String, String> okapiHeaders,
-              Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void deleteFinanceStorageLedgerRolloversProgressById(String id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE, id, okapiHeaders, vertxContext, DeleteFinanceStorageLedgerRolloversProgressByIdResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void putFinanceStorageLedgerRolloversProgressById(String id, String lang, LedgerFiscalYearRolloverProgress entity,
-              Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void putFinanceStorageLedgerRolloversProgressById(String id, LedgerFiscalYearRolloverProgress entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageLedgerRolloversProgressByIdResponse.class, asyncResultHandler);
   }
 }
