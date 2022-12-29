@@ -215,7 +215,7 @@ public class BudgetService {
   }
 
   public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBClient client) {
-    if (Objects.nonNull(transaction.getFromFundId()) || transaction.getTransactionType() == Transaction.TransactionType.TRANSFER) {
+    if (Objects.isNull(transaction.getFromFundId()) || transaction.getTransactionType() == Transaction.TransactionType.TRANSFER) {
       return Future.succeededFuture();
     }
 

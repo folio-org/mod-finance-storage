@@ -270,11 +270,31 @@ public class TransactionTest extends TestBase {
     jsonTx.put("amount","21001");
     String transactionSample = jsonTx.toString();
 
+    // prepare budget queries
+    String fY = jsonTx.getString("fiscalYearId");
+    String fromFundId = jsonTx.getString("fromFundId");
+    String toFundId = jsonTx.getString("toFundId");
+
+    String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+    String toBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, toFundId);
+
+    Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    Budget toBudgetBefore = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
+
+    assertEquals(21000, fromBudgetBefore.getAvailable());
+    assertEquals(0, toBudgetBefore.getAvailable());
+
     // create Transfer
     postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
       .statusCode(201)
       .extract()
       .as(Transaction.class);
+
+    Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    Budget toBudgetAfter = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
+
+    assertEquals(-1, fromBudgetAfter.getAvailable());
+    assertEquals(21001, toBudgetAfter.getAvailable());
   }
 
   protected Budget getBudgetAndValidate(String endpoint) throws MalformedURLException {
