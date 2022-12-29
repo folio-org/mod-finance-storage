@@ -10,10 +10,7 @@ import static org.folio.rest.util.ErrorCodes.NOT_ENOUGH_MONEY_FOR_ALLOCATION;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import javax.ws.rs.core.Response;
 
@@ -218,7 +215,7 @@ public class BudgetService {
   }
 
   public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBClient client) {
-    if (transaction.getFromFundId() == null || transaction.getTransactionType() == Transaction.TransactionType.TRANSFER) {
+    if (Objects.nonNull(transaction.getFromFundId()) || transaction.getTransactionType() == Transaction.TransactionType.TRANSFER) {
       return Future.succeededFuture();
     }
 
