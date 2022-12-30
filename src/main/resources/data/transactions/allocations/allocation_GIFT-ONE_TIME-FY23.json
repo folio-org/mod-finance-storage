@@ -1,0 +1,10 @@
+{
+  "id": "7468d9f1-26d1-498c-8129-b57c3a19732b",
+  "amount": 28000.00,
+  "currency": "USD",
+  "fiscalYearId": "0bb73cfd-9251-44ce-a7de-3ef16875ba6a",
+  "source": "User",
+  "sourceFiscalYearId": "0bb73cfd-9251-44ce-a7de-3ef16875ba6a",
+  "toFundId": "6506b79b-7702-48b2-9774-a1c538fdd34e",
+  "transactionType": "Allocation"
+}

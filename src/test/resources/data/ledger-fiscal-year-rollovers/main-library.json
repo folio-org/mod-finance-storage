@@ -1,8 +1,8 @@
 {
   "id": "5599c9c5-5ba5-4ddf-b0d6-598f506f0703",
   "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
-  "fromFiscalYearId": "a06a95ef-5a96-4839-a2d9-ac484a25c261",
-  "toFiscalYearId": "a06a95ef-5a96-4839-a2d9-ac484a25c261",
+  "fromFiscalYearId": "0bb73cfd-9251-44ce-a7de-3ef16875ba6a",
+  "toFiscalYearId": "0bb73cfd-9251-44ce-a7de-3ef16875ba6a",
   "restrictEncumbrance": false,
   "restrictExpenditures": false,
   "needCloseBudgets": true,
