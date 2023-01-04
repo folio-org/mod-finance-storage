@@ -1,0 +1,9 @@
+{
+  "id": "1b01d9d3-3942-4d50-af2f-f3a007ad431e",
+  "name": "Previous",
+  "code": "PREVIOUS",
+  "externalAccountNo": "123456789987",
+  "fundStatus": "Active",
+  "description": "Fund from previous year",
+  "ledgerId": "9b208ad9-8a57-49bb-9e0e-15e3ddd6425e"
+}

@@ -41,7 +41,7 @@ import io.vertx.core.json.JsonObject;
 public class BudgetTest extends TestBase {
 
   private static final String BUDGET_ENDPOINT = TestEntities.BUDGET.getEndpoint();
-  private static final String BUDGET_TEST_TENANT = "budget_test_tenant";
+  private static final String BUDGET_TEST_TENANT = "budget_test_tenant_api";
   private static final Header BUDGET_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, BUDGET_TEST_TENANT);
   private static final String ENCUMBR_SAMPLE = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
   private static TenantJob tenantJob;
@@ -56,7 +56,7 @@ public class BudgetTest extends TestBase {
     tenantJob = prepareTenant(BUDGET_TENANT_HEADER, true, true);
 
     // search for GET
-    verifyCollectionQuantity(BUDGET_ENDPOINT, 21, BUDGET_TENANT_HEADER);
+    verifyCollectionQuantity(BUDGET_ENDPOINT, 23, BUDGET_TENANT_HEADER);
 
     // search with fields from "fund"
     verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Inactive", 2, BUDGET_TENANT_HEADER);
@@ -65,7 +65,7 @@ public class BudgetTest extends TestBase {
     // search with fields from "ledgers"
     verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=ledger.name==Ongoing", 7, BUDGET_TENANT_HEADER);
     // complex query
-    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Active AND ledger.name==Ongoing AND fiscalYear.code==FY2022", 4, BUDGET_TENANT_HEADER);
+    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Active AND ledger.name==Ongoing AND fiscalYear.code==FY2023", 4, BUDGET_TENANT_HEADER);
 
     // search with invalid cql query
     testInvalidCQLQuery(BUDGET_ENDPOINT + "?query=invalid-query");

@@ -1,0 +1,10 @@
+{
+  "id": "7a4c4d30-3b63-4102-8e2d-3ee5792d7d02",
+  "name": "Fiscal Year 2024",
+  "code": "FY2024",
+  "currency": "USD",
+  "description": "Fiscal year for 2024",
+  "periodStart": "2024-01-01T00:00:00Z",
+  "periodEnd": "2024-12-31T23:59:59Z",
+  "series": "FY"
+}

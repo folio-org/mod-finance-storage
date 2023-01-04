@@ -1,0 +1,9 @@
+{
+  "id": "dd464167-812e-4efe-8e21-7fb0dffab8d8",
+  "name": "Future",
+  "code": "FUTURE",
+  "externalAccountNo": "987654321123",
+  "fundStatus": "Active",
+  "description": "Fund from future year",
+  "ledgerId": "b1b81098-dbd4-4cbf-b9d2-3f95fc286692"
+}

@@ -19,7 +19,7 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 - User password is required as a command-line input.
 
 ### Execution example :
-`./fix_lotus_encumbrances.py 'FY2022' 'http://localhost:9130/' 'diku' 'diku_admin'`
+`./fix_lotus_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin'`
 
 ### Required permissions for the user
 These can be set with a permission group created with the API.
