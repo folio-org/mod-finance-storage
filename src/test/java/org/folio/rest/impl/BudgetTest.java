@@ -56,7 +56,7 @@ public class BudgetTest extends TestBase {
     tenantJob = prepareTenant(BUDGET_TENANT_HEADER, true, true);
 
     // search for GET
-    verifyCollectionQuantity(BUDGET_ENDPOINT, 21, BUDGET_TENANT_HEADER);
+    verifyCollectionQuantity(BUDGET_ENDPOINT, 23, BUDGET_TENANT_HEADER);
 
     // search with fields from "fund"
     verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Inactive", 2, BUDGET_TENANT_HEADER);
