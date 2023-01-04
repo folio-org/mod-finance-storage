@@ -1,0 +1,11 @@
+{
+  "id": "b1b81098-dbd4-4cbf-b9d2-3f95fc286692",
+  "name": "Future",
+  "code": "FUTURE",
+  "description": "This is the ledger for the Future",
+  "fiscalYearOneId": "7a4c4d30-3b63-4102-8e2d-3ee5792d7d02",
+  "ledgerStatus": "Active",
+  "currency": "USD",
+  "restrictEncumbrance" : true,
+  "restrictExpenditures" : true
+}

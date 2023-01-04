@@ -9,11 +9,11 @@ import static org.folio.rest.impl.TransactionTest.ORDER_TRANSACTION_SUMMARIES_EN
 public enum TestEntities {
   //The Order is important because of the foreign key relationships
   EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageExpenseClasses.class), ExpenseClass.class, "data/expense-classes/", "elec.json", "name", "Electronic", 2, true),
-  FISCAL_YEAR(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class), FiscalYear.class, "data/fiscal-years/", "fy23.json", "name", "FY23", 6, true),
-  LEDGER(HelperUtils.getEndpoint(FinanceStorageLedgers.class), Ledger.class, "data/ledgers/", "One-time.json", "code", "One-time", 3, true),
+  FISCAL_YEAR(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class), FiscalYear.class, "data/fiscal-years/", "fy23.json", "name", "FY23", 7, true),
+  LEDGER(HelperUtils.getEndpoint(FinanceStorageLedgers.class), Ledger.class, "data/ledgers/", "One-time.json", "code", "One-time", 5, true),
   FUND_TYPE(HelperUtils.getEndpoint(FinanceStorageFundTypes.class), FundType.class, "data/fund-types/", "approvals.json", "name", "New type name", 26, true),
-  FUND(HelperUtils.getEndpoint(FinanceStorageFunds.class), Fund.class, "data/funds/", "AFRICAHIST.json", "name", "African History", 21, true),
-  BUDGET(HelperUtils.getEndpoint(FinanceStorageBudgets.class), Budget.class, "data/budgets/", "AFRICAHIST-FY23.json", "name", "AFRICAHIST-FY23", 21, true),
+  FUND(HelperUtils.getEndpoint(FinanceStorageFunds.class), Fund.class, "data/funds/", "AFRICAHIST.json", "name", "African History", 23, true),
+  BUDGET(HelperUtils.getEndpoint(FinanceStorageBudgets.class), Budget.class, "data/budgets/", "AFRICAHIST-FY23.json", "name", "AFRICAHIST-FY23", 23, true),
   BUDGET_EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageBudgetExpenseClasses.class), BudgetExpenseClass.class, "data/budget-expense-classes/", "AFRICAHIST-FY23-elec.json", "status", "Inactive", 1, true),
   ORDER_SUMMARY(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, OrderTransactionSummary.class, "data/order-transaction-summaries/", "order-306857_transaction-summary.json", "numTransactions", "1", 1, false),
   ALLOCATION_TRANSACTION(HelperUtils.getEndpoint(FinanceStorageTransactions.class), Transaction.class, "data/transactions/", "allocations/allocation_AFRICAHIST-FY23.json", "source", "Invoice", 16, true),

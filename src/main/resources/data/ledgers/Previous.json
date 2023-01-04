@@ -1,0 +1,11 @@
+{
+  "id": "9b208ad9-8a57-49bb-9e0e-15e3ddd6425e",
+  "name": "Previous",
+  "code": "PREVIOUS",
+  "description": "This is the ledger for the Previous",
+  "fiscalYearOneId": "a06a95ef-5a96-4839-a2d9-ac484a25c261",
+  "ledgerStatus": "Active",
+  "currency": "USD",
+  "restrictEncumbrance" : true,
+  "restrictExpenditures" : true
+}
