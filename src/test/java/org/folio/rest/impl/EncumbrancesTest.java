@@ -14,7 +14,6 @@ import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
-//import static org.folio.service.budget.BudgetService.BUDGET_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
 import static org.folio.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
 import static org.folio.service.transactions.restriction.BaseTransactionRestrictionService.FUND_CANNOT_BE_PAID;
