@@ -145,8 +145,8 @@ public class BudgetService {
           handleFailure(promise, reply);
         } else if (reply.result()
           .isEmpty()) {
-          logger.error(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError());
-          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
+          logger.error("Budget not found for fundId: {} and fiscalYearId: {}", fundId, fiscalYearId);
+          promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(),
             JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily()));
         } else {
           promise.complete(reply.result()
@@ -167,8 +167,8 @@ public class BudgetService {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else if (reply.result().isEmpty()) {
-          logger.error(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError());
-          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
+          logger.error("Budget not found for fundId: {} and fiscalYearId: {}", fundId, fiscalYearId);
+          promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(),
             JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily()));
         } else {
           promise.complete(reply.result().get(0));
