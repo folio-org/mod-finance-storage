@@ -10,8 +10,8 @@ public enum ErrorCodes {
   BUDGET_EXPENSE_CLASS_REFERENCE_ERROR("budgetExpenseClassReferenceError", "Can't delete budget that referenced with expense class"),
   MISSING_FUND_ID("missingFundId", "One of the fields toFundId or fromFundId must be specified"),
   MUST_BE_POSITIVE("mustBePositive", "Value must be greater than zero"),
-  CONFLICT("conflict", "Conflict when updating a record in table {0}: {1}");
-
+  CONFLICT("conflict", "Conflict when updating a record in table {0}: {1}"),
+  BUDGET_NOT_FOUND_FOR_TRANSACTION("budgetNotFoundForTransaction", "Budget not found for pair fiscalYear-fundId");
   private final String code;
   private final String description;
 

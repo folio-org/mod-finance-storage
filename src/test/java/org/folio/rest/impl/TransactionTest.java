@@ -165,7 +165,7 @@ public class TransactionTest extends TestBase {
       .log().all()
       .post(storageUrl(TRANSACTION_ENDPOINT))
       .then()
-      .statusCode(400);
+      .statusCode(404);
 
     Budget toBudgetAfter = getBudgetAndValidate(toBudgetEndpointWithQueryParams);
 

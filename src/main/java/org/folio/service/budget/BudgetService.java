@@ -5,8 +5,7 @@ import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.getQueryValues;
-import static org.folio.rest.util.ErrorCodes.GENERIC_ERROR_CODE;
-import static org.folio.rest.util.ErrorCodes.NOT_ENOUGH_MONEY_FOR_ALLOCATION;
+import static org.folio.rest.util.ErrorCodes.*;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
@@ -40,7 +39,6 @@ public class BudgetService {
   private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
   private static final String TRANSACTIONS_TABLE = "transaction";
   public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
-  public static final String BUDGET_NOT_FOUND_FOR_TRANSACTION = "Budget not found for pair fiscalYear-fundId";
 
   public static final String SELECT_BUDGETS_BY_FY_AND_FUND_FOR_UPDATE = "SELECT jsonb FROM %s "
     + "WHERE jsonb->>'fiscalYearId' = $1 AND jsonb->>'fundId' = $2"
@@ -147,8 +145,9 @@ public class BudgetService {
           handleFailure(promise, reply);
         } else if (reply.result()
           .isEmpty()) {
-          logger.error(BUDGET_NOT_FOUND_FOR_TRANSACTION);
-          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_NOT_FOUND_FOR_TRANSACTION));
+          logger.error("Budget not found for fundId: {} and fiscalYearId: {}", fundId, fiscalYearId);
+          promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(),
+            JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily()));
         } else {
           promise.complete(reply.result()
             .get(0));
@@ -168,8 +167,9 @@ public class BudgetService {
         if (reply.failed()) {
           handleFailure(promise, reply);
         } else if (reply.result().isEmpty()) {
-          logger.error(BUDGET_NOT_FOUND_FOR_TRANSACTION);
-          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_NOT_FOUND_FOR_TRANSACTION));
+          logger.error("Budget not found for fundId: {} and fiscalYearId: {}", fundId, fiscalYearId);
+          promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(),
+            JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily()));
         } else {
           promise.complete(reply.result().get(0));
         }
