@@ -16,7 +16,6 @@ import org.folio.models.EmailEntity;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
-import org.folio.rest.jaxrs.model.RolloverType;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.utils.EmailOkapiClient;
@@ -96,7 +95,7 @@ public class EmailService {
 
   private String getRolloverBody(LedgerFiscalYearRollover rollover, String linkToRolloverLedger, String ledgerName, JsonObject user) {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT_PATTERN).withZone(ZoneId.of(UTC_ZONE_ID));
-    return String.format(RolloverType.COMMIT.equals(rollover.getRolloverType()) ? COMMIT_MESSAGE : PREVIEW_MESSAGE,
+    return String.format(LedgerFiscalYearRollover.RolloverType.COMMIT.equals(rollover.getRolloverType()) ? COMMIT_MESSAGE : PREVIEW_MESSAGE,
       user.getString(USERNAME_KEY),
       formatter.format(rollover.getMetadata().getCreatedDate().toInstant()),
       ledgerName,

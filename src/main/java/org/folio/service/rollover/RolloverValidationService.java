@@ -9,7 +9,6 @@ import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
-import org.folio.rest.jaxrs.model.RolloverType;
 import org.folio.rest.persist.DBClient;
 
 import io.vertx.core.Future;
@@ -25,7 +24,7 @@ public class RolloverValidationService {
   public Future<Void> checkRolloverExists(LedgerFiscalYearRollover rollover, DBClient client) {
     Promise<Void> promise = Promise.promise();
 
-    if (rollover.getRolloverType().equals(RolloverType.COMMIT)) {
+    if (rollover.getRolloverType().equals(LedgerFiscalYearRollover.RolloverType.COMMIT)) {
       String query = buildValidateUniquenessQuery(client.getTenantId());
       Tuple parameters = getParametersForValidateUniquenessQuery(rollover);
       isRolloverExists(query, parameters, client)
