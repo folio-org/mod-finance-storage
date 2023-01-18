@@ -11,6 +11,7 @@ import httpx
 import requests
 
 ITEM_MAX = 2147483647
+MAX_BY_CHUNK = 1000
 
 okapi_url = ''
 headers = {}
@@ -120,13 +121,33 @@ def get_fiscal_year_ids_by_query(query):
     return ids
 
 
-def get_order_ids_by_query(query):
-    params = {'query': query, 'offset': '0', 'limit': ITEM_MAX}
-    try:
-        r = requests.get(okapi_url + 'orders-storage/purchase-orders', headers=headers, params=params)
+def get_by_chunks(url, query, key):
+    records = []
+    offset = 0
+    first = True
+    total_records = 1
+    while first or len(records) < total_records:
+        params = {'query': query, 'offset': offset, 'limit': MAX_BY_CHUNK}
+        r = requests.get(url, headers=headers, params=params)
         if r.status_code != 200:
             raise_exception_for_reply(r)
-        orders = r.json()['purchaseOrders']
+        j = r.json()
+        if key not in j.keys():
+            raise Exception('Could not find key when retrieving by chunks; url={}, key={}'.format(url, key))
+        records_in_chunk = j[key]
+        if not first and len(records_in_chunk) == 0:
+            raise Exception('Error retrieving by chunk: no record; url={}, offset={}'.format(url, offset))
+        records.extend(records_in_chunk)
+        if first:
+            total_records = j['totalRecords']
+            first = False
+        offset += len(records_in_chunk)
+    return records
+
+
+def get_order_ids_by_query(query):
+    try:
+        orders = get_by_chunks(okapi_url + 'orders-storage/purchase-orders', query, 'purchaseOrders')
         ids = []
         for order in orders:
             ids.append(order.get('id'))
