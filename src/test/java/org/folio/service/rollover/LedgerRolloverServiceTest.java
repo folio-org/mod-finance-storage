@@ -33,7 +33,6 @@ import java.util.UUID;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
-import org.folio.rest.jaxrs.model.RolloverType;
 import org.folio.rest.jaxrs.model.EncumbranceRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
@@ -366,7 +365,7 @@ public class LedgerRolloverServiceTest {
   void shouldSkipOrderRolloverAndClosingBudgetsForPreview(VertxTestContext testContext) {
     LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover()
       .withId(UUID.randomUUID().toString())
-      .withRolloverType(RolloverType.PREVIEW);
+      .withRolloverType(LedgerFiscalYearRollover.RolloverType.PREVIEW);
     LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
 
     when(requestContext.toDBClient()).thenReturn(dbClient);
