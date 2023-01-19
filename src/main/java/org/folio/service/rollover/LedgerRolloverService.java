@@ -17,7 +17,6 @@ import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
-import org.folio.rest.jaxrs.model.RolloverType;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
@@ -144,7 +143,7 @@ public class LedgerRolloverService {
   }
 
   private Future<Void> closeBudgets(LedgerFiscalYearRollover rollover, DBClient client) {
-    if (RolloverType.PREVIEW.equals(rollover.getRolloverType()) || !Boolean.TRUE.equals(rollover.getNeedCloseBudgets())) {
+    if (LedgerFiscalYearRollover.RolloverType.PREVIEW.equals(rollover.getRolloverType()) || !Boolean.TRUE.equals(rollover.getNeedCloseBudgets())) {
       log.info("Close budgets skipped for Ledger {} and rollover type {} and needCloseBudgets is {}",
         rollover.getLedgerId(), rollover.getRolloverType(), rollover.getNeedCloseBudgets());
       return Future.succeededFuture();
@@ -155,7 +154,7 @@ public class LedgerRolloverService {
   private Future<Void> startOrdersRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
       RequestContext requestContext) {
     DBClient client = requestContext.toDBClient();
-    if (RolloverType.PREVIEW.equals(rollover.getRolloverType()) || rollover.getEncumbrancesRollover().isEmpty()) {
+    if (LedgerFiscalYearRollover.RolloverType.PREVIEW.equals(rollover.getRolloverType()) || rollover.getEncumbrancesRollover().isEmpty()) {
       log.info("Orders rollover skipped for Ledger {} and rollover type {}", rollover.getLedgerId(), rollover.getRolloverType());
       return rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress.withOrdersRolloverStatus(SUCCESS), client);
     }

@@ -24,7 +24,6 @@ import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.Metadata;
-import org.folio.rest.jaxrs.model.RolloverType;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -87,7 +86,7 @@ public class EmailServiceTest {
   private LedgerFiscalYearRollover getRollover() {
     return new LedgerFiscalYearRollover().withLedgerId(UUID.randomUUID()
         .toString())
-      .withRolloverType(RolloverType.PREVIEW)
+      .withRolloverType(LedgerFiscalYearRollover.RolloverType.PREVIEW)
       .withMetadata(new Metadata().withCreatedDate(new Date()));
   }
 
