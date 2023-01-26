@@ -124,9 +124,7 @@ def get_fiscal_year_ids_by_query(query):
 def get_by_chunks(url, query, key):
     records = []
     offset = 0
-    first = True
-    total_records = 1
-    while first or len(records) < total_records:
+    while True:
         params = {'query': query, 'offset': offset, 'limit': MAX_BY_CHUNK}
         r = requests.get(url, headers=headers, params=params)
         if r.status_code != 200:
@@ -135,12 +133,9 @@ def get_by_chunks(url, query, key):
         if key not in j.keys():
             raise Exception(f'Could not find key when retrieving by chunks; url={url}, key={key}')
         records_in_chunk = j[key]
-        if not first and len(records_in_chunk) == 0:
-            raise Exception(f'Error retrieving by chunk: no record; url={url}, offset={offset}')
+        if len(records_in_chunk) == 0:
+            break
         records.extend(records_in_chunk)
-        if first:
-            total_records = j['totalRecords']
-            first = False
         offset += len(records_in_chunk)
     return records
 
