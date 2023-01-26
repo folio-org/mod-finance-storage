@@ -1,6 +1,6 @@
 # Fix Lotus Encumbrances
 
-This script will fix several issues in encumbrances related to the fiscal year rollover for FOLIO Lotus.
+This script will fix several issues in encumbrances related to the fiscal year rollover for FOLIO Lotus, and negative encumbrance issues which can still happen in Morning Glory and Nolana.
 In particular, after a fiscal year rollover in Lotus, there can be a mismatch between budget encumbrances and purchase order encumbrances.
 
 ## Running the script :
@@ -41,10 +41,14 @@ These can be set with a permission group created with the API.
 - Fix `encumbrance` links in PO lines in case if poline fund distribution refers to the encumbrance from previous fiscal year.
 - Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterwards because it is not possible to change this property for released encumbrances.
 - Change the encumbrance status to `Unreleased` for all open orders' encumbrances with non-zero amounts
+- Release open order unreleased encumbrances with negative amounts when they have `amountAwaitingPayment` or `amountExpended` > 0.
 - Recalculate the encumbered property for all the budgets related to these encumbrances by summing the related unreleased encumbrances.
 - Release all unreleased encumbrances for closed orders
 
 ## JIRA tickets
-[MODFISTO-326](https://issues.folio.org/browse/MODFISTO-326) - Create a script to fix Lotus encumbrance issues
-[MODFISTO-326](https://issues.folio.org/browse/MODFISTO-350) - Script to fix POLs with links to encumbrances from previous fiscal years.
-
+- [MODFISTO-326](https://issues.folio.org/browse/MODFISTO-326) - Create a script to fix Lotus encumbrance issues
+- [MODFISTO-329](https://issues.folio.org/browse/MODFISTO-329) - Migrate python script to the async approach
+- [MODFISTO-337](https://issues.folio.org/browse/MODFISTO-337) - Script improvements
+- [MODFISTO-350](https://issues.folio.org/browse/MODFISTO-350) - Fix POLs with links to encumbrances from previous fiscal years.
+- [MODFISTO-367](https://issues.folio.org/browse/MODFISTO-367) - Avoid requesting too many orders at once.
+- [MODFISTO-368](https://issues.folio.org/browse/MODFISTO-368) - Fix negative encumbrances.
