@@ -1,6 +1,6 @@
 # Fix Lotus Encumbrances
 
-This script will fix several issues in encumbrances related to the fiscal year rollover for FOLIO Lotus, and some other encumbrance issues still happening with later releases.
+This script will fix several issues in encumbrances related to the fiscal year rollover for FOLIO Lotus, and negative encumbrance issues which can still happen in Morning Glory and Nolana.
 In particular, after a fiscal year rollover in Lotus, there can be a mismatch between budget encumbrances and purchase order encumbrances.
 
 ## Running the script :
