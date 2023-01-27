@@ -47,6 +47,20 @@ def login(tenant, username, password):
         raise SystemExit(1)
 
 
+async def get_request_without_query(url: str):
+    try:
+        resp = await client.get(url, headers=headers, timeout=ASYNC_CLIENT_TIMEOUT)
+
+        if resp.status_code == HTTPStatus.OK:
+            return resp.json()
+        else:
+            print(f'Error getting record with url {url} : \n{resp.text} ')
+            raise SystemExit(1)
+    except Exception as err:
+        print(f'Error getting record with url {url} : {err=}')
+        raise SystemExit(1)
+
+
 async def get_request(url: str, query: str):
     params = {'query': query, 'offset': '0', 'limit': ITEM_MAX}
 
@@ -87,6 +101,20 @@ async def put_request(url: str, data) -> httpx.Response:
 
     except Exception as err:
         print(f'Error updating record {url} "{data}": {err=}')
+        raise SystemExit(1)
+
+
+async def delete_request(url: str) -> httpx.Response:
+    try:
+        resp = await client.delete(url, headers=headers, timeout=ASYNC_CLIENT_TIMEOUT)
+        if resp.status_code == HTTPStatus.NO_CONTENT:
+            return resp
+        else:
+            print(f'Error deleting record {url}: {resp.text}')
+            raise SystemExit(1)
+
+    except Exception as err:
+        print(f'Error deleting record {url}: {err=}')
         raise SystemExit(1)
 
 
@@ -233,17 +261,6 @@ def build_polines_by_fund_ids_query(fund_ids):
     return fund_ids_query
 
 
-async def put_encumbrance(encumbrance):
-    try:
-        url = f"{okapi_url}finance-storage/transactions/{encumbrance['id']}"
-        r = requests.put(url, headers=headers, json=encumbrance)
-        if r.status_code != 204:
-            raise_exception_for_reply(r)
-    except Exception as err:
-        print(f'Error putting encumbrance "{encumbrance}": {err=}')
-        raise SystemExit(1)
-
-
 async def transaction_summary(order_id, num_transactions):
     data = {'id': order_id, 'numTransactions': num_transactions}
     url = f'{okapi_url}finance-storage/order-transaction-summaries/{order_id}'
@@ -274,12 +291,90 @@ def put_budget(budget):
         raise SystemExit(1)
 
 
-async def get_order_encumbrances(order_id, fiscal_year_id, sem):
+async def get_order_encumbrances(order_id, fiscal_year_id, sem=None):
     url = okapi_url + 'finance-storage/transactions'
     query = f'encumbrance.sourcePurchaseOrderId=={order_id} AND fiscalYearId=={fiscal_year_id}'
     response = await get_request(url, query)
-    sem.release()
+    if sem is not None:
+        sem.release()
     return response['transactions']
+
+
+# ---------------------------------------------------
+# Remove duplicate encumbrances
+
+def find_encumbrances_to_remove(encumbrances):
+    encumbrance_changes = []
+    unreleased_encumbrances = []
+    released_encumbrances = []
+    for enc in encumbrances:
+        if enc['encumbrance']['status'] == 'Unreleased':
+            unreleased_encumbrances.append(enc)
+        if enc['encumbrance']['status'] == 'Released':
+            released_encumbrances.append(enc)
+    for enc1 in unreleased_encumbrances:
+        from_fund_id = enc1['fromFundId']
+        source_po_line_id = enc1['encumbrance']['sourcePoLineId']
+        if 'expenseClassId' in enc1:
+            expense_class_id = enc1['expenseClassId']
+        else:
+            expense_class_id = None
+        fiscal_year_id = enc1['fiscalYearId']
+        for enc2 in released_encumbrances:
+            ec_test = (expense_class_id is None and 'expenseClassId' not in enc2) or\
+                      (expense_class_id is not None and 'expenseClassId' in enc2 and
+                       enc2['expenseClassId'] == expense_class_id)
+            if (enc2['fromFundId'] == from_fund_id and enc2['encumbrance']['sourcePoLineId'] == source_po_line_id and
+                    ec_test and enc2['fiscalYearId'] == fiscal_year_id):
+                encumbrance_changes.append({'remove': enc1, 'replace_by': enc2})
+                break
+    return encumbrance_changes
+
+
+async def update_poline_encumbrance(encumbrance_to_remove, replace_by):
+    url = okapi_url + f"orders-storage/po-lines/{encumbrance_to_remove['encumbrance']['sourcePoLineId']}"
+    po_line = await get_request_without_query(url)
+    for fd in po_line['fundDistribution']:
+        if fd['encumbrance'] == encumbrance_to_remove['id']:
+            fd['encumbrance'] = replace_by['id']
+            await put_request(url, po_line)
+            break
+
+
+async def remove_encumbrances_and_update_polines(encumbrance_changes):
+    futures = []
+    for change in encumbrance_changes:
+        encumbrance_to_remove = change['remove']
+        replace_by = change['replace_by']
+        futures.append(asyncio.ensure_future(update_poline_encumbrance(encumbrance_to_remove, replace_by)))
+        url = f"{okapi_url}finance-storage/transactions/{encumbrance_to_remove['id']}"
+        futures.append(asyncio.ensure_future(delete_request(url)))
+    await asyncio.gather(*futures)
+
+
+async def remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id, sem):
+    order_encumbrances = await get_order_encumbrances(order_id, fiscal_year_id)
+    if len(order_encumbrances) == 0:
+        sem.release()
+        return
+    encumbrance_changes = find_encumbrances_to_remove(order_encumbrances)
+    await remove_encumbrances_and_update_polines(encumbrance_changes)
+    sem.release()
+    return len(encumbrance_changes)
+
+
+async def remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id):
+    print('Removing duplicate encumbrances...')
+    futures = []
+    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    for idx, order_id in enumerate(open_and_closed_orders_ids):
+        await sem.acquire()
+        progress(idx, len(open_and_closed_orders_ids))
+        futures.append(asyncio.ensure_future(remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id, sem)))
+
+    nb_removed_encumbrances = await asyncio.gather(*futures)
+    progress(len(open_and_closed_orders_ids), len(open_and_closed_orders_ids))
+    print(f'  Removed {sum(nb_removed_encumbrances)} encumbrance(s).')
 
 
 # ---------------------------------------------------
@@ -697,6 +792,8 @@ async def main():
     open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
 
     # comment the steps if needed
+    await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id)
+
     await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id)
 
     await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)

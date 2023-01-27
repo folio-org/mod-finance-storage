@@ -31,13 +31,16 @@ These can be set with a permission group created with the API.
 - `finance-storage.transactions.collection.get`
 - `finance-storage.transactions.item.get`
 - `finance-storage.transactions.item.put`
+- `finance-storage.transactions.item.delete`
 - `finance-storage.budgets.item.put`
 - `orders-storage.purchase-orders.collection.get`
 - `orders-storage.po-lines.collection.get`
+- `orders-storage.po-lines.item.get`
 - `orders-storage.po-lines.item.put`
 
 ## Script Logic
 
+- Remove duplicate encumbrances (one released, one unreleased for the same thing).
 - Fix `encumbrance` links in PO lines in case if poline fund distribution refers to the encumbrance from previous fiscal year.
 - Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterwards because it is not possible to change this property for released encumbrances.
 - Change the encumbrance status to `Unreleased` for all open orders' encumbrances with non-zero amounts
