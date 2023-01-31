@@ -55,3 +55,4 @@ These can be set with a permission group created with the API.
 - [MODFISTO-350](https://issues.folio.org/browse/MODFISTO-350) - Fix POLs with links to encumbrances from previous fiscal years.
 - [MODFISTO-367](https://issues.folio.org/browse/MODFISTO-367) - Avoid requesting too many orders at once.
 - [MODFISTO-368](https://issues.folio.org/browse/MODFISTO-368) - Fix negative encumbrances.
+- [MODFISTO-375](https://issues.folio.org/browse/MODFISTO-375) - Remove duplicate encumbrances
