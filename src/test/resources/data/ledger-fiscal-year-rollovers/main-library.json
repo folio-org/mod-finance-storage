@@ -10,6 +10,7 @@
     {
       "fundTypeId": "c93373df-e7ec-4d31-b200-719736610d88",
       "rolloverAllocation": true,
+      "rolloverBudgetValue": "Available",
       "rolloverAvailable": true,
       "adjustAllocation": 5,
       "addAvailableTo": "Available",
