@@ -69,7 +69,7 @@
     {
       "run": "after",
       "snippetPath": "budget_encumbrances_rollover.sql",
-      "fromModuleVersion": "mod-finance-storage-8.3.1"
+      "fromModuleVersion": "mod-finance-storage-8.4.0"
     },
     {
       "run": "after",
@@ -80,6 +80,11 @@
       "run": "after",
       "snippetPath": "ledger_rollover_log_view.sql",
       "fromModuleVersion": "mod-finance-storage-8.3.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/update_budget_rollover.sql",
+      "fromModuleVersion": "mod-finance-storage-8.4.0"
     }
   ],
   "tables": [
