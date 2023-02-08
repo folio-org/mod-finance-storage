@@ -352,6 +352,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
         totalFunding                    decimal;
         available                       decimal;
         unavailable                     decimal;
+        expended                        decimal;
+        cashBalance                     decimal;
         allowableEncumbrance            decimal;
         allowableExpenditure            decimal;
         metadata                        jsonb;
@@ -361,10 +363,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
          SELECT br INTO budget_rollover FROM jsonb_array_elements(_rollover_record->'budgetsRollover') br
                      WHERE br->>'fundTypeId'=_fund->>'fundTypeId' OR (NOT br ? 'fundTypeId' AND NOT _fund ? 'fundTypeId');
 
+         expended := (_budget->>'expenditures')::decimal;
          allocated := (_budget->>'initialAllocation')::decimal + (_budget->>'allocationTo')::decimal - (_budget->>'allocationFrom')::decimal;
          totalFunding := allocated + (_budget->>'netTransfers')::decimal;
-         unavailable := (_budget->>'encumbered')::decimal + (_budget->>'expenditures')::decimal + (_budget->>'awaitingPayment')::decimal;
+         unavailable := (_budget->>'encumbered')::decimal + expended + (_budget->>'awaitingPayment')::decimal;
          available := totalFunding - unavailable;
+         cashBalance := totalFunding - expended;
 
          IF
             (budget_rollover->>'rolloverAllocation')::boolean
@@ -374,13 +378,11 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
             newAllocated := 0;
          END IF;
 
-         IF
-            (budget_rollover->>'rolloverAvailable')::boolean
-         THEN
-            newNetTransfers := available;
-         ELSE
-            newNetTransfers := 0;
-         END IF;
+         newNetTransfers := CASE budget_rollover->>'rolloverBudgetValue'
+                                WHEN 'Available'   THEN available
+                                WHEN 'CashBalance' THEN cashBalance
+                                ELSE 0
+                            END;
 
          IF
              (budget_rollover->>'setAllowances')::boolean
