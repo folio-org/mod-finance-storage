@@ -15,7 +15,6 @@ import javax.ws.rs.core.Response;
 import io.vertx.pgclient.PgException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PgExceptionUtil;
 
 import io.vertx.core.AsyncResult;
@@ -31,34 +30,25 @@ public class ResponseUtils {
   private ResponseUtils() {
   }
 
-  public static Handler<AsyncResult<Void>> handleNoContentResponse(Handler<AsyncResult<Response>> asyncResultHandler, String id, DBClient client,
-                                                                        String logMessage) {
-    return result -> {
-      if (result.failed()) {
-        HttpException cause = (HttpException) result.cause();
-        logger.error(logMessage, cause, id, "or associated data failed to be");
-
-        // The result of rollback operation is not so important, main failure cause is used to build the response
-        client.rollbackTransaction().onComplete(res -> asyncResultHandler.handle(buildErrorResponse(cause)));
-      } else {
-        logger.info(logMessage, id, "and associated data were successfully");
-        asyncResultHandler.handle(buildNoContentResponse());
-      }
-    };
+  public static Future<Response> handleNoContentResponse(AsyncResult<Void> result, String id, String logMessage) {
+    if (result.failed()) {
+      HttpException cause = (HttpException) result.cause();
+      logger.error(logMessage, cause, id, "or associated data failed to be");
+      return buildErrorResponse(cause);
+    } else {
+      logger.info(logMessage, id, "and associated data were successfully");
+      return buildNoContentResponse();
+    }
   }
 
-  public static Handler<AsyncResult<Void>> handleNoContentResponse(Handler<AsyncResult<Response>> asyncResultHandler, String id,
-                                                                        String logMessage) {
-    return result -> {
-      if (result.failed()) {
-        HttpException cause = (HttpException) result.cause();
-        logger.error(logMessage, cause, id, "or associated data failed to be");
-        asyncResultHandler.handle(buildErrorResponse(cause));
-      } else {
-        logger.info(logMessage, id, "and associated data were successfully");
-        asyncResultHandler.handle(buildNoContentResponse());
-      }
-    };
+  public static Handler<AsyncResult<Void>> handleNoContentResponse(
+      Handler<AsyncResult<Response>> asyncResultHandler, String id, String logMessage) {
+
+    return result -> handleNoContentResponse(result, id, logMessage).onComplete(asyncResultHandler);
+  }
+
+  public static <T> Future<T> handleFailure(Throwable cause) {
+    return Future.future(promise -> handleFailure(promise, Future.failedFuture(cause)));
   }
 
   public static <T, V> void handleFailure(Promise<T> promise, AsyncResult<V> reply) {
