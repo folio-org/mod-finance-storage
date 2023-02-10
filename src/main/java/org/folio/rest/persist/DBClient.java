@@ -63,7 +63,7 @@ public class DBClient {
    *
    * @deprecated use {@link #withTrans(Function)} instead
    */
-  @Deprecated
+  @Deprecated(since="8.4.0", forRemoval=true)
   public Future<DBClient> startTx() {
     Promise<DBClient> promise = Promise.promise();
 
@@ -78,7 +78,7 @@ public class DBClient {
   /**
    * @deprecated use {@link #withTrans(Function)} instead
    */
-  @Deprecated
+  @Deprecated(since="8.4.0", forRemoval=true)
   public Future<Void> endTx() {
     Promise<Void> promise = Promise.promise();
     pgClient.endTx(sqlConnection, asyncResult -> promise.complete());
@@ -88,7 +88,7 @@ public class DBClient {
   /**
    * @deprecated use {@link #withTrans(Function)} instead
    */
-  @Deprecated
+  @Deprecated(since="8.4.0", forRemoval=true)
   public Future<Void> rollbackTransaction() {
     Promise<Void> promise = Promise.promise();
     if (sqlConnection.failed()) {
