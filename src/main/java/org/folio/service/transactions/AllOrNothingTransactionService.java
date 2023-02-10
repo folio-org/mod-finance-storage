@@ -154,7 +154,7 @@ public class AllOrNothingTransactionService {
    */
   private Future<List<Transaction>> addTempTransactionSequentially(Transaction transaction, DBClient client) {
     final String summaryId = transactionSummaryService.getSummaryId(transaction);
-    return client.getPgClient().withConn(conn -> transactionSummaryService.getTransactionSummaryWithLocking(summaryId, conn)
+    return client.getPgClient().withTrans(conn -> transactionSummaryService.getTransactionSummaryWithLocking(summaryId, conn)
       .compose(ar -> temporaryTransactionDAO.createTempTransaction(transaction, summaryId, client)
         .compose(tr -> temporaryTransactionDAO.getTempTransactionsBySummaryId(summaryId, client))));
   }
