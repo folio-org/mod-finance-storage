@@ -4,6 +4,7 @@ import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
 
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import javax.ws.rs.core.Response;
 
@@ -140,6 +141,17 @@ public class AllOrNothingTransactionService {
       .compose(tr -> transactionSummaryService.setTransactionsSummariesProcessed(summary, client)) ;
   }
 
+  /**
+   * This method uses SELECT FOR UPDATE locking on summary table by summaryId.
+   * So in this case requests to create temp transaction and get temp transaction count for the same summaryId
+   * will be executed only by a single thread.
+   * The other thread will wait until DB Lock is released when the connection is closed.
+   * Method {@link org.folio.rest.persist.PostgresClient#withConn(Function)} closes connection after executing.
+   *
+   * @param transaction temp transaction to create
+   * @param client the db client
+   * @return future with list of temp transactions
+   */
   private Future<List<Transaction>> addTempTransactionSequentially(Transaction transaction, DBClient client) {
     final String summaryId = transactionSummaryService.getSummaryId(transaction);
     return client.getPgClient().withConn(conn -> transactionSummaryService.getTransactionSummaryWithLocking(summaryId, conn)

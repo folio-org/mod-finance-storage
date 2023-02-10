@@ -5,6 +5,7 @@ import static org.folio.rest.RestConstants.OKAPI_URL;
 import static org.folio.rest.core.RestClientTest.X_OKAPI_TENANT;
 import static org.folio.rest.core.RestClientTest.X_OKAPI_TOKEN;
 import static org.folio.rest.core.RestClientTest.X_OKAPI_USER_ID;
+import org.folio.rest.persist.PostgresClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -105,6 +106,7 @@ public class EncumbranceServiceTest {
     Budget budget = new Budget().withId(UUID.randomUUID().toString()).withFundId(fundId);
 
     DBClient mockDBClient = mock(DBClient.class);
+    PostgresClient pgClient = mock(PostgresClient.class);
     doReturn(succeededFuture(mockDBClient)).when(mockDBClient).startTx();
     doReturn(vertx).when(mockDBClient).getVertx();
     doReturn("testTenant").when(mockDBClient).getTenantId();
@@ -117,11 +119,10 @@ public class EncumbranceServiceTest {
 
     doReturn(succeededFuture(trSummary)).when(mockTransactionSummaryService).getAndCheckTransactionSummary(eq(incomingTransaction), any(DBClient.class));
     doReturn(orderId).when(mockTransactionSummaryService).getSummaryId(eq(incomingTransaction));
+    doReturn(pgClient).when(mockDBClient).getPgClient();
+    doReturn(succeededFuture(List.of(incomingTransaction))).when(pgClient).withConn(any());
     doReturn(1).when(mockTransactionSummaryService).getNumTransactions(eq(trSummary));
     doReturn(succeededFuture(null)).when(mockTransactionSummaryService).setTransactionsSummariesProcessed(eq(trSummary), any(DBClient.class));
-
-    doReturn(succeededFuture(incomingTransaction)).when(mockTemporaryTransactionDAO).createTempTransaction(eq(incomingTransaction), eq(orderId), any(DBClient.class));
-    doReturn(succeededFuture(List.of(incomingTransaction))).when(mockTemporaryTransactionDAO).getTempTransactionsBySummaryId(eq(orderId), any(DBClient.class));
     doReturn(succeededFuture(1)).when(mockTemporaryTransactionDAO).deleteTempTransactions(eq(orderId), any(DBClient.class));
 
     encumbranceService.updateTransaction(incomingTransaction, mockRequestContext)
