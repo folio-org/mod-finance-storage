@@ -99,8 +99,8 @@ public class DBClient {
     return promise.future();
   }
 
-  public Future<Void> withTrans(Function<DBConn, Future<Void>> function) {
-    return pgClient.withConn(conn -> function.apply(new DBConn(this, conn)));
+  public <T> Future<T> withTrans(Function<DBConn, Future<T>> function) {
+    return pgClient.withTrans(conn -> function.apply(new DBConn(this, conn)));
   }
 
   public Future<Void> save(String table, String id, Object entity) {
