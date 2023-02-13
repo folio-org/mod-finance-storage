@@ -29,6 +29,13 @@ public class HttpException extends RuntimeException {
     this.code = code;
   }
 
+  public HttpException(int code, Error error) {
+    this.code = code;
+    this.errors = new Errors()
+      .withErrors(Collections.singletonList(error))
+      .withTotalRecords(1);
+  }
+
   public int getCode() {
     return code;
   }

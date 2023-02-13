@@ -6,6 +6,7 @@ import static org.folio.service.transactions.PendingPaymentService.SELECT_BUDGET
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,9 +26,12 @@ import java.util.List;
 import java.util.UUID;
 
 import org.folio.dao.transactions.EncumbranceDAO;
+import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.AwaitingPayment;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
+import org.folio.rest.jaxrs.model.Error;
+import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
@@ -747,4 +751,36 @@ public class PendingPaymentServiceTest {
     verify(cancelTransactionService, times(1)).cancelTransactions(anyList(), eq(client));
   }
 
+  @Test
+  void outdatedFundIdInEncumbrance() {
+    BigDecimal linkedAmount = BigDecimal.valueOf(2.0);
+    linkedTransaction.withAmount(linkedAmount.doubleValue());
+    List<Transaction> pendingPayments = Collections.singletonList(linkedTransaction);
+    encumbrance.withAmount(1.0);
+    encumbrance.getEncumbrance().setSourcePoLineId(UUID.randomUUID().toString());
+    List<Transaction> encumbrances = Collections.singletonList(encumbrance);
+    List<Budget> budgets = List.of();
+
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(transactionsDAO.getTransactions(anyList(), eq(client)))
+      .thenReturn(Future.succeededFuture(encumbrances));
+
+    pendingPaymentService.createTransactions(pendingPayments, client)
+        .onComplete(event -> {
+          assertThat(event.cause(), instanceOf(HttpException.class));
+          HttpException thrown = (HttpException)event.cause();
+          assertThat(thrown.getCode(), is(500));
+          Error error = thrown.getErrors().getErrors().get(0);
+          assertThat(error.getCode(), is("outdatedFundIdInEncumbrance"));
+          List<Parameter> parameters = error.getParameters();
+          assertThat(parameters.get(0).getKey(), is("encumbranceId"));
+          assertThat(parameters.get(0).getValue(), is(encumbrance.getId()));
+          assertThat(parameters.get(1).getKey(), is("fundId"));
+          assertThat(parameters.get(1).getValue(), is(fundId));
+          assertThat(parameters.get(2).getKey(), is("poLineId"));
+          assertThat(parameters.get(2).getValue(), is(encumbrance.getEncumbrance().getSourcePoLineId()));
+        }
+      );
+  }
 }
