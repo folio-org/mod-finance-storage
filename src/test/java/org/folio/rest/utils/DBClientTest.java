@@ -15,11 +15,19 @@ import java.util.UUID;
 import org.folio.rest.impl.TestBase;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.PostgresClient;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(VertxExtension.class)
-class DBClientTest extends TestBase {
+public class DBClientTest extends TestBase {
+
+  @AfterAll
+  static void afterAll(Vertx vertx, VertxTestContext vtc) throws Exception {
+    PostgresClient.getInstance(vertx, TENANT_NAME).execute("TRUNCATE " + FISCAL_YEAR_TABLE + " CASCADE")
+    .onComplete(vtc.succeedingThenComplete());
+  }
 
   @Test
   void save(Vertx vertx, VertxTestContext vtc) {
