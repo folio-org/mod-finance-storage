@@ -233,8 +233,6 @@ public class LedgerRolloverService {
       .withErrorType(errorType)
       .withFailedAction(failedAction)
       .withErrorMessage(message);
-    return client.startTx()
-      .compose(v -> rolloverErrorService.createRolloverError(error, client))
-      .compose(v -> client.endTx());
+    return rolloverErrorService.createRolloverError(error, client);
   }
 }

@@ -5,7 +5,6 @@ import java.util.List;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
-
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 
@@ -29,16 +28,7 @@ public class RolloverErrorDAO {
   }
 
   public Future<Void> create(LedgerFiscalYearRolloverError rolloverError, DBClient client) {
-    Promise<Void> promise = Promise.promise();
-    client.getPgClient()
-      .save(client.getConnection(), LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, rolloverError.getId(), rolloverError, reply -> {
-        if (reply.failed()) {
-          handleFailure(promise, reply);
-        } else {
-          promise.complete();
-        }
-      });
-    return promise.future();
+    return client.save(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, rolloverError.getId(), rolloverError);
   }
 
   public Future<Void> deleteByQuery(Criterion filter, DBClient client) {
