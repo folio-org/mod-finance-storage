@@ -41,7 +41,7 @@ import io.vertx.core.json.JsonObject;
 public abstract class TestBase {
   protected final Logger logger = LogManager.getLogger(this.getClass());
 
-  static final String TENANT_NAME = "diku";
+  protected static final String TENANT_NAME = "diku";
   static final String NON_EXISTED_ID = "bad500aa-aaaa-500a-aaaa-aaaaaaaaaaaa";
   public static final Header TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TENANT_NAME);
 
