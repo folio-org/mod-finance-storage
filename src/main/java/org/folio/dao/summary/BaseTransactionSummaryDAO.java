@@ -20,36 +20,36 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 
+import java.util.Objects;
+
 public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao {
   protected final Logger logger = LogManager.getLogger(this.getClass());
 
 
   @Override
   public Future<JsonObject> getSummaryById(String summaryId, DBClient client) {
-    Promise<JsonObject> promise = Promise.promise();
-    client.getPgClient().getById(getTableName(), summaryId, reply -> processGetResult(summaryId, promise, reply));
-    return promise.future();
+    return client.getPgClient().getById(getTableName(), summaryId)
+      .transform(reply -> processGetResult(summaryId, reply));
   }
 
   @Override
   public Future<JsonObject> getSummaryByIdWithLocking(String summaryId, Conn conn) {
-    Promise<JsonObject> promise = Promise.promise();
-    conn.getByIdForUpdate(getTableName(), summaryId).onComplete(reply -> processGetResult(summaryId, promise, reply));
-    return promise.future();
+    return conn.getByIdForUpdate(getTableName(), summaryId)
+      .transform(reply -> processGetResult(summaryId, reply));
   }
 
-  private void processGetResult(String summaryId, Promise<JsonObject> promise, AsyncResult<JsonObject> reply) {
+  private Future<JsonObject> processGetResult(String summaryId, AsyncResult<JsonObject> reply) {
     if (reply.failed()) {
       logger.error("Summary retrieval with id={} failed", summaryId, reply.cause());
-      handleFailure(promise, reply);
+      return Future.future(promise -> handleFailure(promise, reply));
     } else {
       final JsonObject summary = reply.result();
 
-      if (summary == null) {
-        promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
+      if (Objects.isNull(summary)) {
+        return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
       } else {
         logger.debug("Summary with id={} successfully extracted", summaryId);
-        promise.complete(summary);
+        return Future.succeededFuture(summary);
       }
     }
   }

@@ -153,10 +153,11 @@ public class AllOrNothingTransactionService {
    * @return future with list of temp transactions
    */
   private Future<List<Transaction>> addTempTransactionSequentially(Transaction transaction, DBClient client) {
+    final String tenantId = client.getTenantId();
     final String summaryId = transactionSummaryService.getSummaryId(transaction);
     return client.getPgClient().withTrans(conn -> transactionSummaryService.getTransactionSummaryWithLocking(summaryId, conn)
-      .compose(ar -> temporaryTransactionDAO.createTempTransaction(transaction, summaryId, client)
-        .compose(tr -> temporaryTransactionDAO.getTempTransactionsBySummaryId(summaryId, client))));
+      .compose(ar -> temporaryTransactionDAO.createTempTransaction(transaction, summaryId, tenantId, conn))
+      .compose(tr -> temporaryTransactionDAO.getTempTransactionsBySummaryId(summaryId, conn)));
   }
 
 }

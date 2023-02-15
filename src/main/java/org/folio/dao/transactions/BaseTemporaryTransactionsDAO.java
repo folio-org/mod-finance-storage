@@ -4,6 +4,7 @@ import static org.folio.rest.persist.PostgresClient.pojo2JsonObject;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.ws.rs.core.Response;
@@ -12,6 +13,7 @@ import io.vertx.ext.web.handler.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.persist.Conn;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
 
@@ -30,52 +32,45 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
   }
 
   @Override
-  public Future<Transaction> createTempTransaction(Transaction transaction, String summaryId, DBClient client) {
-    Promise<Transaction> promise = Promise.promise();
-
-    if (transaction.getId() == null) {
+  public Future<Transaction> createTempTransaction(Transaction transaction, String summaryId, String tenantId, Conn conn) {
+    if (Objects.isNull(transaction.getId())) {
       transaction.setId(UUID.randomUUID().toString());
     }
 
     logger.debug("Creating new transaction with id={}", transaction.getId());
 
     try {
-      client.getPgClient().execute(createTempTransactionQuery(client.getTenantId()),
-        Tuple.of(UUID.fromString(transaction.getId()), pojo2JsonObject(transaction)), reply -> {
-        if (reply.succeeded()) {
-          logger.debug("New transaction with id={} successfully created", transaction.getId());
-          promise.complete(transaction);
-        } else {
-          logger.error("Transaction creation with id={} failed", transaction.getId(), reply.cause());
-          handleFailure(promise, reply);
-        }
-      });
+      return conn.execute(createTempTransactionQuery(tenantId),
+        Tuple.of(UUID.fromString(transaction.getId()), pojo2JsonObject(transaction)))
+        .transform(reply -> {
+          if (reply.succeeded()) {
+            logger.debug("New transaction with id={} successfully created", transaction.getId());
+            return Future.succeededFuture(transaction);
+          } else {
+            logger.error("Transaction creation with id={} failed", transaction.getId(), reply.cause());
+            return Future.future(promise -> handleFailure(promise, reply));
+          }
+        });
     } catch (Exception e) {
-      promise.fail(new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage()));
+      return Future.failedFuture(new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage()));
     }
-
-    return promise.future();
   }
 
-  @Override
-  public Future<List<Transaction>> getTempTransactions(Criterion criterion, DBClient client) {
-    Promise<List<Transaction>> promise = Promise.promise();
-
-    client.getPgClient().get(tableName, Transaction.class, criterion, false, false, reply -> {
-      if (reply.failed()) {
-        logger.error("Failed to extract temporary transaction by criteria = {}", criterion, reply.cause());
-        handleFailure(promise, reply);
-      } else {
-        List<Transaction> transactions = reply.result().getResults();
-        promise.complete(transactions);
+  public Future<List<Transaction>> getTempTransactions(Criterion criterion, Conn conn) {
+    return conn.get(tableName, Transaction.class, criterion, false)
+      .transform(reply -> {
+        if (reply.failed()) {
+          logger.error("Failed to extract temporary transaction by criteria = {}", criterion, reply.cause());
+          return Future.future(promise -> handleFailure(promise, reply));
+        } else {
+          return Future.succeededFuture(reply.result().getResults());
       }
     });
-    return promise.future();
   }
 
   @Override
-  public Future<List<Transaction>> getTempTransactionsBySummaryId(String summaryId, DBClient client) {
-    return getTempTransactions(getSummaryIdCriteria(summaryId), client);
+  public Future<List<Transaction>> getTempTransactionsBySummaryId(String summaryId, Conn conn) {
+    return getTempTransactions(getSummaryIdCriteria(summaryId), conn);
   }
 
   public Future<Integer> deleteTempTransactions(String summaryId, DBClient client) {
