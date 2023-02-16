@@ -4,7 +4,6 @@ import static org.folio.rest.persist.PostgresClient.pojo2JsonObject;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 import javax.ws.rs.core.Response;
@@ -33,7 +32,7 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
 
   @Override
   public Future<Transaction> createTempTransaction(Transaction transaction, String summaryId, String tenantId, Conn conn) {
-    if (Objects.isNull(transaction.getId())) {
+    if (transaction.getId() == null) {
       transaction.setId(UUID.randomUUID().toString());
     }
 
