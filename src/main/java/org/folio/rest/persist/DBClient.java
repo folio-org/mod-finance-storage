@@ -7,8 +7,9 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.tools.utils.TenantTool;
-
+import org.folio.rest.util.ResponseUtils;
 import java.util.Map;
+import java.util.function.Function;
 
 public class DBClient {
 
@@ -52,6 +53,17 @@ public class DBClient {
     return this;
   }
 
+  /**
+   * Opens a database connection and starts a transaction on it; use {@link #getConnection()} to get it.
+   *
+   * {@link #startTx()}, {@link #endTx()} and {@link #rollbackTransaction()} are error-prone
+   * because calling {@link #endTx()} or {@link #rollbackTransaction()} can easily be forgotten
+   * in some cases so that the database connection stays open forever (resource leak),
+   * this may result in reaching PostgreSQL's maximum connection limit.
+   *
+   * @deprecated use {@link #withTrans(Function)} instead
+   */
+  @Deprecated(since="8.4.0", forRemoval=true)
   public Future<DBClient> startTx() {
     Promise<DBClient> promise = Promise.promise();
 
@@ -63,12 +75,20 @@ public class DBClient {
     return promise.future();
   }
 
+  /**
+   * @deprecated use {@link #withTrans(Function)} instead
+   */
+  @Deprecated(since="8.4.0", forRemoval=true)
   public Future<Void> endTx() {
     Promise<Void> promise = Promise.promise();
     pgClient.endTx(sqlConnection, asyncResult -> promise.complete());
     return promise.future();
   }
 
+  /**
+   * @deprecated use {@link #withTrans(Function)} instead
+   */
+  @Deprecated(since="8.4.0", forRemoval=true)
   public Future<Void> rollbackTransaction() {
     Promise<Void> promise = Promise.promise();
     if (sqlConnection.failed()) {
@@ -77,6 +97,17 @@ public class DBClient {
       pgClient.rollbackTx(sqlConnection, promise);
     }
     return promise.future();
+  }
+
+  public <T> Future<T> withTrans(Function<DBConn, Future<T>> function) {
+    return pgClient.withTrans(conn -> function.apply(new DBConn(this, conn)));
+  }
+
+  public Future<Void> save(String table, String id, Object entity) {
+    return getPgClient()
+        .save(table, id, entity)
+        .recover(ResponseUtils::handleFailure)
+        .mapEmpty();
   }
 
   public String getTenantId() {

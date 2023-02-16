@@ -38,6 +38,7 @@ import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.utils.DBClientTest;
 import org.folio.service.email.EmailServiceTest;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
@@ -138,6 +139,10 @@ public class StorageTestSuite {
 
     deploymentComplete.get(60, TimeUnit.SECONDS);
 
+  }
+
+  @Nested
+  class DBClientTestNested extends DBClientTest {
   }
 
   @Nested

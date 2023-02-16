@@ -27,9 +27,10 @@ import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.LedgerCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
-
+import org.folio.rest.util.ResponseUtils;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -82,7 +83,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
           } else if (result.result() == null) {
             asyncResultHandler.handle(succeededFuture(PutFinanceStorageLedgersByIdResponse.respond404WithTextPlain("Not found")));
           } else if (Boolean.TRUE.equals(result.result())) {
-            handleLedgerStatusUpdate(ledger, client, asyncResultHandler);
+            handleLedgerStatusUpdate(ledger, client).onComplete(asyncResultHandler);
           } else {
             PgUtil.put(LEDGER_TABLE, ledger, id, okapiHeaders, vertxContext, PutFinanceStorageLedgersByIdResponse.class, asyncResultHandler);
           }
@@ -90,47 +91,36 @@ public class LedgerAPI implements FinanceStorageLedgers {
     );
   }
 
-  private void handleLedgerStatusUpdate(Ledger ledger, DBClient client, Handler<AsyncResult<Response>> asyncResultHandler) {
-   client.startTx()
-      .compose(v -> updateLedger(ledger, client))
-      .compose(v -> updateRelatedFunds(ledger,client))
-      .compose(fundIds -> updateRelatedBudgets(fundIds, ledger,client))
-      .compose(v ->client.endTx())
-      .onComplete(handleNoContentResponse(asyncResultHandler, ledger.getId(),client, "Ledger {} {} updated"));
+  private Future<Response> handleLedgerStatusUpdate(Ledger ledger, DBClient client) {
+    return client.withTrans(conn -> updateLedger(ledger, conn)
+            .compose(v -> updateRelatedFunds(ledger, conn))
+            .compose(fundIds -> updateRelatedBudgets(fundIds, ledger, conn)))
+        .transform(result -> handleNoContentResponse(result, ledger.getId(), "Ledger {} {} updated"));
   }
 
-  private Future<Void> updateRelatedBudgets(List<String> fundIds, Ledger ledger,  DBClient client) {
-    Promise<Void> promise = Promise.promise();
+  private Future<Void> updateRelatedBudgets(List<String> fundIds, Ledger ledger, DBConn conn) {
     if (CollectionUtils.isEmpty(fundIds)) {
-      promise.complete();
-    } else {
-      String fullBudgetTableName = getFullTableName(client.getTenantId(), BUDGET_TABLE);
-      String fullFYTableName = getFullTableName(client.getTenantId(), FISCAL_YEAR_TABLE);
-
-      String queryPlaceHolders = IntStream.range(0, fundIds.size())
+      return Future.succeededFuture();
+    }
+    String fullBudgetTableName = getFullTableName(conn.getTenantId(), BUDGET_TABLE);
+    String fullFYTableName = getFullTableName(conn.getTenantId(), FISCAL_YEAR_TABLE);
+    String queryPlaceHolders = IntStream.range(0, fundIds.size())
         .map(i -> i + 2)
         .mapToObj(i -> "$" + i)
         .collect(Collectors.joining(","));
 
-      ArrayTuple params = new ArrayTuple(fundIds.size() + 1);
-      params.addValue(ledger.getLedgerStatus().value());
-      fundIds.forEach(fundId -> params.addValue(UUID.fromString(fundId)));
+    ArrayTuple params = new ArrayTuple(fundIds.size() + 1);
+    params.addValue(ledger.getLedgerStatus().value());
+    fundIds.forEach(fundId -> params.addValue(UUID.fromString(fundId)));
 
-      String sql = "UPDATE " + fullBudgetTableName + " SET jsonb = jsonb_set(jsonb,'{budgetStatus}', $1) " +
+    String sql = "UPDATE " + fullBudgetTableName + " SET jsonb = jsonb_set(jsonb,'{budgetStatus}', $1) " +
         "WHERE ((fundId IN (" + queryPlaceHolders + "))" +
         " AND (fiscalYearId IN " +
         "(SELECT id FROM " + fullFYTableName + " WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
         "AND (jsonb->>'periodEnd')::timestamp)));";
-     client.getPgClient().execute(client.getConnection(), sql, params, event -> {
-        if (event.failed()) {
-          handleFailure(promise, event);
-        } else {
-          log.info("{} budget records are updated", event.result().rowCount());
-          promise.complete();
-        }
-      });
-    }
-    return promise.future();
+    return conn.execute(sql, params)
+        .onSuccess(rowSet -> log.info("{} budget records are updated", rowSet.rowCount()))
+        .mapEmpty();
   }
 
   private Future<Boolean> isLedgerStatusChanged(Ledger ledger, DBClient client) {
@@ -149,40 +139,26 @@ public class LedgerAPI implements FinanceStorageLedgers {
     return promise.future();
   }
 
-  private Future<Void> updateLedger(Ledger ledger, DBClient client) {
-    Promise<Void> promise = Promise.promise();
-
-   client.getPgClient().update(client.getConnection(), LEDGER_TABLE, ledger, "jsonb", " WHERE id='" + ledger.getId() + "'", false, event -> {
-        if (event.failed()) {
-        handleFailure(promise, event);
-      } else {
-        log.info("Ledger record {} was successfully updated", ledger);
-        promise.complete();
-      }
-    });
-    return promise.future();
+  private Future<Void> updateLedger(Ledger ledger, DBConn dbConn) {
+    return dbConn.update(LEDGER_TABLE, ledger, ledger.getId())
+        .recover(ResponseUtils::handleFailure)
+        .onSuccess(x -> log.info("Ledger record {} was successfully updated", ledger))
+        .mapEmpty();
   }
 
-  private Future<List<String>> updateRelatedFunds(Ledger ledger, DBClient client) {
-    Promise<List<String>> promise = Promise.promise();
-
-    String fullFundTableName = getFullTableName(client.getTenantId(), FUND_TABLE);
+  private Future<List<String>> updateRelatedFunds(Ledger ledger, DBConn conn) {
+    String fullFundTableName = getFullTableName(conn.getTenantId(), FUND_TABLE);
     String sql = "UPDATE " + fullFundTableName + "  SET jsonb = jsonb_set(jsonb,'{fundStatus}', $1) " +
       "WHERE (ledgerId = $2) AND (jsonb->>'fundStatus' <> $3) RETURNING id";
 
-   client.getPgClient().select(client.getConnection(), sql,
-     Tuple.of(ledger.getLedgerStatus().value(), UUID.fromString(ledger.getId()), ledger.getLedgerStatus().value()), event -> {
-      if (event.failed()) {
-        handleFailure(promise, event);
-      } else {
-        log.info("All fund records related to ledger with id={} has been successfully updated", ledger.getId());
-        List<String> ids = new ArrayList<>();
-        event.result().spliterator().forEachRemaining(row -> ids.add(row.getUUID(0).toString()));
-        promise.complete(ids);
-      }
-    });
-    return promise.future();
+    return conn.execute(sql, Tuple.of(
+            ledger.getLedgerStatus().value(), UUID.fromString(ledger.getId()), ledger.getLedgerStatus().value()))
+        .map(result -> {
+          log.info("All fund records related to ledger with id={} has been successfully updated", ledger.getId());
+          List<String> ids = new ArrayList<>();
+          result.spliterator().forEachRemaining(row -> ids.add(row.getUUID(0).toString()));
+          return ids;
+        });
   }
-
 
 }
