@@ -12,6 +12,7 @@ import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORAR
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
+import static org.folio.rest.util.ErrorCodes.OUTDATED_FUND_ID_IN_ENCUMBRANCE;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
@@ -27,11 +28,17 @@ import java.util.stream.Collectors;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
+import javax.ws.rs.core.Response;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.folio.rest.exception.HttpException;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
+import org.folio.rest.jaxrs.model.Error;
+import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
@@ -44,6 +51,8 @@ import io.vertx.sqlclient.Tuple;
 import org.javamoney.moneta.function.MonetaryFunctions;
 
 public class PendingPaymentService implements TransactionManagingStrategy {
+
+  protected final Logger logger = LogManager.getLogger(this.getClass());
 
   public static final String SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE =
     "SELECT b.jsonb FROM %s b INNER JOIN (SELECT DISTINCT budgets.id FROM %s budgets INNER JOIN %s transactions "
@@ -274,6 +283,15 @@ public class PendingPaymentService implements TransactionManagingStrategy {
       CurrencyUnit currency = Monetary.getCurrency(negativeEncumbrances.get(0).getCurrency());
       negativeEncumbrances.forEach(transaction -> {
         Budget budget = fundIdBudgetMap.get(transaction.getFromFundId());
+        if (budget == null) {
+          List<Parameter> parameters = new ArrayList<>();
+          parameters.add(new Parameter().withKey("encumbranceId").withValue(transaction.getId()));
+          parameters.add(new Parameter().withKey("fundId").withValue(transaction.getFromFundId()));
+          parameters.add(new Parameter().withKey("poLineId").withValue(transaction.getEncumbrance().getSourcePoLineId()));
+          Error error = OUTDATED_FUND_ID_IN_ENCUMBRANCE.toError().withParameters(parameters);
+          logger.error(JsonObject.mapFrom(error).encodePrettily());
+          throw new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), error);
+        }
         MonetaryAmount amount = Money.of(transaction.getAmount(), currency).negate();
 
         MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);

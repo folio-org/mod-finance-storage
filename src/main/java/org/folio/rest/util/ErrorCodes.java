@@ -11,7 +11,9 @@ public enum ErrorCodes {
   MISSING_FUND_ID("missingFundId", "One of the fields toFundId or fromFundId must be specified"),
   MUST_BE_POSITIVE("mustBePositive", "Value must be greater than zero"),
   CONFLICT("conflict", "Conflict when updating a record in table {0}: {1}"),
-  BUDGET_NOT_FOUND_FOR_TRANSACTION("budgetNotFoundForTransaction", "Budget not found for pair fiscalYear-fundId");
+  BUDGET_NOT_FOUND_FOR_TRANSACTION("budgetNotFoundForTransaction", "Budget not found for pair fiscalYear-fundId"),
+  OUTDATED_FUND_ID_IN_ENCUMBRANCE("outdatedFundIdInEncumbrance",
+    "Could not find the budget for the encumbrance. The encumbrance fund id is probably not matching the fund id in the invoice line.");
   private final String code;
   private final String description;
 
