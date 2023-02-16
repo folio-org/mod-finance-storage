@@ -1,6 +1,8 @@
 package org.folio.dao.transactions;
 
 import static org.folio.rest.persist.PostgresClient.pojo2JsonObject;
+import org.folio.rest.persist.interfaces.Results;
+import org.folio.rest.util.ResponseUtils;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 import java.util.List;
@@ -41,15 +43,10 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
     try {
       return conn.execute(createTempTransactionQuery(tenantId),
         Tuple.of(UUID.fromString(transaction.getId()), pojo2JsonObject(transaction)))
-        .transform(reply -> {
-          if (reply.succeeded()) {
-            logger.debug("New transaction with id={} successfully created", transaction.getId());
-            return Future.succeededFuture(transaction);
-          } else {
-            logger.error("Transaction creation with id={} failed", transaction.getId(), reply.cause());
-            return Future.future(promise -> handleFailure(promise, reply));
-          }
-        });
+        .map(transaction)
+        .recover(ResponseUtils::handleFailure)
+        .onSuccess(x -> logger.debug("New transaction with id={} successfully created", transaction.getId()))
+        .onFailure(e -> logger.error("Transaction creation with id={} failed", transaction.getId(), e));
     } catch (Exception e) {
       return Future.failedFuture(new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage()));
     }
@@ -57,14 +54,9 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
 
   public Future<List<Transaction>> getTempTransactions(Criterion criterion, Conn conn) {
     return conn.get(tableName, Transaction.class, criterion, false)
-      .transform(reply -> {
-        if (reply.failed()) {
-          logger.error("Failed to extract temporary transaction by criteria = {}", criterion, reply.cause());
-          return Future.future(promise -> handleFailure(promise, reply));
-        } else {
-          return Future.succeededFuture(reply.result().getResults());
-      }
-    });
+      .map(Results::getResults)
+      .onFailure(e -> logger.error("Failed to extract temporary transaction by criteria = {}", criterion, e))
+      .recover(ResponseUtils::handleFailure);
   }
 
   @Override
