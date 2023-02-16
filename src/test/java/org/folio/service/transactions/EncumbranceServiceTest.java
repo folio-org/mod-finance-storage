@@ -120,7 +120,7 @@ public class EncumbranceServiceTest {
     doReturn(succeededFuture(trSummary)).when(mockTransactionSummaryService).getAndCheckTransactionSummary(eq(incomingTransaction), any(DBClient.class));
     doReturn(orderId).when(mockTransactionSummaryService).getSummaryId(eq(incomingTransaction));
     doReturn(pgClient).when(mockDBClient).getPgClient();
-    doReturn(succeededFuture(List.of(incomingTransaction))).when(pgClient).withConn(any());
+    doReturn(succeededFuture(List.of(incomingTransaction))).when(pgClient).withTrans(any());
     doReturn(1).when(mockTransactionSummaryService).getNumTransactions(eq(trSummary));
     doReturn(succeededFuture(null)).when(mockTransactionSummaryService).setTransactionsSummariesProcessed(eq(trSummary), any(DBClient.class));
     doReturn(succeededFuture(1)).when(mockTemporaryTransactionDAO).deleteTempTransactions(eq(orderId), any(DBClient.class));
