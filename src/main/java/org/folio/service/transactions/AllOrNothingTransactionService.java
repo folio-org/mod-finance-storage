@@ -146,7 +146,7 @@ public class AllOrNothingTransactionService {
    * So in this case requests to create temp transaction and get temp transaction count for the same summaryId
    * will be executed only by a single thread.
    * The other thread will wait until DB Lock is released when the connection is closed.
-   * Method {@link org.folio.rest.persist.PostgresClient#withConn(Function)} closes connection after executing.
+   * Method {@link org.folio.rest.persist.PostgresClient#withTrans(Function)} closes connection after executing.
    *
    * @param transaction temp transaction to create
    * @param client the db client
