@@ -145,8 +145,8 @@ public class AllOrNothingTransactionService {
    * This method uses SELECT FOR UPDATE locking on summary table by summaryId.
    * So in this case requests to create temp transaction and get temp transaction count for the same summaryId
    * will be executed only by a single thread.
-   * The other thread will wait until DB Lock is released when the connection is closed.
-   * Method {@link org.folio.rest.persist.PostgresClient#withTrans(Function)} closes connection after executing.
+   * The other thread will wait until DB Lock is released when the database transaction ends.
+   * Method {@link org.folio.rest.persist.PostgresClient#withTrans(Function)} ends the database transaction after executing.
    *
    * @param transaction temp transaction to create
    * @param client the db client
