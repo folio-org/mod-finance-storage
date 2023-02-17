@@ -26,7 +26,8 @@ public class TemporaryTransactionService {
       .withOperation("AND")
       .withJson("fromFundId", "=", budget.getFundId());
 
-    return temporaryTransactionDAO.getTempTransactions(criterionBuilder.build(), client);
+    return client.getPgClient()
+      .withConn(conn -> temporaryTransactionDAO.getTempTransactions(criterionBuilder.build(), conn));
   }
 
 }

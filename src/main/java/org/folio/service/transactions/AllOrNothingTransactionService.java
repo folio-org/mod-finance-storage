@@ -4,6 +4,7 @@ import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
 
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import javax.ws.rs.core.Response;
 
@@ -20,10 +21,7 @@ import org.folio.service.summary.TransactionSummaryService;
 import org.folio.service.transactions.restriction.TransactionRestrictionService;
 
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.shareddata.Lock;
-import io.vertx.core.shareddata.SharedData;
 import io.vertx.ext.web.handler.HttpException;
 
 public class AllOrNothingTransactionService {
@@ -91,9 +89,18 @@ public class AllOrNothingTransactionService {
                                   });
   }
 
+  /**
+   * Accumulate transactions in a temporary table until expected number of transactions are present,
+   * then apply them all at once.
+   * Updating all the required tables together is occurred in a database transaction.
+   *
+   * @param transaction processed transaction
+   *
+   * @return future with void
+   */
   private Future<Void> processAllOrNothing(Transaction transaction, DBClient client, BiFunction<List<Transaction>, DBClient, Future<Void>> operation) {
     return transactionSummaryService.getAndCheckTransactionSummary(transaction, client)
-      .compose(summary -> collectTempTransactions(transaction, client)
+      .compose(summary -> addTempTransactionSequentially(transaction, client)
         .compose(transactions -> {
           if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
             return client.startTx()
@@ -117,31 +124,6 @@ public class AllOrNothingTransactionService {
       );
   }
 
-  /**
-   * Accumulate transactions in a temporary table until expected number of transactions are present, then apply them all at once,
-   * updating all the required tables together in a database transaction.
-   *
-   * @param transaction         processed transaction
-   *                            permanent one.
-   * @return completed future
-   */
-  Future<List<Transaction>> collectTempTransactions(Transaction transaction, DBClient client) {
-    try {
-      return addTempTransactionSequentially(transaction, client)
-        .compose(transactions -> {
-          Promise<List<Transaction>> promise = Promise.promise();
-          try {
-            promise.complete(transactions);
-          } catch (Exception e) {
-            promise.fail(new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
-          }
-          return promise.future();
-        });
-    } catch (HttpException e) {
-      return Future.failedFuture(e);
-    }
-  }
-
   private Future<Void> verifyTransactionExistence(String transactionId, DBClient client) {
     CriterionBuilder criterionBuilder = new CriterionBuilder();
     criterionBuilder.with("id", transactionId);
@@ -159,45 +141,23 @@ public class AllOrNothingTransactionService {
       .compose(tr -> transactionSummaryService.setTransactionsSummariesProcessed(summary, client)) ;
   }
 
+  /**
+   * This method uses SELECT FOR UPDATE locking on summary table by summaryId.
+   * So in this case requests to create temp transaction and get temp transaction count for the same summaryId
+   * will be executed only by a single thread.
+   * The other thread will wait until DB Lock is released when the database transaction ends.
+   * Method {@link org.folio.rest.persist.PostgresClient#withTrans(Function)} ends the database transaction after executing.
+   *
+   * @param transaction temp transaction to create
+   * @param client the db client
+   * @return future with list of temp transactions
+   */
   private Future<List<Transaction>> addTempTransactionSequentially(Transaction transaction, DBClient client) {
-    Promise<List<Transaction>> promise = Promise.promise();
-    SharedData sharedData = client.getVertx().sharedData();
-    // define unique lockName based on combination of transactions type and summary id
+    final String tenantId = client.getTenantId();
     final String summaryId = transactionSummaryService.getSummaryId(transaction);
-    String lockName = transaction.getTransactionType() + summaryId;
-
-    sharedData.getLock(lockName, lockResult -> {
-      if (lockResult.succeeded()) {
-        log.info("Got lock {}", lockName);
-        Lock lock = lockResult.result();
-        try {
-          client.getVertx().setTimer(30000, timerId -> releaseLock(lock, lockName));
-
-          temporaryTransactionDAO.createTempTransaction(transaction, summaryId, client)
-            .compose(tr -> temporaryTransactionDAO.getTempTransactionsBySummaryId(summaryId, client))
-            .onComplete(trnsResult -> {
-              releaseLock(lock, lockName);
-              if (trnsResult.succeeded()) {
-                promise.complete(trnsResult.result());
-              } else {
-                promise.fail(trnsResult.cause());
-              }
-            });
-        } catch (Exception e) {
-          releaseLock(lock, lockName);
-          promise.fail(e);
-        }
-      } else {
-        promise.fail(new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), lockResult.cause().getMessage()));
-      }
-    });
-
-    return promise.future();
-  }
-
-  private void releaseLock(Lock lock, String lockName) {
-    log.info("Released lock {}", lockName);
-    lock.release();
+    return client.getPgClient().withTrans(conn -> transactionSummaryService.getTransactionSummaryWithLocking(summaryId, conn)
+      .compose(ar -> temporaryTransactionDAO.createTempTransaction(transaction, summaryId, tenantId, conn))
+      .compose(tr -> temporaryTransactionDAO.getTempTransactionsBySummaryId(summaryId, conn)));
   }
 
 }

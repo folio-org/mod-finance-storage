@@ -1,5 +1,7 @@
 package org.folio.dao.summary;
 
+import io.vertx.core.AsyncResult;
+import org.folio.rest.persist.Conn;
 import static org.folio.rest.persist.HelperUtils.ID_FIELD_NAME;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.service.transactions.AllOrNothingTransactionService.TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION;
@@ -24,24 +26,30 @@ public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao
 
   @Override
   public Future<JsonObject> getSummaryById(String summaryId, DBClient client) {
-    Promise<JsonObject> promise = Promise.promise();
+    return client.getPgClient().getById(getTableName(), summaryId)
+      .transform(reply -> processGetResult(summaryId, reply));
+  }
 
-    logger.debug("Get summary={}", summaryId);
-    client.getPgClient().getById(getTableName(), summaryId, reply -> {
-      if (reply.failed()) {
-        logger.error("Summary retrieval with id={} failed", summaryId, reply.cause());
-        handleFailure(promise, reply);
+  @Override
+  public Future<JsonObject> getSummaryByIdWithLocking(String summaryId, Conn conn) {
+    return conn.getByIdForUpdate(getTableName(), summaryId)
+      .transform(reply -> processGetResult(summaryId, reply));
+  }
+
+  private Future<JsonObject> processGetResult(String summaryId, AsyncResult<JsonObject> reply) {
+    if (reply.failed()) {
+      logger.error("Summary retrieval with id={} failed", summaryId, reply.cause());
+      return Future.future(promise -> handleFailure(promise, reply));
+    } else {
+      final JsonObject summary = reply.result();
+
+      if (summary == null) {
+        return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
       } else {
-        final JsonObject summary = reply.result();
-        if (summary == null) {
-          promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
-        } else {
-          logger.debug("Summary with id={} successfully extracted", summaryId);
-          promise.complete(summary);
-        }
+        logger.debug("Summary with id={} successfully extracted", summaryId);
+        return Future.succeededFuture(summary);
       }
-    });
-    return promise.future();
+    }
   }
 
   @Override

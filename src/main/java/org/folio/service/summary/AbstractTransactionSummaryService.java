@@ -1,5 +1,6 @@
 package org.folio.service.summary;
 
+import org.folio.rest.persist.Conn;
 import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
 
 import javax.ws.rs.core.Response;
@@ -27,7 +28,8 @@ public abstract class AbstractTransactionSummaryService implements TransactionSu
 
   @Override
   public Future<JsonObject> getAndCheckTransactionSummary(Transaction transaction, DBClient client) {
-    return this.getTransactionSummary(transaction, client)
+    String summaryId = getSummaryId(transaction);
+    return this.getTransactionSummary(summaryId, client)
       .map(summary -> {
         if ((isProcessed(summary))) {
           logger.debug("Expected number of transactions for summary with id={} already processed", summary.getString(HelperUtils.ID_FIELD_NAME));
@@ -39,11 +41,17 @@ public abstract class AbstractTransactionSummaryService implements TransactionSu
   }
 
   @Override
-  public Future<JsonObject> getTransactionSummary(Transaction transaction, DBClient client) {
-    logger.debug("Get summary={}", getSummaryId(transaction));
-    String summaryId = getSummaryId(transaction);
+  public Future<JsonObject> getTransactionSummary(String summaryId, DBClient client) {
+    logger.debug("Get summary by id: {}", summaryId);
 
     return transactionSummaryDao.getSummaryById(summaryId, client);
+  }
+
+  @Override
+  public Future<JsonObject> getTransactionSummaryWithLocking(String summaryId, Conn conn) {
+    logger.debug("Get summary by id: {} with locking", summaryId);
+
+    return transactionSummaryDao.getSummaryByIdWithLocking(summaryId, conn);
   }
 
   @Override
