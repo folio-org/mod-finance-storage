@@ -1,4 +1,21 @@
-## 8.4.0 - Unreleased
+## 8.5.0 - Unreleased
+
+## 8.4.0 - Released (Orchid R1 2023)
+The primary focus of this release was to replace Vertx shared lock with DB lock to increase stability
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.3.0...v8.4.0)
+
+### Stories
+* [MODFISTO-377](https://issues.folio.org/browse/MODFISTO-377) Replace Vertx shared lock with DB lock to increase stability working with transactions
+* [MODFISTO-373](https://issues.folio.org/browse/MODFISTO-373) Add migration script to support cache balance changes
+* [MODFISTO-371](https://issues.folio.org/browse/MODFISTO-371) Add support to rollover cash balance during FY rollover
+* [MODFISTO-358](https://issues.folio.org/browse/MODFISTO-358) Logging improvement - Configuration
+* [MODFISTO-290](https://issues.folio.org/browse/MODFISTO-290) Allowing "Available" to be a negative number
+
+### Bug Fixes
+* [MODFISTO-386](https://issues.folio.org/browse/MODFISTO-386) startTx DB connection not closed on failure, resource leak
+* [MODFISTO-384](https://issues.folio.org/browse/MODFISTO-384) Failed to create pending payment during invoice approval
+* [MODFISTO-362](https://issues.folio.org/browse/MODFISTO-362) Expense class code and status are not shown in test rollover results .csv file
 
 ## 8.3.0 - Released (Nolana R3 2022)
 The primary focus of this release was to implementation preview rollover flow
