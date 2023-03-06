@@ -1,14 +1,17 @@
-# Fix Lotus Encumbrances
+# Fix Encumbrances
 
-This script will fix several issues in encumbrances related to the fiscal year rollover for FOLIO Lotus, and negative encumbrance issues which can still happen in Morning Glory and Nolana.
+This script will fix several issues in encumbrances related to the fiscal year rollover for FOLIO Lotus, and other issues related to encumbrances in later FOLIO versions.
 In particular, after a fiscal year rollover in Lotus, there can be a mismatch between budget encumbrances and purchase order encumbrances.
 
 ## Running the script :
 
 - ***Make a backup first !***
+- Use a recent version of python (at least 3.8)
+- Install the required python packages if needed:\
+  `pip install requests`
 - Expect the script to take a long time with a large number of orders.
-- Operations affecting order encumbrances or budgets should be avoided while the script is running.
-- The script should not be used before a rollover in Lotus (because if it was, encumbrances would not be created for closed orders, and they could not be reopened - see [MODORDERS-706](https://issues.folio.org/browse/MODORDERS-706)). It can be used after a rollover for all ledgers, or just before migration to Morning Glory. If necessary it could also be used in Morning Glory.
+- Operations affecting order encumbrances or budgets should be avoided while the budgets are recalculated.
+- The script should not be used before a rollover in Lotus (because if it was, encumbrances would not be created for closed orders, and they could not be reopened - see [MODORDERS-706](https://issues.folio.org/browse/MODORDERS-706)).
 
 ### Script arguments :
 
@@ -19,7 +22,7 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 - User password is required as a command-line input.
 
 ### Execution example :
-`./fix_lotus_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin'`
+`./fix_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin'`
 
 ### Required permissions for the user
 These can be set with a permission group created with the API.
@@ -38,8 +41,10 @@ These can be set with a permission group created with the API.
 - `orders-storage.po-lines.item.get`
 - `orders-storage.po-lines.item.put`
 
-## Script Logic
+## Options
+The operation to run can now be selected in a menu.
 
+- Run all fixes (can be long)
 - Remove duplicate encumbrances (one released, one unreleased for the same thing).
 - Fix `encumbrance` links in PO lines in case if poline fund distribution refers to the encumbrance from previous fiscal year.
 - Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterwards because it is not possible to change this property for released encumbrances.
@@ -56,3 +61,4 @@ These can be set with a permission group created with the API.
 - [MODFISTO-367](https://issues.folio.org/browse/MODFISTO-367) - Avoid requesting too many orders at once.
 - [MODFISTO-368](https://issues.folio.org/browse/MODFISTO-368) - Fix negative encumbrances.
 - [MODFISTO-375](https://issues.folio.org/browse/MODFISTO-375) - Remove duplicate encumbrances
+- [MODFISTO-382](https://issues.folio.org/browse/MODFISTO-382) - Interactive menu for encumbrance script
