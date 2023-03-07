@@ -188,19 +188,6 @@ async def get_encumbrance_by_ids(encumbrance_ids) -> list:
     return resp['transactions']
 
 
-def get_budgets_by_query(query) -> list:
-    params = {'query': query, 'offset': '0', 'limit': ITEM_MAX}
-    try:
-        r = requests.get(okapi_url + 'finance-storage/budgets', headers=headers, params=params)
-        if r.status_code != 200:
-            raise_exception_for_reply(r)
-        budgets = r.json()['budgets']
-    except Exception as err:
-        print(f'Error getting budgets with query "{query}": {err}')
-        raise SystemExit(1)
-    return budgets
-
-
 def get_fiscal_year_id(fiscal_year_code) -> str:
     query = f'code=="{fiscal_year_code}"'
     fiscal_year_ids = get_fiscal_year_ids_by_query(query)
@@ -269,20 +256,6 @@ async def get_budget_by_fund_id(fund_id, fiscal_year_id) -> dict:
     return budgets['budgets'][0]
 
 
-def put_budget(budget):
-    # NOTE: readonly properties will be sent too, curiously they are normally saved to storage when the budget is
-    # modified with the UI too. Values in storage might be inconsistent when encumbered is changed,
-    # but they get recalculated on a GET.
-    try:
-        url = f"{okapi_url}finance-storage/budgets/{budget['id']}"
-        r = requests.put(url, headers=headers, json=budget)
-        if r.status_code != 204:
-            raise_exception_for_reply(r)
-    except Exception as err:
-        print(f'Error putting budget "{budget}": {err}')
-        raise SystemExit(1)
-
-
 async def get_order_encumbrances(order_id, fiscal_year_id, sem=None) -> list:
     url = okapi_url + 'finance-storage/transactions'
     query = f'encumbrance.sourcePurchaseOrderId=={order_id} AND fiscalYearId=={fiscal_year_id}'
@@ -290,6 +263,22 @@ async def get_order_encumbrances(order_id, fiscal_year_id, sem=None) -> list:
     if sem is not None:
         sem.release()
     return response['transactions']
+
+
+def progress(index, total_elements, label=''):
+    if total_elements == 0:
+        return
+    progress_length = 80
+    current_progress_length = int(round(progress_length * index / float(total_elements)))
+
+    percents_completed = round(100.0 * index / float(total_elements), 1)
+    bar = '=' * current_progress_length + '-' * (progress_length - current_progress_length)
+
+    sys.stdout.write('%s - [%s] %s%s \r' % (label, bar, percents_completed, '%'))
+    sys.stdout.flush()
+
+    if index == total_elements:
+        print()
 
 
 # ---------------------------------------------------
@@ -482,6 +471,7 @@ async def fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fisc
 
 # ---------------------------------------------------
 # Unrelease open orders encumbrances with non-zero amounts
+
 async def unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id, sem) -> int:
     query = f'amount<>0.0 AND encumbrance.status=="Released" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
         f'fiscalYearId=={fiscal_year_id}'
@@ -497,7 +487,7 @@ async def unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id,
 
 
 async def unrelease_encumbrances(order_id, encumbrances):
-    print(f'\n  Unreleasing {len(encumbrances)} encumbrances for the order {order_id}')
+    print(f'\n  Unreleasing {len(encumbrances)} encumbrance(s) for the order {order_id}')
 
     await transaction_summary(order_id, len(encumbrances))
 
@@ -527,6 +517,7 @@ async def unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id
 
 # ---------------------------------------------------
 # Release open orders encumbrances with negative amounts (see MODFISTO-368)
+
 async def release_encumbrances_with_negative_amounts(order_id, fiscal_year_id, sem) -> int:
     query = 'amount </number 0 AND encumbrance.status=="Unreleased" AND ' \
         f'(encumbrance.amountAwaitingPayment >/number 0 OR encumbrance.amountExpended >/number 0) AND ' \
@@ -626,6 +617,7 @@ async def update_budgets(encumbered, fund_id, fiscal_year_id, sem) -> int:
 
 # ---------------------------------------------------
 # Release unreleased encumbrances for closed orders
+
 async def get_order_encumbrances_to_release(order_id, fiscal_year_id) -> list:
     query = f'encumbrance.status=="Unreleased" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
         f'fiscalYearId=={fiscal_year_id}'
@@ -658,6 +650,9 @@ async def release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, f
 
     print(f'  Released {sum(nb_released_encumbrances)} encumbrance(s).')
 
+
+# ---------------------------------------------------
+# Fix poline-encumbrance relations
 
 async def get_polines_by_order_id(order_id) -> list:
     query = f'purchaseOrderId=={order_id}'
@@ -727,63 +722,102 @@ async def fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id):
     progress(len(open_orders_ids), len(open_orders_ids))
 
 
-def progress(index, total_elements, label=''):
-    if total_elements == 0:
+# ---------------------------------------------------
+# All operations
+
+async def all_operations(closed_orders_ids, open_orders_ids, open_and_closed_orders_ids, fiscal_year_id):
+    await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id)
+    await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id)
+    await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
+    await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
+    await release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids)
+    await recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_id)
+    await release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, fiscal_year_id)
+
+
+# ---------------------------------------------------
+# Menu and running operations
+
+async def run_operation(choice, fiscal_year_code, tenant, username, password):
+    global headers
+    initial_time = time.time()
+    headers = login(tenant, username, password)
+    fiscal_year_id = get_fiscal_year_id(fiscal_year_code)
+
+    if choice == 1:
+        closed_orders_ids = get_closed_orders_ids()
+        open_orders_ids = get_open_orders_ids()
+        open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
+        await all_operations(closed_orders_ids, open_orders_ids, open_and_closed_orders_ids, fiscal_year_id)
+    elif choice == 2:
+        closed_orders_ids = get_closed_orders_ids()
+        open_orders_ids = get_open_orders_ids()
+        open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
+        await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id)
+    elif choice == 3:
+        open_orders_ids = get_open_orders_ids()
+        await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id)
+    elif choice == 4:
+        closed_orders_ids = get_closed_orders_ids()
+        await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
+    elif choice == 5:
+        open_orders_ids = get_open_orders_ids()
+        await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
+    elif choice == 6:
+        open_orders_ids = get_open_orders_ids()
+        await release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids)
+    elif choice == 7:
+        closed_orders_ids = get_closed_orders_ids()
+        open_orders_ids = get_open_orders_ids()
+        open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
+        await recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_id)
+    elif choice == 8:
+        closed_orders_ids = get_closed_orders_ids()
+        await release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, fiscal_year_id)
+    delta = round(time.time() - initial_time)
+    hours, remainder = divmod(delta, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    print(f'Elapsed time: {hours} hour(s), {minutes} minute(s) and {seconds} second(s).')
+
+
+def menu(fiscal_year_code, tenant, username):
+    print('1) Run all fixes (can be long)')
+    print('2) Remove duplicate encumbrances')
+    print('3) Fix order line - encumbrance relations')
+    print('4) Fix encumbrance order status for closed orders')
+    print('5) Unrelease open order encumbrances with nonzero amounts')
+    print('6) Release open order encumbrances with negative amounts')
+    print('7) Recalculate all budget encumbered amounts (avoid any transaction while this is running!)')
+    print('8) Release unreleased encumbrances for closed orders')
+    print('9) Quit')
+    choice_s = input('Choose an option: ')
+    try:
+        choice_i = int(choice_s)
+    except ValueError:
+        print('Invalid option.')
         return
-    progress_length = 80
-    current_progress_length = int(round(progress_length * index / float(total_elements)))
-
-    percents_completed = round(100.0 * index / float(total_elements), 1)
-    bar = '=' * current_progress_length + '-' * (progress_length - current_progress_length)
-
-    sys.stdout.write('%s - [%s] %s%s \r' % (label, bar, percents_completed, '%'))
-    sys.stdout.flush()
-
-    if index == total_elements:
-        print()
+    if choice_i < 1 or choice_i > 9:
+        print('Invalid option.')
+        return
+    if choice_i == 9:
+        return
+    password = getpass.getpass('Password:')
+    asyncio.run(run_operation(choice_i, fiscal_year_code, tenant, username, password))
 
 
 # ---------------------------------------------------
 # Main
-async def main():
-    global okapi_url, headers
+
+def main():
+    global okapi_url
     if len(sys.argv) != 5:
-        print("Syntax: ./fix_lotus_encumbrances.py 'fiscal_year_code' 'okapi_url' 'tenant' 'username'")
+        print("Syntax: ./fix_encumbrances.py 'fiscal_year_code' 'okapi_url' 'tenant' 'username'")
         raise SystemExit(1)
     fiscal_year_code = sys.argv[1]
     okapi_url = sys.argv[2]
     tenant = sys.argv[3]
     username = sys.argv[4]
-    password = getpass.getpass('Password:')
-    headers = login(tenant, username, password)
-    initial_time = time.time()
-
-    fiscal_year_id = get_fiscal_year_id(fiscal_year_code)
-
-    # get open and closed order ids
-    closed_orders_ids = get_closed_orders_ids()
-    open_orders_ids = get_open_orders_ids()
-    open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
-
-    # comment the steps if needed
-    await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id)
-
-    await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id)
-
-    await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
-
-    await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
-
-    await release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids)
-
-    await recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_id)
-
-    await release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, fiscal_year_id)
-    print(f'Time spent: {round(time.time() - initial_time, 2)} sec')
-    print('Done.')
+    menu(fiscal_year_code, tenant, username)
 
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-loop.run_until_complete(main())
-loop.close()
+main()
