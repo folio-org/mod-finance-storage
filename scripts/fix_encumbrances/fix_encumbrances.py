@@ -312,13 +312,14 @@ def find_encumbrances_to_remove(encumbrances) -> list:
     return encumbrance_changes
 
 
-async def update_poline_encumbrance(encumbrance_to_remove, replace_by):
+async def update_poline_encumbrance(encumbrance_to_remove, replace_by, poline=None):
     url = okapi_url + f"orders-storage/po-lines/{encumbrance_to_remove['encumbrance']['sourcePoLineId']}"
-    po_line = await get_request_without_query(url)
-    for fd in po_line['fundDistribution']:
-        if fd['encumbrance'] == encumbrance_to_remove['id']:
+    if poline is None:
+        poline = await get_request_without_query(url)
+    for fd in poline['fundDistribution']:
+        if 'encumbrance' in fd and fd['encumbrance'] == encumbrance_to_remove['id']:
             fd['encumbrance'] = replace_by['id']
-            await put_request(url, po_line)
+            await put_request(url, poline)
             break
 
 
@@ -661,31 +662,62 @@ async def get_polines_by_order_id(order_id) -> list:
     return po_lines
 
 
+async def update_encumbrance_fund_id(encumbrance, new_fund_id, poline):
+    encumbrance['fromFundId'] = new_fund_id
+    encumbrance_id = encumbrance['id']
+    order_id = poline['purchaseOrderId']
+    print(f"  Fixing fromFundId for po line {poline['id']} ({poline['poLineNumber']}) encumbrance {encumbrance_id}")
+    await transaction_summary(order_id, 1)
+    url = f"{okapi_url}finance-storage/transactions/{encumbrance_id}"
+    await put_request(url, encumbrance)
+
+
+# Remove a duplicate encumbrance if it has a wrong fromFundId, and update the poline fd if needed
+async def fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline):
+    encumbrances_with_right_fund = []
+    encumbrances_with_bad_fund = []
+    for encumbrance in encumbrances:
+        if encumbrance['fromFundId'] == fd_fund_id:
+            encumbrances_with_right_fund.append(encumbrance)
+        else:
+            encumbrances_with_bad_fund.append(encumbrance)
+    if len(encumbrances_with_bad_fund) == 0:
+        print(f"  Warning: there is a remaining duplicate encumbrance for poline {poline['id']} "
+              f"({poline['poLineNumber']}).")
+        return
+    if len(encumbrances_with_right_fund) != 1:
+        print(f"  Problem fixing encumbrances for poline {poline['id']} ({poline['poLineNumber']}), "
+              "please fix by hand.")
+        return
+    replace_by = encumbrances_with_right_fund[0]
+    for encumbrance_to_remove in encumbrances_with_bad_fund:
+        print(f"  Removing encumbrance {encumbrance_to_remove['id']} for po line {poline['id']} "
+              f"({poline['poLineNumber']})")
+        await update_poline_encumbrance(encumbrance_to_remove, replace_by, poline)
+        url = f"{okapi_url}finance-storage/transactions/{encumbrance_to_remove['id']}"
+        await delete_request(url)
+
+
 # Fix encumbrance fromFundId if it doesn't match the po line fund distribution (see MODFISTO-384, MODFISTO-385)
-async def fix_encumbrance_fund_id(poline, order_encumbrances):
+async def fix_poline_encumbrance_fund_id(poline, order_encumbrances):
     fds = poline['fundDistribution']
     # we can't fix the fundId if there is more than 1 fund distribution in the po line
     if len(fds) != 1:
         return
 
-    fd = fds[0]
-    poline_id = poline['id']
-    fd_fund_id = fd['fundId']
+    fd_fund_id = fds[0]['fundId']
     encumbrances = []
     for enc in order_encumbrances:
-        if enc['encumbrance']['sourcePoLineId'] == poline_id and enc['fromFundId'] != fd_fund_id:
+        if enc['encumbrance']['sourcePoLineId'] == poline['id']:
             encumbrances.append(enc)
-    if len(encumbrances) != 1:
+    if len(encumbrances) == 0:
         return
-
-    encumbrance = encumbrances[0]
-    encumbrance['fromFundId'] = fd_fund_id
-    encumbrance_id = encumbrance['id']
-    url = f"{okapi_url}finance-storage/transactions/{encumbrance_id}"
-    order_id = poline['purchaseOrderId']
-    print(f"  Fixing fromFundId for po line {poline_id} ({poline['poLineNumber']}) encumbrance {encumbrance_id}")
-    await transaction_summary(order_id, 1)
-    await put_request(url, encumbrance)
+    if len(encumbrances) == 1:
+        if encumbrances[0]['fromFundId'] == fd_fund_id:
+            return
+        await update_encumbrance_fund_id(encumbrances[0], fd_fund_id, poline)
+        return
+    await fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline)
 
 
 def check_if_fd_needs_updates_and_update_fd(poline, order_encumbrances, fd) -> bool:
@@ -723,8 +755,8 @@ async def fix_poline_encumbrance_link(poline, order_encumbrances):
         await put_request(url, poline)
 
 
-async def process_po_line_encumbrances_relations(poline, order_encumbrances):
-    await fix_encumbrance_fund_id(poline, order_encumbrances)
+async def process_poline_encumbrances_relations(poline, order_encumbrances):
+    await fix_poline_encumbrance_fund_id(poline, order_encumbrances)
     await fix_poline_encumbrance_link(poline, order_encumbrances)
 
 
@@ -739,7 +771,7 @@ async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_s
         return
 
     for po_line in po_lines:
-        await process_po_line_encumbrances_relations(po_line, order_encumbrances)
+        await process_poline_encumbrances_relations(po_line, order_encumbrances)
 
     order_sem.release()
 
