@@ -735,13 +735,11 @@ async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_s
         return
     order_encumbrances = await get_order_encumbrances(order_id, fiscal_year_id)
     if len(order_encumbrances) == 0:
+        order_sem.release()
         return
 
-    poline_futures = []
     for po_line in po_lines:
-        poline_futures.append(asyncio.ensure_future(process_po_line_encumbrances_relations(
-            po_line, order_encumbrances)))
-    await asyncio.gather(*poline_futures)
+        await process_po_line_encumbrances_relations(po_line, order_encumbrances)
 
     order_sem.release()
 
