@@ -44,14 +44,14 @@ These can be set with a permission group created with the API.
 ## Options
 The operation to run can now be selected in a menu.
 
-- Run all fixes (can be long)
-- Remove duplicate encumbrances (one released, one unreleased for the same thing).
-- Fix `encumbrance` links in PO lines in case if poline fund distribution refers to the encumbrance from previous fiscal year.
-- Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterwards because it is not possible to change this property for released encumbrances.
-- Change the encumbrance status to `Unreleased` for all open orders' encumbrances with non-zero amounts
-- Release open order unreleased encumbrances with negative amounts when they have `amountAwaitingPayment` or `amountExpended` > 0.
-- Recalculate the encumbered property for all the budgets related to these encumbrances by summing the related unreleased encumbrances.
-- Release all unreleased encumbrances for closed orders
+1. Run all fixes (can be long).
+2. Remove duplicate encumbrances (one released, one unreleased for the same thing).
+3. Fix order line - encumbrance relations: fix `encumbrance` links in PO lines in case the poline fund distribution refers to the encumbrance from the previous fiscal year; also fix the fund id in encumbrances if they don't match their po line distribution fund id.
+4. Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterwards because it is not possible to change this property for released encumbrances.
+5. Change the encumbrance status to `Unreleased` for all open orders' encumbrances with non-zero amounts.
+6. Release open order unreleased encumbrances with negative amounts when they have `amountAwaitingPayment` or `amountExpended` > 0.
+7. Recalculate the encumbered property for all the budgets related to these encumbrances by summing the related unreleased encumbrances.
+8. Release all unreleased encumbrances for closed orders.
 
 ## JIRA tickets
 - [MODFISTO-326](https://issues.folio.org/browse/MODFISTO-326) - Create a script to fix Lotus encumbrance issues
@@ -61,4 +61,5 @@ The operation to run can now be selected in a menu.
 - [MODFISTO-367](https://issues.folio.org/browse/MODFISTO-367) - Avoid requesting too many orders at once.
 - [MODFISTO-368](https://issues.folio.org/browse/MODFISTO-368) - Fix negative encumbrances.
 - [MODFISTO-375](https://issues.folio.org/browse/MODFISTO-375) - Remove duplicate encumbrances
-- [MODFISTO-382](https://issues.folio.org/browse/MODFISTO-382) - Interactive menu for encumbrance script
+- [MODFISTO-382](https://issues.folio.org/browse/MODFISTO-382) - Interactive menu
+- [MODFISTO-385](https://issues.folio.org/browse/MODFISTO-385) - Fix encumbrances' fromFundId
