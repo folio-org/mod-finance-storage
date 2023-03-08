@@ -74,8 +74,8 @@ public class EmailServiceTest {
 
   @Test
   void shouldSendEmail(Vertx vertx) {
-    when(restClient.get(anyString(), anyInt(), anyInt(), eq(mockRequestContext), any())).thenReturn(succeededFuture(getHostAddressJson()));
-    when(restClient.getById(anyString(), eq(mockRequestContext), any())).thenReturn(succeededFuture(getUserJson()));
+    when(restClient.get(anyString(), anyInt(), anyInt(), eq(mockRequestContext))).thenReturn(succeededFuture(getHostAddressJson()));
+    when(restClient.getById(anyString(), eq(mockRequestContext))).thenReturn(succeededFuture(getUserJson()));
     when(ledgerDAO.getLedgerById(anyString(), any())).thenReturn(succeededFuture(new Ledger().withName("TestName")));
     when(dbClientFactory.getDbClient(mockRequestContext)).thenReturn(new DBClient(vertx, TEST_TENANT));
 

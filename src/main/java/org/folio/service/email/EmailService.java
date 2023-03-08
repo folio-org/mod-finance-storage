@@ -116,10 +116,10 @@ public class EmailService {
   }
 
   private Future<JsonObject> getHostAddress(RequestContext requestContext) {
-    return configurationRestClient.get(CONFIGURATION_QUERY, 0, 1, requestContext, JsonObject.class);
+    return configurationRestClient.get(CONFIGURATION_QUERY, 0, 1, requestContext);
   }
 
   private Future<JsonObject> getCurrentUser(RequestContext requestContext) {
-    return userRestClient.getById(requestContext.getHeaders().get(OKAPI_USER_ID), requestContext, JsonObject.class);
+    return userRestClient.getById(requestContext.getHeaders().get(OKAPI_USER_ID), requestContext);
   }
 }

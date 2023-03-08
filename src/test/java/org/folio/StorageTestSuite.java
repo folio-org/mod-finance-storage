@@ -36,7 +36,6 @@ import org.folio.rest.impl.TransactionTest;
 import org.folio.rest.impl.TransactionsSummariesTest;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.utils.DBClientTest;
 import org.folio.service.email.EmailServiceTest;
@@ -95,7 +94,7 @@ public class StorageTestSuite {
 
     DeploymentOptions options = new DeploymentOptions();
 
-    options.setConfig(new JsonObject().put("http.port", port).put(HttpClientMock2.MOCK_MODE, "true"));
+    options.setConfig(new JsonObject().put("http.port", port));
 
     startVerticle(options);
 
