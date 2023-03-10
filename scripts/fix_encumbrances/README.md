@@ -5,7 +5,7 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 
 ## Running the script :
 
-- ***Make a backup first !***
+- ***Make a backup first !*** (unless you plan to use dry-run mode)
 - Use a recent version of python (at least 3.8)
 - Install the required python packages if needed:\
   `pip install requests`
@@ -15,17 +15,17 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 
 ### Script arguments :
 
-- **CURRENT** fiscal year code
+- Fiscal year code (use the current fiscal year when fixing issues with the fiscal year rollover)
 - Okapi URL
 - Tenant
 - Username
 - User password is required as a command-line input.
 
 ### Execution example :
-`./fix_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin'`
+`python3 ./fix_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin'`
 
-To save output in a file, use `tee` on Linux:
-`./fix_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
+To save output in a file, use `tee` on Linux:\
+`python3 ./fix_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
 
 ### Required permissions for the user
 These can be set with a permission group created with the API.
