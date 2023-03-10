@@ -16,6 +16,7 @@ MAX_BY_CHUNK = 1000
 okapi_url = ''
 headers = {}
 client = httpx.AsyncClient()
+dryrun = False
 
 # request timeout in seconds
 ASYNC_CLIENT_TIMEOUT = 30
@@ -77,41 +78,30 @@ async def get_request(url: str, query: str) -> dict:
         raise SystemExit(1)
 
 
-async def post_request(url: str, data) -> httpx.Response:
-    try:
-        resp = await client.post(url, headers=headers, content='', timeout=ASYNC_CLIENT_TIMEOUT)
-        if resp.status_code == HTTPStatus.OK:
-            return resp
-        else:
-            print(f'Error creating record {url} \n "{data}": \n{resp.text} ')
-            raise SystemExit(1)
-    except Exception as err:
-        print(f'Error creating record {url} "{data}": {err=}')
-        raise SystemExit(1)
-
-
-async def put_request(url: str, data) -> httpx.Response:
+async def put_request(url: str, data):
+    if dryrun:
+        return
     try:
         resp = await client.put(url, headers=headers, data=json.dumps(data), timeout=ASYNC_CLIENT_TIMEOUT)
         if resp.status_code == HTTPStatus.NO_CONTENT:
-            return resp
-        else:
-            print(f'Error updating record {url} "{data}": {resp.text}')
-            raise SystemExit(1)
+            return
+        print(f'Error updating record {url} "{data}": {resp.text}')
+        raise SystemExit(1)
 
     except Exception as err:
         print(f'Error updating record {url} "{data}": {err=}')
         raise SystemExit(1)
 
 
-async def delete_request(url: str) -> httpx.Response:
+async def delete_request(url: str):
+    if dryrun:
+        return
     try:
         resp = await client.delete(url, headers=headers, timeout=ASYNC_CLIENT_TIMEOUT)
         if resp.status_code == HTTPStatus.NO_CONTENT:
-            return resp
-        else:
-            print(f'Error deleting record {url}: {resp.text}')
-            raise SystemExit(1)
+            return
+        print(f'Error deleting record {url}: {resp.text}')
+        raise SystemExit(1)
 
     except Exception as err:
         print(f'Error deleting record {url}: {err=}')
@@ -213,38 +203,10 @@ def get_open_orders_ids() -> list:
     return open_orders_ids
 
 
-def build_order_by_fund_ids_query(fund_ids) -> str:
-    fund_ids_query = ''
-    if len(fund_ids) > 0:
-        fund_ids_query = ' AND ('
-
-        for idx, fund_id in enumerate(fund_ids):
-            fund_ids_query += f'poLine.fundDistribution = /@fundId ="{fund_id}"'
-            if len(fund_ids) != (idx + 1):
-                fund_ids_query += ' OR '
-
-        fund_ids_query += ')'
-    return fund_ids_query
-
-
-def build_polines_by_fund_ids_query(fund_ids) -> str:
-    fund_ids_query = ''
-    if len(fund_ids) > 0:
-        fund_ids_query = ' AND ('
-        for idx, fund_id in enumerate(fund_ids):
-            fund_ids_query += f'fundDistribution = /@fundId ="{fund_id}"'
-            if len(fund_ids) != (idx + 1):
-                fund_ids_query += ' OR '
-
-        fund_ids_query += ')'
-    return fund_ids_query
-
-
 async def transaction_summary(order_id, num_transactions):
     data = {'id': order_id, 'numTransactions': num_transactions}
     url = f'{okapi_url}finance-storage/order-transaction-summaries/{order_id}'
-
-    return await put_request(url, data)
+    await put_request(url, data)
 
 
 async def get_budget_by_fund_id(fund_id, fiscal_year_id) -> dict:
@@ -340,6 +302,12 @@ async def remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id, sem) 
         sem.release()
         return 0
     encumbrance_changes = find_encumbrances_to_remove(order_encumbrances)
+    if len(encumbrance_changes) == 0:
+        sem.release()
+        return 0
+    print(f"  Removing the following encumbrances for order {order_id}:")
+    for change in encumbrance_changes:
+        print(f"    {change['remove']['id']}")
     await remove_encumbrances_and_update_polines(encumbrance_changes)
     sem.release()
     return len(encumbrance_changes)
@@ -433,7 +401,9 @@ async def fix_order_encumbrances_order_status(order_id, encumbrances):
     # Eventually we could rely on the post-MODFISTO-328 implementation to change orderStatus directly
     # (Morning Glory bug fix).
     try:
-        print(f'\n  Fixing {len(encumbrances)} encumbrance(s) for order {order_id}...')
+        print(f'\n  Fixing the following encumbrance(s) for order {order_id} :')
+        for encumbrance in encumbrances:
+            print(f"    {encumbrance['id']}")
         modified_encumbrances = await unrelease_order_encumbrances(order_id, encumbrances)
         if len(modified_encumbrances) != 0:
             await fix_order_status_and_release_encumbrances(order_id, modified_encumbrances)
@@ -473,6 +443,19 @@ async def fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fisc
 # ---------------------------------------------------
 # Unrelease open orders encumbrances with non-zero amounts
 
+async def unrelease_encumbrances(order_id, encumbrances):
+    print(f'\n  Unreleasing the following encumbrance(s) for order {order_id} :')
+    for encumbrance in encumbrances:
+        print(f"    {encumbrance['id']}")
+
+    await transaction_summary(order_id, len(encumbrances))
+
+    for encumbrance in encumbrances:
+        encumbrance['encumbrance']['status'] = 'Unreleased'
+        url = f"{okapi_url}finance-storage/transactions/{encumbrance['id']}"
+        await put_request(url, encumbrance)
+
+
 async def unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id, sem) -> int:
     query = f'amount<>0.0 AND encumbrance.status=="Released" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
         f'fiscalYearId=={fiscal_year_id}'
@@ -485,17 +468,6 @@ async def unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id,
 
     sem.release()
     return len(order_encumbrances)
-
-
-async def unrelease_encumbrances(order_id, encumbrances):
-    print(f'\n  Unreleasing {len(encumbrances)} encumbrance(s) for the order {order_id}')
-
-    await transaction_summary(order_id, len(encumbrances))
-
-    for encumbrance in encumbrances:
-        encumbrance['encumbrance']['status'] = 'Unreleased'
-        url = f"{okapi_url}finance-storage/transactions/{encumbrance['id']}"
-        await put_request(url, encumbrance)
 
 
 async def unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids):
@@ -519,6 +491,19 @@ async def unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id
 # ---------------------------------------------------
 # Release open orders encumbrances with negative amounts (see MODFISTO-368)
 
+async def release_encumbrances(order_id, encumbrances):
+    print(f'\n  Releasing the following encumbrances for order {order_id} :')
+    for encumbrance in encumbrances:
+        print(f"    {encumbrance['id']}")
+
+    await transaction_summary(order_id, len(encumbrances))
+
+    for encumbrance in encumbrances:
+        encumbrance['encumbrance']['status'] = 'Released'
+        url = f"{okapi_url}finance-storage/transactions/{encumbrance['id']}"
+        await put_request(url, encumbrance)
+
+
 async def release_encumbrances_with_negative_amounts(order_id, fiscal_year_id, sem) -> int:
     query = 'amount </number 0 AND encumbrance.status=="Unreleased" AND ' \
         f'(encumbrance.amountAwaitingPayment >/number 0 OR encumbrance.amountExpended >/number 0) AND ' \
@@ -532,17 +517,6 @@ async def release_encumbrances_with_negative_amounts(order_id, fiscal_year_id, s
 
     sem.release()
     return len(order_encumbrances)
-
-
-async def release_encumbrances(order_id, encumbrances):
-    print(f'\n  Releasing {len(encumbrances)} encumbrances for order {order_id}')
-
-    await transaction_summary(order_id, len(encumbrances))
-
-    for encumbrance in encumbrances:
-        encumbrance['encumbrance']['status'] = 'Released'
-        url = f"{okapi_url}finance-storage/transactions/{encumbrance['id']}"
-        await put_request(url, encumbrance)
 
 
 async def release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids):
@@ -565,6 +539,22 @@ async def release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id,
 
 # ---------------------------------------------------
 # Recalculate budget encumbered
+
+async def update_budgets(encumbered, fund_id, fiscal_year_id, sem) -> int:
+    nb_modified = 0
+    budget = await get_budget_by_fund_id(fund_id, fiscal_year_id)
+
+    # Cast into decimal values, so 0 == 0.0 == 0.00 will return true
+    if Decimal(str(budget['encumbered'])) != Decimal(encumbered):
+        print(f"    Budget \"{budget['name']}\": changing encumbered from {budget['encumbered']} to {encumbered}")
+        budget['encumbered'] = encumbered
+
+        url = f"{okapi_url}finance-storage/budgets/{budget['id']}"
+        await put_request(url, budget)
+        nb_modified = 1
+    sem.release()
+    return nb_modified
+
 
 async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_id):
     # Recalculate the encumbered property for all the budgets related to these encumbrances
@@ -598,22 +588,6 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
 
     print(f'  Edited {nb_modified} budget(s).')
     print('  Done recalculating budget encumbered.')
-
-
-async def update_budgets(encumbered, fund_id, fiscal_year_id, sem) -> int:
-    nb_modified = 0
-    budget = await get_budget_by_fund_id(fund_id, fiscal_year_id)
-
-    # Cast into decimal values, so 0 == 0.0 == 0.00 will return true
-    if Decimal(str(budget['encumbered'])) != Decimal(encumbered):
-        print(f"    Budget \"{budget['name']}\": changing encumbered from {budget['encumbered']} to {encumbered}")
-        budget['encumbered'] = encumbered
-
-        url = f"{okapi_url}finance-storage/budgets/{budget['id']}"
-        await put_request(url, budget)
-        nb_modified = 1
-    sem.release()
-    return nb_modified
 
 
 # ---------------------------------------------------
@@ -807,6 +781,31 @@ async def all_operations(closed_orders_ids, open_orders_ids, open_and_closed_ord
 
 
 # ---------------------------------------------------
+# Dry-run mode selection
+
+def dryrun_mode_selection():
+    global dryrun
+
+    choice_i = 0
+    while choice_i < 1 or choice_i > 2:
+        print('1) Dry-run mode (read-only, will not apply fixes)')
+        print('2) Normal mode (will apply fixes)')
+        choice_s = input('Choose an option: ')
+        try:
+            choice_i = int(choice_s)
+            if choice_i < 1 or choice_i > 2:
+                print('Invalid option.')
+        except ValueError:
+            print('Invalid option.')
+    if choice_i == 1:
+        dryrun = True
+        print("Dry-run mode enabled. Fixes *will not* actually be applied.")
+    else:
+        print("Normal mode. All fixes *will* be applied.")
+    print()
+
+
+# ---------------------------------------------------
 # Menu and running operations
 
 async def run_operation(choice, fiscal_year_code, tenant, username, password):
@@ -872,6 +871,9 @@ def menu(fiscal_year_code, tenant, username):
         return
     if choice_i == 9:
         return
+    if choice_i == 1 and dryrun:
+        print("Note that, because dry-run mode is enabled, some operations will behave differently because they "
+              "depend on the execution of previous ones, such as when recalculating the budget encumbrances.")
     password = getpass.getpass('Password:')
     asyncio.run(run_operation(choice_i, fiscal_year_code, tenant, username, password))
 
@@ -888,6 +890,7 @@ def main():
     okapi_url = sys.argv[2]
     tenant = sys.argv[3]
     username = sys.argv[4]
+    dryrun_mode_selection()
     menu(fiscal_year_code, tenant, username)
 
 

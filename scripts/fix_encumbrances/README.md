@@ -24,6 +24,9 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 ### Execution example :
 `./fix_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin'`
 
+To save output in a file, use `tee` on Linux:
+`./fix_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
+
 ### Required permissions for the user
 These can be set with a permission group created with the API.
 
@@ -42,7 +45,9 @@ These can be set with a permission group created with the API.
 - `orders-storage.po-lines.item.put`
 
 ## Options
-The operation to run can now be selected in a menu.
+After the script is launched, it is possible to select a dry-run mode. This will execute the script in the same way as normal but without any actual modification. When running all fixes, it might execute differently because some operations depend on previous ones, such as when recalculating budget encumbrances.
+
+After the mode selection, it is possible to select the operation(s) to execute:
 
 1. Run all fixes (can be long).
 2. Remove duplicate encumbrances (one released, one unreleased for the same thing).
@@ -63,3 +68,4 @@ The operation to run can now be selected in a menu.
 - [MODFISTO-375](https://issues.folio.org/browse/MODFISTO-375) - Remove duplicate encumbrances
 - [MODFISTO-382](https://issues.folio.org/browse/MODFISTO-382) - Interactive menu
 - [MODFISTO-385](https://issues.folio.org/browse/MODFISTO-385) - Fix encumbrances' fromFundId
+- [MODFISTO-419](https://issues.folio.org/browse/MODFISTO-419) - Add dry-run mode to FYRO script
