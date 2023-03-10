@@ -738,6 +738,7 @@ async def process_poline_encumbrances_relations(poline, order_encumbrances):
 async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_sem):
     po_lines = await get_polines_by_order_id(order_id)
     if len(po_lines) == 0:
+        order_sem.release()
         return
     order_encumbrances = await get_order_encumbrances(order_id, fiscal_year_id)
     if len(order_encumbrances) == 0:
