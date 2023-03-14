@@ -55,8 +55,9 @@ After the mode selection, it is possible to select the operation(s) to execute:
 4. Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterwards because it is not possible to change this property for released encumbrances.
 5. Change the encumbrance status to `Unreleased` for all open orders' encumbrances with non-zero amounts.
 6. Release open order unreleased encumbrances with negative amounts when they have `amountAwaitingPayment` or `amountExpended` > 0.
-7. Recalculate the encumbered property for all the budgets related to these encumbrances by summing the related unreleased encumbrances.
-8. Release all unreleased encumbrances for closed orders.
+7. Release cancelled order line encumbrances: releases encumbrances when their order line has a `paymentStatus` of `Cancelled`.
+8. Recalculate the encumbered property for all the budgets related to these encumbrances by summing the related unreleased encumbrances.
+9. Release all unreleased encumbrances for closed orders.
 
 ## JIRA tickets
 - [MODFISTO-326](https://issues.folio.org/browse/MODFISTO-326) - Create a script to fix Lotus encumbrance issues
@@ -69,3 +70,4 @@ After the mode selection, it is possible to select the operation(s) to execute:
 - [MODFISTO-382](https://issues.folio.org/browse/MODFISTO-382) - Interactive menu
 - [MODFISTO-385](https://issues.folio.org/browse/MODFISTO-385) - Fix encumbrances' fromFundId
 - [MODFISTO-419](https://issues.folio.org/browse/MODFISTO-419) - Add dry-run mode to FYRO script
+- [MODFISTO-383](https://issues.folio.org/browse/MODFISTO-383) - Encumbrance script: release encumbrances for cancelled POLs
