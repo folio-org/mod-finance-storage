@@ -160,9 +160,7 @@ public class LedgerRolloverService {
     }
     log.info("Orders rollover started for Ledger {}", rollover.getLedgerId());
     return orderRolloverRestClient.postEmptyResponse(rollover, requestContext)
-      .recover(t -> handleOrderRolloverError(t, rollover, progress, client))
-      .compose(aVoid -> rolloverProgressService.calculateAndUpdateOverallProgressStatus(
-        progress.withOrdersRolloverStatus(SUCCESS), client));
+      .recover(t -> handleOrderRolloverError(t, rollover, progress, client));
   }
 
   private Future<Void> startFinancialRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
