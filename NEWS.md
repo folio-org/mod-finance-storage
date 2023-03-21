@@ -1,5 +1,13 @@
 ## 8.5.0 - Unreleased
 
+## 8.4.1 - Released (Orchid R1 2023)
+The primary focus of this release was to rewrite the orders rollover interaction in an asynchronous way
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.4.0...v8.4.1)
+
+### Bug Fixes
+* [MODORDERS-865](https://issues.folio.org/browse/MODORDERS-865) Rewrite the orders rollover interaction in an asynchronous way
+
 ## 8.4.0 - Released (Orchid R1 2023)
 The primary focus of this release was to replace Vertx shared lock with DB lock to increase stability
 
