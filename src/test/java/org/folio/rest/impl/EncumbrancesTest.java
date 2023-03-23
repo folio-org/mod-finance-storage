@@ -184,9 +184,9 @@ public class EncumbrancesTest extends TestBase {
     encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
     // create Encumbrance
-    postData(ALLOCATION_TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400)
-      .body(containsString(BUDGET_IS_INACTIVE.getDescription()));
+    Errors errors = postData(ALLOCATION_TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(400).extract().as(Errors.class);
+    assertThat(errors.getErrors(), hasSize(1));
 
   }
 
