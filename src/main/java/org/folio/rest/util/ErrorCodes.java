@@ -13,7 +13,8 @@ public enum ErrorCodes {
   CONFLICT("conflict", "Conflict when updating a record in table {0}: {1}"),
   BUDGET_NOT_FOUND_FOR_TRANSACTION("budgetNotFoundForTransaction", "Budget not found for pair fiscalYear-fundId"),
   OUTDATED_FUND_ID_IN_ENCUMBRANCE("outdatedFundIdInEncumbrance",
-    "Could not find the budget for the encumbrance. The encumbrance fund id is probably not matching the fund id in the invoice line.");
+    "Could not find the budget for the encumbrance. The encumbrance fund id is probably not matching the fund id in the invoice line."),
+  BUDGET_IS_INACTIVE("budgetIsInactive", "Cannot create transaction from the not active budget {0}");
   private final String code;
   private final String description;
 

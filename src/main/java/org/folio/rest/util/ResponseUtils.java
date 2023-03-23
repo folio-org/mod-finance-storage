@@ -79,6 +79,9 @@ public class ResponseUtils {
     if (throwable instanceof HttpException) {
       code = ((HttpException) throwable).getStatusCode();
       message = ((HttpException) throwable).getPayload();
+    } else if (throwable instanceof org.folio.rest.exception.HttpException) {
+      org.folio.rest.exception.HttpException exception = (org.folio.rest.exception.HttpException) throwable;
+      return Future.succeededFuture(buildErrorResponse(exception));
     } else {
       code = INTERNAL_SERVER_ERROR.getStatusCode();
       message = throwable.getMessage();
@@ -91,6 +94,13 @@ public class ResponseUtils {
     return Response.status(code)
       .header(CONTENT_TYPE, code == 422 ? APPLICATION_JSON: TEXT_PLAIN)
       .entity(message)
+      .build();
+  }
+
+  private static Response buildErrorResponse(org.folio.rest.exception.HttpException exception) {
+    return Response.status(exception.getCode())
+      .header(CONTENT_TYPE, APPLICATION_JSON)
+      .entity(exception.getErrors())
       .build();
   }
 

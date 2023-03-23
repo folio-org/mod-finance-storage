@@ -1,21 +1,23 @@
 package org.folio.service.transactions.restriction;
 
-import static org.folio.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
-
-import javax.ws.rs.core.Response;
-
+import io.vertx.core.Future;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.rest.exception.HttpException;
+import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Ledger;
+import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.ledger.LedgerService;
 import org.javamoney.moneta.Money;
 
-import io.vertx.core.Future;
-import io.vertx.ext.web.handler.HttpException;
+import javax.ws.rs.core.Response;
+import java.text.MessageFormat;
+
+import static org.folio.rest.util.ErrorCodes.BUDGET_IS_INACTIVE;
 
 public abstract class BaseTransactionRestrictionService implements TransactionRestrictionService {
 
@@ -39,8 +41,9 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
     return budgetService.getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), fundId, dbClient)
       .compose(budget -> {
         if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
-          log.error(BUDGET_IS_INACTIVE, budget.getId());
-          return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), BUDGET_IS_INACTIVE));
+          Error error = buildBudgetIsInactiveError(budget);
+          log.error(error.getMessage());
+          return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), error));
         }
         if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT || transaction.getAmount() <= 0) {
           return Future.succeededFuture();
@@ -49,6 +52,14 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
           .compose(relatedTransaction -> ledgerService.getLedgerByTransaction(transaction, dbClient)
             .map(ledger -> checkTransactionAllowed(transaction, relatedTransaction, budget, ledger)));
       });
+  }
+
+  private Error buildBudgetIsInactiveError(Budget budget) {
+    final String BUDGET_ID = "budgetId";
+    String description = MessageFormat.format(BUDGET_IS_INACTIVE.getDescription(), budget.getId());
+    Error error = new Error().withCode(BUDGET_IS_INACTIVE.getCode()).withMessage(description);
+    error.getParameters().add(new Parameter().withKey(BUDGET_ID).withValue(budget.getId()));
+    return error;
   }
 
   protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient dbClient) {
