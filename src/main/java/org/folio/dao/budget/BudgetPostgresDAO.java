@@ -29,6 +29,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
 
   private final Logger logger = LogManager.getLogger(this.getClass());
 
+  @Override
   public Future<Integer> updateBatchBudgets(String sql, DBClient client) {
     Promise<Integer> promise = Promise.promise();
 
@@ -42,7 +43,8 @@ public class BudgetPostgresDAO implements BudgetDAO {
     return promise.future();
   }
 
-  public Future<List<Budget>> getBudgets(String sql, Tuple params, DBClient client) {
+  @Override
+  public Future<List<Budget>> getBudgetsTx(String sql, Tuple params, DBClient client) {
     Promise<List<Budget>> promise = Promise.promise();
     client.getPgClient()
       .select(client.getConnection(), sql, params, reply -> {
@@ -58,6 +60,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
     return promise.future();
   }
 
+  @Override
   public Future<List<Budget>> getBudgets(Criterion criterion, DBClient client) {
     Promise<List<Budget>> promise = Promise.promise();
     client.getPgClient().get(BUDGET_TABLE, Budget.class, criterion, false, reply -> {
@@ -70,6 +73,21 @@ public class BudgetPostgresDAO implements BudgetDAO {
           promise.complete(budgets);
         }
       });
+    return promise.future();
+  }
+
+  @Override
+  public Future<List<Budget>> getBudgetsTx(Criterion criterion, DBClient client) {
+    Promise<List<Budget>> promise = Promise.promise();
+    client.getPgClient().get(client.getConnection(), BUDGET_TABLE, Budget.class, criterion, false, false, reply -> {
+      if (reply.failed()) {
+        handleFailure(promise, reply);
+      } else {
+        List<Budget> budgets = reply.result().getResults();
+        budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
+        promise.complete(budgets);
+      }
+    });
     return promise.future();
   }
 

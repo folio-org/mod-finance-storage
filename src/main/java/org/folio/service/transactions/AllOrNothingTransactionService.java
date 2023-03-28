@@ -72,21 +72,21 @@ public class AllOrNothingTransactionService {
   }
 
   private Future<Void> validateTransactionAsFuture(Transaction transaction) {
-    try {
-      transactionRestrictionService.handleValidationError(transaction);
-      return Future.succeededFuture();
-    } catch (HttpException e) {
-      return Future.failedFuture(e);
-    }
+    return Future.succeededFuture()
+      .map(v -> {
+        transactionRestrictionService.handleValidationError(transaction);
+        return null;
+      });
   }
 
   private Future<Void> cleanupTempTransactions(Transaction transaction, DBClient client) {
     final String summaryId = transactionSummaryService.getSummaryId(transaction);
     return temporaryTransactionDAO.deleteTempTransactionsWithNewConn(summaryId, client)
-                                  .compose(count -> Future.succeededFuture(null), t -> {
-                                    log.error("Can't delete temporary transaction for {}", summaryId);
-                                    return Future.failedFuture(t);
-                                  });
+      .recover(t -> {
+        log.error("Can't delete temporary transaction for {}", summaryId);
+        return Future.failedFuture(t);
+      })
+      .mapEmpty();
   }
 
   /**

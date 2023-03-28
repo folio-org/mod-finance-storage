@@ -71,7 +71,7 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
   }
 
   @Override
-  public Void handleValidationError(Transaction transaction) {
+  public void handleValidationError(Transaction transaction) {
     List<Error> errors = new ArrayList<>();
 
     if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT) {
@@ -84,7 +84,6 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
         .withTotalRecords(errors.size()))
         .encode());
     }
-    return null;
   }
 
   @Override
