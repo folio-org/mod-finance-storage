@@ -83,7 +83,7 @@ public class AllOrNothingTransactionService {
     final String summaryId = transactionSummaryService.getSummaryId(transaction);
     return temporaryTransactionDAO.deleteTempTransactionsWithNewConn(summaryId, client)
       .recover(t -> {
-        log.error("Can't delete temporary transaction for {}", summaryId);
+        log.error("Can't delete temporary transaction for {}", summaryId, t);
         return Future.failedFuture(t);
       })
       .mapEmpty();
