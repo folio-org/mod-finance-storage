@@ -60,6 +60,14 @@ public class BudgetPostgresDAO implements BudgetDAO {
     return promise.future();
   }
 
+  /**
+   * Receives a list of budgets by criteria. In current implementation postgres client will create a new database connection with
+   * new transaction every time.
+   * Use this method if transactional mode is not required.
+   *
+   * @param criterion the set of filters for searching budgets
+   * @param client : the list of payments and credits
+   */
   @Override
   public Future<List<Budget>> getBudgets(Criterion criterion, DBClient client) {
     Promise<List<Budget>> promise = Promise.promise();
@@ -76,6 +84,13 @@ public class BudgetPostgresDAO implements BudgetDAO {
     return promise.future();
   }
 
+  /**
+   * Receives a list of budgets by criteria with using the same connection. Such behavior supports processing the set
+   * of operations in scope of the same transaction. This method should be used only for transactional mode.
+   *
+   * @param criterion the set of filters for searching budgets
+   * @param client : the list of payments and credits
+   */
   @Override
   public Future<List<Budget>> getBudgetsTx(Criterion criterion, DBClient client) {
     Promise<List<Budget>> promise = Promise.promise();
