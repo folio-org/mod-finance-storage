@@ -60,7 +60,7 @@ public class TransferService extends AbstractTransactionService implements Trans
             client.rollbackTransaction();
           } else {
             promise.complete(transfer);
-            log.info("Transactions and associated data were successfully processed");
+            log.info("Transfer and associated data were successfully processed");
           }
         })).onFailure(throwable -> {
          client.rollbackTransaction();
