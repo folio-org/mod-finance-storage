@@ -30,17 +30,16 @@ public class ExpenseClassAPI implements FinanceStorageExpenseClasses {
 
   @Override
   @Validate
-  public void getFinanceStorageExpenseClasses(String query, @Min(0) @Max(2147483647) int offset, @Min(0) @Max(2147483647) int limit,
-      @Pattern(regexp = "[a-zA-Z]{2}") String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageExpenseClasses(String query, String totalRecords, @Min(0) @Max(2147483647) int offset, @Min(0) @Max(2147483647) int limit,
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(EXPENSE_CLASS_TABLE, ExpenseClass.class, ExpenseClassCollection.class, query, offset, limit, okapiHeaders,
         vertxContext, FinanceStorageExpenseClasses.GetFinanceStorageExpenseClassesResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void postFinanceStorageExpenseClasses(@Pattern(regexp = "[a-zA-Z]{2}") String lang, ExpenseClass entity,
-      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void postFinanceStorageExpenseClasses(ExpenseClass entity, Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     expenseClassService.createExpenseClass(entity, vertxContext, asyncResultHandler);
   }
 
@@ -48,8 +47,7 @@ public class ExpenseClassAPI implements FinanceStorageExpenseClasses {
   @Validate
   public void getFinanceStorageExpenseClassesById(
       @Pattern(regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$") String id,
-      @Pattern(regexp = "[a-zA-Z]{2}") String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(EXPENSE_CLASS_TABLE, ExpenseClass.class, id, okapiHeaders, vertxContext,
         FinanceStorageExpenseClasses.GetFinanceStorageExpenseClassesByIdResponse.class, asyncResultHandler);
   }
@@ -58,8 +56,7 @@ public class ExpenseClassAPI implements FinanceStorageExpenseClasses {
   @Validate
   public void deleteFinanceStorageExpenseClassesById(
       @Pattern(regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$") String id,
-      @Pattern(regexp = "[a-zA-Z]{2}") String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(EXPENSE_CLASS_TABLE, id, okapiHeaders, vertxContext,
         FinanceStorageExpenseClasses.DeleteFinanceStorageExpenseClassesByIdResponse.class, asyncResultHandler);
   }
@@ -68,8 +65,7 @@ public class ExpenseClassAPI implements FinanceStorageExpenseClasses {
   @Validate
   public void putFinanceStorageExpenseClassesById(
       @Pattern(regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$") String id,
-      @Pattern(regexp = "[a-zA-Z]{2}") String lang, ExpenseClass entity, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+      ExpenseClass entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     expenseClassService.updateExpenseClass(id, entity, vertxContext, asyncResultHandler);
   }
 }

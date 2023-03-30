@@ -15,9 +15,9 @@ public class BudgetExpenseClassAPI implements FinanceStorageBudgetExpenseClasses
   public static final String BUDGET_EXPENSE_CLASS_TABLE = "budget_expense_class";
   @Override
   public void getFinanceStorageBudgetExpenseClasses(String query,
+                                                    String totalRecords,
                                                     int offset,
                                                     int limit,
-                                                    String lang,
                                                     Map<String, String> okapiHeaders,
                                                     Handler<AsyncResult<Response>> asyncResultHandler,
                                                     Context vertxContext) {
@@ -27,8 +27,7 @@ public class BudgetExpenseClassAPI implements FinanceStorageBudgetExpenseClasses
   }
 
   @Override
-  public void postFinanceStorageBudgetExpenseClasses(String lang,
-                                                     BudgetExpenseClass entity,
+  public void postFinanceStorageBudgetExpenseClasses(BudgetExpenseClass entity,
                                                      Map<String, String> okapiHeaders,
                                                      Handler<AsyncResult<Response>> asyncResultHandler,
                                                      Context vertxContext) {
@@ -39,7 +38,6 @@ public class BudgetExpenseClassAPI implements FinanceStorageBudgetExpenseClasses
 
   @Override
   public void getFinanceStorageBudgetExpenseClassesById(String id,
-                                                        String lang,
                                                         Map<String, String> okapiHeaders,
                                                         Handler<AsyncResult<Response>> asyncResultHandler,
                                                         Context vertxContext) {
@@ -50,7 +48,6 @@ public class BudgetExpenseClassAPI implements FinanceStorageBudgetExpenseClasses
 
   @Override
   public void deleteFinanceStorageBudgetExpenseClassesById(String id,
-                                                           String lang,
                                                            Map<String, String> okapiHeaders,
                                                            Handler<AsyncResult<Response>> asyncResultHandler,
                                                            Context vertxContext) {
@@ -61,7 +58,6 @@ public class BudgetExpenseClassAPI implements FinanceStorageBudgetExpenseClasses
 
   @Override
   public void putFinanceStorageBudgetExpenseClassesById(String id,
-                                                        String lang,
                                                         BudgetExpenseClass entity,
                                                         Map<String, String> okapiHeaders,
                                                         Handler<AsyncResult<Response>> asyncResultHandler,

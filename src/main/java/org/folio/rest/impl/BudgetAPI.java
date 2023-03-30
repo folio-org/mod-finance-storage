@@ -28,7 +28,7 @@ public class BudgetAPI implements FinanceStorageBudgets {
 
   @Override
   @Validate
-  public void getFinanceStorageBudgets(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageBudgets(String query, String totalRecords, int offset, int limit, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(BUDGET_TABLE, Budget.class, BudgetCollection.class, query, offset, limit, okapiHeaders, vertxContext,
       GetFinanceStorageBudgetsResponse.class, responseAsyncResult -> {
         Response result = responseAsyncResult.result();
@@ -41,13 +41,13 @@ public class BudgetAPI implements FinanceStorageBudgets {
 
   @Override
   @Validate
-  public void postFinanceStorageBudgets(String lang, Budget entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void postFinanceStorageBudgets(Budget entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.post(BUDGET_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageBudgetsResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void getFinanceStorageBudgetsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageBudgetsById(String id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(BUDGET_TABLE, Budget.class, id, okapiHeaders, vertxContext, GetFinanceStorageBudgetsByIdResponse.class, responseAsyncResult -> {
       Response result = responseAsyncResult.result();
       if (!responseAsyncResult.failed() && responseAsyncResult.result().getEntity() instanceof Budget) {
@@ -60,13 +60,13 @@ public class BudgetAPI implements FinanceStorageBudgets {
 
   @Override
   @Validate
-  public void deleteFinanceStorageBudgetsById(String id, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void deleteFinanceStorageBudgetsById(String id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     budgetService.deleteById(id, vertxContext, okapiHeaders, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void putFinanceStorageBudgetsById(String id, String lang, Budget entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void putFinanceStorageBudgetsById(String id, Budget entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(BUDGET_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageBudgetsByIdResponse.class, asyncResultHandler);
   }
 }
