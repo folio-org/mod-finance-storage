@@ -21,6 +21,7 @@ import static org.folio.rest.util.ErrorCodes.BUDGET_IS_INACTIVE;
 
 public abstract class BaseTransactionRestrictionService implements TransactionRestrictionService {
 
+  private static final String BUDGET_ID = "budgetId";
   public static final String FUND_CANNOT_BE_PAID = "Fund cannot be paid due to restrictions";
 
   protected final Logger log = LogManager.getLogger(this.getClass());
@@ -55,7 +56,6 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
   }
 
   private Error buildBudgetIsInactiveError(Budget budget) {
-    final String BUDGET_ID = "budgetId";
     String description = MessageFormat.format(BUDGET_IS_INACTIVE.getDescription(), budget.getId());
     Error error = new Error().withCode(BUDGET_IS_INACTIVE.getCode()).withMessage(description);
     error.getParameters().add(new Parameter().withKey(BUDGET_ID).withValue(budget.getId()));
