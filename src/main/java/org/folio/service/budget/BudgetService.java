@@ -132,25 +132,28 @@ public class BudgetService {
     return promise.future();
   }
 
-  public Future<Budget> getBudgetByFundIdAndFiscalYearId(String fiscalYearId, String fundId, DBClient dbClient) {
+  public Future<Budget> getBudgetByFundIdAndFiscalYearId(String fiscalYearId, String fundId, DBClient dbClient, boolean withTx) {
     Promise<Budget> promise = Promise.promise();
 
     Criterion criterion = new CriterionBuilder().with("fundId", fundId)
       .with("fiscalYearId", fiscalYearId)
       .build();
-
-    budgetDAO.getBudgets(criterion, dbClient)
+    Future.succeededFuture()
+      .compose(v -> {
+        if (withTx) {
+          return budgetDAO.getBudgetsTx(criterion, dbClient);
+        }
+        return budgetDAO.getBudgets(criterion, dbClient);
+      })
       .onComplete(reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
-        } else if (reply.result()
-          .isEmpty()) {
+        } else if (reply.result().isEmpty()) {
           logger.error("Budget not found for fundId: {} and fiscalYearId: {}", fundId, fiscalYearId);
           promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(),
-            JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily()));
+              JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily()));
         } else {
-          promise.complete(reply.result()
-            .get(0));
+          promise.complete(reply.result().get(0));
         }
       });
 
@@ -162,7 +165,7 @@ public class BudgetService {
 
     String sql = getSelectBudgetQueryByFyAndFundForUpdate(dbClient.getTenantId());
 
-    budgetDAO.getBudgets(sql, Tuple.of(fiscalYearId, fundId), dbClient)
+    budgetDAO.getBudgetsTx(sql, Tuple.of(fiscalYearId, fundId), dbClient)
       .onComplete(reply -> {
         if (reply.failed()) {
           handleFailure(promise, reply);
@@ -193,7 +196,7 @@ public class BudgetService {
   }
 
   public Future<List<Budget>> getBudgets(String sql, Tuple params, DBClient client) {
-    return budgetDAO.getBudgets(sql, params, client);
+    return budgetDAO.getBudgetsTx(sql, params, client);
   }
 
   public void updateBudgetMetadata(Budget budget, Transaction transaction) {
@@ -219,7 +222,7 @@ public class BudgetService {
       return Future.succeededFuture();
     }
 
-    return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), client).compose(budget -> {
+    return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), client, true).compose(budget -> {
       if (budget.getAvailable() < transaction.getAmount()) {
         ErrorCodes errorCode = transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION ?
           NOT_ENOUGH_MONEY_FOR_ALLOCATION : GENERIC_ERROR_CODE;

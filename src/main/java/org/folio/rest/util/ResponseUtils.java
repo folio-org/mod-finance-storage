@@ -53,6 +53,7 @@ public class ResponseUtils {
 
   public static <T, V> void handleFailure(Promise<T> promise, AsyncResult<V> reply) {
     Throwable cause = reply.cause();
+    logger.error(cause.getMessage());
     if (cause instanceof PgException && "23F09".equals(((PgException)cause).getCode())) {
       String message = MessageFormat.format(ErrorCodes.CONFLICT.getDescription(), ((PgException)cause).getTable(),
         ((PgException)cause).getErrorMessage());
@@ -63,7 +64,6 @@ public class ResponseUtils {
     if (badRequestMessage != null) {
       promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), badRequestMessage));
     } else {
-      logger.error(cause.getMessage());
       promise.fail(new HttpException(INTERNAL_SERVER_ERROR.getStatusCode(), cause.getMessage()));
     }
   }

@@ -13,9 +13,10 @@ public interface BudgetDAO {
 
   Future<Integer> updateBatchBudgets(String sql, DBClient client);
 
-  Future<List<Budget>> getBudgets(String sql, Tuple params, DBClient client);
+  Future<List<Budget>> getBudgetsTx(String sql, Tuple params, DBClient client);
 
   Future<List<Budget>> getBudgets(Criterion criterion, DBClient client);
+  Future<List<Budget>> getBudgetsTx(Criterion criterion, DBClient client);
 
   Future<Budget> getBudgetById(String id, DBClient client);
 

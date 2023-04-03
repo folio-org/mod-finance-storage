@@ -57,7 +57,7 @@ public class EncumbranceRestrictionService extends BaseTransactionRestrictionSer
   }
 
   @Override
-  public Void handleValidationError(Transaction transaction) {
+  public void handleValidationError(Transaction transaction) {
     List<Error> errors = new ArrayList<>();
 
     errors.addAll(buildNullValidationError(getSummaryId(transaction), "encumbrance"));
@@ -68,7 +68,6 @@ public class EncumbranceRestrictionService extends BaseTransactionRestrictionSer
         .withTotalRecords(errors.size()))
         .encode());
     }
-    return null;
   }
 
   private String getSummaryId(Transaction transaction) {

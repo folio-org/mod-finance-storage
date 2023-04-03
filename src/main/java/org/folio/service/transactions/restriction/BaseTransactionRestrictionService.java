@@ -39,7 +39,7 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
   public Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, DBClient dbClient) {
     String fundId = transaction.getTransactionType() == Transaction.TransactionType.CREDIT ? transaction.getToFundId() : transaction.getFromFundId();
 
-    return budgetService.getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), fundId, dbClient)
+    return budgetService.getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), fundId, dbClient, false)
       .compose(budget -> {
         if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
           Error error = buildBudgetIsInactiveError(budget);

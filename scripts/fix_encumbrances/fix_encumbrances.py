@@ -4,6 +4,7 @@ import getpass
 import json
 import sys
 import time
+from datetime import datetime
 from decimal import Decimal
 from http import HTTPStatus
 
@@ -108,20 +109,16 @@ async def delete_request(url: str):
         raise SystemExit(1)
 
 
-def get_fiscal_year_ids_by_query(query) -> list:
+def get_fiscal_years_by_query(query) -> dict:
     params = {'query': query, 'offset': '0', 'limit': ITEM_MAX}
     try:
         r = requests.get(okapi_url + 'finance-storage/fiscal-years', headers=headers, params=params)
         if r.status_code != 200:
             raise_exception_for_reply(r)
-        fiscal_years = r.json()['fiscalYears']
-        ids = []
-        for fiscal_year in fiscal_years:
-            ids.append(fiscal_year['id'])
+        return r.json()['fiscalYears']
     except Exception as err:
-        print(f'Error getting fiscal year ids with query "{query}": {err}')
+        print(f'Error getting fiscal years with query "{query}": {err}')
         raise SystemExit(1)
-    return ids
 
 
 def get_by_chunks(url, query, key) -> list:
@@ -178,13 +175,20 @@ async def get_encumbrance_by_ids(encumbrance_ids) -> list:
     return resp['transactions']
 
 
-def get_fiscal_year_id(fiscal_year_code) -> str:
+def get_fiscal_year(fiscal_year_code) -> dict:
     query = f'code=="{fiscal_year_code}"'
-    fiscal_year_ids = get_fiscal_year_ids_by_query(query)
-    if len(fiscal_year_ids) == 0:
+    fiscal_years = get_fiscal_years_by_query(query)
+    if len(fiscal_years) == 0:
         print(f'Could not find fiscal year "{fiscal_year_code}".')
         raise SystemExit(1)
-    return fiscal_year_ids[0]
+    return fiscal_years[0]
+
+
+def test_fiscal_year_current(fiscal_year) -> bool:
+    start = datetime.fromisoformat(fiscal_year['periodStart'])
+    end = datetime.fromisoformat(fiscal_year['periodEnd'])
+    now = datetime.now().astimezone()
+    return start < now < end
 
 
 def get_closed_orders_ids() -> list:
@@ -264,7 +268,7 @@ def find_encumbrances_to_remove(encumbrances) -> list:
             expense_class_id = None
         fiscal_year_id = enc1['fiscalYearId']
         for enc2 in released_encumbrances:
-            ec_test = (expense_class_id is None and 'expenseClassId' not in enc2) or\
+            ec_test = (expense_class_id is None and 'expenseClassId' not in enc2) or \
                       (expense_class_id is not None and 'expenseClassId' in enc2 and
                        enc2['expenseClassId'] == expense_class_id)
             if (enc2['fromFundId'] == from_fund_id and enc2['encumbrance']['sourcePoLineId'] == source_po_line_id and
@@ -400,7 +404,7 @@ def check_if_fd_needs_updates_and_update_fd(poline, order_encumbrances, fd) -> b
     fd_fund_id = fd['fundId']
     for enc in order_encumbrances:
         if enc['encumbrance']['sourcePoLineId'] == poline_id and float(enc['amount']) != 0.0 and \
-           enc['fromFundId'] == fd_fund_id:
+                enc['fromFundId'] == fd_fund_id:
             fd_encumbrance_id = fd['encumbrance']
             if enc['id'] == fd_encumbrance_id:
                 return False
@@ -430,13 +434,14 @@ async def fix_poline_encumbrance_link(poline, order_encumbrances):
         await put_request(url, poline)
 
 
-async def process_poline_encumbrances_relations(poline, order_encumbrances):
+async def process_poline_encumbrances_relations(poline, order_encumbrances, fy_is_current):
     await fix_poline_encumbrance_fund_id(poline, order_encumbrances)
-    await fix_poline_encumbrance_link(poline, order_encumbrances)
+    if fy_is_current:
+        await fix_poline_encumbrance_link(poline, order_encumbrances)
 
 
 # Get encumbrances for the fiscal year and call process_po_line_encumbrances_relations() for each po line
-async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_sem):
+async def process_order_encumbrances_relations(order_id, fiscal_year_id, fy_is_current, order_sem):
     po_lines = await get_polines_by_order_id(order_id)
     if len(po_lines) == 0:
         order_sem.release()
@@ -447,24 +452,26 @@ async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_s
         return
 
     for po_line in po_lines:
-        await process_poline_encumbrances_relations(po_line, order_encumbrances)
+        await process_poline_encumbrances_relations(po_line, order_encumbrances, fy_is_current)
 
     order_sem.release()
 
 
 # Call process_order_encumbrances_relations() for each order
-async def fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id):
+async def fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, fy_is_current):
     print('Fixing poline-encumbrance links...')
     if len(open_orders_ids) == 0:
         print('  Found no open orders.')
         return
+    if not fy_is_current:
+        print('  Fiscal year is not current, fix_poline_encumbrance_link() will be skipped.')
     orders_futures = []
     order_sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
     for idx, order_id in enumerate(open_orders_ids):
         await order_sem.acquire()
         progress(idx, len(open_orders_ids))
         orders_futures.append(asyncio.ensure_future(process_order_encumbrances_relations(
-            order_id, fiscal_year_id, order_sem)))
+            order_id, fiscal_year_id, fy_is_current, order_sem)))
     await asyncio.gather(*orders_futures)
     progress(len(open_orders_ids), len(open_orders_ids))
 
@@ -474,7 +481,7 @@ async def fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id):
 
 async def get_order_encumbrances_to_fix(order_id, fiscal_year_id) -> dict:
     query = f'encumbrance.orderStatus<>"Closed" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
-        f'fiscalYearId=={fiscal_year_id}'
+            f'fiscalYearId=={fiscal_year_id}'
     url = okapi_url + 'finance-storage/transactions'
 
     return await get_request(url, query)
@@ -600,7 +607,7 @@ async def unrelease_encumbrances(order_id, encumbrances):
 
 async def unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id, sem) -> int:
     query = f'amount<>0.0 AND encumbrance.status=="Released" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
-        f'fiscalYearId=={fiscal_year_id}'
+            f'fiscalYearId=={fiscal_year_id}'
     transactions_response = await get_request(okapi_url + 'finance-storage/transactions', query)
 
     order_encumbrances = transactions_response['transactions']
@@ -648,8 +655,8 @@ async def release_encumbrances(order_id, encumbrances):
 
 async def release_encumbrances_with_negative_amounts(order_id, fiscal_year_id, sem) -> int:
     query = 'amount </number 0 AND encumbrance.status=="Unreleased" AND ' \
-        f'(encumbrance.amountAwaitingPayment >/number 0 OR encumbrance.amountExpended >/number 0) AND ' \
-        f'encumbrance.sourcePurchaseOrderId=={order_id} AND fiscalYearId=={fiscal_year_id}'
+            f'(encumbrance.amountAwaitingPayment >/number 0 OR encumbrance.amountExpended >/number 0) AND ' \
+            f'encumbrance.sourcePurchaseOrderId=={order_id} AND fiscalYearId=={fiscal_year_id}'
     transactions_response = await get_request(okapi_url + 'finance-storage/transactions', query)
 
     order_encumbrances = transactions_response['transactions']
@@ -785,7 +792,7 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
 
 async def get_order_encumbrances_to_release(order_id, fiscal_year_id) -> list:
     query = f'encumbrance.status=="Unreleased" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
-        f'fiscalYearId=={fiscal_year_id}'
+            f'fiscalYearId=={fiscal_year_id}'
     return await get_encumbrances_by_query(query)
 
 
@@ -819,9 +826,9 @@ async def release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, f
 # ---------------------------------------------------
 # All operations
 
-async def all_operations(closed_orders_ids, open_orders_ids, open_and_closed_orders_ids, fiscal_year_id):
+async def all_operations(closed_orders_ids, open_orders_ids, open_and_closed_orders_ids, fiscal_year_id, fy_is_current):
     await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id)
-    await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id)
+    await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, fy_is_current)
     await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
     await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
     await release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids)
@@ -862,13 +869,16 @@ async def run_operation(choice, fiscal_year_code, tenant, username, password):
     global headers
     initial_time = time.time()
     headers = login(tenant, username, password)
-    fiscal_year_id = get_fiscal_year_id(fiscal_year_code)
+    fiscal_year = get_fiscal_year(fiscal_year_code)
+    fy_is_current = test_fiscal_year_current(fiscal_year)
+    fiscal_year_id = fiscal_year['id']
 
     if choice == 1:
         closed_orders_ids = get_closed_orders_ids()
         open_orders_ids = get_open_orders_ids()
         open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
-        await all_operations(closed_orders_ids, open_orders_ids, open_and_closed_orders_ids, fiscal_year_id)
+        await all_operations(closed_orders_ids, open_orders_ids, open_and_closed_orders_ids, fiscal_year_id,
+                             fy_is_current)
     elif choice == 2:
         closed_orders_ids = get_closed_orders_ids()
         open_orders_ids = get_open_orders_ids()
@@ -876,7 +886,7 @@ async def run_operation(choice, fiscal_year_code, tenant, username, password):
         await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id)
     elif choice == 3:
         open_orders_ids = get_open_orders_ids()
-        await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id)
+        await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, fy_is_current)
     elif choice == 4:
         closed_orders_ids = get_closed_orders_ids()
         await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)

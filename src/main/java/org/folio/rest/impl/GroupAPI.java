@@ -32,7 +32,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
 
   @Override
   @Validate
-  public void getFinanceStorageGroups(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
+  public void getFinanceStorageGroups(String query, String totalRecords, int offset, int limit, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(GROUPS_TABLE, Group.class, GroupCollection.class, query, offset, limit, okapiHeaders, vertxContext,
         GetFinanceStorageGroupsResponse.class, asyncResultHandler);
@@ -40,14 +40,14 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
 
   @Override
   @Validate
-  public void postFinanceStorageGroups(String lang, Group entity, Map<String, String> okapiHeaders,
+  public void postFinanceStorageGroups(Group entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     groupService.createGroup( entity, vertxContext, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void getFinanceStorageGroupsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void getFinanceStorageGroupsById(String id, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(GROUPS_TABLE, Group.class, id, okapiHeaders, vertxContext, GetFinanceStorageGroupsByIdResponse.class,
         asyncResultHandler);
@@ -55,7 +55,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
 
   @Override
   @Validate
-  public void deleteFinanceStorageGroupsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void deleteFinanceStorageGroupsById(String id, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(GROUPS_TABLE, id, okapiHeaders, vertxContext, DeleteFinanceStorageGroupsByIdResponse.class,
         asyncResultHandler);
@@ -63,14 +63,14 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
 
   @Override
   @Validate
-  public void putFinanceStorageGroupsById(String id, String lang, Group entity, Map<String, String> okapiHeaders,
+  public void putFinanceStorageGroupsById(String id, Group entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     groupService.updateGroup( entity, id, vertxContext, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void getFinanceStorageGroupFundFiscalYears(String query, int offset, int limit, String lang,
+  public void getFinanceStorageGroupFundFiscalYears(String query, String totalRecords, int offset, int limit,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(GROUP_FUND_FY_TABLE, GroupFundFiscalYear.class, GroupFundFiscalYearCollection.class, query, offset, limit,
         okapiHeaders, vertxContext, GetFinanceStorageGroupFundFiscalYearsResponse.class, asyncResultHandler);
@@ -78,7 +78,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
 
   @Override
   @Validate
-  public void postFinanceStorageGroupFundFiscalYears(String lang, GroupFundFiscalYear entity, Map<String, String> okapiHeaders,
+  public void postFinanceStorageGroupFundFiscalYears(GroupFundFiscalYear entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.post(GROUP_FUND_FY_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageGroupFundFiscalYearsResponse.class,
         asyncResultHandler);
@@ -86,7 +86,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
 
   @Override
   @Validate
-  public void getFinanceStorageGroupFundFiscalYearsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void getFinanceStorageGroupFundFiscalYearsById(String id, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(GROUP_FUND_FY_TABLE, GroupFundFiscalYear.class, id, okapiHeaders, vertxContext,
         GetFinanceStorageGroupFundFiscalYearsByIdResponse.class, asyncResultHandler);
@@ -94,7 +94,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
 
   @Override
   @Validate
-  public void deleteFinanceStorageGroupFundFiscalYearsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void deleteFinanceStorageGroupFundFiscalYearsById(String id, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(GROUP_FUND_FY_TABLE, id, okapiHeaders, vertxContext,
         DeleteFinanceStorageGroupFundFiscalYearsByIdResponse.class, asyncResultHandler);
@@ -102,7 +102,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
 
   @Override
   @Validate
-  public void putFinanceStorageGroupFundFiscalYearsById(String id, String lang, GroupFundFiscalYear entity,
+  public void putFinanceStorageGroupFundFiscalYearsById(String id, GroupFundFiscalYear entity,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(GROUP_FUND_FY_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageGroupFundFiscalYearsByIdResponse.class,
         asyncResultHandler);

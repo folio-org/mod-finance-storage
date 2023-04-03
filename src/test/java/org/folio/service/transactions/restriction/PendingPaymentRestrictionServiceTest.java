@@ -1,7 +1,15 @@
 package org.folio.service.transactions.restriction;
 
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.HttpException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Collections;
+import java.util.UUID;
+
+import javax.money.MonetaryAmount;
+
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -14,14 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.MockitoAnnotations;
 
-import javax.money.MonetaryAmount;
-import java.util.Collections;
-import java.util.UUID;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.HttpException;
 
 public class PendingPaymentRestrictionServiceTest {
 
@@ -67,7 +69,7 @@ public class PendingPaymentRestrictionServiceTest {
 
   @Test
   void testHandleValidationErrorValidTransaction() {
-    assertNull(restrictionService.handleValidationError(new Transaction().withFromFundId(fundId)));
+    assertDoesNotThrow(() -> restrictionService.handleValidationError(new Transaction().withFromFundId(fundId)));
   }
 
   @Test

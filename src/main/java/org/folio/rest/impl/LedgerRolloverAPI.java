@@ -42,7 +42,7 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
 
   @Override
   @Validate
-  public void getFinanceStorageLedgerRollovers(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
+  public void getFinanceStorageLedgerRollovers(String query, String totalRecords, int offset, int limit, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(LEDGER_FISCAL_YEAR_ROLLOVER_TABLE, LedgerFiscalYearRollover.class, LedgerFiscalYearRolloverCollection.class, query, offset, limit, okapiHeaders, vertxContext,
       GetFinanceStorageLedgerRolloversResponse.class, asyncResultHandler);
@@ -50,7 +50,7 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
 
   @Override
   @Validate
-  public void postFinanceStorageLedgerRollovers(String lang, LedgerFiscalYearRollover entity, Map<String, String> okapiHeaders,
+  public void postFinanceStorageLedgerRollovers(LedgerFiscalYearRollover entity, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     ledgerRolloverService.rolloverLedger(entity, new RequestContext(vertxContext, okapiHeaders))
             .onComplete(result -> {
@@ -71,14 +71,14 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
 
   @Override
   @Validate
-  public void getFinanceStorageLedgerRolloversById(String id, String lang, Map<String, String> okapiHeaders,
+  public void getFinanceStorageLedgerRolloversById(String id, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(LEDGER_FISCAL_YEAR_ROLLOVER_TABLE, LedgerFiscalYearRollover.class, id, okapiHeaders, vertxContext, GetFinanceStorageLedgerRolloversByIdResponse.class, asyncResultHandler);
   }
 
   @Override
   @Validate
-  public void deleteFinanceStorageLedgerRolloversById(String rolloverId, String lang, Map<String, String> okapiHeaders,
+  public void deleteFinanceStorageLedgerRolloversById(String rolloverId, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     ledgerRolloverService.deleteRollover(rolloverId, new RequestContext(vertxContext, okapiHeaders))
       .onComplete(result -> {
@@ -94,7 +94,7 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
 
   @Override
   @Validate
-  public void putFinanceStorageLedgerRolloversById(String id, String lang, LedgerFiscalYearRollover entity,
+  public void putFinanceStorageLedgerRolloversById(String id, LedgerFiscalYearRollover entity,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(LEDGER_FISCAL_YEAR_ROLLOVER_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageLedgerRolloversByIdResponse.class, asyncResultHandler);
   }

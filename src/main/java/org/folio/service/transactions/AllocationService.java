@@ -55,12 +55,12 @@ public class AllocationService extends DefaultTransactionService implements Tran
       .compose(ok -> client.endTx())
       .onComplete(result -> {
         if (result.failed()) {
-          log.error("Transfer or associated data failed to be processed", result.cause());
+          log.error("Allocation or associated data failed to be processed", result.cause());
           client.rollbackTransaction();
           promise.fail(result.cause());
         } else {
           promise.complete(allocation);
-          log.info("Transactions and associated data were successfully processed");
+          log.info("Allocation and associated data were successfully processed");
         }
       });
     return promise.future();
@@ -69,8 +69,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
   private Future<Transaction> createAllocation(Transaction transaction, DBClient client) {
     Promise<Transaction> promise = Promise.promise();
     if (StringUtils.isEmpty(transaction.getId())) {
-      transaction.setId(UUID.randomUUID()
-        .toString());
+      transaction.setId(UUID.randomUUID().toString());
     }
 
     client.getPgClient()
@@ -106,8 +105,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
     }
     return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(allocation.getFiscalYearId(), allocation.getFromFundId(), client)
       .map(budgetFrom -> {
-        Budget budgetFromNew = JsonObject.mapFrom(budgetFrom)
-          .mapTo(Budget.class);
+        Budget budgetFromNew = JsonObject.mapFrom(budgetFrom).mapTo(Budget.class);
         CalculationUtils.recalculateBudgetAllocationFrom(budgetFromNew, allocation, allocation.getAmount());
         budgetService.updateBudgetMetadata(budgetFromNew, allocation);
         return budgetFromNew;
