@@ -20,11 +20,11 @@ public class GroupBudgetAPI implements FinanceStorageGroupBudgets {
   public static final String GROUP_BUDGET_VIEW = "group_budgets_view";
 
   @Override
-  public void getFinanceStorageGroupBudgets(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageGroupBudgets(String query, String totalRecords, int offset, int limit, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
     EntitiesMetadataHolder<Budget, BudgetCollection> entitiesMetadataHolder = new EntitiesMetadataHolder<>(
       Budget.class, BudgetCollection.class, GetFinanceStorageGroupBudgetsResponse.class);
-    QueryHolder cql = new QueryHolder(GROUP_BUDGET_VIEW, query, offset, limit, lang);
+    QueryHolder cql = new QueryHolder(GROUP_BUDGET_VIEW, query, offset, limit);
     getEntitiesCollectionWithDistinctOn(entitiesMetadataHolder, cql, ID_FIELD_NAME, asyncResultHandler, vertxContext, okapiHeaders);
   }
 

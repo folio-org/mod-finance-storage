@@ -20,7 +20,7 @@ public class LedgerRolloverErrorAPI implements FinanceStorageLedgerRolloversErro
 
   @Override
   @Validate
-  public void getFinanceStorageLedgerRolloversErrors(String query, int offset, int limit, String lang,
+  public void getFinanceStorageLedgerRolloversErrors(String query, String totalRecords, int offset, int limit,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.get(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, LedgerFiscalYearRolloverError.class,
         LedgerFiscalYearRolloverErrorCollection.class, query, offset, limit, okapiHeaders, vertxContext,
@@ -29,7 +29,7 @@ public class LedgerRolloverErrorAPI implements FinanceStorageLedgerRolloversErro
 
   @Override
   @Validate
-  public void postFinanceStorageLedgerRolloversErrors(String lang, LedgerFiscalYearRolloverError entity,
+  public void postFinanceStorageLedgerRolloversErrors(LedgerFiscalYearRolloverError entity,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.post(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, entity, okapiHeaders, vertxContext,
         PostFinanceStorageLedgerRolloversErrorsResponse.class, asyncResultHandler);
@@ -37,7 +37,7 @@ public class LedgerRolloverErrorAPI implements FinanceStorageLedgerRolloversErro
 
   @Override
   @Validate
-  public void getFinanceStorageLedgerRolloversErrorsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void getFinanceStorageLedgerRolloversErrorsById(String id, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, LedgerFiscalYearRolloverError.class, id, okapiHeaders, vertxContext,
         GetFinanceStorageLedgerRolloversErrorsByIdResponse.class, asyncResultHandler);
@@ -45,7 +45,7 @@ public class LedgerRolloverErrorAPI implements FinanceStorageLedgerRolloversErro
 
   @Override
   @Validate
-  public void deleteFinanceStorageLedgerRolloversErrorsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void deleteFinanceStorageLedgerRolloversErrorsById(String id, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, id, okapiHeaders, vertxContext,
         DeleteFinanceStorageLedgerRolloversErrorsByIdResponse.class, asyncResultHandler);
@@ -53,7 +53,7 @@ public class LedgerRolloverErrorAPI implements FinanceStorageLedgerRolloversErro
 
   @Override
   @Validate
-  public void putFinanceStorageLedgerRolloversErrorsById(String id, String lang, LedgerFiscalYearRolloverError entity,
+  public void putFinanceStorageLedgerRolloversErrorsById(String id, LedgerFiscalYearRolloverError entity,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE, entity, id, okapiHeaders, vertxContext,
         PutFinanceStorageLedgerRolloversErrorsByIdResponse.class, asyncResultHandler);
