@@ -5,6 +5,7 @@ import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID;
 import static org.folio.rest.jaxrs.model.Encumbrance.Status.PENDING;
+import static org.folio.rest.util.ErrorCodes.BUDGET_IS_INACTIVE;
 import static org.folio.rest.util.ErrorCodes.BUDGET_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -15,7 +16,6 @@ import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
 import static org.folio.service.transactions.AllOrNothingTransactionService.ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED;
-import static org.folio.service.transactions.AllOrNothingTransactionService.BUDGET_IS_INACTIVE;
 import static org.folio.service.transactions.restriction.BaseTransactionRestrictionService.FUND_CANNOT_BE_PAID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -184,9 +184,9 @@ public class EncumbrancesTest extends TestBase {
     encumbrance.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
     // create Encumbrance
-    postData(ALLOCATION_TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-      .statusCode(400)
-      .body(containsString(BUDGET_IS_INACTIVE));
+    Errors errors = postData(ALLOCATION_TRANSACTION.getEndpoint(), JsonObject.mapFrom(encumbrance).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+      .statusCode(400).extract().as(Errors.class);
+    assertThat(errors.getErrors(), hasSize(1));
 
   }
 

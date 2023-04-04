@@ -30,7 +30,6 @@ public class AllOrNothingTransactionService {
 
   public static final String TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION = "Transaction summary not found for transaction";
   public static final String ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED = "All expected transactions already processed";
-  public static final String BUDGET_IS_INACTIVE = "Cannot create encumbrance from the not active budget {}";
 
   private final TransactionDAO transactionDAO;
   private final TemporaryTransactionDAO temporaryTransactionDAO;
