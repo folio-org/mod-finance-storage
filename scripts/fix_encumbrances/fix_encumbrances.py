@@ -434,14 +434,13 @@ async def fix_poline_encumbrance_link(poline, order_encumbrances):
         await put_request(url, poline)
 
 
-async def process_poline_encumbrances_relations(poline, order_encumbrances, fy_is_current):
+async def process_poline_encumbrances_relations(poline, order_encumbrances):
     await fix_poline_encumbrance_fund_id(poline, order_encumbrances)
-    if fy_is_current:
-        await fix_poline_encumbrance_link(poline, order_encumbrances)
+    await fix_poline_encumbrance_link(poline, order_encumbrances)
 
 
 # Get encumbrances for the fiscal year and call process_po_line_encumbrances_relations() for each po line
-async def process_order_encumbrances_relations(order_id, fiscal_year_id, fy_is_current, order_sem):
+async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_sem):
     po_lines = await get_polines_by_order_id(order_id)
     if len(po_lines) == 0:
         order_sem.release()
@@ -452,7 +451,7 @@ async def process_order_encumbrances_relations(order_id, fiscal_year_id, fy_is_c
         return
 
     for po_line in po_lines:
-        await process_poline_encumbrances_relations(po_line, order_encumbrances, fy_is_current)
+        await process_poline_encumbrances_relations(po_line, order_encumbrances)
 
     order_sem.release()
 
@@ -464,14 +463,15 @@ async def fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, fy_
         print('  Found no open orders.')
         return
     if not fy_is_current:
-        print('  Fiscal year is not current, fix_poline_encumbrance_link() will be skipped.')
+        print('  Fiscal year is not current, the step to fix po line encumbrance relations will be skipped.')
+        return
     orders_futures = []
     order_sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
     for idx, order_id in enumerate(open_orders_ids):
         await order_sem.acquire()
         progress(idx, len(open_orders_ids))
         orders_futures.append(asyncio.ensure_future(process_order_encumbrances_relations(
-            order_id, fiscal_year_id, fy_is_current, order_sem)))
+            order_id, fiscal_year_id, order_sem)))
     await asyncio.gather(*orders_futures)
     progress(len(open_orders_ids), len(open_orders_ids))
 

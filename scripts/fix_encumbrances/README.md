@@ -8,7 +8,7 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 - ***Make a backup first !*** (unless you plan to use dry-run mode)
 - Use a recent version of python (at least 3.8)
 - Install the required python packages if needed:\
-  `pip install requests`
+  `pip install requests httpx`
 - Expect the script to take a long time with a large number of orders.
 - Operations affecting order encumbrances or budgets should be avoided while the budgets are recalculated.
 - The script should not be used before a rollover in Lotus (because if it was, encumbrances would not be created for closed orders, and they could not be reopened - see [MODORDERS-706](https://issues.folio.org/browse/MODORDERS-706)).
@@ -51,8 +51,8 @@ After the mode selection, it is possible to select the operation(s) to execute:
 
 1. Run all fixes (can be long).
 2. Remove duplicate encumbrances (one released, one unreleased for the same thing).
-3. Fix order line - encumbrance relations: fix `encumbrance` links in PO lines in case the poline fund distribution refers to the encumbrance from the previous fiscal year; also fix the fund id in encumbrances if they don't match their po line distribution fund id.
-4. Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterwards because it is not possible to change this property for released encumbrances.
+3. Fix order line - encumbrance relations: fix `encumbrance` links in PO lines in case the poline fund distribution refers to the encumbrance from the previous fiscal year; also fix the fund id in encumbrances if they don't match their po line distribution fund id. This whole step is disabled for past fiscal years.
+4. Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterward because it is not possible to change this property for released encumbrances.
 5. Change the encumbrance status to `Unreleased` for all open orders' encumbrances with non-zero amounts.
 6. Release open order unreleased encumbrances with negative amounts when they have `amountAwaitingPayment` or `amountExpended` > 0.
 7. Release cancelled order line encumbrances: releases encumbrances when their order line has a `paymentStatus` of `Cancelled`.
@@ -71,3 +71,4 @@ After the mode selection, it is possible to select the operation(s) to execute:
 - [MODFISTO-385](https://issues.folio.org/browse/MODFISTO-385) - Fix encumbrances' fromFundId
 - [MODFISTO-419](https://issues.folio.org/browse/MODFISTO-419) - Add dry-run mode to FYRO script
 - [MODFISTO-383](https://issues.folio.org/browse/MODFISTO-383) - Encumbrance script: release encumbrances for cancelled POLs
+- [MODFISTO-425](https://issues.folio.org/browse/MODFISTO-425) - Disable fixing encumbrance fund id for past fiscal years
