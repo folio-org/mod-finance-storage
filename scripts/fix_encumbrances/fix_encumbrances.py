@@ -213,13 +213,23 @@ async def transaction_summary(order_id, num_transactions):
     await put_request(url, data)
 
 
+async def get_budgets_by_query(query) -> list:
+    budget_collection = await get_request(okapi_url + 'finance-storage/budgets', query)
+    return budget_collection['budgets']
+
+
 async def get_budget_by_fund_id(fund_id, fiscal_year_id) -> dict:
     query = f'fundId=={fund_id} AND fiscalYearId=={fiscal_year_id}'
-    budgets = await get_request(okapi_url + 'finance/budgets', query)
-    if len(budgets['budgets']) == 0:
+    budgets = await get_budgets_by_query(query)
+    if len(budgets) == 0:
         print(f'Could not find budget for fund "{fund_id}" and fiscal year "{fiscal_year_id}".')
         raise SystemExit(1)
-    return budgets['budgets'][0]
+    return budgets[0]
+
+
+async def get_budgets_by_fiscal_year(fiscal_year_id) -> list:
+    query = f'fiscalYearId=={fiscal_year_id}'
+    return await get_budgets_by_query(query)
 
 
 async def get_order_encumbrances(order_id, fiscal_year_id, sem=None) -> list:
@@ -757,7 +767,6 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
     # Recalculate the encumbered property for all the budgets related to these encumbrances
     # Take closed orders into account because we might have to set a budget encumbered to 0
     print(f'Recalculating budget encumbered for {len(open_and_closed_orders_ids)} orders ...')
-    encumbered_for_fund = {}
     enc_future = []
     sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
     for idx, order_id in enumerate(open_and_closed_orders_ids):
@@ -768,11 +777,17 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
     encumbrances = sum(await asyncio.gather(*enc_future), [])
     progress(len(open_and_closed_orders_ids), len(open_and_closed_orders_ids))
 
-    for encumbrance in encumbrances:
-        fund_id = encumbrance['fromFundId']
+    encumbered_for_fund = {}
+    budgets = await get_budgets_by_fiscal_year(fiscal_year_id)
+    for budget in budgets:
+        fund_id = budget['fundId']
         if fund_id not in encumbered_for_fund:
             encumbered_for_fund[fund_id] = 0
-        encumbered_for_fund[fund_id] += Decimal(str(encumbrance['amount']))
+
+    for encumbrance in encumbrances:
+        fund_id = encumbrance['fromFundId']
+        if fund_id in encumbered_for_fund:
+            encumbered_for_fund[fund_id] += Decimal(str(encumbrance['amount']))
 
     print('  Updating budgets...')
 
