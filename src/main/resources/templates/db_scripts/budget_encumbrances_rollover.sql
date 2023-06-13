@@ -185,7 +185,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             -- #5
             EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.transaction tr
                   LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
-                  LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover rollover ON rollover.ledgerId = fund.ledgerId
+                  LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover rollover ON rollover.ledgerId = fund.ledgerId AND rollover.jsonb->>'rolloverType'<>'Preview'
                   LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_progress rollover_progress ON rollover.id = rollover_progress.ledgerRolloverId
                   WHERE fund.ledgerId::text<>_rollover_record->>'ledgerId' AND tr.fiscalYearId::text = _rollover_record->>'fromFiscalYearId' AND
                            (rollover_progress.jsonb IS NULL OR rollover_progress.jsonb->>'overallRolloverStatus'='Not Started' OR rollover_progress.jsonb->>'overallRolloverStatus'='In Progress')
@@ -214,10 +214,14 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         ELSEIF
            -- #10
            EXISTS (SELECT tr.jsonb as transaction FROM ${myuniversity}_${mymodule}.transaction tr
+                   LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
+                   LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover rollover ON rollover.ledgerId = fund.ledgerId
+                       AND rollover.jsonb->>'rolloverType'<>'Preview'
            					 WHERE NOT EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget budget
            								 	WHERE tr.fromFundId=budget.fundId
            								 	  AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId'
-           								 	  AND budget.ledgerRolloverId::text = _rollover_record->>'id')
+           								 	  AND (budget.ledgerRolloverId::text = _rollover_record->>'id'
+           								 	         OR (fund.ledgerId::text <> _rollover_record->>'ledgerId' AND rollover.jsonb IS NOT NULL)))
            						AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
                                	AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId')
         THEN
