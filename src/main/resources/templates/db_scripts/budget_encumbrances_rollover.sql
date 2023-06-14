@@ -116,11 +116,11 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         CREATE TEMPORARY TABLE tmp_transaction(LIKE ${myuniversity}_${mymodule}.transaction);
 
         INSERT INTO tmp_transaction(id, jsonb)
-        SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER1', tr.id)), jsonb - 'id' || jsonb_build_object
+        SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER1', tr.id)), tr.jsonb - 'id' || jsonb_build_object
             (
                 'fiscalYearId', _rollover_record->>'toFiscalYearId',
                 'amount', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
-                'encumbrance', jsonb->'encumbrance' || jsonb_build_object
+                'encumbrance', tr.jsonb->'encumbrance' || jsonb_build_object
                     (
                         'initialAmountEncumbered', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                         'amountAwaitingPayment', 0,
@@ -131,8 +131,10 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
 
             )
         FROM ${myuniversity}_${mymodule}.transaction tr
+        LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
         WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.jsonb->>'fiscalYearId'=_rollover_record->>'fromFiscalYearId'
-          AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean AND tr.jsonb->'encumbrance'->>'orderStatus'='Open';
+          AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean AND tr.jsonb->'encumbrance'->>'orderStatus'='Open'
+          AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId::text = _rollover_record->>'ledgerId'));
 
         -- #9.1 calculate and add missing penny to appropriate temp transaction
         -- find poLines and calculate missing penny amount for that poLine if any
@@ -216,6 +218,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                     LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
                     WHERE fund.ledgerId::text=_rollover_record->>'ledgerId' AND tr.fiscalYearId::text = _rollover_record->>'fromFiscalYearId'
                           AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
+        END IF;
+
+        -- #5
+        IF _rollover_record->>'rolloverType' <> 'Preview' AND array_length(related_not_rollovered_ledger_ids, 1) > 0
+        THEN
+        -- #6 stop order processing for rolloverType != Preview. Continue with Preview taking into account only requested ledgerId.
         ELSEIF
            -- #10
            EXISTS (SELECT tr.jsonb as transaction FROM ${myuniversity}_${mymodule}.transaction tr
@@ -228,7 +236,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
            								 	  AND (budget.ledgerRolloverId::text = _rollover_record->>'id'
            								 	         OR (fund.ledgerId::text <> _rollover_record->>'ledgerId' AND rollover.jsonb IS NOT NULL)))
            						AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
-                               	AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId')
+                      AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId'
+                      AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId::text = _rollover_record->>'ledgerId')))
         THEN
            -- #11
            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
