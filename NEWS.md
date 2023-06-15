@@ -1,5 +1,13 @@
 ## 8.5.0 - Unreleased
 
+## 8.4.2 - Released (Orchid R1 2023)
+The primary focus of this release was to fix the rollover behaviour for split ledger order encumbrances
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.4.1...v8.4.2)
+
+### Bug Fixes
+* [MODFISTO-426](https://issues.folio.org/browse/MODFISTO-426) Split ledger order encumbrances causing rollover errors
+
 ## 8.4.1 - Released (Orchid R1 2023)
 The primary focus of this release was to rewrite the orders rollover interaction in an asynchronous way
 
