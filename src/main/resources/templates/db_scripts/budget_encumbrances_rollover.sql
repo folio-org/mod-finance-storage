@@ -10,7 +10,8 @@
     For every order id
       #5 Check if there is any encumbrance that need to be rollovered for ledger related to order for which the rollover has not been completed yet
       #6 If #5 is true than create rollover error record
-      #7 if #5 is false then check if rollover restrictEncumbrance setting is true and there is any sum of expected encumbrances grouped by fromFundId greater than corresponding budget remaining amount
+      #6.1 If #5 is true and rolloverType != Preview then stop processing for order. If rolloverType = Preview then proceed with validations and result building taking into account only requested ledgerId
+      #7 if #5 is false or #5 is true and rolloverType = Preview then check if rollover restrictEncumbrance setting is true and there is any sum of expected encumbrances grouped by fromFundId greater than corresponding budget remaining amount
       #8 If #7 is true then create corresponding rollover error
       #9 if #7 is false create temp encumbrances with amount non-zero amount calculated with calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb) function
       #9.1 Calculate and add missing penny to appropriate temp transaction
@@ -187,7 +188,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
 
         SELECT array_agg(DISTINCT fund.ledgerId) INTO related_not_rollovered_ledger_ids FROM ${myuniversity}_${mymodule}.transaction tr
             LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
-            LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover rollover ON (rollover.ledgerId = fund.ledgerId AND rollover.jsonb->>'rolloverType'<>'Preview')
+            LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover rollover ON rollover.ledgerId = fund.ledgerId AND rollover.jsonb->>'rolloverType'<>'Preview'
             LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_progress rollover_progress ON rollover.id = rollover_progress.ledgerRolloverId
             WHERE fund.ledgerId::text<>_rollover_record->>'ledgerId' AND tr.fiscalYearId::text = _rollover_record->>'fromFiscalYearId' AND
                 (rollover_progress.jsonb IS NULL OR rollover_progress.jsonb->>'overallRolloverStatus'='Not Started' OR rollover_progress.jsonb->>'overallRolloverStatus'='In Progress')
@@ -220,10 +221,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                           AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
         END IF;
 
-        -- #5
+        -- #6.1 stop order processing for rolloverType != Preview. If rolloverType = Preview then proceed with validations and result building taking into account only requested ledgerId.
         IF _rollover_record->>'rolloverType' <> 'Preview' AND array_length(related_not_rollovered_ledger_ids, 1) > 0
         THEN
-        -- #6 stop order processing for rolloverType != Preview. Continue with Preview taking into account only requested ledgerId.
         ELSEIF
            -- #10
            EXISTS (SELECT tr.jsonb as transaction FROM ${myuniversity}_${mymodule}.transaction tr
@@ -261,7 +261,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                                   AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId'
                                   AND budget.ledgerRolloverId::text = _rollover_record->>'id')
                     AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
-                    AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId';
+                    AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId'
+                    AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId::text = _rollover_record->>'ledgerId'));
         ELSEIF
             -- #7
             (_rollover_record->>'restrictEncumbrance')::boolean AND EXISTS (SELECT sum((tr.jsonb->>'amount')::decimal) FROM tmp_transaction tr
