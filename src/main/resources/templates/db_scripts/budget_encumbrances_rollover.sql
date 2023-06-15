@@ -261,8 +261,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                                   AND budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId'
                                   AND budget.ledgerRolloverId::text = _rollover_record->>'id')
                     AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
-                    AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId'
-                    AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId::text = _rollover_record->>'ledgerId'));
+                    AND tr.fiscalYearId::text= _rollover_record->>'fromFiscalYearId';
         ELSEIF
             -- #7
             (_rollover_record->>'restrictEncumbrance')::boolean AND EXISTS (SELECT sum((tr.jsonb->>'amount')::decimal) FROM tmp_transaction tr
