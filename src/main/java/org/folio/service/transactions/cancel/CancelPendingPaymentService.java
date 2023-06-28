@@ -44,10 +44,13 @@ public class CancelPendingPaymentService extends CancelTransactionService {
   @Override
   protected void cancelEncumbrance(Transaction encumbrance, List<Transaction> pendingPayments) {
     CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
-    double newAmount = encumbrance.getEncumbrance().getAmountAwaitingPayment();
+    double newEncumbranceAmount = encumbrance.getAmount();
+    double newAmountAwaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
     for (Transaction pendingPayment : pendingPayments) {
-      newAmount = MoneyUtils.subtractMoney(newAmount, pendingPayment.getAmount(), currency);
+      newEncumbranceAmount = MoneyUtils.sumMoney(newEncumbranceAmount, pendingPayment.getAmount(), currency);
+      newAmountAwaitingPayment = MoneyUtils.subtractMoney(newAmountAwaitingPayment, pendingPayment.getAmount(), currency);
     }
-    encumbrance.getEncumbrance().setAmountAwaitingPayment(newAmount);
+    encumbrance.setAmount(newEncumbranceAmount);
+    encumbrance.getEncumbrance().setAmountAwaitingPayment(newAmountAwaitingPayment);
   }
 }

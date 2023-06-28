@@ -13,6 +13,9 @@ import javax.money.Monetary;
 import java.util.List;
 import java.util.Optional;
 
+import static org.folio.utils.MoneyUtils.subtractMoney;
+import static org.folio.utils.MoneyUtils.sumMoney;
+
 public class CancelPaymentCreditService extends CancelTransactionService {
 
   public CancelPaymentCreditService(BudgetService budgetService, TransactionDAO paymentCreditDAO, TransactionDAO encumbranceDAO) {
@@ -48,14 +51,18 @@ public class CancelPaymentCreditService extends CancelTransactionService {
   @Override
   protected void cancelEncumbrance(Transaction encumbrance, List<Transaction> paymentsAndCredits) {
     CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
-    double newAmount = encumbrance.getEncumbrance().getAmountExpended();
+    double newEncumbranceAmount = encumbrance.getAmount();
+    double newAmountExpended = encumbrance.getEncumbrance().getAmountExpended();
     for (Transaction paymentOrCredit : paymentsAndCredits) {
       if (paymentOrCredit.getTransactionType().equals(TransactionType.CREDIT)) {
-        newAmount = MoneyUtils.sumMoney(newAmount, paymentOrCredit.getAmount(), currency);
+        newAmountExpended = sumMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
+        newEncumbranceAmount = subtractMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
       } else {
-        newAmount = MoneyUtils.subtractMoney(newAmount, paymentOrCredit.getAmount(), currency);
+        newAmountExpended = subtractMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
+        newEncumbranceAmount = sumMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
       }
     }
-    encumbrance.getEncumbrance().setAmountExpended(newAmount);
+    encumbrance.setAmount(newEncumbranceAmount);
+    encumbrance.getEncumbrance().setAmountExpended(newAmountExpended);
   }
 }
