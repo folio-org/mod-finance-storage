@@ -88,7 +88,11 @@ const parseOrderLine = (log) => {
   const jsonSubstring = log.substring(startIdx, endIdx + 1);
 
   try {
-    return JSON.parse(jsonSubstring.replace(/""(.*?)""/g, '"$1"'));
+    return JSON.parse(
+      jsonSubstring.includes('""id""')
+        ? jsonSubstring.replace(/""(.*?)""/g, '"$1"')
+        : jsonSubstring
+    );
   } catch (error) {
     console.error('Invalid JSON:', jsonSubstring);
 
