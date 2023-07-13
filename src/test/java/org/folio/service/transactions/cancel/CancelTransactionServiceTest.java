@@ -75,7 +75,8 @@ public class CancelTransactionServiceTest {
       .withFromFundId(fundId)
       .withTransactionType(Transaction.TransactionType.ENCUMBRANCE)
       .withEncumbrance(new Encumbrance()
-        .withInitialAmountEncumbered(10d));
+        .withInitialAmountEncumbered(10d))
+      .withAmount(10.0);
     budget = new Budget()
       .withFiscalYearId(fiscalYearId)
       .withAwaitingPayment(0d)
