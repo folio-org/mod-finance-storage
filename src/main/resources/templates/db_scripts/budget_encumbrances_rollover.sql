@@ -144,7 +144,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                    (round((SELECT sum(${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(jsonb, _rollover_record, false)) -
                                   sum(${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(jsonb, _rollover_record, true)) penny
                            FROM ${myuniversity}_${mymodule}.transaction
-                           WHERE _rollover_record ->> 'fromFiscalYearId' = jsonb ->> 'fiscalYearId'
+                           WHERE _rollover_record ->> 'fromFiscalYearId' = fiscalYearId::text
                              AND jsonb -> 'encumbrance' ->> 'sourcePoLineId' = po.id
                            GROUP BY jsonb -> 'encumbrance' ->> 'sourcePoLineId'),
                           (_rollover_record ->> 'currencyFactor')::integer)) as penny
@@ -152,7 +152,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                      SELECT DISTINCT tr.jsonb -> 'encumbrance' ->> 'sourcePoLineId' as id
                      FROM ${myuniversity}_${mymodule}.transaction tr
                      WHERE tr.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = _order_id
-                       AND _rollover_record ->> 'fromFiscalYearId' = jsonb ->> 'fiscalYearId'
+                       AND _rollover_record ->> 'fromFiscalYearId' = fiscalYearId::text
                  ) po;
         -- if missing penny for poLines exist then find transaction (first or last) and add that missing amount to them
         LOOP
@@ -165,7 +165,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         (
                             SELECT id
                             FROM tmp_transaction
-                            WHERE _rollover_record ->> 'toFiscalYearId' = jsonb ->> 'fiscalYearId'
+                            WHERE _rollover_record ->> 'toFiscalYearId' = fiscalYearId::text
                               AND jsonb -> 'encumbrance' ->> 'sourcePoLineId' = missing_penny_row.po_line_id
                             ORDER BY CASE WHEN missing_penny_row.penny < 0 THEN jsonb -> 'metadata' ->> 'createdDate' END,
                                      CASE WHEN missing_penny_row.penny > 0 THEN jsonb -> 'metadata' ->> 'createdDate' END DESC
@@ -529,7 +529,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                                     END as jsonb
                              FROM tmp_budget as tmp_budget
                              LEFT JOIN ${myuniversity}_${mymodule}.budget as budget
-                                 ON tmp_budget.jsonb->>'fundId' = budget.fundId::text AND tmp_budget.jsonb->>'fiscalYearId' = budget.fiscalYearId::text
+                                 ON tmp_budget.fundId = budget.fundId AND tmp_budget.fiscalYearId = budget.fiscalYearId
                              WHERE budget.fiscalYearId::text = _rollover_record->>'toFiscalYearId' OR budget.id IS NULL
                          ) as budget
                     LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id::text = budget.jsonb->>'fundId'
@@ -570,9 +570,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
                INNER JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget AS newBudget ON newBudget.fundId = oldBudget.fundId
                INNER JOIN ${myuniversity}_${mymodule}.budget_expense_class AS exp ON oldBudget.id = exp.budgetid
-        WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
+        WHERE oldBudget.fiscalYearId::text = _rollover_record->>'fromFiscalYearId'
           AND fund.ledgerId::text = _rollover_record->>'ledgerId'
-          AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
+          AND newBudget.fiscalYearId::text = _rollover_record->>'toFiscalYearId'
           AND newBudget.ledgerRolloverId::text = _rollover_record->>'id';
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
@@ -590,9 +590,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                      INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
                      INNER JOIN ${myuniversity}_${mymodule}.budget AS newBudget ON newBudget.fundId = oldBudget.fundId
                      INNER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year AS gr ON oldBudget.id = gr.budgetid
-            WHERE oldBudget.jsonb ->> 'fiscalYearId' = _rollover_record->>'fromFiscalYearId'
+            WHERE oldBudget.fiscalYearId::text = _rollover_record->>'fromFiscalYearId'
               AND fund.ledgerId::text = _rollover_record->>'ledgerId'
-              AND newBudget.jsonb->>'fiscalYearId' = _rollover_record->>'toFiscalYearId'
+              AND newBudget.fiscalYearId::text = _rollover_record->>'toFiscalYearId'
             ON CONFLICT DO NOTHING;
         END IF;
 
