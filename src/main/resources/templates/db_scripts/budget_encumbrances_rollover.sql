@@ -114,6 +114,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         related_not_rollovered_ledger_descriptions text[];
         input_fromFiscalYearId uuid := _rollover_record->>'fromFiscalYearId';
         input_toFiscalYearId uuid := _rollover_record->>'toFiscalYearId';
+        input_ledgerId uuid := _rollover_record->>'ledgerId';
     BEGIN
 
         -- #9 create encumbrances to temp table
@@ -138,7 +139,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
         WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.fiscalYearId=input_fromFiscalYearId
           AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean AND tr.jsonb->'encumbrance'->>'orderStatus'='Open'
-          AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId = (_rollover_record->>'ledgerId')::uuid));
+          AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId = input_ledgerId));
 
         -- #9.1 calculate and add missing penny to appropriate temp transaction
         -- find poLines and calculate missing penny amount for that poLine if any
@@ -194,7 +195,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover rollover ON rollover.ledgerId = fund.ledgerId AND rollover.jsonb->>'rolloverType'<>'Preview'
                 AND rollover.fromfiscalyearid = input_fromFiscalYearId
             LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_progress rollover_progress ON rollover.id = rollover_progress.ledgerRolloverId
-            WHERE fund.ledgerId<>(_rollover_record->>'ledgerId')::uuid AND tr.fiscalYearId = input_fromFiscalYearId AND
+            WHERE fund.ledgerId<>input_ledgerId AND tr.fiscalYearId = input_fromFiscalYearId AND
                 (rollover_progress.jsonb IS NULL OR rollover_progress.jsonb->>'overallRolloverStatus'='Not Started' OR rollover_progress.jsonb->>'overallRolloverStatus'='In Progress')
                  AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
 
@@ -221,7 +222,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 )
                 FROM ${myuniversity}_${mymodule}.transaction tr
                     LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
-                    WHERE fund.ledgerId=(_rollover_record->>'ledgerId')::uuid AND tr.fiscalYearId = input_fromFiscalYearId
+                    WHERE fund.ledgerId=input_ledgerId AND tr.fiscalYearId = input_fromFiscalYearId
                           AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
         END IF;
 
@@ -238,10 +239,10 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
            								 	WHERE tr.fromFundId=budget.fundId
            								 	  AND budget.fiscalYearId = input_toFiscalYearId
            								 	  AND (budget.ledgerRolloverId::text = _rollover_record->>'id'
-           								 	         OR (fund.ledgerId <> (_rollover_record->>'ledgerId')::uuid AND rollover.jsonb IS NOT NULL)))
+           								 	         OR (fund.ledgerId <> input_ledgerId AND rollover.jsonb IS NOT NULL)))
            						AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
                       AND tr.fiscalYearId= input_fromFiscalYearId
-                      AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId = (_rollover_record->>'ledgerId')::uuid)))
+                      AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId = input_ledgerId)))
         THEN
            -- #11
            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
@@ -472,6 +473,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             exceptionDetails			 text;
             input_fromFiscalYearId uuid := _rollover_record->>'fromFiscalYearId';
             input_toFiscalYearId   uuid := _rollover_record->>'toFiscalYearId';
+            input_ledgerId         uuid := _rollover_record->>'ledgerId';
     BEGIN
 
 
@@ -487,7 +489,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                  ${myuniversity}_${mymodule}.build_budget(budget.jsonb, fund.jsonb, _rollover_record, toFiscalYear)
                 FROM ${myuniversity}_${mymodule}.budget AS budget
                 INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id=budget.fundId
-                WHERE fund.jsonb->>'fundStatus'<>'Inactive' AND budget.fiscalYearId=input_fromFiscalYearId AND fund.ledgerId=(_rollover_record->>'ledgerId')::uuid
+                WHERE fund.jsonb->>'fundStatus'<>'Inactive' AND budget.fiscalYearId=input_fromFiscalYearId AND fund.ledgerId=input_ledgerId
             );
 
         INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
@@ -576,7 +578,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                INNER JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget AS newBudget ON newBudget.fundId = oldBudget.fundId
                INNER JOIN ${myuniversity}_${mymodule}.budget_expense_class AS exp ON oldBudget.id = exp.budgetid
         WHERE oldBudget.fiscalYearId = input_fromFiscalYearId
-          AND fund.ledgerId = (_rollover_record->>'ledgerId')::uuid
+          AND fund.ledgerId = input_ledgerId
           AND newBudget.fiscalYearId = input_toFiscalYearId
           AND newBudget.ledgerRolloverId = (_rollover_record->>'id')::uuid;
 
@@ -596,7 +598,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                      INNER JOIN ${myuniversity}_${mymodule}.budget AS newBudget ON newBudget.fundId = oldBudget.fundId
                      INNER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year AS gr ON oldBudget.id = gr.budgetid
             WHERE oldBudget.fiscalYearId = input_fromFiscalYearId
-              AND fund.ledgerId = (_rollover_record->>'ledgerId')::uuid
+              AND fund.ledgerId = input_ledgerId
               AND newBudget.fiscalYearId = input_toFiscalYearId
             ON CONFLICT DO NOTHING;
         END IF;
@@ -617,7 +619,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                 LEFT JOIN ${myuniversity}_${mymodule}.transaction AS tr_to ON budget.fundId=tr_to.toFundId  AND budget.fiscalYearId=tr_to.fiscalYearId AND  tr_to.jsonb->>'transactionType'='Allocation'
                 LEFT JOIN ${myuniversity}_${mymodule}.transaction AS tr_from ON budget.fundId=tr_from.fromFundId AND budget.fiscalYearId=tr_from.fiscalYearId AND tr_from.jsonb->>'transactionType'='Allocation'
                 LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund_to ON budget.fundId=fund_to.id
-                WHERE budget.fiscalYearId=input_toFiscalYearId AND fund_to.ledgerId=(_rollover_record->>'ledgerId')::uuid
+                WHERE budget.fiscalYearId=input_toFiscalYearId AND fund_to.ledgerId=input_ledgerId
                 GROUP BY budget.jsonb
                 HAVING (budget.jsonb->>'initialAllocation')::decimal+(budget.jsonb->>'allocationTo')::decimal-(budget.jsonb->>'allocationFrom')::decimal-sum(COALESCE((tr_to.jsonb->>'amount')::decimal, 0.00))+sum(COALESCE((tr_from.jsonb->>'amount')::decimal, 0.00)) <> 0
              );
@@ -632,7 +634,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                  LEFT JOIN ${myuniversity}_${mymodule}.transaction AS tr_to ON budget.fundId=tr_to.toFundId  AND budget.fiscalYearId=tr_to.fiscalYearId AND  tr_to.jsonb->>'transactionType'='Transfer'
                  LEFT JOIN ${myuniversity}_${mymodule}.transaction AS tr_from ON budget.fundId=tr_from.fromFundId AND budget.fiscalYearId=tr_from.fiscalYearId AND tr_from.jsonb->>'transactionType'='Transfer'
                  LEFT JOIN ${myuniversity}_${mymodule}.fund AS fund_to ON budget.fundId=fund_to.id
-                 WHERE budget.fiscalYearId=input_toFiscalYearId AND fund_to.ledgerId=(_rollover_record->>'ledgerId')::uuid
+                 WHERE budget.fiscalYearId=input_toFiscalYearId AND fund_to.ledgerId=input_ledgerId
                  GROUP BY budget.jsonb
                  HAVING (budget.jsonb->>'netTransfers')::decimal-sum(COALESCE((tr_to.jsonb->>'amount')::decimal, 0.00))+sum(COALESCE((tr_from.jsonb->>'amount')::decimal, 0.00)) <> 0
               );
@@ -655,7 +657,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                     AND tr.fiscalYearId = input_fromFiscalYearId
                     AND tr.jsonb->'encumbrance'->>'orderStatus' = 'Open'
                     AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
-                    AND ledger.id=(_rollover_record->>'ledgerId')::uuid
+                    AND ledger.id=input_ledgerId
                 GROUP BY order_id
                 ORDER BY date
         LOOP
@@ -668,7 +670,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             SET jsonb = budget.jsonb || jsonb_build_object('budgetStatus', 'Active')
             FROM ${myuniversity}_${mymodule}.fund as fund
             WHERE budget.fundId = fund.id
-                AND fund.ledgerId = (_rollover_record->>'ledgerId')::uuid
+                AND fund.ledgerId = input_ledgerId
                 AND budget.fiscalYearId = input_toFiscalYearId
                 AND budget.jsonb ? 'budgetStatus'
                 AND budget.jsonb ->> 'budgetStatus'='Planned';
