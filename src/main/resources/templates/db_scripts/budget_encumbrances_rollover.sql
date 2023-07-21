@@ -74,7 +74,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
 		THEN
 		    SELECT sum((jsonb->'encumbrance'->>'amountExpended')::decimal) INTO total_amount
             	        FROM ${myuniversity}_${mymodule}.transaction
-                        WHERE (input_fromFiscalYearId)::uuid=fiscalYearId AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
+                        WHERE input_fromFiscalYearId=fiscalYearId AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
                         GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
 
 		ELSEIF
