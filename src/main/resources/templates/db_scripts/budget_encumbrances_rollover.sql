@@ -33,7 +33,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
 		po_line_cost DECIMAL DEFAULT 0;
 		total_amount DECIMAL DEFAULT 0;
 		distribution_value DECIMAL DEFAULT 0;
-		input_fromFiscalYearId uuid := _rollover_record->>'fromFiscalYearId';
+		input_fromFiscalYearId uuid := (_rollover_record->>'fromFiscalYearId')::uuid;
 	BEGIN
 
 	    SELECT sum((jsonb->'encumbrance'->>'initialAmountEncumbered')::decimal) INTO po_line_cost
@@ -112,10 +112,10 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         update_budget_amounts_query text;
         related_not_rollovered_ledger_ids uuid[];
         related_not_rollovered_ledger_descriptions text[];
-        input_fromFiscalYearId uuid := _rollover_record->>'fromFiscalYearId';
-        input_toFiscalYearId uuid := _rollover_record->>'toFiscalYearId';
-        input_ledgerId uuid := _rollover_record->>'ledgerId';
-        input_ledgerRolloverId uuid := _rollover_record->>'id';
+        input_fromFiscalYearId uuid := (_rollover_record->>'fromFiscalYearId')::uuid;
+        input_toFiscalYearId uuid := (_rollover_record->>'toFiscalYearId')::uuid;
+        input_ledgerId uuid := (_rollover_record->>'ledgerId')::uuid;
+        input_ledgerRolloverId uuid := (_rollover_record->>'id')::uuid;
     BEGIN
 
         -- #9 create encumbrances to temp table
@@ -472,10 +472,10 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             temprow 						   record;
             exceptionText 			   text;
             exceptionDetails			 text;
-            input_fromFiscalYearId uuid := _rollover_record->>'fromFiscalYearId';
-            input_toFiscalYearId   uuid := _rollover_record->>'toFiscalYearId';
-            input_ledgerId         uuid := _rollover_record->>'ledgerId';
-            input_ledgerRolloverId  uuid := _rollover_record->>'id';
+            input_fromFiscalYearId uuid := (_rollover_record->>'fromFiscalYearId')::uuid;
+            input_toFiscalYearId   uuid := (_rollover_record->>'toFiscalYearId')::uuid;
+            input_ledgerId         uuid := (_rollover_record->>'ledgerId')::uuid;
+            input_ledgerRolloverId  uuid := (_rollover_record->>'id')::uuid;
     BEGIN
 
 
