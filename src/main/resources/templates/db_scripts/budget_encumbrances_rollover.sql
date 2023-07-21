@@ -115,6 +115,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         input_fromFiscalYearId uuid := _rollover_record->>'fromFiscalYearId';
         input_toFiscalYearId uuid := _rollover_record->>'toFiscalYearId';
         input_ledgerId uuid := _rollover_record->>'ledgerId';
+        input_ledgerRolloverId uuid := _rollover_record->>'id';
     BEGIN
 
         -- #9 create encumbrances to temp table
@@ -208,7 +209,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER2', _rollover_record->>'id', tr.id, fund.id)), jsonb_build_object
                 (
-                    'ledgerRolloverId', _rollover_record->>'id',
+                    'ledgerRolloverId', input_ledgerRolloverId,
                     'errorType', 'Order',
                     'failedAction', 'Create encumbrance',
                     'errorMessage', '[WARNING] Part of the encumbrances belong to the ledger, which has not been rollovered. Ledgers to rollover: ' || array_to_string(related_not_rollovered_ledger_descriptions, ', '),
@@ -238,7 +239,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
            					 WHERE NOT EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget budget
            								 	WHERE tr.fromFundId=budget.fundId
            								 	  AND budget.fiscalYearId = input_toFiscalYearId
-           								 	  AND (budget.ledgerRolloverId::text = _rollover_record->>'id'
+           								 	  AND (budget.ledgerRolloverId = input_ledgerRolloverId
            								 	         OR (fund.ledgerId <> input_ledgerId AND rollover.jsonb IS NOT NULL)))
            						AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
                       AND tr.fiscalYearId= input_fromFiscalYearId
@@ -248,7 +249,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER3', _rollover_record->>'id', tr.id)), jsonb_build_object
                (
-                   'ledgerRolloverId', _rollover_record->>'id',
+                   'ledgerRolloverId', input_ledgerRolloverId,
                    'errorType', 'Order',
                    'failedAction', 'Create encumbrance',
                    'errorMessage', 'Budget not found',
@@ -264,7 +265,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                  WHERE NOT EXISTS (SELECT * FROM ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget budget
                                 WHERE tr.fromFundId=budget.fundId
                                   AND budget.fiscalYearId = input_toFiscalYearId
-                                  AND budget.ledgerRolloverId::text = _rollover_record->>'id')
+                                  AND budget.ledgerRolloverId = input_ledgerRolloverId)
                     AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
                     AND tr.fiscalYearId= input_fromFiscalYearId;
         ELSEIF
@@ -275,7 +276,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                                                                               AND tr.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = _order_id
                                                                               AND tr.fiscalYearId = input_toFiscalYearId
                                                                               AND budget.fiscalYearId = input_toFiscalYearId
-                                                                              AND budget.ledgerRolloverId = (_rollover_record->>'id')::uuid
+                                                                              AND budget.ledgerRolloverId = input_ledgerRolloverId
                                                                             GROUP BY budget.jsonb, tr.fromFundId
                 HAVING sum((tr.jsonb->>'amount')::decimal) > ((budget.jsonb->>'initialAllocation')::decimal +
                                                                                                       (budget.jsonb->>'allocationTo')::decimal -
@@ -288,7 +289,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER4', _rollover_record->>'id', tr.id, summary.budget->>'id')), jsonb_build_object
                 (
-                    'ledgerRolloverId', _rollover_record->>'id',
+                    'ledgerRolloverId', input_ledgerRolloverId,
                     'errorType', 'Order',
                     'failedAction', 'Create encumbrance',
                     'errorMessage', 'Insufficient funds',
@@ -309,7 +310,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         WHERE budget.jsonb->>'allowableEncumbrance' IS NOT NULL
                             AND tr.fiscalYearId=input_toFiscalYearId
                             AND budget.fiscalYearId=input_toFiscalYearId
-                            AND budget.ledgerRolloverId = (_rollover_record->>'id')::uuid
+                            AND budget.ledgerRolloverId = input_ledgerRolloverId
                         GROUP BY tr.fromFundId, budget.jsonb
                         HAVING sum((tr.jsonb->>'amount')::decimal) > ((budget.jsonb->>'initialAllocation')::decimal +
                                                                                                             (budget.jsonb->>'allocationTo')::decimal -
@@ -474,6 +475,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             input_fromFiscalYearId uuid := _rollover_record->>'fromFiscalYearId';
             input_toFiscalYearId   uuid := _rollover_record->>'toFiscalYearId';
             input_ledgerId         uuid := _rollover_record->>'ledgerId';
+            input_ledgerRolloverId  uuid := _rollover_record->>'id';
     BEGIN
 
 
@@ -495,7 +497,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget
             (
                 SELECT id, budget || jsonb_build_object(
-                    'ledgerRolloverId', _rollover_record->>'id',
+                    'ledgerRolloverId', input_ledgerRolloverId,
                     'budgetId', id,
                     'fundDetails', jsonb_build_object(
                         'id', fund->'id',
@@ -561,7 +563,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             FROM ${myuniversity}_${mymodule}.budget as budget
             WHERE budget.fundId = rollover_budget.fundId
                 AND budget.fiscalYearId = rollover_budget.fiscalYearId
-                AND rollover_budget.ledgerRolloverId::text = _rollover_record->>'id';
+                AND rollover_budget.ledgerRolloverId = input_ledgerRolloverId;
         END IF;
 
         DROP TABLE IF EXISTS tmp_budget;
@@ -580,7 +582,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         WHERE oldBudget.fiscalYearId = input_fromFiscalYearId
           AND fund.ledgerId = input_ledgerId
           AND newBudget.fiscalYearId = input_toFiscalYearId
-          AND newBudget.ledgerRolloverId = (_rollover_record->>'id')::uuid;
+          AND newBudget.ledgerRolloverId = input_ledgerRolloverId;
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
             INSERT INTO ${myuniversity}_${mymodule}.budget_expense_class(SELECT id, jsonb FROM tmp_budget_expense_class)
@@ -682,7 +684,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER3', _rollover_record->>'id')), jsonb_build_object
                 (
-                  'ledgerRolloverId', _rollover_record->>'id',
+                  'ledgerRolloverId', input_ledgerRolloverId,
                   'errorType', 'Other',
                   'failedAction', exceptionText,
                   'errorMessage', exceptionDetails
