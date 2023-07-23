@@ -124,7 +124,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         INSERT INTO tmp_transaction(id, jsonb)
         SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER1', tr.id)), tr.jsonb - 'id' || jsonb_build_object
             (
-                'fiscalYearId', input_toFiscalYearId,
+                'fiscalYearId', _rollover_record->>'toFiscalYearId',
                 'amount', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                 'encumbrance', tr.jsonb->'encumbrance' || jsonb_build_object
                     (
@@ -209,7 +209,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER2', _rollover_record->>'id', tr.id, fund.id)), jsonb_build_object
                 (
-                    'ledgerRolloverId', input_ledgerRolloverId,
+                    'ledgerRolloverId', _rollover_record->>'id',
                     'errorType', 'Order',
                     'failedAction', 'Create encumbrance',
                     'errorMessage', '[WARNING] Part of the encumbrances belong to the ledger, which has not been rollovered. Ledgers to rollover: ' || array_to_string(related_not_rollovered_ledger_descriptions, ', '),
@@ -249,7 +249,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
            INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER3', _rollover_record->>'id', tr.id)), jsonb_build_object
                (
-                   'ledgerRolloverId', input_ledgerRolloverId,
+                   'ledgerRolloverId', _rollover_record->>'id',
                    'errorType', 'Order',
                    'failedAction', 'Create encumbrance',
                    'errorMessage', 'Budget not found',
@@ -289,7 +289,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER4', _rollover_record->>'id', tr.id, summary.budget->>'id')), jsonb_build_object
                 (
-                    'ledgerRolloverId', input_ledgerRolloverId,
+                    'ledgerRolloverId', _rollover_record->>'id',
                     'errorType', 'Order',
                     'failedAction', 'Create encumbrance',
                     'errorMessage', 'Insufficient funds',
@@ -593,7 +593,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER7', oldBudget.id, fund.id, newBudget.id, gr.id)),
                    jsonb_build_object('budgetId', newBudget.id,
                                       'groupId', gr.jsonb->>'groupId',
-                                      'fiscalYearId', input_toFiscalYearId,
+                                      'fiscalYearId', _rollover_record->>'toFiscalYearId',
                                       'fundId', gr.jsonb->>'fundId')
             FROM ${myuniversity}_${mymodule}.budget AS oldBudget
                      INNER JOIN ${myuniversity}_${mymodule}.fund AS fund ON fund.id = oldBudget.fundId
@@ -611,7 +611,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         INSERT INTO tmp_transaction
              (
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER8', budget.jsonb->>'id')),
-                    jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', input_toFiscalYearId, 'transactionType', 'Allocation',
+                    jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Allocation',
                     'source', 'User', 'currency', toFiscalYear->>'currency', 'amount', (budget.jsonb->>'initialAllocation')::decimal+
                         (budget.jsonb->>'allocationTo')::decimal-
                         (budget.jsonb->>'allocationFrom')::decimal-
@@ -629,7 +629,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
         -- #3 Create transfers
         INSERT INTO tmp_transaction
               (
-                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER9', budget.jsonb->>'id')), jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', input_toFiscalYearId, 'transactionType', 'Rollover transfer',
+                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER9', budget.jsonb->>'id')), jsonb_build_object('toFundId', budget.jsonb->>'fundId', 'fiscalYearId', _rollover_record->>'toFiscalYearId', 'transactionType', 'Rollover transfer',
                                                                'source', 'User', 'currency', toFiscalYear->>'currency', 'amount', (budget.jsonb->>'netTransfers')::decimal-sum(COALESCE((tr_to.jsonb->>'amount')::decimal, 0.00))+sum(COALESCE((tr_from.jsonb->>'amount')::decimal, 0.00)),
                                                                'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', date_trunc('milliseconds', clock_timestamp())::text))
                  FROM ${myuniversity}_${mymodule}.budget AS budget
@@ -684,7 +684,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             INSERT INTO ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_error (id, jsonb)
                 SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER3', _rollover_record->>'id')), jsonb_build_object
                 (
-                  'ledgerRolloverId', input_ledgerRolloverId,
+                  'ledgerRolloverId', _rollover_record->>'id',
                   'errorType', 'Other',
                   'failedAction', exceptionText,
                   'errorMessage', exceptionDetails

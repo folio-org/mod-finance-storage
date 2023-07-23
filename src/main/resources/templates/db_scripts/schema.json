@@ -411,6 +411,12 @@
           "targetTable": "expense_class"
         }
       ],
+      "index": [
+        {
+          "fieldName": "encumbrance.sourcePoLineId",
+          "tOps": "ADD"
+        }
+      ],
       "ginIndex": [
         {
           "fieldName": "amount",
@@ -426,12 +432,6 @@
         },
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
-        },
-        {
-          "fieldName": "encumbrance.sourcePoLineId",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
