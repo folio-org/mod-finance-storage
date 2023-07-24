@@ -24,7 +24,6 @@
 
     NOTE: uuid_generate_v4() cannot be used to generate uuids because of pgpool2. uuid_generate_v5() is used instead, with unique strings.
  */
-SET log_statement = 'all';
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 -- Map encumbrance with corresponding encumbranceRollover item, calculate expected encumbrance amount based on that item
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(_transaction jsonb, _rollover_record jsonb, _rounding boolean) RETURNS decimal as $$
