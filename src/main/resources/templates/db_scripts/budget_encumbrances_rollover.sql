@@ -318,9 +318,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                                                                                                             (budget.jsonb->>'netTransfers')::decimal) *
                                                                                                             (budget.jsonb->>'allowableEncumbrance')::decimal/100 -
                                                                                                             (budget.jsonb->>'encumbered')::decimal
-                    ) as summary ON summary.budget->>'fundId'=tr.jsonb->>'fromFundId'
+                    ) as summary ON (summary.budget->>'fundId')::uuid=tr.fromFundId
                 WHERE tr.jsonb->>'transactionType'='Encumbrance' AND ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId')=_order_id
-                AND tr.fiscalYearId::text=_rollover_record->>'fromFiscalYearId';
+                AND tr.fiscalYearId=input_fromFiscalYearId;
         ELSE
             -- #9.2 move transactions from temp table to permanent
             IF _rollover_record->>'rolloverType' = 'Preview' THEN
