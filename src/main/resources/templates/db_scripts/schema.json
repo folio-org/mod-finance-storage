@@ -666,16 +666,6 @@
           "targetTableAlias": "fiscalYear",
           "tOps": "ADD"
         }
-      ],
-      "index": [
-        {
-          "fieldName": "ledgerRolloverId",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fiscalYearId",
-          "tOps": "ADD"
-        }
       ]
     },
     {
