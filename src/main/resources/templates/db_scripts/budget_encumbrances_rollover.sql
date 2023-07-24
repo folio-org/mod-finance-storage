@@ -467,15 +467,15 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollover(_rollover_record jsonb) RETURNS VOID as $$
     DECLARE
-            toFiscalYear					 jsonb;
-            fromFiscalYear				 jsonb;
-            temprow 						   record;
-            exceptionText 			   text;
-            exceptionDetails			 text;
+            toFiscalYear           jsonb;
+            fromFiscalYear         jsonb;
+            temprow                record;
+            exceptionText          text;
+            exceptionDetails       text;
             input_fromFiscalYearId uuid := (_rollover_record->>'fromFiscalYearId')::uuid;
             input_toFiscalYearId   uuid := (_rollover_record->>'toFiscalYearId')::uuid;
             input_ledgerId         uuid := (_rollover_record->>'ledgerId')::uuid;
-            input_ledgerRolloverId  uuid := (_rollover_record->>'id')::uuid;
+            input_ledgerRolloverId uuid := (_rollover_record->>'id')::uuid;
     BEGIN
 
 
