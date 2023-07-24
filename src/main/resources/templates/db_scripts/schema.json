@@ -413,6 +413,10 @@
       ],
       "index": [
         {
+          "fieldName": "encumbrance.sourcePurchaseOrderId",
+          "tOps": "ADD"
+        },
+        {
           "fieldName": "encumbrance.sourcePoLineId",
           "tOps": "ADD"
         }
@@ -432,6 +436,12 @@
         },
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "encumbrance.sourcePoLineId",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
