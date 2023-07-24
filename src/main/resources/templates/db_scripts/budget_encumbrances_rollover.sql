@@ -339,7 +339,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             SET jsonb = budget.jsonb || jsonb_build_object(''encumbered'', (budget.jsonb->>''encumbered'')::decimal + subquery.amount)
             FROM
                 (
-                    SELECT (jsonb->>''fromFundId'')::uuid AS fund_id, sum((jsonb->>''amount'')::decimal) AS amount FROM (
+                    SELECT jsonb->>''fromFundId'' AS fund_id, sum((jsonb->>''amount'')::decimal) AS amount FROM (
                         SELECT jsonb FROM ${myuniversity}_${mymodule}.transaction
                         UNION
                         SELECT jsonb FROM tmp_encumbered_transactions
@@ -347,8 +347,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 WHERE jsonb->>''fiscalYearId''=%2$L::jsonb->>''toFiscalYearId'' AND jsonb->''encumbrance''->>''sourcePurchaseOrderId''=%3$L
                 GROUP BY fund_id
             ) AS subquery
-            LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON subquery.fund_id=fund.id
-            WHERE subquery.fund_id=budget.fundId AND fund.ledgerId=(%2$L::jsonb->>''ledgerId'')::uuid AND budget.fiscalYearId=(%2$L::jsonb->>''toFiscalYearId'')::uuid
+            LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON subquery.fund_id=fund.id::text
+            WHERE subquery.fund_id=budget.fundId::text AND fund.ledgerId::text=%2$L::jsonb->>''ledgerId'' AND budget.fiscalYearId::text=%2$L::jsonb->>''toFiscalYearId''
                 AND (NOT budget.jsonb ? ''ledgerRolloverId'' OR budget.jsonb->>''ledgerRolloverId''=%2$L::jsonb->>''id'');';
 
         IF _rollover_record->>'rolloverType' = 'Preview' THEN
