@@ -271,7 +271,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         ELSEIF
             -- #7
             (_rollover_record->>'restrictEncumbrance')::boolean AND EXISTS (SELECT sum((tr.jsonb->>'amount')::decimal) FROM tmp_transaction tr
-                LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget budget ON tr.fromFundId = budget.fundId
+                LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_budget budget ON (tr.jsonb->>'fromFundId')::uuid = budget.fundId
                                                                             WHERE budget.jsonb ->> 'allowableEncumbrance' IS NOT NULL
                                                                               AND tr.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = _order_id
                                                                               AND tr.jsonb->>'fiscalYearId' = _rollover_record ->> 'toFiscalYearId'
