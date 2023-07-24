@@ -138,7 +138,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             )
         FROM ${myuniversity}_${mymodule}.transaction tr
         LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
-        WHERE tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id AND tr.fiscalYearId=input_fromFiscalYearId
+        WHERE ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId')=_order_id AND tr.fiscalYearId=input_fromFiscalYearId
           AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean AND tr.jsonb->'encumbrance'->>'orderStatus'='Open'
           AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId = input_ledgerId));
 
@@ -156,7 +156,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             FROM (
                      SELECT DISTINCT tr.jsonb -> 'encumbrance' ->> 'sourcePoLineId' as id
                      FROM ${myuniversity}_${mymodule}.transaction tr
-                     WHERE tr.jsonb -> 'encumbrance' ->> 'sourcePurchaseOrderId' = _order_id
+                     WHERE ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId') = _order_id
                        AND input_fromFiscalYearId = fiscalYearId
                  ) po;
         -- if missing penny for poLines exist then find transaction (first or last) and add that missing amount to them
@@ -198,7 +198,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
             LEFT JOIN ${myuniversity}_${mymodule}.ledger_fiscal_year_rollover_progress rollover_progress ON rollover.id = rollover_progress.ledgerRolloverId
             WHERE fund.ledgerId<>input_ledgerId AND tr.fiscalYearId = input_fromFiscalYearId AND
                 (rollover_progress.jsonb IS NULL OR rollover_progress.jsonb->>'overallRolloverStatus'='Not Started' OR rollover_progress.jsonb->>'overallRolloverStatus'='In Progress')
-                 AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
+                 AND ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId')=_order_id;
 
         -- #5
         IF array_length(related_not_rollovered_ledger_ids, 1) > 0
@@ -224,7 +224,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 FROM ${myuniversity}_${mymodule}.transaction tr
                     LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
                     WHERE fund.ledgerId=input_ledgerId AND tr.fiscalYearId = input_fromFiscalYearId
-                          AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id;
+                          AND ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId')=_order_id;
         END IF;
 
         -- #6.1 stop order processing for rolloverType != Preview. If rolloverType = Preview then proceed with validations and result building taking into account only requested ledgerId.
@@ -241,7 +241,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
            								 	  AND budget.fiscalYearId = input_toFiscalYearId
            								 	  AND (budget.ledgerRolloverId = input_ledgerRolloverId
            								 	         OR (fund.ledgerId <> input_ledgerId AND rollover.jsonb IS NOT NULL)))
-           						AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
+           						AND ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId')= _order_id
                       AND tr.fiscalYearId= input_fromFiscalYearId
                       AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId = input_ledgerId)))
         THEN
@@ -266,7 +266,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                                 WHERE tr.fromFundId=budget.fundId
                                   AND budget.fiscalYearId = input_toFiscalYearId
                                   AND budget.ledgerRolloverId = input_ledgerRolloverId)
-                    AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'= _order_id
+                    AND ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId')= _order_id
                     AND tr.fiscalYearId= input_fromFiscalYearId;
         ELSEIF
             -- #7
@@ -319,7 +319,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                                                                                                             (budget.jsonb->>'allowableEncumbrance')::decimal/100 -
                                                                                                             (budget.jsonb->>'encumbered')::decimal
                     ) as summary ON summary.budget->>'fundId'=tr.jsonb->>'fromFundId'
-                WHERE tr.jsonb->>'transactionType'='Encumbrance' AND tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId'=_order_id
+                WHERE tr.jsonb->>'transactionType'='Encumbrance' AND ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId')=_order_id
                 AND tr.fiscalYearId::text=_rollover_record->>'fromFiscalYearId';
         ELSE
             -- #9.2 move transactions from temp table to permanent
