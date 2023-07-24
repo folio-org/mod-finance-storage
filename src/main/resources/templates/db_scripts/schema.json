@@ -412,8 +412,40 @@
         }
       ],
       "index": [
+        {
+          "fieldName": "encumbrance.sourcePurchaseOrderId",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "encumbrance.sourcePoLineId",
+          "tOps": "ADD"
+        }
       ],
       "ginIndex": [
+        {
+          "fieldName": "amount",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "transactionType",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "encumbrance.sourcePurchaseOrderId",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "encumbrance.sourcePoLineId",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        }
       ]
     },
     {
