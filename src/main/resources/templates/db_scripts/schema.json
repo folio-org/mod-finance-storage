@@ -361,7 +361,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-7.1.0",
+      "fromModuleVersion": "mod-finance-storage-8.5.0",
       "withMetadata": true,
       "withOptimisticLocking": "failOnConflict",
       "customSnippetPath": "transactions.sql",
@@ -651,7 +651,7 @@
     },
     {
       "tableName": "ledger_fiscal_year_rollover_budget",
-      "fromModuleVersion": "mod-finance-storage-8.3.0",
+      "fromModuleVersion": "mod-finance-storage-8.5.0",
       "withMetadata": true,
       "withOptimisticLocking": "failOnConflict",
       "foreignKeys": [
