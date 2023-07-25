@@ -57,7 +57,7 @@ public class CancelPaymentCreditService extends CancelTransactionService {
     for (Transaction paymentOrCredit : paymentsAndCredits) {
       if (paymentOrCredit.getTransactionType().equals(TransactionType.CREDIT)) {
         newAmountExpended = sumMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
-        if (!encumbrance.getEncumbrance().getStatus().equals(Encumbrance.Status.RELEASED)) {
+        if (Encumbrance.Status.RELEASED != encumbrance.getEncumbrance().getStatus()) {
           newEncumbranceAmount = subtractMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
         }
       } else {

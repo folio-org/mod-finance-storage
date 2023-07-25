@@ -48,7 +48,7 @@ public class CancelPendingPaymentService extends CancelTransactionService {
     double newEncumbranceAmount = encumbrance.getAmount();
     double newAmountAwaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
     for (Transaction pendingPayment : pendingPayments) {
-      if (!encumbrance.getEncumbrance().getStatus().equals(Encumbrance.Status.RELEASED)) {
+      if (Encumbrance.Status.RELEASED != encumbrance.getEncumbrance().getStatus()) {
         newEncumbranceAmount = MoneyUtils.sumMoney(newEncumbranceAmount, pendingPayment.getAmount(), currency);
       }
       newAmountAwaitingPayment = MoneyUtils.subtractMoney(newAmountAwaitingPayment, pendingPayment.getAmount(), currency);
