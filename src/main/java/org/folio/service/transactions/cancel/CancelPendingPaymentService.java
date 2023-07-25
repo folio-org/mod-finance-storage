@@ -56,4 +56,5 @@ public class CancelPendingPaymentService extends CancelTransactionService {
       encumbrance.getEncumbrance().setAmountAwaitingPayment(newAmountAwaitingPayment);
     }
   }
+
 }
