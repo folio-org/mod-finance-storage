@@ -2,6 +2,11 @@
   "exactCount" : 20000,
   "scripts": [
     {
+      "run": "before",
+      "snippetPath": "remove_from_rmb_internal_index.sql",
+      "fromModuleVersion": "mod-finance-storage-8.5.0"
+    },
+    {
       "run": "after",
       "snippetPath": "group_budget_view.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0"
@@ -411,6 +416,16 @@
           "targetTable": "expense_class"
         }
       ],
+      "index": [
+        {
+          "fieldName": "encumbrance.sourcePurchaseOrderId",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "encumbrance.sourcePoLineId",
+          "tOps": "ADD"
+        }
+      ],
       "ginIndex": [
         {
           "fieldName": "amount",
@@ -426,6 +441,12 @@
         },
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": true
+        },
+        {
+          "fieldName": "encumbrance.sourcePoLineId",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true
@@ -658,16 +679,6 @@
           "targetTable": "fiscal_year",
           "tableAlias": "ledgerFYROBudget",
           "targetTableAlias": "fiscalYear",
-          "tOps": "ADD"
-        }
-      ],
-      "index": [
-        {
-          "fieldName": "ledgerRolloverId",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fiscalYearId",
           "tOps": "ADD"
         }
       ]
