@@ -3,6 +3,7 @@ package org.folio.service.transactions.cancel;
 import io.vertx.core.json.JsonObject;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 import org.folio.service.budget.BudgetService;
@@ -50,19 +51,21 @@ public class CancelPaymentCreditService extends CancelTransactionService {
 
   @Override
   protected void cancelEncumbrance(Transaction encumbrance, List<Transaction> paymentsAndCredits) {
-    CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
-    double newEncumbranceAmount = encumbrance.getAmount();
-    double newAmountExpended = encumbrance.getEncumbrance().getAmountExpended();
-    for (Transaction paymentOrCredit : paymentsAndCredits) {
-      if (paymentOrCredit.getTransactionType().equals(TransactionType.CREDIT)) {
-        newAmountExpended = sumMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
-        newEncumbranceAmount = subtractMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
-      } else {
-        newAmountExpended = subtractMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
-        newEncumbranceAmount = sumMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
+    if (!encumbrance.getEncumbrance().getStatus().equals(Encumbrance.Status.RELEASED)) {
+      CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
+      double newEncumbranceAmount = encumbrance.getAmount();
+      double newAmountExpended = encumbrance.getEncumbrance().getAmountExpended();
+      for (Transaction paymentOrCredit : paymentsAndCredits) {
+        if (paymentOrCredit.getTransactionType().equals(TransactionType.CREDIT)) {
+          newAmountExpended = sumMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
+          newEncumbranceAmount = subtractMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
+        } else {
+          newAmountExpended = subtractMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
+          newEncumbranceAmount = sumMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
+        }
       }
+      encumbrance.setAmount(newEncumbranceAmount);
+      encumbrance.getEncumbrance().setAmountExpended(newAmountExpended);
     }
-    encumbrance.setAmount(newEncumbranceAmount);
-    encumbrance.getEncumbrance().setAmountExpended(newAmountExpended);
   }
 }

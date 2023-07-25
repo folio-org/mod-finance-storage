@@ -3,6 +3,7 @@ package org.folio.service.transactions.cancel;
 import io.vertx.core.json.JsonObject;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.service.budget.BudgetService;
 import org.folio.utils.MoneyUtils;
@@ -43,14 +44,16 @@ public class CancelPendingPaymentService extends CancelTransactionService {
 
   @Override
   protected void cancelEncumbrance(Transaction encumbrance, List<Transaction> pendingPayments) {
-    CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
-    double newEncumbranceAmount = encumbrance.getAmount();
-    double newAmountAwaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
-    for (Transaction pendingPayment : pendingPayments) {
-      newEncumbranceAmount = MoneyUtils.sumMoney(newEncumbranceAmount, pendingPayment.getAmount(), currency);
-      newAmountAwaitingPayment = MoneyUtils.subtractMoney(newAmountAwaitingPayment, pendingPayment.getAmount(), currency);
+    if (!encumbrance.getEncumbrance().getStatus().equals(Encumbrance.Status.RELEASED)) {
+      CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
+      double newEncumbranceAmount = encumbrance.getAmount();
+      double newAmountAwaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
+      for (Transaction pendingPayment : pendingPayments) {
+        newEncumbranceAmount = MoneyUtils.sumMoney(newEncumbranceAmount, pendingPayment.getAmount(), currency);
+        newAmountAwaitingPayment = MoneyUtils.subtractMoney(newAmountAwaitingPayment, pendingPayment.getAmount(), currency);
+      }
+      encumbrance.setAmount(newEncumbranceAmount);
+      encumbrance.getEncumbrance().setAmountAwaitingPayment(newAmountAwaitingPayment);
     }
-    encumbrance.setAmount(newEncumbranceAmount);
-    encumbrance.getEncumbrance().setAmountAwaitingPayment(newAmountAwaitingPayment);
   }
 }
