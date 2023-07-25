@@ -74,22 +74,22 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
 		THEN
 		    SELECT sum((jsonb->'encumbrance'->>'amountExpended')::decimal) INTO total_amount
             	        FROM ${myuniversity}_${mymodule}.transaction
-                        WHERE input_fromFiscalYearId=fiscalYearId AND to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')=_transaction->'encumbrance'->>'sourcePoLineId'
-                        GROUP BY to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId');
+                        WHERE input_fromFiscalYearId=fiscalYearId AND ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')=_transaction->'encumbrance'->>'sourcePoLineId'
+                        GROUP BY ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId');
 
 		ELSEIF
 		  encumbrance_rollover->>'basedOn'='Remaining'
 		THEN
 			SELECT sum((jsonb->>'amount')::decimal) INTO total_amount
                         	        FROM ${myuniversity}_${mymodule}.transaction
-                                    WHERE input_fromFiscalYearId=fiscalYearId AND to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')=_transaction->'encumbrance'->>'sourcePoLineId'
-                                    GROUP BY to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId');
+                                    WHERE input_fromFiscalYearId=fiscalYearId AND ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')=_transaction->'encumbrance'->>'sourcePoLineId'
+                                    GROUP BY ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId');
 
     ELSE
       SELECT sum((jsonb->'encumbrance'->>'initialAmountEncumbered')::decimal) INTO total_amount
                       FROM ${myuniversity}_${mymodule}.transaction
-                        WHERE input_fromFiscalYearId=fiscalYearId AND to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')=_transaction->'encumbrance'->>'sourcePoLineId'
-                        GROUP BY to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId');
+                        WHERE input_fromFiscalYearId=fiscalYearId AND ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')=_transaction->'encumbrance'->>'sourcePoLineId'
+                        GROUP BY ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId');
 
 		END IF;
 		total_amount:= total_amount + total_amount * (encumbrance_rollover->>'increaseBy')::decimal/100;
@@ -150,8 +150,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                                   sum(${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(jsonb, _rollover_record, true)) penny
                            FROM ${myuniversity}_${mymodule}.transaction
                            WHERE input_fromFiscalYearId = fiscalYearId
-                             AND to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId') = po.id
-                           GROUP BY to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')),
+                             AND ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId') = po.id
+                           GROUP BY ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')),
                           (_rollover_record ->> 'currencyFactor')::integer)) as penny
             FROM (
                      SELECT DISTINCT tr.jsonb -> 'encumbrance' ->> 'sourcePoLineId' as id
@@ -171,7 +171,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                             SELECT id
                             FROM tmp_transaction
                             WHERE _rollover_record ->> 'toFiscalYearId' = jsonb ->> 'fiscalYearId'
-                              AND to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId') = missing_penny_row.po_line_id
+                              AND ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId') = missing_penny_row.po_line_id
                             ORDER BY CASE WHEN missing_penny_row.penny < 0 THEN jsonb -> 'metadata' ->> 'createdDate' END,
                                      CASE WHEN missing_penny_row.penny > 0 THEN jsonb -> 'metadata' ->> 'createdDate' END DESC
                             LIMIT 1
