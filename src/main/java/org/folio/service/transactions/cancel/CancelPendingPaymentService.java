@@ -44,17 +44,16 @@ public class CancelPendingPaymentService extends CancelTransactionService {
 
   @Override
   protected void cancelEncumbrance(Transaction encumbrance, List<Transaction> pendingPayments) {
-    if (!encumbrance.getEncumbrance().getStatus().equals(Encumbrance.Status.RELEASED)) {
-      CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
-      double newEncumbranceAmount = encumbrance.getAmount();
-      double newAmountAwaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
-      for (Transaction pendingPayment : pendingPayments) {
+    CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
+    double newEncumbranceAmount = encumbrance.getAmount();
+    double newAmountAwaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
+    for (Transaction pendingPayment : pendingPayments) {
+      if (!encumbrance.getEncumbrance().getStatus().equals(Encumbrance.Status.RELEASED)) {
         newEncumbranceAmount = MoneyUtils.sumMoney(newEncumbranceAmount, pendingPayment.getAmount(), currency);
-        newAmountAwaitingPayment = MoneyUtils.subtractMoney(newAmountAwaitingPayment, pendingPayment.getAmount(), currency);
       }
-      encumbrance.setAmount(newEncumbranceAmount);
-      encumbrance.getEncumbrance().setAmountAwaitingPayment(newAmountAwaitingPayment);
+      newAmountAwaitingPayment = MoneyUtils.subtractMoney(newAmountAwaitingPayment, pendingPayment.getAmount(), currency);
     }
+    encumbrance.setAmount(newEncumbranceAmount);
+    encumbrance.getEncumbrance().setAmountAwaitingPayment(newAmountAwaitingPayment);
   }
-
 }

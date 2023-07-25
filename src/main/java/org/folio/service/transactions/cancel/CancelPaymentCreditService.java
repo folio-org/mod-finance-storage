@@ -51,21 +51,21 @@ public class CancelPaymentCreditService extends CancelTransactionService {
 
   @Override
   protected void cancelEncumbrance(Transaction encumbrance, List<Transaction> paymentsAndCredits) {
-    if (!encumbrance.getEncumbrance().getStatus().equals(Encumbrance.Status.RELEASED)) {
-      CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
-      double newEncumbranceAmount = encumbrance.getAmount();
-      double newAmountExpended = encumbrance.getEncumbrance().getAmountExpended();
-      for (Transaction paymentOrCredit : paymentsAndCredits) {
-        if (paymentOrCredit.getTransactionType().equals(TransactionType.CREDIT)) {
-          newAmountExpended = sumMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
+    CurrencyUnit currency = Monetary.getCurrency(encumbrance.getCurrency());
+    double newEncumbranceAmount = encumbrance.getAmount();
+    double newAmountExpended = encumbrance.getEncumbrance().getAmountExpended();
+    for (Transaction paymentOrCredit : paymentsAndCredits) {
+      if (paymentOrCredit.getTransactionType().equals(TransactionType.CREDIT)) {
+        newAmountExpended = sumMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
+        if (!encumbrance.getEncumbrance().getStatus().equals(Encumbrance.Status.RELEASED)) {
           newEncumbranceAmount = subtractMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
-        } else {
-          newAmountExpended = subtractMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
-          newEncumbranceAmount = sumMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
         }
+      } else {
+        newAmountExpended = subtractMoney(newAmountExpended, paymentOrCredit.getAmount(), currency);
+        newEncumbranceAmount = sumMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
       }
+    }
       encumbrance.setAmount(newEncumbranceAmount);
       encumbrance.getEncumbrance().setAmountExpended(newAmountExpended);
-    }
   }
 }
