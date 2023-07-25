@@ -3,7 +3,7 @@
   "scripts": [
     {
       "run": "before",
-      "snippetPath": "removeRmbInternalIndex.sql",
+      "snippetPath": "remove_from_rmb_internal_index.sql",
       "fromModuleVersion": "mod-finance-storage-8.5.0"
     },
     {
