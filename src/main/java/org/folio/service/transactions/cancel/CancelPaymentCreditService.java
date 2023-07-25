@@ -65,7 +65,7 @@ public class CancelPaymentCreditService extends CancelTransactionService {
         newEncumbranceAmount = sumMoney(newEncumbranceAmount, paymentOrCredit.getAmount(), currency);
       }
     }
-      encumbrance.setAmount(newEncumbranceAmount);
-      encumbrance.getEncumbrance().setAmountExpended(newAmountExpended);
+    encumbrance.setAmount(newEncumbranceAmount);
+    encumbrance.getEncumbrance().setAmountExpended(newAmountExpended);
   }
 }
