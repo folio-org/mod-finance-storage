@@ -2,6 +2,10 @@
   "exactCount" : 20000,
   "scripts": [
     {
+      "run": "before",
+      "snippetPath": "removeRmbInternalIndex.sql"
+    },
+    {
       "run": "after",
       "snippetPath": "group_budget_view.sql",
       "fromModuleVersion": "mod-finance-storage-4.0.0"
