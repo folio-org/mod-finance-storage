@@ -180,4 +180,32 @@ public class CancelTransactionServiceTest {
         first.getEncumbrance().getAmountExpended() == 0d;
     }), eq(client));
   }
+
+  @Test
+  void cancelTransactionWithTypeCredit() {
+    cancelPaymentCreditService = new CancelPaymentCreditService(budgetService, transactionsDAO, encumbranceDAO);
+
+    transaction.setTransactionType(TransactionType.CREDIT);
+    transaction.setPaymentEncumbranceId(encumbrance.getId());
+    List<Transaction> transactions = List.of(transaction);
+    encumbrance.getEncumbrance().setAmountExpended(10.0);
+    List<Transaction> encumbrances = List.of(encumbrance);
+
+    budget.withAwaitingPayment(100d)
+      .withAvailable(90d)
+      .withEncumbered(10d)
+      .withUnavailable(10d)
+      .withExpenditures(100d);
+    List<Budget> budgets = Collections.singletonList(budget);
+
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(encumbranceDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
+    when(encumbranceDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+
+    Future<Void> cancelResult = cancelPaymentCreditService.cancelTransactions(transactions, client);
+    assertTrue(cancelResult.succeeded());
+  }
 }
