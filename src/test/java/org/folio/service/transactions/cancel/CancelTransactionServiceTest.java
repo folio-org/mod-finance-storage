@@ -69,6 +69,7 @@ public class CancelTransactionServiceTest {
       .withCurrency(currency)
       .withAmount(10.0)
       .withInvoiceCancelled(true);
+
     encumbrance = new Transaction()
       .withId(UUID.randomUUID().toString())
       .withCurrency(currency)
@@ -77,6 +78,7 @@ public class CancelTransactionServiceTest {
       .withEncumbrance(new Encumbrance()
         .withInitialAmountEncumbered(10d))
       .withAmount(10.0);
+
     budget = new Budget()
       .withFiscalYearId(fiscalYearId)
       .withAwaitingPayment(0d)
