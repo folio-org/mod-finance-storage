@@ -330,7 +330,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 -- tmp_encumbered_transactions contains data for all orders with updated encumbered field
                 INSERT INTO tmp_encumbered_transactions SELECT * FROM tmp_transaction;
             ELSE
-                INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction;
+                INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction ON CONFLICT (id) DO NOTHING;
             END IF;
         END IF;
 
@@ -644,7 +644,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
               );
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
-            INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction;
+            INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction ON CONFLICT (id) DO NOTHING;
         END IF;
 
         DROP TABLE IF EXISTS tmp_transaction;
