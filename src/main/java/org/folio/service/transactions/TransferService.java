@@ -28,7 +28,7 @@ import io.vertx.ext.web.handler.HttpException;
 
 public class TransferService extends AbstractTransactionService implements TransactionManagingStrategy {
 
-  private static final Logger logger = LogManager.getLogger(Transaction.class);
+  private static final Logger logger = LogManager.getLogger(TransferService.class);
 
   private final BudgetService budgetService;
 

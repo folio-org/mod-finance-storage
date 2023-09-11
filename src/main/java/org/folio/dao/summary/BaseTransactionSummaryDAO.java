@@ -57,16 +57,17 @@ public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao
 
   @Override
   public Future<Void> updateSummaryInTransaction(JsonObject summary, DBClient client) {
-    logger.debug("Trying to update summary in transaction by id {}", summary.getString(ID_FIELD_NAME));
+    String id = summary.getString(ID_FIELD_NAME);
+    logger.debug("Trying to update summary in transaction by id {}", id);
     Promise<Void> promise = Promise.promise();
-    Criterion criterion = new CriterionBuilder().with(ID_FIELD_NAME, summary.getString(ID_FIELD_NAME)).build();
+    Criterion criterion = new CriterionBuilder().with(ID_FIELD_NAME, id).build();
     CQLWrapper cql = new CQLWrapper(criterion);
     client.getPgClient().update(client.getConnection(), getTableName(), summary, cql, false, reply -> {
       if (reply.failed()) {
-        logger.error("Summary update with id {} failed", summary.getString(ID_FIELD_NAME), reply.cause());
+        logger.error("Summary update with id {} failed", id, reply.cause());
         handleFailure(promise, reply);
       } else {
-        logger.info("Summary with id {} successfully updated", summary.getString(ID_FIELD_NAME));
+        logger.info("Summary with id {} successfully updated", id);
         promise.complete();
       }
     });

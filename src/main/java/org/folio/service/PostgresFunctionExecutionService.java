@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.service.budget.BudgetService;
 
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
