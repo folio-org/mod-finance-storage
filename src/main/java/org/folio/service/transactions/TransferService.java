@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Error;
@@ -25,6 +27,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
 
 public class TransferService extends AbstractTransactionService implements TransactionManagingStrategy {
+
+  private static final Logger logger = LogManager.getLogger(Transaction.class);
 
   private final BudgetService budgetService;
 
@@ -56,11 +60,11 @@ public class TransferService extends AbstractTransactionService implements Trans
         .compose(ok -> client.endTx())
         .onComplete(result -> {
           if (result.failed()) {
-            log.error("Transfer or associated data failed to be processed", result.cause());
+            logger.error("createTransaction:: Transfer or associated data failed to be processed", result.cause());
             client.rollbackTransaction();
           } else {
             promise.complete(transfer);
-            log.info("Transfer and associated data were successfully processed");
+            logger.info("createTransaction:: Transfer and associated data were successfully processed");
           }
         })).onFailure(throwable -> {
          client.rollbackTransaction();
@@ -83,8 +87,10 @@ public class TransferService extends AbstractTransactionService implements Trans
     dbClient.getPgClient()
       .save(dbClient.getConnection(), TRANSACTION_TABLE, transaction.getId(), transaction, event -> {
         if (event.succeeded()) {
+          logger.info("createTransfer:: Transfer transaction with id {} successfully created", transaction.getId());
           promise.complete(transaction);
         } else {
+          logger.error("createTransfer:: Creation transfer transaction failed", event.cause());
           promise.fail(new HttpException(500, PgExceptionUtil.getMessage(event.cause())));
         }
       });
@@ -120,6 +126,7 @@ public class TransferService extends AbstractTransactionService implements Trans
     List<Error> errors = new ArrayList<>(buildNullValidationError(transfer.getToFundId(), TO_FUND_ID));
 
     if (isNotEmpty(errors)) {
+      logger.error("handleValidationError: Validation error for transfer with toFundId {}", transfer.getToFundId());
       throw new HttpException(422, JsonObject.mapFrom(new Errors().withErrors(errors)
         .withTotalRecords(errors.size()))
         .encode());

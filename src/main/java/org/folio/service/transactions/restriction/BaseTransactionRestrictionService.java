@@ -21,10 +21,10 @@ import static org.folio.rest.util.ErrorCodes.BUDGET_IS_INACTIVE;
 
 public abstract class BaseTransactionRestrictionService implements TransactionRestrictionService {
 
+  private static final Logger logger = LogManager.getLogger(BaseTransactionRestrictionService.class);
+
   private static final String BUDGET_ID = "budgetId";
   public static final String FUND_CANNOT_BE_PAID = "Fund cannot be paid due to restrictions";
-
-  protected final Logger log = LogManager.getLogger(this.getClass());
 
   private final BudgetService budgetService;
   private final LedgerService ledgerService;
@@ -43,7 +43,7 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
       .compose(budget -> {
         if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
           Error error = buildBudgetIsInactiveError(budget);
-          log.error(error.getMessage());
+          logger.error("verifyBudgetHasEnoughMoney:: The verification failed, the budget has the status {} ", budget.getBudgetStatus().value());
           return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), error));
         }
         if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT || transaction.getAmount() <= 0) {

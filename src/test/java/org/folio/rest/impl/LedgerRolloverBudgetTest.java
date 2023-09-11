@@ -38,7 +38,7 @@ public class LedgerRolloverBudgetTest extends TestBase {
 
   @Test
   void testGetById() throws MalformedURLException, InterruptedException {
-    logger.info(String.format("--- mod-finance-storage %1$s test: Fetching %1$s with ID: %2$s", ENTITY_NAME, BUDGET_ID));
+    logger.info(String.format("--- mod-finance-storage %1$s test: Fetching %1$s with ID %2$s", ENTITY_NAME, BUDGET_ID));
     testEntitySuccessfullyFetched(LEDGER_FISCAL_YEAR_ROLLOVER_BUDGET_ENDPOINT + "/{id}", BUDGET_ID);
   }
 

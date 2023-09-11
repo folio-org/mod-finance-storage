@@ -24,9 +24,11 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
 
 public class ExpenseClassService {
+
+  private static final Logger logger = LogManager.getLogger(ExpenseClassService.class);
+
   private static final String EXPENSE_CLASS_TABLE = "expense_class";
 
-  private final Logger logger = LogManager.getLogger(this.getClass());
   private final PostgresClient pgClient;
   private final NameCodeConstraintErrorBuilder nameCodeConstraintErrorBuilder;
 
@@ -36,27 +38,29 @@ public class ExpenseClassService {
   }
 
   public void createExpenseClass(ExpenseClass entity, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+    logger.debug("createExpenseClass:: Trying to create expense class");
     vertxContext.runOnContext(v -> createExpenseClass(entity)
       .onSuccess(group -> {
-        logger.debug("ExpenseClass with id {} created", entity.getId());
+        logger.info("createExpenseClass:: Expense class with id {} created", entity.getId());
         asyncResultHandler.handle(Future.succeededFuture(
           FinanceStorageExpenseClasses.PostFinanceStorageExpenseClassesResponse.respond201WithApplicationJson(group, headersFor201())));
       })
       .onFailure(throwable -> {
-        logger.error("ExpenseClass creation with id {} failed", entity.getId(), throwable);
+        logger.error("createExpenseClass:: Expense class creation with id {} failed", entity.getId(), throwable);
         asyncResultHandler.handle(buildErrorResponse(throwable));
       }));
   }
 
   public void updateExpenseClass(String id, ExpenseClass entity, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+    logger.debug("updateExpenseClass:: Trying to update expense class with id {}", id);
     vertxContext.runOnContext(v -> updateExpenseClass(id, entity)
       .onSuccess(group -> {
-        logger.debug("ExpenseClass with id {} updated", entity.getId());
+        logger.info("updateExpenseClass:: Expense class with id {} updated", entity.getId());
         asyncResultHandler.handle(Future.succeededFuture(
           FinanceStorageExpenseClasses.PutFinanceStorageExpenseClassesByIdResponse.respond204()));
       })
       .onFailure(throwable -> {
-        logger.error("ExpenseClass update with id {} failed", entity.getId(), throwable);
+        logger.error("updateExpenseClass:: Expense class update with id {} failed", entity.getId(), throwable);
         asyncResultHandler.handle(buildErrorResponse(throwable));
       }));
   }

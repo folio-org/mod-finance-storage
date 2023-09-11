@@ -16,19 +16,23 @@ import org.folio.rest.persist.DBClient;
 
 public class FiscalYearPostgresDAO implements FiscalYearDAO {
 
-  public static final String FISCAL_YEAR_NOT_FOUND = "Fiscal year not found by id=%s";
-  private final Logger logger = LogManager.getLogger(this.getClass());
+  private static final Logger logger = LogManager.getLogger(FiscalYearPostgresDAO.class);
+
+  private static final String FISCAL_YEAR_NOT_FOUND = "Fiscal year not found by id=%s";
 
   public Future<FiscalYear> getFiscalYearById(String id, DBClient client) {
+    logger.debug("Trying to get fiscal year by id {}", id);
     Promise<FiscalYear> promise = Promise.promise();
     client.getPgClient().getById(FISCAL_YEAR_TABLE, id, FiscalYear.class,
       reply -> {
         if (reply.failed()) {
+          logger.error("Getting fiscal year by id {} failed", id, reply.cause());
           handleFailure(promise, reply);
         } else if (Objects.isNull(reply.result())) {
-          logger.error(String.format(FISCAL_YEAR_NOT_FOUND, id));
+          logger.warn(String.format(FISCAL_YEAR_NOT_FOUND, id));
           promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), String.format(FISCAL_YEAR_NOT_FOUND, id)));
         } else {
+          logger.info("Successfully retrieved a fiscal year by id {}", id);
           promise.complete(reply.result());
         }
       });

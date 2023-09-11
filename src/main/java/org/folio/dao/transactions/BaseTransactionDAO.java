@@ -13,6 +13,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
@@ -28,11 +30,14 @@ import io.vertx.sqlclient.Tuple;
 
 public abstract class BaseTransactionDAO implements TransactionDAO {
 
+  private static final Logger logger = LogManager.getLogger(BaseTransactionDAO.class);
+
   public static final String INSERT_PERMANENT_TRANSACTIONS_BY_IDS = "INSERT INTO %s (id, jsonb) (SELECT id, jsonb FROM %s WHERE id in (%s)) "
     + "ON CONFLICT DO NOTHING;";
 
   @Override
   public Future<List<Transaction>> getTransactions(Criterion criterion, DBClient client) {
+    logger.debug("Trying to get transactions by query: {}", criterion);
     Promise<List<Transaction>> promise = Promise.promise();
     if (Objects.isNull(client.getConnection())) {
       client.getPgClient().get(TRANSACTIONS_TABLE, Transaction.class, criterion, false, true, handleGet(promise));
@@ -45,6 +50,7 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
 
   @Override
   public Future<List<Transaction>> getTransactions(List<String> ids, DBClient client) {
+    logger.debug("Trying to get transactions by ids = {}", ids);
     if (ids.isEmpty()) {
       return Future.succeededFuture(Collections.emptyList());
     }
@@ -56,9 +62,11 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
   private Handler<AsyncResult<Results<Transaction>>> handleGet(Promise<List<Transaction>> promise) {
     return reply -> {
       if (reply.failed()) {
+        logger.error("Getting transactions failed", reply.cause());
         handleFailure(promise, reply);
       } else {
         List<Transaction> encumbrances = reply.result().getResults();
+        logger.info("Successfully retrieved {} transactions", encumbrances.size());
         promise.complete(encumbrances);
       }
     };
@@ -66,12 +74,15 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
 
   @Override
   public Future<Integer> saveTransactionsToPermanentTable(String summaryId, DBClient client) {
+    logger.debug("Trying to save transactions to permanent table with summaryid {}", summaryId);
     Promise<Integer> promise = Promise.promise();
     client.getPgClient()
       .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), reply -> {
         if (reply.failed()) {
+          logger.error("Saving transactions to permanent table with summaryid {} failed", summaryId, reply.cause());
           handleFailure(promise, reply);
         } else {
+          logger.info("Successfully saved {} transactions to permanent table with summaryid {}", reply.result().rowCount(), summaryId);
           promise.complete(reply.result().rowCount());
         }
       });
@@ -80,12 +91,15 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
 
   @Override
   public Future<Integer> saveTransactionsToPermanentTable(List<String> ids, DBClient client) {
+    logger.debug("Trying to save transactions to permanent table by ids = {}", ids);
     Promise<Integer> promise = Promise.promise();
     client.getPgClient()
       .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId(), ids), reply -> {
         if (reply.failed()) {
+          logger.error("Save transactions to permanent table by ids = {} failed", ids, reply.cause());
           handleFailure(promise, reply);
         } else {
+          logger.info("Successfully saved {} transactions to permanent table with ids = {}", reply.result().rowCount(), ids);
           promise.complete(reply.result().rowCount());
         }
       });
@@ -103,6 +117,7 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
 
   @Override
   public Future<Void> updatePermanentTransactions(List<Transaction> transactions, DBClient client) {
+    logger.debug("Trying to update permanent transactions");
     Promise<Void> promise = Promise.promise();
     if (transactions.isEmpty()) {
       promise.complete();
@@ -117,6 +132,7 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
 
   @Override
   public Future<Void> deleteTransactions(Criterion criterion, DBClient client) {
+    logger.debug("Trying to delete transactions by query: {}", criterion);
     Promise<Void> promise = Promise.promise();
     client.getPgClient().delete(client.getConnection(), TRANSACTIONS_TABLE, criterion, event -> handleVoidAsyncResult(promise, event));
     return promise.future();

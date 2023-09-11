@@ -9,6 +9,8 @@ import java.util.UUID;
 
 import io.vertx.ext.web.handler.HttpException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Errors;
@@ -24,6 +26,8 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 
 public class AllocationService extends DefaultTransactionService implements TransactionManagingStrategy {
+
+  private static final Logger logger = LogManager.getLogger(AllocationService.class);
 
   private final BudgetService budgetService;
 
@@ -55,18 +59,19 @@ public class AllocationService extends DefaultTransactionService implements Tran
       .compose(ok -> client.endTx())
       .onComplete(result -> {
         if (result.failed()) {
-          log.error("Allocation or associated data failed to be processed", result.cause());
+          logger.error("createTransaction:: Allocation or associated data failed to be processed", result.cause());
           client.rollbackTransaction();
           promise.fail(result.cause());
         } else {
+          logger.info("createTransaction:: Allocation and associated data were successfully processed");
           promise.complete(allocation);
-          log.info("Allocation and associated data were successfully processed");
         }
       });
     return promise.future();
   }
 
   private Future<Transaction> createAllocation(Transaction transaction, DBClient client) {
+    logger.debug("createAllocation:: Trying to created allocation");
     Promise<Transaction> promise = Promise.promise();
     if (StringUtils.isEmpty(transaction.getId())) {
       transaction.setId(UUID.randomUUID().toString());
@@ -75,8 +80,10 @@ public class AllocationService extends DefaultTransactionService implements Tran
     client.getPgClient()
       .save(client.getConnection(), TRANSACTION_TABLE, transaction.getId(), transaction, event -> {
         if (event.succeeded()) {
+          logger.info("createAllocation:: Allocation with id {} successfully created", transaction.getId());
           promise.complete(transaction);
         } else {
+          logger.error("createAllocation:: Creating the allocation with id {} failed", transaction.getId(), event.cause());
           promise.fail(new HttpException(500, PgExceptionUtil.getMessage(event.cause())));
         }
       });

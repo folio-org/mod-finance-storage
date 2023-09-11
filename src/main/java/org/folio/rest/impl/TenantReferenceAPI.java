@@ -34,7 +34,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 public class TenantReferenceAPI extends TenantAPI {
-  private static final Logger log = LogManager.getLogger(TenantReferenceAPI.class);
+
+  private static final Logger logger = LogManager.getLogger(TenantReferenceAPI.class);
 
   private static final String PARAMETER_LOAD_REFERENCE = "loadReference";
   private static final String PARAMETER_LOAD_SAMPLE = "loadSample";
@@ -42,23 +43,22 @@ public class TenantReferenceAPI extends TenantAPI {
 
   @Override
   public Future<Integer> loadData(TenantAttributes attributes, String tenantId, Map<String, String> headers, Context vertxContext) {
-    log.info("postTenant");
+    logger.debug("Trying to load tenant data with tenantId {}", tenantId);
     Vertx vertx = vertxContext.owner();
     Promise<Integer> promise = Promise.promise();
 
     TenantLoading tl = new TenantLoading();
     buildDataLoadingParameters(attributes, tl);
 
-    tl.perform(attributes, headers, vertx, res1 -> {
-      if (res1.failed()) {
-        promise.fail(res1.cause());
-
+    tl.perform(attributes, headers, vertx, res -> {
+      if (res.failed()) {
+        logger.error("Failed to load tenant data", res.cause());
+        promise.fail(res.cause());
       } else {
-        promise.complete(res1.result());
+        logger.info("Tenant data loaded successfully");
+        promise.complete(res.result());
       }
-
     });
-
     return promise.future();
   }
 
@@ -120,15 +120,15 @@ public class TenantReferenceAPI extends TenantAPI {
   }
 
   @Override
-  public void deleteTenantByOperationId(String operationId, Map<String, String> headers, Handler<AsyncResult<Response>> hndlr,
-      Context cntxt) {
-    log.info("deleteTenant");
+  public void deleteTenantByOperationId(String operationId, Map<String, String> headers, Handler<AsyncResult<Response>> handler,
+      Context ctx) {
+    logger.info("Trying to delete tenant by operation id {}", operationId);
     super.deleteTenantByOperationId(operationId, headers, res -> {
-      Vertx vertx = cntxt.owner();
+      Vertx vertx = ctx.owner();
       String tenantId = TenantTool.tenantId(headers);
       PostgresClient.getInstance(vertx, tenantId)
-        .closeClient(event -> hndlr.handle(res));
-    }, cntxt);
+        .closeClient(event -> handler.handle(res));
+    }, ctx);
   }
 
   private static String getUriPath(Class<?> clazz) {

@@ -52,7 +52,7 @@ import org.javamoney.moneta.function.MonetaryFunctions;
 
 public class PendingPaymentService implements TransactionManagingStrategy {
 
-  protected final Logger logger = LogManager.getLogger(this.getClass());
+  private static final Logger logger = LogManager.getLogger(PendingPaymentService.class);
 
   public static final String SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE =
     "SELECT b.jsonb FROM %s b INNER JOIN (SELECT DISTINCT budgets.id FROM %s budgets INNER JOIN %s transactions "
@@ -289,7 +289,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
           parameters.add(new Parameter().withKey("fundId").withValue(transaction.getFromFundId()));
           parameters.add(new Parameter().withKey("poLineId").withValue(transaction.getEncumbrance().getSourcePoLineId()));
           Error error = OUTDATED_FUND_ID_IN_ENCUMBRANCE.toError().withParameters(parameters);
-          logger.error(JsonObject.mapFrom(error).encodePrettily());
+          logger.error("applyNegativeEncumbrances:: Applying negative encumbrances failed {}", JsonObject.mapFrom(error).encodePrettily());
           throw new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), error);
         }
         MonetaryAmount amount = Money.of(transaction.getAmount(), currency).negate();

@@ -18,7 +18,7 @@ import io.vertx.ext.web.handler.HttpException;
 
 public abstract class AbstractTransactionSummaryService implements TransactionSummaryService {
 
-  private final Logger logger = LogManager.getLogger(this.getClass());
+  private static final Logger logger = LogManager.getLogger(AbstractTransactionSummaryService.class);
 
   private TransactionSummaryDao transactionSummaryDao;
 
@@ -32,9 +32,10 @@ public abstract class AbstractTransactionSummaryService implements TransactionSu
     return this.getTransactionSummary(summaryId, client)
       .map(summary -> {
         if ((isProcessed(summary))) {
-          logger.debug("Expected number of transactions for summary with id={} already processed", summary.getString(HelperUtils.ID_FIELD_NAME));
+          logger.error("Expected number of transactions for summary with id={} already processed", summary.getString(HelperUtils.ID_FIELD_NAME));
           throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED);
         } else {
+          logger.info("Successfully retrieved a transaction summary with id {}", summary.getString(HelperUtils.ID_FIELD_NAME));
           return JsonObject.mapFrom(summary);
         }
       });
@@ -42,15 +43,13 @@ public abstract class AbstractTransactionSummaryService implements TransactionSu
 
   @Override
   public Future<JsonObject> getTransactionSummary(String summaryId, DBClient client) {
-    logger.debug("Get summary by id: {}", summaryId);
-
+    logger.debug("Get summary by id {}", summaryId);
     return transactionSummaryDao.getSummaryById(summaryId, client);
   }
 
   @Override
   public Future<JsonObject> getTransactionSummaryWithLocking(String summaryId, Conn conn) {
-    logger.debug("Get summary by id: {} with locking", summaryId);
-
+    logger.debug("Get summary by id {} with locking", summaryId);
     return transactionSummaryDao.getSummaryByIdWithLocking(summaryId, conn);
   }
 

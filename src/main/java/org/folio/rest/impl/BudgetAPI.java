@@ -33,7 +33,7 @@ public class BudgetAPI implements FinanceStorageBudgets {
       GetFinanceStorageBudgetsResponse.class, responseAsyncResult -> {
         Response result = responseAsyncResult.result();
         if (!responseAsyncResult.failed() && responseAsyncResult.result().getEntity() instanceof BudgetCollection) {
-          budgetService.updateBudgetsWithCalculatedFilds(((BudgetCollection) result.getEntity()).getBudgets());
+          budgetService.updateBudgetsWithCalculatedFields(((BudgetCollection) result.getEntity()).getBudgets());
         }
         asyncResultHandler.handle(responseAsyncResult);
       });
@@ -52,7 +52,7 @@ public class BudgetAPI implements FinanceStorageBudgets {
       Response result = responseAsyncResult.result();
       if (!responseAsyncResult.failed() && responseAsyncResult.result().getEntity() instanceof Budget) {
         Budget budget = (Budget) result.getEntity();
-        budgetService.updateBudgetsWithCalculatedFilds(List.of(budget));
+        budgetService.updateBudgetsWithCalculatedFields(List.of(budget));
       }
       asyncResultHandler.handle(responseAsyncResult);
     });

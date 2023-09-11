@@ -21,7 +21,8 @@ import io.vertx.core.json.jackson.DatabindCodec;
  * The class initializes vertx context adding spring context
  */
 public class InitAPIs implements InitAPI {
-  private final Logger logger = LogManager.getLogger(InitAPIs.class);
+
+  private static final Logger logger = LogManager.getLogger(InitAPIs.class);
 
   @Override
   public void init(Vertx vertx, Context context, Handler<AsyncResult<Boolean>> resultHandler) {

@@ -9,6 +9,7 @@ import org.folio.okapi.common.OkapiClient;
 import io.vertx.core.Vertx;
 
 public class EmailOkapiClient extends OkapiClient {
+
   private static final Logger logger = LogManager.getLogger(EmailOkapiClient.class);
 
   public EmailOkapiClient(String okapiUrl, Vertx vertx, Map<String, String> headers) {

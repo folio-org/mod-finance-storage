@@ -41,7 +41,7 @@ import io.vertx.sqlclient.impl.ArrayTuple;
 
 public class LedgerAPI implements FinanceStorageLedgers {
 
-  private static final Logger log = LogManager.getLogger(LedgerAPI.class);
+  private static final Logger logger = LogManager.getLogger(LedgerAPI.class);
 
   @Override
   @Validate
@@ -71,6 +71,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
   @Override
   @Validate
   public void putFinanceStorageLedgersById(String id, Ledger ledger, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    logger.debug("Trying to update finance storage ledger by id {}", id);
     ledger.setId(id);
     DBClient client = new DBClient(vertxContext, okapiHeaders);
     vertxContext.runOnContext(event ->
@@ -78,9 +79,10 @@ public class LedgerAPI implements FinanceStorageLedgers {
         .onComplete(result -> {
           if (result.failed()) {
             HttpException cause = (HttpException) result.cause();
-            log.error("Update of the ledger record {} has failed", ledger.getId(), cause);
+            logger.error("Updating finance storage ledger by with id {} failed", id, cause);
             HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
           } else if (result.result() == null) {
+            logger.warn("Finance storage ledger with id {} not found", id);
             asyncResultHandler.handle(succeededFuture(PutFinanceStorageLedgersByIdResponse.respond404WithTextPlain("Not found")));
           } else if (Boolean.TRUE.equals(result.result())) {
             handleLedgerStatusUpdate(ledger, client).onComplete(asyncResultHandler);
@@ -119,7 +121,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
         "(SELECT id FROM " + fullFYTableName + " WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
         "AND (jsonb->>'periodEnd')::timestamp)));";
     return conn.execute(sql, params)
-        .onSuccess(rowSet -> log.info("{} budget records are updated", rowSet.rowCount()))
+        .onSuccess(rowSet -> logger.info("{} budget records are updated", rowSet.rowCount()))
         .mapEmpty();
   }
 
@@ -142,7 +144,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
   private Future<Void> updateLedger(Ledger ledger, DBConn dbConn) {
     return dbConn.update(LEDGER_TABLE, ledger, ledger.getId())
         .recover(ResponseUtils::handleFailure)
-        .onSuccess(x -> log.info("Ledger record {} was successfully updated", ledger))
+        .onSuccess(x -> logger.info("Ledger record {} was successfully updated", ledger))
         .mapEmpty();
   }
 
@@ -154,7 +156,7 @@ public class LedgerAPI implements FinanceStorageLedgers {
     return conn.execute(sql, Tuple.of(
             ledger.getLedgerStatus().value(), UUID.fromString(ledger.getId()), ledger.getLedgerStatus().value()))
         .map(result -> {
-          log.info("All fund records related to ledger with id={} has been successfully updated", ledger.getId());
+          logger.info("All fund records related to ledger with id={} has been successfully updated", ledger.getId());
           List<String> ids = new ArrayList<>();
           result.spliterator().forEachRemaining(row -> ids.add(row.getUUID(0).toString()));
           return ids;

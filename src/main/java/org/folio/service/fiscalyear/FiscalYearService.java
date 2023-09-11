@@ -4,8 +4,6 @@ import io.vertx.core.Future;
 import java.util.Optional;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.FiscalYear;
@@ -15,7 +13,6 @@ import org.folio.rest.persist.DBClient;
 public class FiscalYearService {
 
   public static final int DEFAULT_FACTOR = 2;
-  private final Logger logger = LogManager.getLogger(this.getClass());
 
   private final FiscalYearDAO fyDAO;
 
