@@ -27,7 +27,7 @@ public class PostgresFunctionExecutionService {
       .execute(String.format(sql, schemaName, JsonObject.mapFrom(rollover)
         .encode()), event -> {
           if (event.succeeded()) {
-            logger.debug("runBudgetEncumbrancesRolloverScript:: Budget encumbrances rollover script successfully ran");
+            logger.info("runBudgetEncumbrancesRolloverScript:: Budget encumbrances rollover script successfully ran");
             promise.complete();
           } else {
             logger.error("runBudgetEncumbrancesRolloverScript:: Running budget encumbrances rollover script failed", event.cause());

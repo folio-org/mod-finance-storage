@@ -78,7 +78,7 @@ public class RestClient {
           .putHeader(OKAPI_HEADER_TOKEN, requestContext.getHeaders().get(OKAPI_HEADER_TOKEN))
           .expect(ResponsePredicate.status(200, 299))
           .sendJsonObject(recordData)
-          .onSuccess(body -> logger.debug(
+          .onSuccess(body -> logger.info(
               "'POST {}' request successfully processed. Record with '{}' id has been created", baseEndpoint, body))
           .onFailure(e -> logger.error("'POST {}' request failed: {}. Request body: {}",
               baseEndpoint, e.getCause(), recordData.encodePrettily()))

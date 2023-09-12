@@ -43,7 +43,7 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
         Tuple.of(UUID.fromString(transaction.getId()), pojo2JsonObject(transaction)))
         .map(transaction)
         .recover(ResponseUtils::handleFailure)
-        .onSuccess(x -> logger.debug("New transaction with id {} successfully created", transaction.getId()))
+        .onSuccess(x -> logger.info("New transaction with id {} successfully created", transaction.getId()))
         .onFailure(e -> logger.error("Transaction creation with id {} failed", transaction.getId(), e));
     } catch (Exception e) {
       logger.error("Creating new temp transaction with id {} failed", transaction.getId(), e);
