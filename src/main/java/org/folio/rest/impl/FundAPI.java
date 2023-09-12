@@ -72,7 +72,7 @@ public class FundAPI implements FinanceStorageFunds {
         .onComplete(result -> {
           if (result.failed()) {
             HttpException cause = (HttpException) result.cause();
-            logger.error("Updating finance storage fund by with id {} failed", fund.getId(), cause);
+            logger.error("Failed to update the finance storage fund with Id {}", fund.getId(), cause);
             HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
           } else if (result.result() == null) {
             logger.warn("Finance storage fund with id {} not found", id);
