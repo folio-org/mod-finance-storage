@@ -24,6 +24,8 @@ import javax.ws.rs.core.MediaType;
 
 public class EmailService {
 
+  private static final Logger logger = LogManager.getLogger(EmailService.class);
+
   private static final String ACCEPT_KEY = "Accept";
   private static final String OKAPI_URL = "x-okapi-url";
   private static final String OKAPI_TENANT = "X-Okapi-Tenant";
@@ -41,7 +43,6 @@ public class EmailService {
   private static final String CONFIGS_KEY = "configs";
   private static final String VALUE_KEY = "value";
 
-  private static final Logger logger = LogManager.getLogger(EmailService.class);
   private static final String COMMIT_MESSAGE = "<p>Hi %s,<br><br>The results of your fiscal year rollover from %s " +
     "for %s are ready for review. Click <a href=\"%s\">here</a> to review the results.<br><br>FOLIO</p>";
   private static final String PREVIEW_MESSAGE = "<p>Hi %s,<br><br>The results of your fiscal year rollover test from %s " +
@@ -60,6 +61,7 @@ public class EmailService {
   }
 
   public void createAndSendEmail(RequestContext requestContext, LedgerFiscalYearRollover rollover) {
+    logger.debug("createAndSendEmail:: Trying to create and send email");
     getHostAddress(requestContext)
       .onSuccess(hostAddressResponse -> getCurrentUser(requestContext)
         .onSuccess(userResponse -> {
@@ -70,11 +72,12 @@ public class EmailService {
               String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
               Map<String, String> headers = getHeaders(requestContext);
               EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
+              logger.info("createAndSendEmail:: Sending email");
 
               sendEmail(requestContext, headers, emailEntity);
-            }).onFailure(t -> logger.error("Getting ledger failed {}", t.getMessage()));
-        }).onFailure(t -> logger.error("Getting user failed {}", t.getMessage())))
-      .onFailure(t -> logger.error("Getting host address failed {}", t.getMessage()));
+            }).onFailure(t -> logger.error("createAndSendEmail:: Getting ledger failed {}", t.getMessage()));
+        }).onFailure(t -> logger.error("createAndSendEmail:: Getting user failed {}", t.getMessage())))
+      .onFailure(t -> logger.error("createAndSendEmail:: Getting host address failed {}", t.getMessage()));
   }
 
   private void sendEmail(RequestContext requestContext, Map<String, String> headers, EmailEntity emailEntity) {

@@ -22,7 +22,9 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.predicate.ResponsePredicate;
 
 public class RestClient {
-  private static final Logger LOGGER = LogManager.getLogger(RestClient.class);
+
+  private static final Logger logger = LogManager.getLogger(RestClient.class);
+
   private static final String SEARCH_ENDPOINT = "%s?limit=%s&offset=%s%s";
   private static final String EXCEPTION_CALLING_ENDPOINT_MSG = "Exception calling {} {} {}";
   private final String baseEndpoint;
@@ -43,7 +45,7 @@ public class RestClient {
 
   private Future<JsonObject> get(RequestContext requestContext, String endpoint) {
     try {
-      LOGGER.debug("Calling GET {}", endpoint);
+      logger.debug("Calling GET {}", endpoint);
       String url = requestContext.getHeaders().get(RestConstants.OKAPI_URL) + endpoint;
       return webClient.getAbs(url)
           .putHeader(OKAPI_HEADER_TENANT, requestContext.getHeaders().get(OKAPI_HEADER_TENANT))
@@ -52,13 +54,13 @@ public class RestClient {
           .send()
           .map(HttpResponse::bodyAsJsonObject)
           .onSuccess(body -> {
-            if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("The response body for GET {}: {}", endpoint, nonNull(body) ? body.encodePrettily() : null);
+            if (logger.isDebugEnabled()) {
+              logger.debug("The response body for GET {}: {}", endpoint, nonNull(body) ? body.encodePrettily() : null);
             }
           })
-          .onFailure(e -> LOGGER.error(EXCEPTION_CALLING_ENDPOINT_MSG, HttpMethod.GET, endpoint, e.getMessage()));
+          .onFailure(e -> logger.error(EXCEPTION_CALLING_ENDPOINT_MSG, HttpMethod.GET, endpoint, e.getMessage()));
     } catch (Exception e) {
-      LOGGER.error(EXCEPTION_CALLING_ENDPOINT_MSG, HttpMethod.GET, endpoint, e.getMessage(), e);
+      logger.error(EXCEPTION_CALLING_ENDPOINT_MSG, HttpMethod.GET, endpoint, e.getMessage(), e);
       return Future.failedFuture(e);
     }
   }
@@ -67,8 +69,8 @@ public class RestClient {
     try {
       JsonObject recordData = JsonObject.mapFrom(entity);
 
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Sending 'POST {}' with body: {}", baseEndpoint, recordData.encodePrettily());
+      if (logger.isDebugEnabled()) {
+        logger.debug("Sending 'POST {}' with body: {}", baseEndpoint, recordData.encodePrettily());
       }
 
       return webClient.postAbs(requestContext.getHeaders().get(OKAPI_URL) + baseEndpoint)
@@ -76,13 +78,13 @@ public class RestClient {
           .putHeader(OKAPI_HEADER_TOKEN, requestContext.getHeaders().get(OKAPI_HEADER_TOKEN))
           .expect(ResponsePredicate.status(200, 299))
           .sendJsonObject(recordData)
-          .onSuccess(body -> LOGGER.debug(
+          .onSuccess(body -> logger.info(
               "'POST {}' request successfully processed. Record with '{}' id has been created", baseEndpoint, body))
-          .onFailure(e -> LOGGER.error("'POST {}' request failed: {}. Request body: {}",
+          .onFailure(e -> logger.error("'POST {}' request failed: {}. Request body: {}",
               baseEndpoint, e.getCause(), recordData.encodePrettily()))
           .mapEmpty();
     } catch (Exception e) {
-      LOGGER.error("'POST {}' request failed: {}.", baseEndpoint, e.getCause());
+      logger.error("'POST {}' request failed: {}.", baseEndpoint, e.getCause());
       return Future.failedFuture(e);
     }
   }

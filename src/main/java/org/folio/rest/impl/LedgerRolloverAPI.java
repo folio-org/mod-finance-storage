@@ -31,7 +31,7 @@ import io.vertx.core.Vertx;
 
 public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
 
-  private static final Logger log = LogManager.getLogger(LedgerRolloverAPI.class);
+  private static final Logger logger = LogManager.getLogger(LedgerRolloverAPI.class);
 
   @Autowired
   private LedgerRolloverService ledgerRolloverService;
@@ -52,14 +52,15 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
   @Validate
   public void postFinanceStorageLedgerRollovers(LedgerFiscalYearRollover entity, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    logger.debug("Trying to create finance storage ledger rollover");
     ledgerRolloverService.rolloverLedger(entity, new RequestContext(vertxContext, okapiHeaders))
             .onComplete(result -> {
               if (result.failed()) {
                 HttpException cause = (HttpException) result.cause();
                 if (Response.Status.CONFLICT.getStatusCode() == cause.getStatusCode()) {
-                  log.error("Rollover already exists with id {}", entity.getId(), cause);
+                  logger.error("Rollover already exists with id {}", entity.getId(), cause);
                 } else {
-                  log.error("Creating rollover with id {} failed", entity.getId(), cause);
+                  logger.error("Creating rollover with id {} failed", entity.getId(), cause);
                 }
                 HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
               } else {
@@ -80,11 +81,12 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
   @Validate
   public void deleteFinanceStorageLedgerRolloversById(String rolloverId, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    logger.debug("Trying to delete finance storage ledger rollover by id {}", rolloverId);
     ledgerRolloverService.deleteRollover(rolloverId, new RequestContext(vertxContext, okapiHeaders))
       .onComplete(result -> {
         if (result.failed()) {
           HttpException cause = (HttpException) result.cause();
-          log.error("Rollover deletion error {}", rolloverId, cause);
+          logger.error("Rollover deletion error {}", rolloverId, cause);
           HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
         } else {
           asyncResultHandler.handle(buildNoContentResponse());

@@ -168,7 +168,7 @@ public abstract class TestBase {
   }
 
   void deleteDataSuccess(TestEntities testEntity, String id) throws MalformedURLException {
-    logger.info(String.format("--- %s test: Deleting record with ID: %s", testEntity.name(), id));
+    logger.info(String.format("--- %s test: Deleting record with ID %s", testEntity.name(), id));
     deleteData(testEntity.getEndpointWithId(), id)
       .then().log().ifValidationFails()
       .statusCode(204);

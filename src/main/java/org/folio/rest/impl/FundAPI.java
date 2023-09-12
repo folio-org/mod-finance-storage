@@ -31,9 +31,10 @@ import org.apache.logging.log4j.Logger;
 import io.vertx.sqlclient.Tuple;
 
 public class FundAPI implements FinanceStorageFunds {
-  public static final String FUND_TABLE = "fund";
 
-  private static final Logger log = LogManager.getLogger(FundAPI.class);
+  private static final Logger logger = LogManager.getLogger(FundAPI.class);
+
+  public static final String FUND_TABLE = "fund";
 
   @Override
   @Validate
@@ -63,6 +64,7 @@ public class FundAPI implements FinanceStorageFunds {
   @Override
   @Validate
   public void putFinanceStorageFundsById(String id, Fund fund, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    logger.debug("Trying to update finance storage fund by id {}", id);
     fund.setId(id);
     DBClient client = new DBClient(vertxContext, okapiHeaders);
     vertxContext.runOnContext(event ->
@@ -70,9 +72,10 @@ public class FundAPI implements FinanceStorageFunds {
         .onComplete(result -> {
           if (result.failed()) {
             HttpException cause = (HttpException) result.cause();
-            log.error("Update of the fund record {} has failed", fund.getId(), cause);
+            logger.error("Failed to update the finance storage fund with Id {}", fund.getId(), cause);
             HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
           } else if (result.result() == null) {
+            logger.warn("Finance storage fund with id {} not found", id);
             asyncResultHandler.handle(succeededFuture(FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.respond404WithTextPlain("Not found")));
           } else if (Boolean.TRUE.equals(result.result())) {
             handleFundStatusUpdate(fund, client).onComplete(asyncResultHandler);
@@ -109,7 +112,7 @@ public class FundAPI implements FinanceStorageFunds {
 
   private Future<Void> updateFund(Fund fund, DBConn conn) {
     return conn.update(FUND_TABLE, fund, fund.getId())
-        .onSuccess(x -> log.info("Fund record {} was successfully updated", fund))
+        .onSuccess(x -> logger.info("Fund record {} was successfully updated", fund))
         .mapEmpty();
   }
 

@@ -26,7 +26,7 @@ import io.vertx.ext.web.handler.HttpException;
 
 public class AllOrNothingTransactionService {
 
-  private static final Logger log = LogManager.getLogger(AllOrNothingTransactionService.class);
+  private static final Logger logger = LogManager.getLogger(AllOrNothingTransactionService.class);
 
   public static final String TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION = "Transaction summary not found for transaction";
   public static final String ALL_EXPECTED_TRANSACTIONS_ALREADY_PROCESSED = "All expected transactions already processed";
@@ -82,7 +82,7 @@ public class AllOrNothingTransactionService {
     final String summaryId = transactionSummaryService.getSummaryId(transaction);
     return temporaryTransactionDAO.deleteTempTransactionsWithNewConn(summaryId, client)
       .recover(t -> {
-        log.error("Can't delete temporary transaction for {}", summaryId, t);
+        logger.error("cleanupTempTransactions:: Can't delete temporary transaction for {}", summaryId, t);
         return Future.failedFuture(t);
       })
       .mapEmpty();
@@ -109,13 +109,12 @@ public class AllOrNothingTransactionService {
               .compose(ok -> client.endTx())
               .onComplete(result -> {
                 if (result.failed()) {
-                  log.error("Transactions or associated data failed to be processed", result.cause());
+                  logger.error("processAllOrNothing:: Transactions with id {} or associated data failed to be processed", transaction.getId(), result.cause());
                   client.rollbackTransaction();
                 } else {
-                  log.info("Transactions and associated data were successfully processed");
+                  logger.info("processAllOrNothing:: Transactions with id {} and associated data were successfully processed", transaction.getId());
                 }
               });
-
           } else {
             return Future.succeededFuture();
           }
@@ -129,6 +128,7 @@ public class AllOrNothingTransactionService {
     return transactionDAO.getTransactions(criterionBuilder.build(), client)
       .map(transactions -> {
         if (transactions.isEmpty()) {
+          logger.warn("verifyTransactionExistence:: Transaction with id {} not found", transactionId);
           throw new HttpException(Response.Status.NOT_FOUND.getStatusCode(), "Transaction not found");
         }
         return null;

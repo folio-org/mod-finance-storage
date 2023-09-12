@@ -18,7 +18,7 @@ import static org.folio.rest.persist.HelperUtils.chainCall;
 
 public class RolloverBudgetService {
 
-  private static final Logger log = LogManager.getLogger(RolloverBudgetService.class);
+  private static final Logger logger = LogManager.getLogger(RolloverBudgetService.class);
 
   private static final String LEDGER_ROLLOVER_ID = "ledgerRolloverId";
 
@@ -49,10 +49,10 @@ public class RolloverBudgetService {
     retrieveAssociatedDataAndUpdateExpenseClassTotals(budgets, dbClient)
       .onComplete(result -> {
         if (result.failed()) {
-          log.error("Transactions or expense class data failed to be processed", result.cause());
+          logger.error("updateRolloverBudgetsExpenseClassTotals:: Transactions or expense class data failed to be processed", result.cause());
           promise.fail("Error when updating rollover budget expense class totals");
         } else {
-          log.info("Transactions or expense class data were successfully processed");
+          logger.info("updateRolloverBudgetsExpenseClassTotals:: Transactions or expense class data were successfully processed");
           promise.complete();
         }
       });

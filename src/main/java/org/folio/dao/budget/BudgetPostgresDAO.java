@@ -27,16 +27,18 @@ import io.vertx.sqlclient.Tuple;
 
 public class BudgetPostgresDAO implements BudgetDAO {
 
-  private final Logger logger = LogManager.getLogger(this.getClass());
+  private static final Logger logger = LogManager.getLogger(BudgetPostgresDAO.class);
 
   @Override
   public Future<Integer> updateBatchBudgets(String sql, DBClient client) {
+    logger.debug("Trying update batch budgets by query: {}", sql);
     Promise<Integer> promise = Promise.promise();
-
     client.getPgClient().execute(client.getConnection(), sql, reply -> {
       if (reply.failed()) {
+        logger.error("Update batch budgets by query: {} failed", sql, reply.cause());
         handleFailure(promise, reply);
       } else {
+        logger.info("Updated {} batch budgets", reply.result().rowCount());
         promise.complete(reply.result().rowCount());
       }
     });
@@ -45,15 +47,18 @@ public class BudgetPostgresDAO implements BudgetDAO {
 
   @Override
   public Future<List<Budget>> getBudgetsTx(String sql, Tuple params, DBClient client) {
+    logger.debug("Trying to get budgets in transactional by sql");
     Promise<List<Budget>> promise = Promise.promise();
     client.getPgClient()
       .select(client.getConnection(), sql, params, reply -> {
         if (reply.failed()) {
+          logger.error("Getting budgets in transactional by sql failed", reply.cause());
           handleFailure(promise, reply);
         } else {
           List<Budget> budgets = new ArrayList<>();
           reply.result().spliterator()
             .forEachRemaining(row -> budgets.add(row.get(JsonObject.class, 0).mapTo(Budget.class)));
+          logger.info("Successfully retrieved {} budgets in transactional by sql", reply.result().rowCount());
           promise.complete(budgets);
         }
       });
@@ -70,14 +75,17 @@ public class BudgetPostgresDAO implements BudgetDAO {
    */
   @Override
   public Future<List<Budget>> getBudgets(Criterion criterion, DBClient client) {
+    logger.debug("Trying to get budgets by query: {}", criterion);
     Promise<List<Budget>> promise = Promise.promise();
     client.getPgClient().get(BUDGET_TABLE, Budget.class, criterion, false, reply -> {
         if (reply.failed()) {
+          logger.error("Getting budgets by query: {} failed", criterion, reply.cause());
           handleFailure(promise, reply);
         } else {
           List<Budget> budgets = reply.result()
             .getResults();
           budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
+          logger.info("Successfully retrieved {} budgets by query: {}", budgets.size(), criterion);
           promise.complete(budgets);
         }
       });
@@ -93,13 +101,16 @@ public class BudgetPostgresDAO implements BudgetDAO {
    */
   @Override
   public Future<List<Budget>> getBudgetsTx(Criterion criterion, DBClient client) {
+    logger.debug("Trying to get budgets in transactional by query: {}", criterion);
     Promise<List<Budget>> promise = Promise.promise();
     client.getPgClient().get(client.getConnection(), BUDGET_TABLE, Budget.class, criterion, false, false, reply -> {
       if (reply.failed()) {
+        logger.error("Getting budgets in transactional by query: {} failed", criterion, reply.cause());
         handleFailure(promise, reply);
       } else {
         List<Budget> budgets = reply.result().getResults();
         budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
+        logger.info("Successfully retrieved {} budgets in transactional by query: {}", budgets.size(), criterion);
         promise.complete(budgets);
       }
     });
@@ -107,22 +118,21 @@ public class BudgetPostgresDAO implements BudgetDAO {
   }
 
   public Future<Budget> getBudgetById(String id, DBClient client) {
+    logger.debug("Trying to get a budget by id {}", id);
     Promise<Budget> promise = Promise.promise();
-
-    logger.debug("Get budget={}", id);
-
     client.getPgClient().getById(BUDGET_TABLE, id, reply -> {
       if (reply.failed()) {
-        logger.error("Budget retrieval with id={} failed", id, reply.cause());
+        logger.error("Getting a budget by id {} failed", id, reply.cause());
         handleFailure(promise, reply);
       } else {
         final JsonObject budget = reply.result();
         if (budget == null) {
+          logger.warn("Budget with id {} not found", id, reply.cause());
           promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(), Response.Status.NOT_FOUND.getReasonPhrase()));
         } else {
-          logger.debug("Budget with id={} successfully extracted", id);
           Budget convertedBudget = budget.mapTo(Budget.class);
           CalculationUtils.calculateBudgetSummaryFields(convertedBudget);
+          logger.info("Successfully retrieved a budget with id {}", id);
           promise.complete(convertedBudget);
         }
       }
@@ -131,19 +141,23 @@ public class BudgetPostgresDAO implements BudgetDAO {
   }
 
   public Future<DBClient> deleteBudget(String id, DBClient client) {
+    logger.debug("Trying to delete a budget by id {}", id);
     Promise<DBClient> promise = Promise.promise();
     client.getPgClient().delete(client.getConnection(), BUDGET_TABLE, id, reply -> {
       if (reply.failed()) {
-        logger.error("Budget deletion with id={} failed", id, reply.cause());
         if (checkForeignKeyViolationError(reply.cause())) {
+          logger.error("Can't delete budget with id {} that referenced with expense class", id, reply.cause());
           promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
             buildErrorForBudgetExpenseClassReferenceError()));
         } else {
+          logger.error("Deleting a budget by id {} failed", id, reply.cause());
           handleFailure(promise, reply);
         }
       } else if (reply.result().rowCount() == 0) {
+        logger.warn("Budget with id {} not found for deletion", id, reply.cause());
         promise.fail(new HttpException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase()));
       } else {
+        logger.info("Successfully deleted a budget with id {}", id);
         promise.complete(client);
       }
     });

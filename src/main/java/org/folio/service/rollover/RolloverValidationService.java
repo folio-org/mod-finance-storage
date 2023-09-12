@@ -19,7 +19,7 @@ import io.vertx.sqlclient.impl.ArrayTuple;
 
 public class RolloverValidationService {
 
-  private static final Logger log = LogManager.getLogger(RolloverValidationService.class);
+  private static final Logger logger = LogManager.getLogger(RolloverValidationService.class);
 
   public Future<Void> checkRolloverExists(LedgerFiscalYearRollover rollover, DBClient client) {
     Promise<Void> promise = Promise.promise();
@@ -30,9 +30,10 @@ public class RolloverValidationService {
       isRolloverExists(query, parameters, client)
         .onSuccess(isExists -> {
           if (Boolean.TRUE.equals(isExists)) {
-            log.error("Not unique pair ledgerId {} and fromFiscalYearId {}", rollover.getLedgerId(), rollover.getFromFiscalYearId());
+            logger.error("checkRolloverExists:: Not unique pair ledgerId {} and fromFiscalYearId {}", rollover.getLedgerId(), rollover.getFromFiscalYearId());
             promise.fail(new HttpException(Response.Status.CONFLICT.getStatusCode(), "Not unique pair ledgerId and fromFiscalYearId"));
           } else {
+            logger.info("checkRolloverExists:: A pair ledgerId {} and fromFiscalYearId {} are unique", rollover.getLedgerId(), rollover.getFromFiscalYearId());
             promise.complete();
           }
         })
@@ -56,11 +57,13 @@ public class RolloverValidationService {
   }
 
   private Future<Boolean> isRolloverExists(String query, Tuple parameters, DBClient client) {
+    logger.debug("isRolloverExists:: Is rollover exists by query {}", query);
     Promise<Boolean> promise = Promise.promise();
 
     client.getPgClient()
       .execute(query, parameters, reply -> {
         if (reply.failed()) {
+          logger.debug("isRolloverExists:: Getting rollover by query {}", query, reply.cause());
           handleFailure(promise, reply);
         } else {
           reply.result()

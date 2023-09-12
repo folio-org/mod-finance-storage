@@ -5,6 +5,8 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Tuple;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
@@ -37,6 +39,8 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 public class PaymentCreditService extends AbstractTransactionService implements TransactionManagingStrategy {
+
+  private static final Logger logger = LogManager.getLogger(PaymentCreditService.class);
 
   private static final String TRANSACTIONS_TABLE = "transaction";
 
@@ -168,7 +172,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
       .collect(groupingBy(transaction -> groupedBudgets.get(transaction.getFromFundId())));
 
     if (!paymentBudgetsGrouped.isEmpty()) {
-      log.debug("Calculating budget totals for payment transactions");
+      logger.debug("calculatePaymentBudgetsTotals:: Calculating budget totals for payment transactions");
       paymentBudgetsGrouped.entrySet()
         .forEach(this::updateBudgetPaymentTotals);
     }
@@ -182,7 +186,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
       .collect(groupingBy(transaction -> groupedBudgets.get(transaction.getToFundId())));
 
     if (!creditBudgetsGrouped.isEmpty()) {
-      log.debug("Calculating budget totals for credit transactions");
+      logger.debug("calculateCreditBudgetsTotals:: Calculating budget totals for credit transactions");
       creditBudgetsGrouped.entrySet()
         .forEach(this::updateBudgetCreditTotals);
     }
@@ -285,15 +289,18 @@ public class PaymentCreditService extends AbstractTransactionService implements 
   }
 
   private Future<List<Transaction>> getAllEncumbrances(String summaryId, DBClient client) {
+    logger.debug("getAllEncumbrances:: Trying to get all encumbrances by summary id {}", summaryId);
     Promise<List<Transaction>> promise = Promise.promise();
     String sql = buildGetPermanentEncumbrancesQuery(client.getTenantId());
     client.getPgClient()
       .select(client.getConnection(), sql, Tuple.of(UUID.fromString(summaryId)), reply -> {
         if (reply.failed()) {
+          logger.error("getAllEncumbrances:: Getting all encumbrances by summary id {} failed", summaryId, reply.cause());
           handleFailure(promise, reply);
         } else {
           List<Transaction> encumbrances = new ArrayList<>();
           reply.result().spliterator().forEachRemaining(row -> encumbrances.add(row.get(JsonObject.class, 0).mapTo(Transaction.class)));
+          logger.info("Successfully retrieved {} encumbrances by summary id {}", encumbrances.size(), summaryId);
           promise.complete(encumbrances);
         }
       });

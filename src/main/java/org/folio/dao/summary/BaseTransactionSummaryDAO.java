@@ -21,17 +21,19 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 
 public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao {
-  protected final Logger logger = LogManager.getLogger(this.getClass());
 
+  private static final Logger logger = LogManager.getLogger(BaseTransactionSummaryDAO.class);
 
   @Override
   public Future<JsonObject> getSummaryById(String summaryId, DBClient client) {
+    logger.debug("Trying to get summary by id {}", summaryId);
     return client.getPgClient().getById(getTableName(), summaryId)
       .transform(reply -> processGetResult(summaryId, reply));
   }
 
   @Override
   public Future<JsonObject> getSummaryByIdWithLocking(String summaryId, Conn conn) {
+    logger.debug("Trying to get summary with locking by id {}", summaryId);
     return conn.getByIdForUpdate(getTableName(), summaryId)
       .transform(reply -> processGetResult(summaryId, reply));
   }
@@ -44,9 +46,10 @@ public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao
       final JsonObject summary = reply.result();
 
       if (summary == null) {
+        logger.warn("Transaction summary with id {} not found for transaction", summaryId, reply.cause());
         return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
       } else {
-        logger.debug("Summary with id={} successfully extracted", summaryId);
+        logger.info("Summary with id {} successfully extracted", summaryId);
         return Future.succeededFuture(summary);
       }
     }
@@ -54,15 +57,17 @@ public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao
 
   @Override
   public Future<Void> updateSummaryInTransaction(JsonObject summary, DBClient client) {
+    String id = summary.getString(ID_FIELD_NAME);
+    logger.debug("Trying to update summary in transaction by id {}", id);
     Promise<Void> promise = Promise.promise();
-    Criterion criterion = new CriterionBuilder().with(ID_FIELD_NAME, summary.getString(ID_FIELD_NAME)).build();
+    Criterion criterion = new CriterionBuilder().with(ID_FIELD_NAME, id).build();
     CQLWrapper cql = new CQLWrapper(criterion);
     client.getPgClient().update(client.getConnection(), getTableName(), summary, cql, false, reply -> {
       if (reply.failed()) {
-        logger.error("Summary update with id={} failed", summary.getString(ID_FIELD_NAME), reply.cause());
+        logger.error("Summary update with id {} failed", id, reply.cause());
         handleFailure(promise, reply);
       } else {
-        logger.debug("Summary with id={} successfully updated", summary.getString(ID_FIELD_NAME));
+        logger.info("Summary with id {} successfully updated", id);
         promise.complete();
       }
     });

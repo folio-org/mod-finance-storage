@@ -24,9 +24,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
 
 public class GroupService {
-  private static final String GROUPS_TABLE = "groups";
 
-  private final Logger logger = LogManager.getLogger(this.getClass());
+  private static final Logger logger = LogManager.getLogger(GroupService.class);
+
+  private static final String GROUPS_TABLE = "groups";
 
   private PostgresClient pgClient;
   private final NameCodeConstraintErrorBuilder nameCodeConstraintErrorBuilder;
@@ -37,22 +38,24 @@ public class GroupService {
   }
 
   public void createGroup(Group entity, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+    logger.debug("createGroup:: Trying to create group");
     vertxContext.runOnContext(v -> createGroup(entity)
       .onSuccess(group -> {
-        logger.debug("Group with id {} created", entity.getId());
+        logger.info("createGroup:: Group with id {} created", entity.getId());
         asyncResultHandler.handle(Future.succeededFuture(
             FinanceStorageGroups.PostFinanceStorageGroupsResponse.respond201WithApplicationJson(group, headersFor201())));
       })
       .onFailure(throwable -> {
-        logger.error("Group creation with id {} failed", entity.getId(), throwable);
+        logger.error("createGroup:: Group creation with id {} failed", entity.getId(), throwable);
         asyncResultHandler.handle(buildErrorResponse(throwable));
       }));
   }
 
   public void updateGroup(Group entity, String id, Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+    logger.debug("createGroup:: Trying to update group with id {}", id);
     vertxContext.runOnContext(v -> updateGroup(entity, id)
       .onSuccess(group -> {
-        logger.debug("Group with id {} updated", entity.getId());
+        logger.info("updateGroup:: Group with id {} updated", entity.getId());
         asyncResultHandler.handle(Future.succeededFuture(
           FinanceStorageGroups.PutFinanceStorageGroupsByIdResponse.respond204()));
       })
