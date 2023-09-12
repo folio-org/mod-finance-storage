@@ -60,11 +60,11 @@ public class TransferService extends AbstractTransactionService implements Trans
         .compose(ok -> client.endTx())
         .onComplete(result -> {
           if (result.failed()) {
-            logger.error("createTransaction:: Transfer or associated data failed to be processed", result.cause());
+            logger.error("createTransaction:: Transfer  with id {} or associated data failed to be processed", transfer.getId(), result.cause());
             client.rollbackTransaction();
           } else {
             promise.complete(transfer);
-            logger.info("createTransaction:: Transfer and associated data were successfully processed");
+            logger.info("createTransaction:: Transfer with id {} and associated data were successfully processed", transfer.getId());
           }
         })).onFailure(throwable -> {
          client.rollbackTransaction();
@@ -90,7 +90,7 @@ public class TransferService extends AbstractTransactionService implements Trans
           logger.info("createTransfer:: Transfer transaction with id {} successfully created", transaction.getId());
           promise.complete(transaction);
         } else {
-          logger.error("createTransfer:: Creation transfer transaction failed", event.cause());
+          logger.error("createTransfer:: Creation transfer with id {} transaction failed", transaction.getId(), event.cause());
           promise.fail(new HttpException(500, PgExceptionUtil.getMessage(event.cause())));
         }
       });

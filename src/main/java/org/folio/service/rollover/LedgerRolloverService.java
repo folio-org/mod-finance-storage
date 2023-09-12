@@ -99,7 +99,7 @@ public class LedgerRolloverService {
       .compose(aVoid -> ledgerFiscalYearRolloverDAO.delete(rolloverProgress.getLedgerRolloverId(), client))
       .compose(aVoid -> client.endTx())
       .onFailure(t -> {
-        logger.error("deleteRolloverWithProgressAndErrors:: Rollover delete failed for Ledger {}", rolloverProgress.getLedgerRolloverId());
+        logger.error("deleteRolloverWithProgressAndErrors:: Rollover delete failed for Ledger {}", rolloverProgress.getLedgerRolloverId(), t);
         client.rollbackTransaction();
     });
   }

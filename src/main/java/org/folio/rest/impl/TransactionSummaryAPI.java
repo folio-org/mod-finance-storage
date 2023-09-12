@@ -63,9 +63,9 @@ public class TransactionSummaryAPI implements FinanceStorage {
   @Validate
   public void postFinanceStorageOrderTransactionSummaries(OrderTransactionSummary summary, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    logger.debug("Trying to create finance storage order transaction summaries");
+    logger.debug("Trying to create finance storage order transaction summaries with id {}", summary.getId());
     if (summary.getNumTransactions() < 1) {
-      logger.error("Summary transactions less than 1");
+      logger.error("Summary with id {} transactions less than 1", summary.getId());
       handleValidationError(summary.getNumTransactions(), asyncResultHandler);
     } else {
       String sql = "INSERT INTO " + getFullTableName(tenantId, ORDER_TRANSACTION_SUMMARIES)
@@ -74,7 +74,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
 
         pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), pojo2JsonObject(summary)), result -> {
           if (result.failed()) {
-            logger.error("Create finance storage order transaction summaries failed", result.cause());
+            logger.error("Create finance storage order transaction summaries with id {} failed", summary.getId(), result.cause());
             String badRequestMessage = PgExceptionUtil.badRequestMessage(result.cause());
             if (badRequestMessage != null) {
               asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageOrderTransactionSummariesResponse
@@ -84,14 +84,14 @@ public class TransactionSummaryAPI implements FinanceStorage {
                 .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())));
             }
           } else {
-            logger.info("Successfully created {} finance storage order transaction summaries", summary.getNumTransactions());
+            logger.info("Successfully created {} finance storage order transaction summaries with summaryId {}", summary.getNumTransactions(), summary.getId());
             asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageOrderTransactionSummariesResponse
               .respond201WithApplicationJson(summary, PostFinanceStorageOrderTransactionSummariesResponse.headersFor201()
                 .withLocation(ORDER_TRANSACTION_SUMMARIES_LOCATION_PREFIX + summary.getId()))));
           }
         });
       } catch (Exception e) {
-        logger.error("Creating finance storage order transaction summaries failed", e);
+        logger.error("Creating finance storage order transaction summaries with id {} failed", summary.getId(), e);
         asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageOrderTransactionSummariesResponse
           .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())));
       }
@@ -137,9 +137,9 @@ public class TransactionSummaryAPI implements FinanceStorage {
   @Validate
   public void postFinanceStorageInvoiceTransactionSummaries(InvoiceTransactionSummary summary, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    logger.debug("Trying to create finance storage invoice transaction summaries");
+    logger.debug("Trying to create finance storage invoice transaction summaries with id {}", summary.getId());
     if (summary.getNumPaymentsCredits() < 1) {
-      logger.error("Summary transactions less than 1");
+      logger.error("Summary with id {} transactions less than 1", summary.getId());
       handleValidationError(summary.getNumPaymentsCredits(), asyncResultHandler);
     } else {
       String sql = "INSERT INTO " + getFullTableName(tenantId, INVOICE_TRANSACTION_SUMMARIES)
@@ -147,7 +147,7 @@ public class TransactionSummaryAPI implements FinanceStorage {
       try {
         pgClient.execute(sql, Tuple.of(UUID.fromString(summary.getId()), pojo2JsonObject(summary)), result -> {
           if (result.failed()) {
-            logger.error("Create finance storage invoice transaction summaries failed", result.cause());
+            logger.error("Create finance storage invoice transaction summaries with id {} failed", summary.getId(), result.cause());
             String badRequestMessage = PgExceptionUtil.badRequestMessage(result.cause());
             if (badRequestMessage != null) {
               asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageInvoiceTransactionSummariesResponse
@@ -157,14 +157,14 @@ public class TransactionSummaryAPI implements FinanceStorage {
                 .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())));
             }
           } else {
-            logger.info("Successfully created {} finance storage invoice transaction summaries", summary.getNumPaymentsCredits());
+            logger.info("Successfully created {} finance storage invoice transaction summaries with summaryId {}", summary.getId(), summary.getNumPaymentsCredits());
             asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageInvoiceTransactionSummariesResponse
               .respond201WithApplicationJson(summary, PostFinanceStorageInvoiceTransactionSummariesResponse.headersFor201()
                 .withLocation(INVOICE_TRANSACTION_SUMMARIES_LOCATION_PREFIX + summary.getId()))));
           }
         });
       } catch (Exception e) {
-        logger.error("Creating finance storage invoice transaction summaries failed", e);
+        logger.error("Creating finance storage invoice transaction summaries with id {} failed", summary.getId(), e);
         asyncResultHandler.handle(Future.succeededFuture(PostFinanceStorageInvoiceTransactionSummariesResponse
           .respond500WithTextPlain(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())));
       }

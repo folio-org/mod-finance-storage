@@ -25,11 +25,11 @@ public class DefaultTransactionService extends AbstractTransactionService {
           logger.info("createTransaction:: Transaction with id {} successfully created", createdTransaction.getId());
           promise.complete(createdTransaction);
         } else {
-          logger.error("createTransaction:: Creating transaction failed with status {}", event.result().getStatus());
+          logger.error("createTransaction:: Creating transaction  with id {} failed with status {}", transaction.getId(), event.result().getStatus());
           promise.fail(new HttpException(event.result().getStatus(), event.result().getEntity().toString()));
         }
       } else {
-        logger.error("createTransaction:: Creating transaction failed", event.cause());
+        logger.error("createTransaction:: Creating transaction  with id {} failed", transaction.getId(), event.cause());
         promise.fail(event.cause());
       }
     });

@@ -84,10 +84,10 @@ public class BudgetService {
 
     client.getPgClient().execute(client.getConnection(), sql, reply -> {
       if (reply.failed()) {
-        logger.error("deleteAllocationTransactions:: Allocation transaction deletion by query {} failed", sql, reply.cause());
+        logger.error("deleteAllocationTransactions:: Allocation transaction deletion by query {} failed for budget with id {}", sql, budget.getId(), reply.cause());
         handleFailure(promise, reply);
       } else {
-        logger.info("deleteAllocationTransactions:: Allocation transaction successfully deleted");
+        logger.info("deleteAllocationTransactions:: Allocation transaction for budget with id {} successfully deleted", budget.getId());
         promise.complete();
       }
     });
@@ -106,14 +106,14 @@ public class BudgetService {
 
     client.getPgClient().execute(sql, reply -> {
         if (reply.failed()) {
-          logger.error("checkTransactions:: Transaction retrieval by query {} failed", sql, reply.cause());
+          logger.error("checkTransactions:: Transaction retrieval by query {} failed for FundId {}", sql, budget.getFundId(), reply.cause());
           handleFailure(promise, reply);
         } else {
           if (reply.result().size() > 0) {
             logger.error("checkTransactions:: Transaction is present");
             promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
           }
-          logger.info("checkTransactions:: Transactions have been successfully checked");
+          logger.info("checkTransactions:: Transactions for FundId {} have been successfully checked", budget.getFundId());
           promise.complete();
         }
       });
@@ -133,7 +133,7 @@ public class BudgetService {
           logger.error("unlinkGroupFundFiscalYears:: Failed to update group_fund_fiscal_year by budget id {}", id, reply.cause());
           handleFailure(promise, reply);
         } else {
-          logger.info("unlinkGroupFundFiscalYears:: Group fund fiscal years have been successfully unlinked");
+          logger.info("unlinkGroupFundFiscalYears:: Group fund fiscal years have been successfully unlinked by budget id {}", id);
           promise.complete();
         }
       });

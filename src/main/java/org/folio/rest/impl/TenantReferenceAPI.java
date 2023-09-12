@@ -55,7 +55,7 @@ public class TenantReferenceAPI extends TenantAPI {
         logger.error("Failed to load tenant data", res.cause());
         promise.fail(res.cause());
       } else {
-        logger.info("Tenant data loaded successfully");
+        logger.info("Tenant data with tenantId {} loaded successfully", tenantId);
         promise.complete(res.result());
       }
     });

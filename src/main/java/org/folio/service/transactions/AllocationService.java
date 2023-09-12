@@ -59,11 +59,11 @@ public class AllocationService extends DefaultTransactionService implements Tran
       .compose(ok -> client.endTx())
       .onComplete(result -> {
         if (result.failed()) {
-          logger.error("createTransaction:: Allocation or associated data failed to be processed", result.cause());
+          logger.error("createTransaction:: Allocation with id {} or associated data failed to be processed", allocation.getId(), result.cause());
           client.rollbackTransaction();
           promise.fail(result.cause());
         } else {
-          logger.info("createTransaction:: Allocation and associated data were successfully processed");
+          logger.info("createTransaction:: Allocation with id {} and associated data were successfully processed", allocation.getId());
           promise.complete(allocation);
         }
       });

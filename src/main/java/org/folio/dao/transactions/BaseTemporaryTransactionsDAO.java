@@ -35,7 +35,7 @@ public abstract class BaseTemporaryTransactionsDAO implements TemporaryTransacti
   @Override
   public Future<Transaction> createTempTransaction(Transaction transaction, String summaryId, String tenantId, Conn conn) {
     logger.debug("Trying to create temp transaction");
-        if (transaction.getId() == null) {
+    if (transaction.getId() == null) {
       transaction.setId(UUID.randomUUID().toString());
     }
     try {

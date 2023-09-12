@@ -109,10 +109,10 @@ public class AllOrNothingTransactionService {
               .compose(ok -> client.endTx())
               .onComplete(result -> {
                 if (result.failed()) {
-                  logger.error("processAllOrNothing:: Transactions or associated data failed to be processed", result.cause());
+                  logger.error("processAllOrNothing:: Transactions with id {} or associated data failed to be processed", transaction.getId(), result.cause());
                   client.rollbackTransaction();
                 } else {
-                  logger.info("processAllOrNothing:: Transactions and associated data were successfully processed");
+                  logger.info("processAllOrNothing:: Transactions with id {} and associated data were successfully processed", transaction.getId());
                 }
               });
           } else {
