@@ -3,9 +3,12 @@ package org.folio.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Transaction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import java.util.UUID;
 
 public class CalculationUtilsTest {
 
@@ -73,5 +76,21 @@ public class CalculationUtilsTest {
     CalculationUtils.calculateBudgetSummaryFields(budget);
 
     assertEquals(200d, budget.getOverEncumbrance(), 0d);
+  }
+
+  @Test
+  void allocationShouldBeAddToAllocationToIfFromFundIdExist() {
+    Budget budget = new Budget()
+      .withInitialAllocation(0d)
+      .withAllocationTo(0d);
+
+    Transaction allocation = new Transaction()
+      .withAmount(100d)
+      .withFromFundId(UUID.randomUUID().toString())
+      .withCurrency("USD");
+
+    CalculationUtils.recalculateBudgetAllocationTo(budget, allocation, 100d);
+
+    assertEquals(100d, budget.getAllocationTo(), 0d);
   }
 }
