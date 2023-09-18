@@ -6,6 +6,7 @@ import static org.folio.utils.MoneyUtils.sumMoney;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -41,7 +42,7 @@ public final class CalculationUtils {
   public static void recalculateBudgetAllocationTo(Budget budget, Transaction allocation, Double allocatedAmount) {
     CurrencyUnit currency = Monetary.getCurrency(allocation.getCurrency());
     double newAllocation = sumMoney(budget.getAllocationTo(), allocatedAmount, currency);
-    if (budget.getInitialAllocation() > 0) {
+    if (budget.getInitialAllocation() > 0 || Objects.nonNull(allocation.getFromFundId())) {
       budget.setAllocationTo(newAllocation);
     } else {
       budget.setInitialAllocation(allocatedAmount);
