@@ -13,6 +13,7 @@ import java.util.*;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.budget.BudgetDAO;
@@ -230,9 +231,17 @@ public class BudgetService {
     budgetFromNew.setTotalFunding(null);
   }
 
+  /**
+   * Checks if there is enough budget money available for a transaction.
+   * This method is used exclusively for "Move allocation" action and is skipped for other types.
+   *
+   * @param transaction The transaction to be checked.
+   * @param client      The database client used for database operations.
+   * @return A {@link Future} that completes successfully if there is enough money available,
+   * or fails with a {@link HttpException} if not enough money is available.
+   */
   public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBClient client) {
-    if (Objects.isNull(transaction.getFromFundId()) || isDecreaseAllocation(transaction)
-      || transaction.getTransactionType() == Transaction.TransactionType.TRANSFER) {
+    if (isNotMoveAllocation(transaction)) {
       return Future.succeededFuture();
     }
 
@@ -248,6 +257,7 @@ public class BudgetService {
       return Future.succeededFuture();
     });
   }
+
   public void updateBudgetsWithCalculatedFields(List<Budget> budgets){
     budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
   }
@@ -268,8 +278,8 @@ public class BudgetService {
     return String.format(SELECT_BUDGETS_BY_FY_AND_FUND_FOR_UPDATE, budgetTableName);
   }
 
-  private boolean isDecreaseAllocation(Transaction transaction) {
-    return Objects.nonNull(transaction.getFromFundId()) && Objects.isNull(transaction.getToFundId())
+  private boolean isNotMoveAllocation(Transaction transaction) {
+    return ObjectUtils.anyNull(transaction.getFromFundId(), transaction.getToFundId())
       && transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION;
   }
 
