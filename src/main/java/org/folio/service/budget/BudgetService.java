@@ -3,6 +3,8 @@ package org.folio.service.budget;
 import static java.util.stream.Collectors.toList;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.TRANSFER;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.getQueryValues;
 import static org.folio.rest.util.ErrorCodes.*;
@@ -40,6 +42,7 @@ public class BudgetService {
 
   private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
   private static final String TRANSACTIONS_TABLE = "transaction";
+  private static final Set<Transaction.TransactionType> BYPASS_BUDGET_CHECK_TYPES = Set.of(TRANSFER, ALLOCATION);
   public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
 
   public static final String SELECT_BUDGETS_BY_FY_AND_FUND_FOR_UPDATE = "SELECT jsonb FROM %s "
@@ -231,7 +234,7 @@ public class BudgetService {
   }
 
   public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBClient client) {
-    if (Objects.isNull(transaction.getFromFundId()) || transaction.getTransactionType() == Transaction.TransactionType.TRANSFER) {
+    if (Objects.isNull(transaction.getFromFundId()) || BYPASS_BUDGET_CHECK_TYPES.contains(transaction.getTransactionType())) {
       return Future.succeededFuture();
     }
 
