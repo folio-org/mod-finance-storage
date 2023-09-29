@@ -13,6 +13,7 @@ import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.MalformedURLException;
 import java.util.UUID;
@@ -176,6 +177,55 @@ public class TransactionTest extends TestBase {
       assertEquals(toBudgetBefore.getUnavailable() , toBudgetAfter.getUnavailable());
     }
 
+  }
+
+  @Test
+  void testDecreaseAllocationWhenAvailableLessThanAllocation() throws MalformedURLException {
+
+    givenTestData(TRANSACTION_TENANT_HEADER,
+      Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
+      Pair.of(FISCAL_YEAR, FISCAL_YEAR_18_SAMPLE_PATH),
+      Pair.of(LEDGER, LEDGER_MAIN_LIBRARY_SAMPLE_PATH),
+      Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
+      Pair.of(FUND, ALLOCATION_TO_FUND_SAMPLE_PATH),
+      Pair.of(FUND, ALLOCATION_FROM_FUND_SAMPLE_PATH),
+      Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH),
+      Pair.of(BUDGET, ALLOCATION_FROM_BUDGET_SAMPLE_PATH),
+      Pair.of(ALLOCATION_TRANSACTION, ALLOCATION_SAMPLE_PATH));
+
+    JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
+    jsonTx.remove("id");
+    jsonTx.remove("toFundId");
+
+    String fY = jsonTx.getString("fiscalYearId");
+    String fromFundId = jsonTx.getString("fromFundId");
+
+    // prepare budget queries
+    String fromBudgetEndpointWithQueryParams = String.format(BUDGETS_QUERY, fY, fromFundId);
+
+    Budget fromBudgetBefore = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+    jsonTx.put("amount", fromBudgetBefore.getAvailable() + 10d);
+    String transactionSample = jsonTx.toString();
+
+    // create Allocation
+    postData(TRANSACTION_ENDPOINT, transactionSample, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(201)
+      .extract()
+      .as(Transaction.class);
+
+    Budget fromBudgetAfter = getBudgetAndValidate(fromBudgetEndpointWithQueryParams);
+
+    // check source budget totals
+    final Double amount = jsonTx.getDouble("amount");
+    double expectedBudgetsAvailable;
+    double expectedBudgetsAllocated;
+
+    expectedBudgetsAllocated = subtractValues(fromBudgetBefore.getAllocated(), amount);
+    expectedBudgetsAvailable = subtractValues(fromBudgetBefore.getAvailable(), amount);
+
+    assertTrue(fromBudgetAfter.getAvailable() < 0);
+    assertEquals(expectedBudgetsAllocated, fromBudgetAfter.getAllocated());
+    assertEquals(expectedBudgetsAvailable, fromBudgetAfter.getAvailable());
   }
 
   @Test
