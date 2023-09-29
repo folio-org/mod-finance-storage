@@ -231,7 +231,8 @@ public class BudgetService {
   }
 
   public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBClient client) {
-    if (Objects.isNull(transaction.getFromFundId()) || transaction.getTransactionType() == Transaction.TransactionType.TRANSFER) {
+    if (Objects.isNull(transaction.getFromFundId()) || isDecreaseAllocation(transaction)
+      || transaction.getTransactionType() == Transaction.TransactionType.TRANSFER) {
       return Future.succeededFuture();
     }
 
@@ -265,6 +266,11 @@ public class BudgetService {
   private String getSelectBudgetQueryByFyAndFundForUpdate(String tenantId){
     String budgetTableName = getFullTableName(tenantId, BUDGET_TABLE);
     return String.format(SELECT_BUDGETS_BY_FY_AND_FUND_FOR_UPDATE, budgetTableName);
+  }
+
+  private boolean isDecreaseAllocation(Transaction transaction) {
+    return Objects.nonNull(transaction.getFromFundId()) && Objects.isNull(transaction.getToFundId())
+      && transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION;
   }
 
 }
