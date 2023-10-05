@@ -44,7 +44,7 @@ public class BudgetService {
   public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
 
   public static final String SELECT_BUDGETS_BY_FY_AND_FUND_FOR_UPDATE = "SELECT jsonb FROM %s "
-    + "WHERE jsonb->>'fiscalYearId' = $1 AND jsonb->>'fundId' = $2"
+    + "WHERE jsonb->>'fiscalYearId' = $1 AND jsonb->>'fundId' = $2 "
     + "FOR UPDATE";
 
   private BudgetDAO budgetDAO;
