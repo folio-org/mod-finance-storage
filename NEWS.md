@@ -1,4 +1,24 @@
-## 8.5.0 - Unreleased
+## 8.6.0 - Unreleased
+
+## 8.5.0 - Released (Poppy R2 2023)
+The primary focus of this release was to improve finance rollover script performance
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.4.0...v8.5.0)
+### Stories
+* [MODFISTO-443](https://issues.folio.org/browse/MODFISTO-443) Allow user to decrease allocation resulting in a negative available amount
+* [MODFISTO-441](https://issues.folio.org/browse/MODFISTO-441) Add the ability to skip the transaction if it is from the previous year
+* [MODFISTO-439](https://issues.folio.org/browse/MODFISTO-439) Make adjustments to improve finance rollover script performance
+* [MODFISTO-435](https://issues.folio.org/browse/MODFISTO-435) Update to Java 17 mod-finance-storage
+* [MODFISTO-405](https://issues.folio.org/browse/MODFISTO-405) Provide error code to restriction in case transaction creation when the budget status is not found/not active
+* [MODFISTO-365](https://issues.folio.org/browse/MODFISTO-365) Update dependent raml-util
+* [MODFISTO-287](https://issues.folio.org/browse/MODFISTO-287) Logging improvement
+
+### Bug Fixes
+* [MODFISTO-446](https://issues.folio.org/browse/MODFISTO-446) Creating budget fails with trailing junk after parameter at or near "$2F"
+* [MODFISTO-442](https://issues.folio.org/browse/MODFISTO-442) Incorrect ledger summary calculation after allocation movement to 0 budget
+* [MODFISTO-426](https://issues.folio.org/browse/MODFISTO-426) Split ledger order encumbrances causing rollover errors
+* [MODFISTO-411](https://issues.folio.org/browse/MODFISTO-411) RMB HttpClient resource leak, use Vert.x WebClient
+* [MODORDERS-865](https://issues.folio.org/browse/MODORDERS-865) Rewrite the orders rollover interaction in an asynchronous way
 
 ## 8.4.0 - Released (Orchid R1 2023)
 The primary focus of this release was to replace Vertx shared lock with DB lock to increase stability
