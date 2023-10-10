@@ -16,7 +16,9 @@ The primary focus of this release was to improve finance rollover script perform
 ### Bug Fixes
 * [MODFISTO-446](https://issues.folio.org/browse/MODFISTO-446) Creating budget fails with trailing junk after parameter at or near "$2F"
 * [MODFISTO-442](https://issues.folio.org/browse/MODFISTO-442) Incorrect ledger summary calculation after allocation movement to 0 budget
+* [MODFISTO-426](https://issues.folio.org/browse/MODFISTO-426) Split ledger order encumbrances causing rollover errors
 * [MODFISTO-411](https://issues.folio.org/browse/MODFISTO-411) RMB HttpClient resource leak, use Vert.x WebClient
+* [MODORDERS-865](https://issues.folio.org/browse/MODORDERS-865) Rewrite the orders rollover interaction in an asynchronous way
 
 ## 8.4.0 - Released (Orchid R1 2023)
 The primary focus of this release was to replace Vertx shared lock with DB lock to increase stability
