@@ -509,6 +509,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                         'fundTypeId', fund->'fundTypeId',
                         'fundTypeName', fund_type->'name',
                         'acqUnitIds', fund->'acqUnitIds',
+                        'donorOrganizationIds', fund->'donorOrganizationIds',
+                        'locationIds', fund->'locationIds',
                         'allocatedFromIds', fund->'allocatedFromIds',
                         'allocatedFromNames', allocatedFromNames,
                         'allocatedToIds', fund->'allocatedToIds',
