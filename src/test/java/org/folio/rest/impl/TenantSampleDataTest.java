@@ -28,7 +28,7 @@ public class TenantSampleDataTest extends TestBase {
 
   private final Logger logger = LogManager.getLogger(TenantSampleDataTest.class);
 
-  private static final Header ANOTHER_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "new_tenant");
+  private static final Header ANOTHER_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "newtenant");
 
   private static TenantJob tenantJob;
 

@@ -53,7 +53,7 @@ public class EmailServiceTest {
 
   private Vertx vertx;
   private RequestContext mockRequestContext;
-  private static final String TEST_TENANT = "test_tenant";
+  private static final String TEST_TENANT = "testtenant";
   private static final String OKAPI_TOKEN = "x-okapi-token";
   private static final String OKAPI_URL = "x-okapi-url";
   private static final String OKAPI_TENANT = "x-okapi-tenant";

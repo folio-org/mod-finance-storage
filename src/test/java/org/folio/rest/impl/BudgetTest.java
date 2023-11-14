@@ -41,7 +41,7 @@ import io.vertx.core.json.JsonObject;
 public class BudgetTest extends TestBase {
 
   private static final String BUDGET_ENDPOINT = TestEntities.BUDGET.getEndpoint();
-  private static final String BUDGET_TEST_TENANT = "budget_test_tenant_api";
+  private static final String BUDGET_TEST_TENANT = "budgettesttenantapi";
   private static final Header BUDGET_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, BUDGET_TEST_TENANT);
   private static final String ENCUMBR_SAMPLE = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
   private static TenantJob tenantJob;
