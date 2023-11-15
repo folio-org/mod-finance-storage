@@ -19,7 +19,7 @@ import static org.folio.rest.utils.TestEntities.GROUP;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 
 public class GroupTest extends TestBase {
-  private static final String GROUP_TEST_TENANT = "group_test_tenant";
+  private static final String GROUP_TEST_TENANT = "grouptesttenant";
   private static final Header GROUP_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, GROUP_TEST_TENANT);
   private static TenantJob tenantJob;
 

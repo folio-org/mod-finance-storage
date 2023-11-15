@@ -39,7 +39,7 @@ public class TransactionTest extends TestBase {
 
   protected static final String TRANSACTION_ENDPOINT = ALLOCATION_TRANSACTION.getEndpoint();
   protected static final String TRANSACTION_ENDPOINT_BY_ID = ALLOCATION_TRANSACTION.getEndpointWithId();
-  protected static final String TRANSACTION_TEST_TENANT = "transaction_test_tenant";
+  protected static final String TRANSACTION_TEST_TENANT = "transactiontesttenant";
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
   private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";

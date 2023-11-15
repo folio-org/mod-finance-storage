@@ -13,7 +13,7 @@ import io.restassured.http.Header;
 
 public class GroupFundFYTest extends TestBase {
 
-  private static final Header GROUP_FUND_FY_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "GROUP_FUND_FY");
+  private static final Header GROUP_FUND_FY_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "groupfundfy");
 
   @Test
   public void testGetQuery() throws Exception {
