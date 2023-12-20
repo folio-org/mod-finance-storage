@@ -30,7 +30,7 @@ public class HelperUtilsTest extends TestBase {
   private static final String GROUP_BUDGET_ENDPOINT = getEndpoint(FinanceStorageGroupBudgets.class);
 
   @Test
-  public void getEntitiesCollectionWithDistinctOnFailCqlExTest() throws Exception {
+  public void getEntitiesCollectionWithDistinctOnFailCqlExTest() {
     new MockUp<PgUtil>()
     {
       @Mock
@@ -44,7 +44,7 @@ public class HelperUtilsTest extends TestBase {
 
   @Test
   @Disabled("Disabled until 'jdk11 + jmockit + jacoco' incompatibility will be fixed")
-  public void entitiesMetadataHolderRespond400FailTest() throws Exception {
+  public void entitiesMetadataHolderRespond400FailTest() {
     new MockUp<EntitiesMetadataHolder>()
     {
       @Mock
@@ -57,7 +57,7 @@ public class HelperUtilsTest extends TestBase {
 
   @Test
   @Disabled("Disabled until 'jdk11 + jmockit + jacoco' incompatibility will be fixed")
-  public void entitiesMetadataHolderRespond500FailTest() throws Exception {
+  public void entitiesMetadataHolderRespond500FailTest() {
     new MockUp<EntitiesMetadataHolder>()
     {
       @Mock
@@ -70,7 +70,7 @@ public class HelperUtilsTest extends TestBase {
 
   @Test
   @Disabled("Disabled until 'jdk11 + jmockit + jacoco' incompatibility will be fixed")
-  public void entitiesMetadataHolderRespond200FailTest() throws Exception {
+  public void entitiesMetadataHolderRespond200FailTest() {
     new MockUp<EntitiesMetadataHolder>()
     {
       @Mock
@@ -82,7 +82,7 @@ public class HelperUtilsTest extends TestBase {
   }
 
   @Test
-  public void getEntitiesCollectionWithDistinctOnFailNpExTest() throws Exception {
+  public void getEntitiesCollectionWithDistinctOnFailNpExTest() {
     new MockUp<PgUtil>()
     {
       @Mock

@@ -15,7 +15,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.net.MalformedURLException;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
@@ -74,7 +73,7 @@ public class TransactionTest extends TestBase {
   }
 
   @Test
-  void testCreateAllocation() throws MalformedURLException {
+  void testCreateAllocation() {
 
     givenTestData(TRANSACTION_TENANT_HEADER,
       Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
@@ -135,7 +134,7 @@ public class TransactionTest extends TestBase {
   }
 
   @Test
-  void testCreateAllocationWithSourceBudgetNotExist() throws MalformedURLException {
+  void testCreateAllocationWithSourceBudgetNotExist() {
     givenTestData(TRANSACTION_TENANT_HEADER,
       Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
       Pair.of(FISCAL_YEAR, FISCAL_YEAR_18_SAMPLE_PATH),
@@ -180,7 +179,7 @@ public class TransactionTest extends TestBase {
   }
 
   @Test
-  void testDecreaseAllocationWhenAvailableLessThanAllocation() throws MalformedURLException {
+  void testDecreaseAllocationWhenAvailableLessThanAllocation() {
 
     givenTestData(TRANSACTION_TENANT_HEADER,
       Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
@@ -229,7 +228,7 @@ public class TransactionTest extends TestBase {
   }
 
   @Test
-  void testCreateTransfer() throws MalformedURLException {
+  void testCreateTransfer() {
 
     givenTestData(TRANSACTION_TENANT_HEADER,
       Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
@@ -294,7 +293,7 @@ public class TransactionTest extends TestBase {
 
 
   @Test
-  void testCreateTransferThatAvailableNegativeNumberOfBudget() throws MalformedURLException {
+  void testCreateTransferThatAvailableNegativeNumberOfBudget() {
 
     givenTestData(TRANSACTION_TENANT_HEADER,
       Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
@@ -347,7 +346,7 @@ public class TransactionTest extends TestBase {
     assertEquals(21001, toBudgetAfter.getAvailable());
   }
 
-  protected Budget getBudgetAndValidate(String endpoint) throws MalformedURLException {
+  protected Budget getBudgetAndValidate(String endpoint) {
     return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .body(BUDGETS, hasSize(1))
@@ -356,7 +355,7 @@ public class TransactionTest extends TestBase {
   }
 
   @Test
-  void testUpdateEncumbranceConflict() throws MalformedURLException {
+  void testUpdateEncumbranceConflict() {
     givenTestData(TRANSACTION_TENANT_HEADER,
       Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
       Pair.of(LEDGER, LEDGER.getPathToSampleFile()),

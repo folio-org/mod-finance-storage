@@ -19,7 +19,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import java.net.MalformedURLException;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -62,7 +61,7 @@ public class PaymentsCreditsTest extends TestBase {
   }
 
   @Test
-  void testCreatePaymentsCreditsAllOrNothing() throws MalformedURLException {
+  void testCreatePaymentsCreditsAllOrNothing() {
 
     String invoiceId = UUID.randomUUID().toString();
     String orderId = UUID.randomUUID().toString();
@@ -251,7 +250,7 @@ public class PaymentsCreditsTest extends TestBase {
   }
 
   @Test
-  void testCreatePaymentsCreditsAllOrNothingWithNoEncumbrances() throws MalformedURLException {
+  void testCreatePaymentsCreditsAllOrNothingWithNoEncumbrances() {
 
     String invoiceId = UUID.randomUUID().toString();
     createInvoiceSummary(invoiceId, 3);
@@ -345,7 +344,7 @@ public class PaymentsCreditsTest extends TestBase {
   }
 
   @Test
-  void testCreatePaymentWithoutInvoiceSummary() throws MalformedURLException {
+  void testCreatePaymentWithoutInvoiceSummary() {
 
     String invoiceId = UUID.randomUUID()
       .toString();
@@ -365,7 +364,7 @@ public class PaymentsCreditsTest extends TestBase {
   }
 
   @Test
-  void testPaymentsIdempotentInTemporaryTable() throws MalformedURLException {
+  void testPaymentsIdempotentInTemporaryTable() {
 
     JsonObject encumbranceJson = new JsonObject(getFile(TRANSACTION_SAMPLE));
     Transaction encumbrance = encumbranceJson.mapTo(Transaction.class);
@@ -406,7 +405,7 @@ public class PaymentsCreditsTest extends TestBase {
   }
 
   @Test
-  void testPaymentsWithInvalidPaymentEncumbranceInTemporaryTable() throws MalformedURLException {
+  void testPaymentsWithInvalidPaymentEncumbranceInTemporaryTable() {
 
     String invoiceId = UUID.randomUUID()
       .toString();
@@ -428,7 +427,7 @@ public class PaymentsCreditsTest extends TestBase {
   }
 
   @Test
-  void testCreatePaymentWithRestrictedLedgerAndNotEnoughMoney() throws MalformedURLException {
+  void testCreatePaymentWithRestrictedLedgerAndNotEnoughMoney() {
 
     String invoiceId = UUID.randomUUID().toString();
     createInvoiceSummary(invoiceId, 1);
@@ -449,7 +448,7 @@ public class PaymentsCreditsTest extends TestBase {
   }
 
   @RepeatedTest(3)
-  void testCreateAllOrNothing10Payments() throws MalformedURLException {
+  void testCreateAllOrNothing10Payments() {
     int numberOfPayments = 10;
     int initialNumberOfTransactions = getData(TRANSACTION_ENDPOINT, TRANSACTION_TENANT_HEADER).then()
       .extract()
@@ -474,13 +473,9 @@ public class PaymentsCreditsTest extends TestBase {
       .limit(numberOfPayments)
       .parallel()
       .forEach(transaction -> {
-        try {
-          postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(transaction)
-            .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
-            .statusCode(201);
-        } catch (MalformedURLException e) {
-          logger.error(e.getMessage());
-        }
+        postData(TRANSACTION_ENDPOINT, JsonObject.mapFrom(transaction)
+          .encodePrettily(), TRANSACTION_TENANT_HEADER).then()
+          .statusCode(201);
       });
 
     int newNumberOfTransactions = getData(TRANSACTION_ENDPOINT, TRANSACTION_TENANT_HEADER).then()
@@ -492,19 +487,19 @@ public class PaymentsCreditsTest extends TestBase {
       String.format("initialNum = %s, newNum = %s", initialNumberOfTransactions, newNumberOfTransactions));
   }
 
-  protected void createOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
+  protected void createOrderSummary(String orderId, int encumbranceNumber) {
     OrderTransactionSummary summary = new OrderTransactionSummary().withId(orderId).withNumTransactions(encumbranceNumber);
     postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
 
-  protected void createInvoiceSummary(String invoiceId, int numPaymentsCredits) throws MalformedURLException {
+  protected void createInvoiceSummary(String invoiceId, int numPaymentsCredits) {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numPaymentsCredits).withNumPendingPayments(numPaymentsCredits);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
 
-  protected Budget getBudgetAndValidate(String endpoint) throws MalformedURLException {
+  protected Budget getBudgetAndValidate(String endpoint) {
     return getData(endpoint, TRANSACTION_TENANT_HEADER).then()
       .statusCode(200)
       .body(BUDGETS, hasSize(1))

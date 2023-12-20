@@ -5,7 +5,6 @@ import static org.folio.rest.impl.TransactionsSummariesTest.INVOICE_TRANSACTION_
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID;
 import static org.folio.rest.jaxrs.model.Encumbrance.Status.PENDING;
-import static org.folio.rest.util.ErrorCodes.BUDGET_IS_INACTIVE;
 import static org.folio.rest.util.ErrorCodes.BUDGET_NOT_FOUND_FOR_TRANSACTION;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -23,7 +22,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.net.MalformedURLException;
 import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.Budget;
@@ -64,7 +62,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testCreateEncumbranceAllOrNothingIdempotent() throws MalformedURLException {
+  void testCreateEncumbranceAllOrNothingIdempotent() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -139,7 +137,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testCreateEncumbranceWithNotEnoughBudgetMoney() throws MalformedURLException {
+  void testCreateEncumbranceWithNotEnoughBudgetMoney() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -165,7 +163,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testCreateEncumbranceFromInactiveBudget() throws MalformedURLException {
+  void testCreateEncumbranceFromInactiveBudget() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -191,7 +189,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testCreateEncumbranceWithoutSummary() throws MalformedURLException {
+  void testCreateEncumbranceWithoutSummary() {
 
     String orderId = UUID.randomUUID().toString();
 
@@ -209,7 +207,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testCreateEncumbranceWithoutBudget() throws MalformedURLException {
+  void testCreateEncumbranceWithoutBudget() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -231,13 +229,13 @@ public class EncumbrancesTest extends TestBase {
 
   }
 
-  protected void createOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
+  protected void createOrderSummary(String orderId, int encumbranceNumber) {
     OrderTransactionSummary summary = new OrderTransactionSummary().withId(orderId).withNumTransactions(encumbranceNumber);
     postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
 
-  protected void updateOrderSummary(String orderId, int encumbranceNumber) throws MalformedURLException {
+  protected void updateOrderSummary(String orderId, int encumbranceNumber) {
     OrderTransactionSummary summary = getDataById(ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID, orderId, TRANSACTION_TENANT_HEADER)
       .as(OrderTransactionSummary.class);
     summary.setNumTransactions(encumbranceNumber);
@@ -247,14 +245,14 @@ public class EncumbrancesTest extends TestBase {
 
   }
 
-  protected void createInvoiceSummary(String invoiceId, int numEncumbrances) throws MalformedURLException {
+  protected void createInvoiceSummary(String invoiceId, int numEncumbrances) {
     InvoiceTransactionSummary summary = new InvoiceTransactionSummary().withId(invoiceId).withNumPaymentsCredits(numEncumbrances).withNumPendingPayments(numEncumbrances);
     postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(summary)
       .encodePrettily(), TRANSACTION_TENANT_HEADER);
   }
 
   @Test
-  void testCreateEncumbranceWithMissedRequiredFields() throws MalformedURLException {
+  void testCreateEncumbranceWithMissedRequiredFields() {
 
     JsonObject jsonTx = new JsonObject(getFile(ENCUMBRANCE_SAMPLE));
 
@@ -272,7 +270,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testCreateEncumbrancesDuplicateInTemporaryTable() throws MalformedURLException {
+  void testCreateEncumbrancesDuplicateInTemporaryTable() {
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
     String fundId = createFund(ledgerId);
@@ -308,7 +306,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testCreateEncumbrancesDuplicateInTransactionTable() throws MalformedURLException {
+  void testCreateEncumbrancesDuplicateInTransactionTable() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -360,7 +358,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testUpdateEncumbranceAllOrNothing() throws MalformedURLException {
+  void testUpdateEncumbranceAllOrNothing() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -491,7 +489,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testUpdateAlreadyReleasedEncumbranceBudgetNotUpdated() throws MalformedURLException {
+  void testUpdateAlreadyReleasedEncumbranceBudgetNotUpdated() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -547,7 +545,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testUpdateReleasedToUnreleased() throws MalformedURLException {
+  void testUpdateReleasedToUnreleased() {
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
     String fundId = createFund(ledgerId);
@@ -610,7 +608,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testUpdateEncumbranceWithoutStatusChangeBudgetUpdated() throws MalformedURLException {
+  void testUpdateEncumbranceWithoutStatusChangeBudgetUpdated() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -667,7 +665,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testUpdateEncumbranceNotFound() throws MalformedURLException {
+  void testUpdateEncumbranceNotFound() {
 
     String invoiceId = UUID.randomUUID().toString();
     createInvoiceSummary(invoiceId, 2);
@@ -683,7 +681,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void tesPostEncumbranceUnavailableMustNotIncludeOverEncumberedAmounts() throws MalformedURLException {
+  void tesPostEncumbranceUnavailableMustNotIncludeOverEncumberedAmounts() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -726,7 +724,7 @@ public class EncumbrancesTest extends TestBase {
   }
 
   @Test
-  void testUpdateAndCreateEncumbrancesAllOrNothing() throws MalformedURLException {
+  void testUpdateAndCreateEncumbrancesAllOrNothing() {
 
     String fiscalYearId = createFiscalYear();
     String ledgerId = createLedger(fiscalYearId, true);
@@ -840,19 +838,19 @@ public class EncumbrancesTest extends TestBase {
   }
 
 
-  private String createFund(String ledgerId) throws MalformedURLException {
+  private String createFund(String ledgerId) {
     Fund fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class).withId(null).withLedgerId(ledgerId);
     return postData(FUND.getEndpoint(), JsonObject.mapFrom(fund).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201).extract().as(Fund.class).getId();
   }
 
-  private String createFiscalYear() throws MalformedURLException {
+  private String createFiscalYear() {
     FiscalYear fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class).withId(null);
     return postData(FISCAL_YEAR.getEndpoint(), JsonObject.mapFrom(fiscalYear).encodePrettily(), TRANSACTION_TENANT_HEADER).then()
       .statusCode(201).extract().as(FiscalYear.class).getId();
   }
 
-  private String createLedger(String fiscalYearId, boolean restrictEncumbrance) throws MalformedURLException {
+  private String createLedger(String fiscalYearId, boolean restrictEncumbrance) {
     Ledger ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class)
       .withId(null)
       .withFiscalYearOneId(fiscalYearId)

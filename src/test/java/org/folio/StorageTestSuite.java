@@ -73,8 +73,12 @@ public class StorageTestSuite {
   private StorageTestSuite() {
   }
 
-  public static URL storageUrl(String path) throws MalformedURLException {
-    return new URL("http", "localhost", port, path);
+  public static URL storageUrl(String path) {
+    try {
+      return new URL("http", "localhost", port, path);
+    } catch (MalformedURLException e) {
+      throw new IllegalArgumentException(path, e);
+    }
   }
 
   public static Vertx getVertx() {

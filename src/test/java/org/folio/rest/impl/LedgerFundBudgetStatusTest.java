@@ -12,7 +12,6 @@ import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 
-import java.net.MalformedURLException;
 import java.time.Instant;
 import java.util.Date;
 
@@ -29,7 +28,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
 
 
   @Test
-  public void updateFundStatusOnlyBudgetsWithCurrentFYUpdatedTest() throws MalformedURLException {
+  public void updateFundStatusOnlyBudgetsWithCurrentFYUpdatedTest() {
     logger.info("--- Test UPDATE fund status, only budgets with current fiscal year are updated --- ");
     FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
     String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
@@ -84,7 +83,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
   }
 
   @Test
-  public void updateFundStatusRelatedBudgetsNotExistTest() throws MalformedURLException {
+  public void updateFundStatusRelatedBudgetsNotExistTest() {
     logger.info("--- Test UPDATE fund status, related budgets with current fiscal year are updated --- ");
     FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
     String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
@@ -107,7 +106,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
   }
 
   @Test
-  public void updateLedgerStatusTest() throws MalformedURLException {
+  public void updateLedgerStatusTest() {
     logger.info("--- Test UPDATE ledger status, related funds and budgets with current fiscal year are updated --- ");
     FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
     String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));
@@ -174,7 +173,7 @@ public class LedgerFundBudgetStatusTest extends TestBase {
 
 
   @Test
-  public void updateLedgerStatusWhenThereIsNoRelatedFundsTest() throws MalformedURLException {
+  public void updateLedgerStatusWhenThereIsNoRelatedFundsTest() {
     logger.info("--- Test UPDATE ledger status, related funds not exist  --- ");
     FiscalYear fiscalYearOne = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class);
     String fiscalYearOneId = createEntity(FISCAL_YEAR.getEndpoint(), fiscalYearOne.withCode("FY2017"));

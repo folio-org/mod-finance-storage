@@ -5,7 +5,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.net.MalformedURLException;
 
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
@@ -28,7 +27,7 @@ public class TransactionsSummariesTest extends TestBase {
 
 
   @Test
-  void testOrderTransactionSummaries() throws MalformedURLException {
+  void testOrderTransactionSummaries() {
     OrderTransactionSummary sample = new JsonObject(getFile(ORDERS_SUMMARY_SAMPLE)).mapTo(OrderTransactionSummary.class);
     postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
       .encodePrettily(), TENANT_HEADER).as(OrderTransactionSummary.class);
@@ -49,7 +48,7 @@ public class TransactionsSummariesTest extends TestBase {
 
 
   @Test
-  void testOrderTransactionSummariesWithValidationError() throws MalformedURLException {
+  void testOrderTransactionSummariesWithValidationError() {
     OrderTransactionSummary sample = new JsonObject(getFile(ORDERS_SUMMARY_SAMPLE)).mapTo(OrderTransactionSummary.class);
     sample.setNumTransactions(0);
     Error error = postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
@@ -61,7 +60,7 @@ public class TransactionsSummariesTest extends TestBase {
   }
 
   @Test
-  void testInvoiceTransactionSummaries() throws MalformedURLException {
+  void testInvoiceTransactionSummaries() {
     InvoiceTransactionSummary sample = new JsonObject(getFile(INVOICE_SUMMARY_SAMPLE)).mapTo(InvoiceTransactionSummary.class);
 
     InvoiceTransactionSummary createdSummary = postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
@@ -82,7 +81,7 @@ public class TransactionsSummariesTest extends TestBase {
   }
 
   @Test
-  void testInvoiceTransactionSummariesWithValidationError() throws MalformedURLException {
+  void testInvoiceTransactionSummariesWithValidationError() {
     InvoiceTransactionSummary sample = new JsonObject(getFile(INVOICE_SUMMARY_SAMPLE)).mapTo(InvoiceTransactionSummary.class);
     sample.setNumPaymentsCredits(0);
     Error error = postData(INVOICE_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)

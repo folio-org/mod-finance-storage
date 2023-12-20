@@ -38,7 +38,7 @@ public class TenantSampleDataTest extends TestBase {
   }
 
   @Test
-  void sampleDataTests() throws Exception {
+  void sampleDataTests() {
     try {
       logger.info("-- create a tenant with no sample data --");
       tenantJob = prepareTenant(ANOTHER_TENANT_HEADER, false,false);
@@ -52,7 +52,7 @@ public class TenantSampleDataTest extends TestBase {
   }
 
   @Test
-  void testLoadSampleDataWithoutUpgrade() throws Exception {
+  void testLoadSampleDataWithoutUpgrade() {
     logger.info("load sample data");
     try {
       tenantJob = postTenant(ANOTHER_TENANT_HEADER, prepareTenantBody());
@@ -67,9 +67,8 @@ public class TenantSampleDataTest extends TestBase {
     }
   }
 
-
   @Test
-  void testLoadReferenceData() throws Exception {
+  void testLoadReferenceData() {
     logger.info("load only Reference Data");
     try {
       TenantAttributes tenantAttributes = prepareTenantBody(false, true);
@@ -90,9 +89,7 @@ public class TenantSampleDataTest extends TestBase {
 
   }
 
-
-
-  private TenantJob upgradeTenantWithSampleDataLoad() throws Exception {
+  private TenantJob upgradeTenantWithSampleDataLoad() {
 
     logger.info("upgrading Module with sample");
 
