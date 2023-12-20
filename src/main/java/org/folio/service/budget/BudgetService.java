@@ -1,5 +1,6 @@
 package org.folio.service.budget;
 
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
@@ -18,6 +19,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
@@ -250,9 +252,8 @@ public class BudgetService {
         ErrorCodes errorCode = transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION ?
           NOT_ENOUGH_MONEY_FOR_ALLOCATION : GENERIC_ERROR_CODE;
         logger.error(errorCode.getDescription());
-        return Future
-          .failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), JsonObject.mapFrom(errorCode.toError())
-            .encodePrettily()));
+        return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
+          JsonObject.mapFrom(new Errors().withErrors(singletonList(errorCode.toError())).withTotalRecords(1)).encode()));
       }
       return Future.succeededFuture();
     });
