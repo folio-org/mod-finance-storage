@@ -16,7 +16,7 @@ public class GroupFundFYTest extends TestBase {
   private static final Header GROUP_FUND_FY_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "groupfundfy");
 
   @Test
-  public void testGetQuery() throws Exception {
+  public void testGetQuery() {
     TenantJob tenantJob = prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
 
     // search for GET

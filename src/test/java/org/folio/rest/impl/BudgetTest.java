@@ -52,7 +52,7 @@ public class BudgetTest extends TestBase {
   }
 
   @Test
-  void testGetQuery() throws Exception {
+  void testGetQuery() {
     tenantJob = prepareTenant(BUDGET_TENANT_HEADER, true, true);
 
     // search for GET
@@ -73,7 +73,7 @@ public class BudgetTest extends TestBase {
   }
 
   @Test
-  void testAbleToDeleteBudgetWithExistingOnlyAllocationTransactions() throws Exception {
+  void testAbleToDeleteBudgetWithExistingOnlyAllocationTransactions() {
     tenantJob = prepareTenant(BUDGET_TENANT_HEADER, false, true);
 
     givenTestData(BUDGET_TENANT_HEADER,
@@ -90,7 +90,7 @@ public class BudgetTest extends TestBase {
   }
 
   @Test
-  void testDeleteBudgetFailedWhenExistOtherThenAllocationTransactions() throws Exception {
+  void testDeleteBudgetFailedWhenExistOtherThenAllocationTransactions() {
     tenantJob = prepareTenant(BUDGET_TENANT_HEADER, false, true);
 
     givenTestData(BUDGET_TENANT_HEADER,
@@ -122,7 +122,7 @@ public class BudgetTest extends TestBase {
   }
 
   @Test
-  void testDeleteBudgetWithExitingExpenseClass() throws Exception {
+  void testDeleteBudgetWithExitingExpenseClass() {
     tenantJob = prepareTenant(BUDGET_TENANT_HEADER, false, true);
 
     givenTestData(BUDGET_TENANT_HEADER,
@@ -140,7 +140,7 @@ public class BudgetTest extends TestBase {
   }
 
   @Test
-  void testDeleteBudgetGroupFundFiscalYearBudgetIdIsCleared() throws Exception {
+  void testDeleteBudgetGroupFundFiscalYearBudgetIdIsCleared() {
     tenantJob = prepareTenant(BUDGET_TENANT_HEADER, false, true);
 
     givenTestData(BUDGET_TENANT_HEADER,
@@ -170,7 +170,7 @@ public class BudgetTest extends TestBase {
   }
 
   @Test
-  void testDeleteBudgetWithoutReferenceWithGroupFundFiscalYear() throws Exception {
+  void testDeleteBudgetWithoutReferenceWithGroupFundFiscalYear() {
     tenantJob = prepareTenant(BUDGET_TENANT_HEADER, false, true);
 
     givenTestData(BUDGET_TENANT_HEADER,
@@ -187,7 +187,7 @@ public class BudgetTest extends TestBase {
   }
 
   @Test
-  void testUpdateBudgetConflict() throws Exception {
+  void testUpdateBudgetConflict() {
     tenantJob = prepareTenant(BUDGET_TENANT_HEADER, false, true);
 
     givenTestData(BUDGET_TENANT_HEADER,

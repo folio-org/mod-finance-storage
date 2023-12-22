@@ -16,7 +16,7 @@ public enum TestEntities {
   BUDGET(HelperUtils.getEndpoint(FinanceStorageBudgets.class), Budget.class, "data/budgets-8.4.0/", "AFRICAHIST-FY23.json", "name", "AFRICAHIST-FY23", 23, true),
   BUDGET_EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageBudgetExpenseClasses.class), BudgetExpenseClass.class, "data/budget-expense-classes-8.4.0/", "AFRICAHIST-FY23-elec.json", "status", "Inactive", 1, true),
   ORDER_SUMMARY(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, OrderTransactionSummary.class, "data/order-transaction-summaries/", "order-306857_transaction-summary.json", "numTransactions", "1", 1, false),
-  ALLOCATION_TRANSACTION(HelperUtils.getEndpoint(FinanceStorageTransactions.class), Transaction.class, "data/transactions/", "allocations/allocation_AFRICAHIST-FY23.json", "source", "Invoice", 16, true),
+  ALLOCATION_TRANSACTION(HelperUtils.getEndpoint(FinanceStorageTransactions.class), Transaction.class, "data/transactions/", "allocations-8.4.0/allocation_AFRICAHIST-FY23.json", "source", "Invoice", 16, true),
   ENCUMBRANCE_TRANSACTION(HelperUtils.getEndpoint(FinanceStorageTransactions.class), Transaction.class, "data/transactions/", "encumbrances/encumbrance_AFRICAHIST_306857_2.json", "source", "Invoice", 16, true),
   GROUP(HelperUtils.getEndpoint(FinanceStorageGroups.class), Group.class, "data/groups-3.2.0/", "HIST.json", "name", "New name", 1, true),
   GROUP_FUND_FY(HelperUtils.getEndpoint(FinanceStorageGroupFundFiscalYears.class), GroupFundFiscalYear.class, "data/group-fund-fiscal-years-8.4.0/", "AFRICAHIST-FY23.json", "fundId", "7fbd5d84-62d1-44c6-9c45-6cb173998bbd", 12, true),

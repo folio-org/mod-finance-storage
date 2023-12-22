@@ -4,7 +4,6 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.postTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
-import static org.folio.rest.utils.TenantApiTestUtil.prepareTenantBody;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TestEntities.BUDGET_EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
@@ -12,14 +11,10 @@ import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
 import static org.folio.rest.utils.TestEntities.GROUP;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.TenantJob;
-import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.utils.TenantApiTestUtil;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.AfterAll;
@@ -60,7 +55,7 @@ public class TenantSampleDataTest extends TestBase {
   void testLoadSampleDataWithoutUpgrade() {
     logger.info("load sample data");
     try {
-      tenantJob = postTenant(ANOTHER_TENANT_HEADER, prepareTenantBody());
+      tenantJob = postTenant(ANOTHER_TENANT_HEADER, TenantApiTestUtil.prepareTenantBody(true, true));
       for (TestEntities entity : TestEntities.values()) {
         if (!entity.equals(TestEntities.ORDER_SUMMARY)) {
           logger.info("Test expected quantity for " + entity.name());
@@ -76,7 +71,7 @@ public class TenantSampleDataTest extends TestBase {
   void testLoadReferenceData() {
     logger.info("load only Reference Data");
     try {
-      TenantAttributes tenantAttributes = prepareTenantBody(false, true);
+      TenantAttributes tenantAttributes = TenantApiTestUtil.prepareTenantBody(false, true);
       tenantJob = postTenant(ANOTHER_TENANT_HEADER, tenantAttributes);
       verifyCollectionQuantity(FUND_TYPE.getEndpoint(), FUND_TYPE.getInitialQuantity(), ANOTHER_TENANT_HEADER);
       verifyCollectionQuantity(EXPENSE_CLASS.getEndpoint(), EXPENSE_CLASS.getInitialQuantity(), ANOTHER_TENANT_HEADER);
@@ -132,7 +127,7 @@ public class TenantSampleDataTest extends TestBase {
 
     logger.info("upgrading Module with sample");
 
-    TenantJob tenantJob = postTenant(ANOTHER_TENANT_HEADER, prepareUpgradeTenantBody(true, true));
+    TenantJob tenantJob = postTenant(ANOTHER_TENANT_HEADER, TenantApiTestUtil.prepareTenantBody(true, true));
     for (TestEntities entity : TestEntities.values()) {
       if (!entity.equals(TestEntities.ORDER_SUMMARY)) {
         logger.info("Test expected quantity for " + entity.name());
@@ -146,20 +141,8 @@ public class TenantSampleDataTest extends TestBase {
 
     logger.info("upgrading Module without sample data");
 
-    TenantAttributes TenantAttributes = prepareUpgradeTenantBody(false, false);
+    TenantAttributes TenantAttributes = TenantApiTestUtil.prepareTenantBody(false, false);
     return postTenant(ANOTHER_TENANT_HEADER, TenantAttributes);
   }
 
-  private TenantAttributes prepareUpgradeTenantBody(boolean isLoadSampleData, boolean isLoadReferenceData) {
-    String moduleName = ModuleName.getModuleName();
-
-    List<Parameter> parameters = new ArrayList<>();
-    parameters.add(new Parameter().withKey("loadReference").withValue(String.valueOf(isLoadReferenceData)));
-    parameters.add(new Parameter().withKey("loadSample").withValue(String.valueOf(isLoadSampleData)));
-
-    return new TenantAttributes()
-            .withModuleTo(moduleName + "-9.0.0")
-            .withModuleFrom(moduleName + "-1.0.0")
-            .withParameters(parameters);
-  }
 }
