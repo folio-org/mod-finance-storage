@@ -6,8 +6,11 @@ import static org.folio.rest.utils.TenantApiTestUtil.postTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenantBody;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
+import static org.folio.rest.utils.TestEntities.BUDGET_EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
+import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
+import static org.folio.rest.utils.TestEntities.GROUP;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +20,7 @@ import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.tools.utils.ModuleName;
+import org.folio.rest.utils.TenantApiTestUtil;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -28,7 +32,8 @@ public class TenantSampleDataTest extends TestBase {
 
   private final Logger logger = LogManager.getLogger(TenantSampleDataTest.class);
 
-  private static final Header ANOTHER_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "newtenant");
+  private static final Header ANOTHER_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "new_tenant");
+  private static final Header MIGRATION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "migration");
 
   private static TenantJob tenantJob;
 
@@ -89,11 +94,45 @@ public class TenantSampleDataTest extends TestBase {
 
   }
 
+  @Test
+  void testMigrationFromVersion2() {
+    try {
+      prepareTenant(MIGRATION_TENANT_HEADER, false, false);
+      var tenantAttributes = TenantApiTestUtil.prepareTenantBody(true, true).withModuleFrom("2.0.0");
+      postTenant(MIGRATION_TENANT_HEADER, tenantAttributes);
+      TestEntities [] populated = { EXPENSE_CLASS, GROUP };
+      for (var entity : populated) {
+        verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), MIGRATION_TENANT_HEADER);
+      }
+    } finally {
+      purge(MIGRATION_TENANT_HEADER);
+    }
+  }
+
+  @Test
+  void testMigrationFromVersion5() {
+    try {
+      prepareTenant(MIGRATION_TENANT_HEADER, false, false);
+      var tenantAttributes = TenantApiTestUtil.prepareTenantBody(true, true).withModuleFrom("5.0.0");
+      postTenant(MIGRATION_TENANT_HEADER, tenantAttributes);
+      TestEntities [] skipped = { EXPENSE_CLASS, BUDGET_EXPENSE_CLASS };
+      for (var entity : skipped) {
+        verifyCollectionQuantity(entity.getEndpoint(), 0, MIGRATION_TENANT_HEADER);
+      }
+      TestEntities [] populated = { FUND_TYPE, FISCAL_YEAR };
+      for (var entity : populated) {
+        verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), MIGRATION_TENANT_HEADER);
+      }
+    } finally {
+      purge(MIGRATION_TENANT_HEADER);
+    }
+  }
+
   private TenantJob upgradeTenantWithSampleDataLoad() {
 
     logger.info("upgrading Module with sample");
 
-    TenantJob tenantJob = postTenant(ANOTHER_TENANT_HEADER, prepareUpgradeTenantBody());
+    TenantJob tenantJob = postTenant(ANOTHER_TENANT_HEADER, prepareUpgradeTenantBody(true, true));
     for (TestEntities entity : TestEntities.values()) {
       if (!entity.equals(TestEntities.ORDER_SUMMARY)) {
         logger.info("Test expected quantity for " + entity.name());
@@ -111,10 +150,6 @@ public class TenantSampleDataTest extends TestBase {
     return postTenant(ANOTHER_TENANT_HEADER, TenantAttributes);
   }
 
-  private TenantAttributes prepareUpgradeTenantBody() {
-    return prepareUpgradeTenantBody(true, true);
-  }
-
   private TenantAttributes prepareUpgradeTenantBody(boolean isLoadSampleData, boolean isLoadReferenceData) {
     String moduleName = ModuleName.getModuleName();
 
@@ -123,8 +158,8 @@ public class TenantSampleDataTest extends TestBase {
     parameters.add(new Parameter().withKey("loadSample").withValue(String.valueOf(isLoadSampleData)));
 
     return new TenantAttributes()
-            .withModuleTo(moduleName + "-5.0.1")
-            .withModuleFrom(moduleName + "-5.0.0")
+            .withModuleTo(moduleName + "-9.0.0")
+            .withModuleFrom(moduleName + "-1.0.0")
             .withParameters(parameters);
   }
 }
