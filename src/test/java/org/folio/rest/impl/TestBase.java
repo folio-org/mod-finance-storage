@@ -11,7 +11,6 @@ import static org.junit.Assert.assertThat;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.MalformedURLException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -69,7 +68,7 @@ public abstract class TestBase {
   }
 
   @SafeVarargs
-  final void givenTestData(Header header, Pair<TestEntities, String> ... testPairs) throws MalformedURLException {
+  final void givenTestData(Header header, Pair<TestEntities, String> ... testPairs) {
     for(Pair<TestEntities, String> pair: testPairs) {
 
       String sample = getFile(pair.getRight());
@@ -82,7 +81,7 @@ public abstract class TestBase {
     }
   }
 
-  ValidatableResponse verifyCollectionQuantity(String endpoint, int quantity, Header tenantHeader) throws MalformedURLException {
+  ValidatableResponse verifyCollectionQuantity(String endpoint, int quantity, Header tenantHeader) {
     return getData(endpoint, tenantHeader)
       .then()
         .log().all()
@@ -90,18 +89,18 @@ public abstract class TestBase {
         .body("totalRecords", equalTo(quantity));
   }
 
-  ValidatableResponse verifyCollectionQuantity(String endpoint, int quantity) throws MalformedURLException {
+  ValidatableResponse verifyCollectionQuantity(String endpoint, int quantity) {
     return verifyCollectionQuantity(endpoint, quantity, TENANT_HEADER);
   }
 
-  Response getData(String endpoint, Header tenantHeader) throws MalformedURLException {
+  Response getData(String endpoint, Header tenantHeader) {
     return given()
       .header(tenantHeader)
       .contentType(ContentType.JSON)
       .get(storageUrl(endpoint));
   }
 
-  Response getData(String endpoint) throws MalformedURLException {
+  Response getData(String endpoint) {
     return getData(endpoint, TENANT_HEADER);
   }
 
@@ -116,7 +115,7 @@ public abstract class TestBase {
     return value;
   }
 
-  Response postData(String endpoint, String input) throws MalformedURLException {
+  Response postData(String endpoint, String input) {
     return given()
       .header(TENANT_HEADER)
       .accept(ContentType.JSON)
@@ -126,7 +125,7 @@ public abstract class TestBase {
       .post(storageUrl(endpoint));
   }
 
-  Response postData(String endpoint, String input, Header header) throws MalformedURLException {
+  Response postData(String endpoint, String input, Header header) {
     return given()
       .header(header)
       .accept(ContentType.JSON)
@@ -136,11 +135,11 @@ public abstract class TestBase {
       .post(storageUrl(endpoint));
   }
 
-  Response getDataById(String endpoint, String id) throws MalformedURLException {
+  Response getDataById(String endpoint, String id) {
     return getDataById(endpoint, id, TENANT_HEADER);
   }
 
-  Response getDataById(String endpoint, String id, Header header) throws MalformedURLException {
+  Response getDataById(String endpoint, String id, Header header) {
     return given()
       .pathParam("id", id)
       .header(header)
@@ -148,7 +147,7 @@ public abstract class TestBase {
       .get(storageUrl(endpoint));
   }
 
-  Response putData(String endpoint, String id, String input, Header tenant) throws MalformedURLException {
+  Response putData(String endpoint, String id, String input, Header tenant) {
     return given()
       .pathParam("id", id)
       .header(tenant)
@@ -157,28 +156,28 @@ public abstract class TestBase {
       .put(storageUrl(endpoint));
   }
 
-  Response putData(String endpoint, String id, String input) throws MalformedURLException {
+  Response putData(String endpoint, String id, String input) {
     return putData(endpoint, id, input, TENANT_HEADER);
   }
 
-  void deleteDataSuccess(String endpoint, String id) throws MalformedURLException {
+  void deleteDataSuccess(String endpoint, String id) {
     deleteData(endpoint, id)
       .then().log().ifValidationFails()
       .statusCode(204);
   }
 
-  void deleteDataSuccess(TestEntities testEntity, String id) throws MalformedURLException {
+  void deleteDataSuccess(TestEntities testEntity, String id) {
     logger.info(String.format("--- %s test: Deleting record with ID %s", testEntity.name(), id));
     deleteData(testEntity.getEndpointWithId(), id)
       .then().log().ifValidationFails()
       .statusCode(204);
   }
 
-  Response deleteData(String endpoint, String id) throws MalformedURLException {
+  Response deleteData(String endpoint, String id) {
     return deleteData(endpoint, id, TENANT_HEADER);
   }
 
-  Response deleteData(String endpoint, String id, Header tenantHeader) throws MalformedURLException {
+  Response deleteData(String endpoint, String id, Header tenantHeader) {
     return given()
       .pathParam("id", id)
       .header(tenantHeader)
@@ -186,7 +185,7 @@ public abstract class TestBase {
       .delete(storageUrl(endpoint));
   }
 
-  String createEntity(String endpoint, Object entity) throws MalformedURLException {
+  String createEntity(String endpoint, Object entity) {
     return postData(endpoint, JsonObject.mapFrom(entity).encode())
       .then().log().all()
       .statusCode(201)
@@ -211,17 +210,18 @@ public abstract class TestBase {
     }
   }
 
-  void testInvalidCQLQuery(String endpoint) throws MalformedURLException {
+  void testInvalidCQLQuery(String endpoint) {
     getData(endpoint).then().log().ifValidationFails()
       .statusCode(400);
   }
-  void testEntityEdit(String endpoint, String entitySample, String id) throws MalformedURLException {
+
+  void testEntityEdit(String endpoint, String entitySample, String id) {
     putData(endpoint, id, entitySample)
       .then().log().ifValidationFails()
       .statusCode(204);
   }
 
-  void testFetchingUpdatedEntity(String id, TestEntities subObject) throws MalformedURLException {
+  void testFetchingUpdatedEntity(String id, TestEntities subObject) {
     Object prop = getDataById(subObject.getEndpointWithId(), id).then()
       .log().ifValidationFails()
       .statusCode(200)
@@ -232,7 +232,7 @@ public abstract class TestBase {
     assertThat(String.valueOf(prop), equalTo(subObject.getUpdatedFieldValue()));
   }
 
-  Response testEntitySuccessfullyFetched(String endpoint, String id) throws MalformedURLException {
+  Response testEntitySuccessfullyFetched(String endpoint, String id) {
     Response response = getDataById(endpoint, id);
     response.then()
       .log().ifValidationFails()
@@ -243,7 +243,7 @@ public abstract class TestBase {
   }
 
 
-  void testVerifyEntityDeletion(String endpoint, String id) throws MalformedURLException {
+  void testVerifyEntityDeletion(String endpoint, String id) {
     getDataById(endpoint, id)
       .then()
         .statusCode(404);

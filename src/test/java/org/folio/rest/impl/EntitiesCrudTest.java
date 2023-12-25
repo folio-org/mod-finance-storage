@@ -18,7 +18,6 @@ import static org.folio.rest.utils.TestEntities.ENCUMBRANCE_TRANSACTION;
 import static org.folio.rest.utils.TestEntities.ORDER_SUMMARY;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
-import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -87,7 +86,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"ORDER_SUMMARY"},
     mode = EnumSource.Mode.EXCLUDE)
-  void testVerifyCollection(TestEntities testEntity) throws MalformedURLException {
+  void testVerifyCollection(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Verifying database's initial state ... ", testEntity.name()));
     verifyCollectionQuantity(testEntity.getEndpoint(), 0);
   }
@@ -97,7 +96,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
     mode = EnumSource.Mode.EXCLUDE)
-  void testPostData(TestEntities testEntity) throws MalformedURLException {
+  void testPostData(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... ", testEntity.name(), testEntity.name()));
     sample = getSample(testEntity.getSampleFileName());
     Response response = postData(testEntity.getEndpoint(), sample);
@@ -142,7 +141,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(3)
   @MethodSource("createDuplicateRecords")
-  void testPostFailsOnUniqueConstraint(TestEntities testEntity) throws MalformedURLException {
+  void testPostFailsOnUniqueConstraint(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... fails with unique constraint", testEntity.name(), testEntity.name()));
     JsonObject record = new JsonObject(getSample(testEntity.getSampleFileName()));
     // Make sure that expecting constraint is not PK
@@ -163,7 +162,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"ORDER_SUMMARY"},
     mode = EnumSource.Mode.EXCLUDE)
-  void testVerifyCollectionQuantity(TestEntities testEntity) throws MalformedURLException {
+  void testVerifyCollectionQuantity(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Verifying only 1 adjustment was created ... ", testEntity.name()));
     int quantity = 1;
     if(List.of(ALLOCATION_TRANSACTION, ENCUMBRANCE_TRANSACTION).contains(testEntity)) {
@@ -176,7 +175,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(5)
   @EnumSource(TestEntities.class)
-  void testGetById(TestEntities testEntity) throws MalformedURLException {
+  void testGetById(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Fetching %s with ID %s", testEntity.name(), testEntity.name(),
         testEntity.getId()));
     ExtractableResponse<Response> response = testEntitySuccessfullyFetched(testEntity.getEndpointWithId(), testEntity.getId()).then().extract();
@@ -193,7 +192,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
     mode = EnumSource.Mode.EXCLUDE)
-  void testPutById(TestEntities testEntity) throws MalformedURLException {
+  void testPutById(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Editing %s with ID %s", testEntity.name(), testEntity.name(),
         testEntity.getId()));
     JsonObject catJSON = new JsonObject(getSample(testEntity.getSampleFileName()));
@@ -211,7 +210,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG", "ORDER_SUMMARY"},
     mode = EnumSource.Mode.EXCLUDE)
-  void testVerifyPut(TestEntities testEntity) throws MalformedURLException {
+  void testVerifyPut(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Fetching updated %s with ID %s", testEntity.name(), testEntity.name(), testEntity.getId()));
     testFetchingUpdatedEntity(testEntity.getId(), testEntity);
   }
@@ -219,7 +218,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(8)
   @MethodSource("deleteFailOrder")
-  void testDeleteEndpointForeignKeyFailure(TestEntities testEntity) throws MalformedURLException {
+  void testDeleteEndpointForeignKeyFailure(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storages %s test: Deleting %s with ID %s", testEntity.name(), testEntity.name(),
         testEntity.getId()));
     deleteData(testEntity.getEndpointWithId(), testEntity.getId()).then()
@@ -231,7 +230,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(9)
   @MethodSource("deleteOrder")
-  void testDeleteEndpoint(TestEntities testEntity) throws MalformedURLException {
+  void testDeleteEndpoint(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storages %s test: Deleting %s with ID %s", testEntity.name(), testEntity.name(),
         testEntity.getId()));
     deleteData(testEntity.getEndpointWithId(), testEntity.getId()).then()
@@ -256,7 +255,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
     mode = EnumSource.Mode.EXCLUDE)
-  void testVerifyDelete(TestEntities testEntity) throws MalformedURLException {
+  void testVerifyDelete(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storages %s test: Verify %s is deleted with ID %s", testEntity.name(),
         testEntity.name(), testEntity.getId()));
     testVerifyEntityDeletion(testEntity.getEndpointWithId(), testEntity.getId());
@@ -264,7 +263,7 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @MethodSource("createFailOrder")
-  void testPostFailsOnForeignKeyDependencies(TestEntities testEntity) throws MalformedURLException {
+  void testPostFailsOnForeignKeyDependencies(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... fails", testEntity.name(), testEntity.name()));
     sample = getSample(testEntity.getSampleFileName());
     postData(testEntity.getEndpoint(), sample).then().statusCode(400);
@@ -272,7 +271,7 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @EnumSource(TestEntities.class)
-  void testFetchEntityWithNonExistedId(TestEntities testEntity) throws MalformedURLException {
+  void testFetchEntityWithNonExistedId(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s get by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),
         NON_EXISTED_ID));
     getDataById(testEntity.getEndpointWithId(), NON_EXISTED_ID).then()
@@ -285,7 +284,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
     mode = EnumSource.Mode.EXCLUDE)
-  void testEditEntityWithNonExistedId(TestEntities testEntity) throws MalformedURLException {
+  void testEditEntityWithNonExistedId(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s put by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),
         NON_EXISTED_ID));
     String sampleData = getFile(testEntity.getSampleFileName());
@@ -299,7 +298,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
     mode = EnumSource.Mode.EXCLUDE)
-  void testDeleteEntityWithNonExistedId(TestEntities testEntity) throws MalformedURLException {
+  void testDeleteEntityWithNonExistedId(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s delete by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),
         NON_EXISTED_ID));
     deleteData(testEntity.getEndpointWithId(), NON_EXISTED_ID).then()
@@ -312,7 +311,7 @@ public class EntitiesCrudTest extends TestBase {
   @EnumSource(value = TestEntities.class,
     names = {"ORDER_SUMMARY"},
     mode = EnumSource.Mode.EXCLUDE)
-  void testGetEntitiesWithInvalidCQLQuery(TestEntities testEntity) throws MalformedURLException {
+  void testGetEntitiesWithInvalidCQLQuery(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Invalid CQL query", testEntity.name()));
     testInvalidCQLQuery(testEntity.getEndpoint() + "?query=invalid-query");
   }

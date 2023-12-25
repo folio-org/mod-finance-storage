@@ -13,7 +13,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
-import java.net.MalformedURLException;
 import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
@@ -55,7 +54,7 @@ public class GroupBudgetTest extends TestBase {
   }
 
   @Test
-  public void testSearchByGroupAcqUnitsIds() throws MalformedURLException {
+  public void testSearchByGroupAcqUnitsIds() {
     Group group = new JsonObject(getFile(GROUP.getSampleFileName())).mapTo(Group.class);
     FiscalYear fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getSampleFileName())).mapTo(FiscalYear.class); // one of fiscal years loaded with sample data
     Budget budget = new JsonObject(getFile(BUDGET.getSampleFileName())).mapTo(Budget.class); // one of budget loaded with sample data

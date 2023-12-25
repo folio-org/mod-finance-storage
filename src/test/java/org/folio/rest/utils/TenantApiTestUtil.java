@@ -27,21 +27,17 @@ public class TenantApiTestUtil {
 
   }
 
-  public static TenantAttributes prepareTenantBody(Boolean isLoadSampleData, Boolean isLoadReferenceData) {
-    TenantAttributes tenantAttributes = new TenantAttributes();
-
+  public static TenantAttributes prepareTenantBody(boolean isLoadSampleData, boolean isLoadReferenceData) {
     List<Parameter> parameters = new ArrayList<>();
-    parameters.add(new Parameter().withKey("loadReference").withValue(isLoadReferenceData.toString()));
-    parameters.add(new Parameter().withKey("loadSample").withValue(isLoadSampleData.toString()));
+    parameters.add(new Parameter().withKey("loadReference").withValue(String.valueOf(isLoadReferenceData)));
+    parameters.add(new Parameter().withKey("loadSample").withValue(String.valueOf(isLoadSampleData)));
     parameters.add(new Parameter().withKey(LOAD_SYNC_PARAMETER).withValue("true"));
 
-    tenantAttributes.withModuleTo(ModuleName.getModuleName() + "-5.0.0").withParameters(parameters);
-
-    return tenantAttributes;
-  }
-
-  public static TenantAttributes prepareTenantBody() {
-    return prepareTenantBody(true, true);
+    String moduleName = ModuleName.getModuleName();
+    return new TenantAttributes()
+      .withModuleTo(moduleName + "-999.0.0")
+      .withModuleFrom(moduleName + "-0.0.0")
+      .withParameters(parameters);
   }
 
   public static TenantJob prepareTenant(Header tenantHeader, boolean isLoadSampleData, boolean isLoadReferenceData) {

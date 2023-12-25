@@ -29,7 +29,7 @@ public class GroupTest extends TestBase {
   }
 
   @Test
-  void testUpdateGroupConflict() throws Exception {
+  void testUpdateGroupConflict() {
     tenantJob = prepareTenant(GROUP_TENANT_HEADER, false, true);
 
     givenTestData(GROUP_TENANT_HEADER,

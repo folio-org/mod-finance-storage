@@ -11,6 +11,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.dbschema.Versioned;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgetExpenseClasses;
@@ -65,28 +66,53 @@ public class TenantReferenceAPI extends TenantAPI {
   private boolean buildDataLoadingParameters(TenantAttributes tenantAttributes, TenantLoading tl) {
     boolean loadData = false;
     if (isLoadReference(tenantAttributes)) {
-      tl.withKey(PARAMETER_LOAD_REFERENCE)
-        .withLead("data")
-        .add("expense-classes", getUriPath(FinanceStorageExpenseClasses.class))
-        .add("fund-types", getUriPath(FinanceStorageFundTypes.class));
+      if (isNew(tenantAttributes, "4.0.0")) {
+        tl.withKey(PARAMETER_LOAD_REFERENCE)
+          .withLead("data")
+          .add("expense-classes-4.0.0", getUriPath(FinanceStorageExpenseClasses.class));
+      }
+      if (isNew(tenantAttributes, "6.0.0")) {
+        tl.withKey(PARAMETER_LOAD_REFERENCE)
+          .withLead("data")
+          .add("fund-types-6.0.0", getUriPath(FinanceStorageFundTypes.class));
+      }
       loadData = true;
     }
     if (isLoadSample(tenantAttributes)) {
-      tl.withKey(PARAMETER_LOAD_SAMPLE)
-        .withLead("data")
-        .add("groups", getUriPath(FinanceStorageGroups.class))
-        .add("fiscal-years", getUriPath(FinanceStorageFiscalYears.class))
-        .add("ledgers", getUriPath(FinanceStorageLedgers.class))
-        .add("funds", getUriPath(FinanceStorageFunds.class))
-        .add("budgets", getUriPath(FinanceStorageBudgets.class))
-        .add("budget-expense-classes", getUriPath(FinanceStorageBudgetExpenseClasses.class))
-        .add("group-fund-fiscal-years", getUriPath(FinanceStorageGroupFundFiscalYears.class))
-        .add("transactions/allocations", getUriPath(FinanceStorageTransactions.class))
-        .withPostIgnore() // Payments and credits don't support PUT
-        .add("transactions/transfers", getUriPath(FinanceStorageTransactions.class));
+      if (isNew(tenantAttributes, "3.2.0")) {
+        tl.withKey(PARAMETER_LOAD_SAMPLE)
+          .withLead("data")
+          .add("groups-3.2.0", getUriPath(FinanceStorageGroups.class));
+      }
+      if (isNew(tenantAttributes, "8.4.0")) {
+        tl.withKey(PARAMETER_LOAD_SAMPLE)
+          .withLead("data")
+          .add("fiscal-years-8.4.0", getUriPath(FinanceStorageFiscalYears.class))
+          .add("ledgers-8.4.0", getUriPath(FinanceStorageLedgers.class))
+          .add("funds-8.4.0", getUriPath(FinanceStorageFunds.class))
+          .add("budgets-8.4.0", getUriPath(FinanceStorageBudgets.class))
+          .add("budget-expense-classes-8.4.0", getUriPath(FinanceStorageBudgetExpenseClasses.class))
+          .add("group-fund-fiscal-years-8.4.0", getUriPath(FinanceStorageGroupFundFiscalYears.class))
+          .add("transactions/allocations-8.4.0", getUriPath(FinanceStorageTransactions.class))
+          .withPostIgnore() // Payments and credits don't support PUT
+          .add("transactions/transfers-8.4.0", getUriPath(FinanceStorageTransactions.class));
+      }
       loadData = true;
     }
     return loadData;
+  }
+
+  /**
+   * Returns attributes.getModuleFrom() < featureVersion or attributes.getModuleFrom() is null.
+   */
+  private static boolean isNew(TenantAttributes attributes, String featureVersion) {
+    if (attributes.getModuleFrom() == null) {
+      return true;
+    }
+    var since = new Versioned() {
+    };
+    since.setFromModuleVersion(featureVersion);
+    return since.isNewForThisInstall(attributes.getModuleFrom());
   }
 
   private boolean isLoadReference(TenantAttributes tenantAttributes) {
