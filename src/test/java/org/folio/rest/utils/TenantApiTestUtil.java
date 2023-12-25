@@ -35,8 +35,8 @@ public class TenantApiTestUtil {
 
     String moduleName = ModuleName.getModuleName();
     return new TenantAttributes()
-      .withModuleTo(moduleName + "-9.0.0")
-      .withModuleFrom(moduleName + "-1.0.0")
+      .withModuleTo(moduleName + "-999.0.0")
+      .withModuleFrom(moduleName + "-0.0.0")
       .withParameters(parameters);
   }
 
