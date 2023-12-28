@@ -30,6 +30,8 @@ public class HelperUtilsTest extends TestBase {
   private static final String GROUP_BUDGET_ENDPOINT = getEndpoint(FinanceStorageGroupBudgets.class);
 
   @Test
+  @Disabled("disabled due to incompatibility of jdk17 + jmockit + jacoco"
+    + "remove annotation and check with command: 'mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install' ")
   public void getEntitiesCollectionWithDistinctOnFailCqlExTest() {
     new MockUp<PgUtil>()
     {
@@ -82,6 +84,8 @@ public class HelperUtilsTest extends TestBase {
   }
 
   @Test
+  @Disabled("disabled due to incompatibility of jdk17 + jmockit + jacoco"
+    + "remove annotation and check with command: 'mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install' ")
   public void getEntitiesCollectionWithDistinctOnFailNpExTest() {
     new MockUp<PgUtil>()
     {

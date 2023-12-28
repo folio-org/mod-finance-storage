@@ -18,12 +18,7 @@ public class EmailOkapiClient extends OkapiClient {
 
   public void sendEmail(String url, String data) {
     post(url, data)
-      .onSuccess(response -> {
-        logger.info("POST {} complete successfully: {}", url, response);
-        close();})
-      .onFailure(t -> {
-        logger.error("Email not delivered {}", t.getMessage());
-        close();
-      });
+      .onSuccess(response -> logger.info("POST {} complete successfully: {}", url, response))
+      .onFailure(t -> logger.error("Email not delivered {}", t.getMessage()));
   }
 }
