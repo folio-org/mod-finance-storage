@@ -27,7 +27,6 @@
     <aspectj.version>1.9.20.1</aspectj.version>
     <aspectj-maven-plugin.version>1.13.1</aspectj-maven-plugin.version>
     <java.version>17</java.version>
-    <mod-configuration-client.version>5.9.2</mod-configuration-client.version>
     <jackson-bom.version>2.15.2</jackson-bom.version>
     <folio-di-support.version>2.0.1</folio-di-support.version>
 
@@ -41,7 +40,6 @@
     <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
     <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>
     <copy-rename-maven-plugin.version>1.0.1</copy-rename-maven-plugin.version>
-    <jsonschema2pojo-maven-plugin.version>1.0.2</jsonschema2pojo-maven-plugin.version>
 
     <!--Test Scope dependencies-->
     <jmockit.version>1.49</jmockit.version>
@@ -75,7 +73,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>2.13.4</version>
+        <version>${jackson-bom.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
