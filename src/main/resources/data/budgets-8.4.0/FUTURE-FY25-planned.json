@@ -1,0 +1,18 @@
+{
+  "id": "1413e1ed-0041-44ec-8255-ddb4c5235d7e",
+  "allocated": 0.00,
+  "allowableEncumbrance": 100,
+  "allowableExpenditure": 100,
+  "available": 0.00,
+  "awaitingPayment": 0,
+  "budgetStatus": "Planned",
+  "cashBalance": 0.00,
+  "encumbered": 0,
+  "expenditures": 0,
+  "fiscalYearId": "43aba0df-70e4-435e-8463-d8f730d19e0b",
+  "fundId": "dd464167-812e-4efe-8e21-7fb0dffab8d8",
+  "name": "FUTURE-FY25",
+  "netTransfers": 0,
+  "overEncumbrance": 0,
+  "totalFunding": 0.00
+}

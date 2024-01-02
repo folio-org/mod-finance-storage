@@ -42,7 +42,7 @@ public class TransactionTest extends TestBase {
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
   private static final String FY_FUND_QUERY = "?query=fiscalYearId==%s AND fundId==%s";
-  public static final String ALLOCATION_SAMPLE = "data/transactions/zallocation_AFRICAHIST-FY23_ANZHIST-FY23.json";
+  public static final String ALLOCATION_SAMPLE = "data/transactions/zallocation_AFRICAHIST-FY24_ANZHIST-FY24.json";
 
   static String BUDGETS_QUERY = BUDGET.getEndpoint() + FY_FUND_QUERY;
   static final String BUDGETS = "budgets";
@@ -50,9 +50,9 @@ public class TransactionTest extends TestBase {
   public static final String LEDGER_MAIN_LIBRARY_SAMPLE_PATH = "data/ledgers-8.4.0/MainLibrary.json";
   public static final String ALLOCATION_FROM_FUND_SAMPLE_PATH = "data/funds-8.4.0/CANLATHIST.json";
   public static final String ALLOCATION_TO_FUND_SAMPLE_PATH = "data/funds-8.4.0/ANZHIST.json";
-  public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets-8.4.0/CANLATHIST-FY23-closed.json";
-  public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets-8.4.0/ANZHIST-FY23.json";
-  public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations-8.4.0/allocation_CANLATHIST-FY23.json";
+  public static final String ALLOCATION_FROM_BUDGET_SAMPLE_PATH = "data/budgets-8.4.0/CANLATHIST-FY24-closed.json";
+  public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets-8.4.0/ANZHIST-FY24.json";
+  public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations-8.4.0/allocation_CANLATHIST-FY24.json";
   public static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
   private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
   private static TenantJob tenantJob;
@@ -240,7 +240,7 @@ public class TransactionTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
 
-    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations-8.4.0/allocation_AFRICAHIST-FY23.json"));
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations-8.4.0/allocation_AFRICAHIST-FY24.json"));
     jsonAllocation.remove("id");
     String allocationSample = jsonAllocation.toString();
 
@@ -305,7 +305,7 @@ public class TransactionTest extends TestBase {
       Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
       Pair.of(BUDGET, ALLOCATION_TO_BUDGET_SAMPLE_PATH));
 
-    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations-8.4.0/allocation_AFRICAHIST-FY23.json"));
+    JsonObject jsonAllocation = new JsonObject(getFile("data/transactions/allocations-8.4.0/allocation_AFRICAHIST-FY24.json"));
     jsonAllocation.remove("id");
     String allocationSample = jsonAllocation.toString();
 
