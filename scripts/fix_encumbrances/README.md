@@ -22,10 +22,10 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 - User password is required as a command-line input.
 
 ### Execution example :
-`python3 ./fix_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin'`
+`python3 ./fix_encumbrances.py 'FY2024' 'http://localhost:9130/' 'diku' 'diku_admin'`
 
 To save output in a file, use `tee` on Linux:\
-`python3 ./fix_encumbrances.py 'FY2023' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
+`python3 ./fix_encumbrances.py 'FY2024' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
 
 ### Required permissions for the user
 These can be set with a permission group created with the API.
