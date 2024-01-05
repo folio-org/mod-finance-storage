@@ -9,7 +9,7 @@ import static org.folio.rest.impl.TransactionTest.ORDER_TRANSACTION_SUMMARIES_EN
 public enum TestEntities {
   //The Order is important because of the foreign key relationships
   EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageExpenseClasses.class), ExpenseClass.class, "data/expense-classes-4.0.0/", "elec.json", "name", "Electronic", 2, true),
-  FISCAL_YEAR(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class), FiscalYear.class, "data/fiscal-years-8.4.0/", "fy24.json", "name", "FY24", 7, true),
+  FISCAL_YEAR(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class), FiscalYear.class, "data/fiscal-years-8.4.0/", "fy24.json", "name", "FY24", 8, true),
   LEDGER(HelperUtils.getEndpoint(FinanceStorageLedgers.class), Ledger.class, "data/ledgers-8.4.0/", "One-time.json", "code", "One-time", 5, true),
   FUND_TYPE(HelperUtils.getEndpoint(FinanceStorageFundTypes.class), FundType.class, "data/fund-types-6.0.0/", "approvals.json", "name", "New type name", 26, true),
   FUND(HelperUtils.getEndpoint(FinanceStorageFunds.class), Fund.class, "data/funds-8.4.0/", "AFRICAHIST.json", "name", "African History", 23, true),
