@@ -13,7 +13,7 @@ public interface BudgetDAO {
 
   Future<Integer> updateBatchBudgets(String sql, DBConn conn);
 
-  Future<List<Budget>> getBudgetsTx(String sql, Tuple params, DBConn conn);
+  Future<List<Budget>> getBudgetsBySql(String sql, Tuple params, DBConn conn);
 
   Future<List<Budget>> getBudgets(Criterion criterion, DBConn conn);
 

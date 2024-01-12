@@ -145,7 +145,7 @@ public class BudgetService {
     logger.debug("getBudgetByFiscalYearIdAndFundIdForUpdate:: Trying to get budget by fund id {} and fiscal year id {} for update", fundId, fiscalYearId);
 
     String sql = getSelectBudgetQueryByFyAndFundForUpdate(conn.getTenantId());
-    return budgetDAO.getBudgetsTx(sql, Tuple.of(fiscalYearId, fundId), conn)
+    return budgetDAO.getBudgetsBySql(sql, Tuple.of(fiscalYearId, fundId), conn)
       .map(budgets -> {
         if (budgets.isEmpty()) {
           logger.error("getBudgetByFiscalYearIdAndFundIdForUpdate:: Budget for update not found for fundId {} and fiscalYearId {}", fundId, fiscalYearId);
@@ -174,7 +174,7 @@ public class BudgetService {
   }
 
   public Future<List<Budget>> getBudgets(String sql, Tuple params, DBConn conn) {
-    return budgetDAO.getBudgetsTx(sql, params, conn);
+    return budgetDAO.getBudgetsBySql(sql, params, conn);
   }
 
   public void updateBudgetMetadata(Budget budget, Transaction transaction) {

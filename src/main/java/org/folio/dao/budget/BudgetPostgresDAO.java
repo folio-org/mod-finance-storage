@@ -38,8 +38,8 @@ public class BudgetPostgresDAO implements BudgetDAO {
   }
 
   @Override
-  public Future<List<Budget>> getBudgetsTx(String sql, Tuple params, DBConn conn) {
-    logger.debug("Trying to get budgets in transactional by sql");
+  public Future<List<Budget>> getBudgetsBySql(String sql, Tuple params, DBConn conn) {
+    logger.debug("Trying to get budgets by sql: {}", sql);
     return conn.execute(sql, params)
       .map(rowSet -> {
         List<Budget> budgets = new ArrayList<>();
