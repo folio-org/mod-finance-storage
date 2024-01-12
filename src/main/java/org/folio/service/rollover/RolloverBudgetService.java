@@ -8,7 +8,7 @@ import org.folio.dao.rollover.RolloverBudgetDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.RolloverBudgetExpenseClassTotalsService;
 
 import java.util.List;
@@ -30,23 +30,23 @@ public class RolloverBudgetService {
     this.rolloverBudgetExpenseClassTotalsService = rolloverBudgetExpenseClassTotalsService;
   }
 
-  public Future<List<LedgerFiscalYearRolloverBudget>> getRolloverBudgets(String rolloverId, DBClient client) {
+  public Future<List<LedgerFiscalYearRolloverBudget>> getRolloverBudgets(String rolloverId, DBConn conn) {
     Criterion filter = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, rolloverId).build();
-    return rolloverBudgetDAO.getRolloverBudgets(filter, client);
+    return rolloverBudgetDAO.getRolloverBudgets(filter, conn);
   }
 
-  public Future<List<LedgerFiscalYearRolloverBudget>> updateBatch(List<LedgerFiscalYearRolloverBudget> budgets, DBClient client) {
-    return rolloverBudgetDAO.updateBatch(budgets, client);
+  public Future<List<LedgerFiscalYearRolloverBudget>> updateBatch(List<LedgerFiscalYearRolloverBudget> budgets, DBConn conn) {
+    return rolloverBudgetDAO.updateBatch(budgets, conn);
   }
 
-  public Future<Void> deleteRolloverBudgets(String ledgerRolloverId, DBClient client) {
+  public Future<Void> deleteRolloverBudgets(String ledgerRolloverId, DBConn conn) {
     Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, ledgerRolloverId).build();
-    return rolloverBudgetDAO.deleteByQuery(criterion, client);
+    return rolloverBudgetDAO.deleteByQuery(criterion, conn);
   }
 
-  public Future<Void> updateRolloverBudgetsExpenseClassTotals(List<LedgerFiscalYearRolloverBudget> budgets, DBClient dbClient) {
+  public Future<Void> updateRolloverBudgetsExpenseClassTotals(List<LedgerFiscalYearRolloverBudget> budgets, DBConn conn) {
     Promise<Void> promise = Promise.promise();
-    retrieveAssociatedDataAndUpdateExpenseClassTotals(budgets, dbClient)
+    retrieveAssociatedDataAndUpdateExpenseClassTotals(budgets, conn)
       .onComplete(result -> {
         if (result.failed()) {
           logger.error("updateRolloverBudgetsExpenseClassTotals:: Transactions or expense class data failed to be processed", result.cause());
@@ -59,9 +59,9 @@ public class RolloverBudgetService {
     return promise.future();
   }
 
-  private Future<LedgerFiscalYearRolloverBudget> retrieveAssociatedDataAndUpdateExpenseClassTotals(List<LedgerFiscalYearRolloverBudget> budgets, DBClient dbClient) {
-    return chainCall(budgets, budget -> rolloverBudgetExpenseClassTotalsService.getBudgetWithUpdatedExpenseClassTotals(budget, dbClient)
-      .compose(budgetWithUpdatedTotals -> rolloverBudgetDAO.updateRolloverBudget(budget, dbClient)));
+  private Future<Void> retrieveAssociatedDataAndUpdateExpenseClassTotals(List<LedgerFiscalYearRolloverBudget> budgets, DBConn conn) {
+    return chainCall(budgets, budget -> rolloverBudgetExpenseClassTotalsService.getBudgetWithUpdatedExpenseClassTotals(budget, conn)
+      .compose(budgetWithUpdatedTotals -> rolloverBudgetDAO.updateRolloverBudget(budget, conn)));
   }
 
 }

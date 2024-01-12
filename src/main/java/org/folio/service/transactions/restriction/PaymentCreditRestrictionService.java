@@ -10,7 +10,7 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.ledger.LedgerService;
 import org.javamoney.moneta.Money;
@@ -87,7 +87,7 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
   }
 
   @Override
-  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient dbClient) {
+  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBConn conn) {
 
     CriterionBuilder criterionBuilder;
     if (transaction.getSourceInvoiceLineId() != null) {
@@ -106,7 +106,7 @@ public class PaymentCreditRestrictionService extends BaseTransactionRestrictionS
         .withOperation("AND");
     }
 
-    return transactionDAO.getTransactions(criterionBuilder.build(), dbClient)
+    return transactionDAO.getTransactions(criterionBuilder.build(), conn)
       .map(transactions -> transactions.isEmpty() ? null : transactions.get(0));
   }
 

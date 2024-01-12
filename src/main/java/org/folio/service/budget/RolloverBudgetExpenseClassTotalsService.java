@@ -6,7 +6,7 @@ import org.folio.rest.jaxrs.model.ExpenseClass;
 import org.folio.rest.jaxrs.model.BudgetExpenseClass;
 import org.folio.rest.jaxrs.model.BudgetExpenseClassTotal;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.transactions.TemporaryTransactionService;
 import org.folio.utils.MoneyUtils;
 
@@ -34,11 +34,12 @@ public class RolloverBudgetExpenseClassTotalsService {
     this.temporaryTransactionService = temporaryTransactionService;
   }
 
-  public Future<LedgerFiscalYearRolloverBudget> getBudgetWithUpdatedExpenseClassTotals(LedgerFiscalYearRolloverBudget budget, DBClient dbClient) {
-    return budgetExpenseClassService.getExpenseClassesByTemporaryBudgetId(budget.getBudgetId(), dbClient)
-      .compose(expenseClasses -> temporaryTransactionService.getTransactions(budget, dbClient)
+  public Future<LedgerFiscalYearRolloverBudget> getBudgetWithUpdatedExpenseClassTotals(LedgerFiscalYearRolloverBudget budget,
+      DBConn conn) {
+    return budgetExpenseClassService.getExpenseClassesByTemporaryBudgetId(budget.getBudgetId(), conn)
+      .compose(expenseClasses -> temporaryTransactionService.getTransactions(budget, conn)
         .map(transactions -> buildBudgetExpenseClassesTotals(expenseClasses, transactions, budget)))
-      .compose(budgetExpenseClassTotals -> budgetExpenseClassService.getTempBudgetExpenseClasses(budget.getBudgetId(), dbClient)
+      .compose(budgetExpenseClassTotals -> budgetExpenseClassService.getTempBudgetExpenseClasses(budget.getBudgetId(), conn)
         .map(budgetExpenseClasses -> updateExpenseClassStatus(budgetExpenseClassTotals, budgetExpenseClasses)))
       .map(budget::withExpenseClassDetails);
   }

@@ -9,7 +9,7 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 
 import javax.money.CurrencyUnit;
@@ -85,19 +85,19 @@ public class EncumbranceService implements TransactionManagingStrategy {
   /**
    * To prevent partial encumbrance transactions for an order, all the encumbrances must be created following All or nothing
    */
-  public Future<Void> processEncumbrances(List<Transaction> tmpTransactions, DBClient client) {
-    return getTransactionsForCreateAndUpdate(tmpTransactions, client)
-      .compose(transactionsForCreateAndUpdate -> updateBudgetsTotals(transactionsForCreateAndUpdate, tmpTransactions, client)
+  public Future<Void> processEncumbrances(List<Transaction> tmpTransactions, DBConn conn) {
+    return getTransactionsForCreateAndUpdate(tmpTransactions, conn)
+      .compose(transactionsForCreateAndUpdate -> updateBudgetsTotals(transactionsForCreateAndUpdate, tmpTransactions, conn)
         .map(v -> findTransactionForUpdate(transactionsForCreateAndUpdate.get(FOR_UPDATE),
                                                                 transactionsForCreateAndUpdate.get(EXISTING)))
-        .compose(transactions -> transactionDAO.updatePermanentTransactions(transactions, client))
+        .compose(transactions -> transactionDAO.updatePermanentTransactions(transactions, conn))
         .compose(ok -> {
           if (!transactionsForCreateAndUpdate.get(FOR_CREATE).isEmpty()) {
             List<String> ids = transactionsForCreateAndUpdate.get(FOR_CREATE)
               .stream()
               .map(Transaction::getId)
               .collect(toList());
-            return transactionDAO.saveTransactionsToPermanentTable(ids, client);
+            return transactionDAO.saveTransactionsToPermanentTable(ids, conn);
           } else {
             return Future.succeededFuture();
           }
@@ -130,14 +130,14 @@ public class EncumbranceService implements TransactionManagingStrategy {
     return budget;
   }
 
-  private Future<Map<String, List<Transaction>>> getTransactionsForCreateAndUpdate(List<Transaction> tmpTransactions, DBClient client) {
+  private Future<Map<String, List<Transaction>>> getTransactionsForCreateAndUpdate(List<Transaction> tmpTransactions, DBConn conn) {
     CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
 
     tmpTransactions.stream()
       .map(Transaction::getId)
       .forEach(id -> criterionBuilder.with("id", id));
 
-    return transactionDAO.getTransactions(criterionBuilder.build(), client)
+    return transactionDAO.getTransactions(criterionBuilder.build(), conn)
       .map(trs -> groupTransactionForCreateAndUpdate(tmpTransactions, trs));
   }
 
@@ -176,18 +176,18 @@ public class EncumbranceService implements TransactionManagingStrategy {
                 && Encumbrance.OrderStatus.OPEN == existingTransaction.getEncumbrance().getOrderStatus();
   }
 
-  private Future<Integer> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions, List<Transaction> newTransactions,
-                                           DBClient client) {
+  private Future<Integer> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions,
+      List<Transaction> newTransactions, DBConn conn) {
 
-    return budgetService.getBudgets(getSelectBudgetsQueryForUpdate(client.getTenantId()),
-        Tuple.of(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId()), client)
+    return budgetService.getBudgets(getSelectBudgetsQueryForUpdate(conn.getTenantId()),
+        Tuple.of(newTransactions.get(0).getEncumbrance().getSourcePurchaseOrderId()), conn)
       .compose(oldBudgets -> {
 
         List<Budget> updatedBudgets = updateBudgetsTotalsForCreatingTransactions(groupedTransactions.get(FOR_CREATE), oldBudgets);
         List<Budget> finalNewBudgets = updateBudgetsTotalsForUpdatingTransactions(groupedTransactions.get(EXISTING),
             groupedTransactions.get(FOR_UPDATE), updatedBudgets);
 
-        return budgetService.updateBatchBudgets(finalNewBudgets, client);
+        return budgetService.updateBatchBudgets(finalNewBudgets, conn);
       });
   }
 

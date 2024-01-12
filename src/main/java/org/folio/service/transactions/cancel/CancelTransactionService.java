@@ -5,7 +5,7 @@ import io.vertx.sqlclient.Tuple;
 import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 
 import java.util.ArrayList;
@@ -46,14 +46,14 @@ public abstract class CancelTransactionService {
    * Updates given transactions, related encumbrances and related budgets to cancel the transactions.
    * All transactions are supposed to be either pending payment or payment/credit.
    */
-  public Future<Void> cancelTransactions(List<Transaction> transactions, DBClient client) {
+  public Future<Void> cancelTransactions(List<Transaction> transactions, DBConn conn) {
     String summaryId = getSummaryId(transactions.get(0));
-    return updateRelatedEncumbrances(transactions, client)
-      .compose(v -> budgetService.getBudgets(getSelectBudgetsQuery(client.getTenantId()),
-        Tuple.of(UUID.fromString(summaryId)), client))
+    return updateRelatedEncumbrances(transactions, conn)
+      .compose(v -> budgetService.getBudgets(getSelectBudgetsQuery(conn.getTenantId()),
+        Tuple.of(UUID.fromString(summaryId)), conn))
       .map(budgets -> budgetsMoneyBack(transactions, budgets))
-      .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, client))
-      .compose(n -> paymentCreditDAO.updatePermanentTransactions(transactions, client));
+      .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, conn))
+      .compose(n -> paymentCreditDAO.updatePermanentTransactions(transactions, conn));
   }
 
   private List<Budget> budgetsMoneyBack(List<Transaction> transactions, List<Budget> budgets) {
@@ -81,16 +81,16 @@ public abstract class CancelTransactionService {
     return String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
   }
 
-  private Future<Void> updateRelatedEncumbrances(List<Transaction> transactions, DBClient client) {
+  private Future<Void> updateRelatedEncumbrances(List<Transaction> transactions, DBConn conn) {
     Map<String, List<Transaction>> encumbranceIdToTransactions = transactions.stream()
       .filter(tr -> getEncumbranceId(tr).isPresent())
       .collect(groupingBy(tr -> getEncumbranceId(tr).orElse(null)));
     if (encumbranceIdToTransactions.isEmpty())
       return Future.succeededFuture();
     List<String> encumbranceIds = new ArrayList<>(encumbranceIdToTransactions.keySet());
-    return encumbranceDAO.getTransactions(encumbranceIds, client)
+    return encumbranceDAO.getTransactions(encumbranceIds, conn)
       .map(tr -> updateEncumbrances(tr, encumbranceIdToTransactions))
-      .compose(encumbrances -> encumbranceDAO.updatePermanentTransactions(encumbrances, client));
+      .compose(encumbrances -> encumbranceDAO.updatePermanentTransactions(encumbrances, conn));
   }
 
   private List<Transaction> updateEncumbrances(List<Transaction> encumbrances,

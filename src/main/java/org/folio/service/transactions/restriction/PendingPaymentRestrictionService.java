@@ -11,7 +11,7 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.ledger.LedgerService;
 import org.javamoney.moneta.Money;
@@ -61,7 +61,7 @@ public class PendingPaymentRestrictionService extends BaseTransactionRestriction
   }
 
   @Override
-  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient client) {
+  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBConn conn) {
 
     String encumbranceId = Optional.ofNullable(transaction)
       .map(Transaction::getAwaitingPayment)
@@ -75,7 +75,7 @@ public class PendingPaymentRestrictionService extends BaseTransactionRestriction
     CriterionBuilder criterion = new CriterionBuilder()
       .with("id", encumbranceId);
 
-    return transactionsDAO.getTransactions(criterion.build(), client)
+    return transactionsDAO.getTransactions(criterion.build(), conn)
       .map(transactions -> transactions.isEmpty() ? null : transactions.get(0));
   }
 

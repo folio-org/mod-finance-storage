@@ -54,20 +54,23 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     logger.debug("Trying to create finance storage ledger rollover");
     ledgerRolloverService.rolloverLedger(entity, new RequestContext(vertxContext, okapiHeaders))
-            .onComplete(result -> {
-              if (result.failed()) {
-                HttpException cause = (HttpException) result.cause();
-                if (Response.Status.CONFLICT.getStatusCode() == cause.getStatusCode()) {
-                  logger.error("Rollover already exists with id {}", entity.getId(), cause);
-                } else {
-                  logger.error("Creating rollover with id {} failed", entity.getId(), cause);
-                }
-                HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
-              } else {
-                asyncResultHandler.handle(succeededFuture(buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/ledger-rollover", entity)));
-              }
-            });
-
+      .onComplete(result -> {
+        if (result.failed()) {
+          Throwable t = result.cause();
+          if (!(t instanceof HttpException)) {
+            t = new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), t);
+          }
+          HttpException cause = (HttpException)t;
+          if (Response.Status.CONFLICT.getStatusCode() == cause.getStatusCode()) {
+            logger.error("Rollover already exists with id {}", entity.getId(), cause);
+          } else {
+            logger.error("Creating rollover with id {} failed", entity.getId(), cause);
+          }
+          HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
+        } else {
+          asyncResultHandler.handle(succeededFuture(buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/ledger-rollover", entity)));
+        }
+      });
   }
 
   @Override

@@ -3,28 +3,23 @@ package org.folio.dao.transactions;
 import static org.folio.dao.transactions.EncumbranceDAO.TRANSACTIONS_TABLE;
 import static org.folio.dao.transactions.TemporaryInvoiceTransactionDAO.TEMPORARY_INVOICE_TRANSACTIONS;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
-import static org.folio.rest.util.ResponseUtils.handleVoidAsyncResult;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import io.vertx.sqlclient.SqlResult;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.DBConn;
 import org.folio.rest.persist.interfaces.Results;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Tuple;
 
@@ -36,74 +31,43 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
     + "ON CONFLICT DO NOTHING;";
 
   @Override
-  public Future<List<Transaction>> getTransactions(Criterion criterion, DBClient client) {
+  public Future<List<Transaction>> getTransactions(Criterion criterion, DBConn conn) {
     logger.debug("Trying to get transactions by query: {}", criterion);
-    Promise<List<Transaction>> promise = Promise.promise();
-    if (Objects.isNull(client.getConnection())) {
-      client.getPgClient().get(TRANSACTIONS_TABLE, Transaction.class, criterion, false, true, handleGet(promise));
-    } else {
-      client.getPgClient()
-        .get(client.getConnection(), TRANSACTIONS_TABLE, Transaction.class, criterion, false, true, handleGet(promise));
-    }
-    return promise.future();
+    return conn.get(TRANSACTIONS_TABLE, Transaction.class, criterion)
+      .map(Results::getResults)
+      .onSuccess(transactions -> logger.info("Successfully retrieved {} transactions", transactions.size()))
+      .onFailure(e -> logger.error("Getting transactions failed", e));
   }
 
   @Override
-  public Future<List<Transaction>> getTransactions(List<String> ids, DBClient client) {
+  public Future<List<Transaction>> getTransactions(List<String> ids, DBConn conn) {
     logger.debug("Trying to get transactions by ids = {}", ids);
     if (ids.isEmpty()) {
       return Future.succeededFuture(Collections.emptyList());
     }
     CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
     ids.forEach(id -> criterionBuilder.with("id", id));
-    return getTransactions(criterionBuilder.build(), client);
-  }
-
-  private Handler<AsyncResult<Results<Transaction>>> handleGet(Promise<List<Transaction>> promise) {
-    return reply -> {
-      if (reply.failed()) {
-        logger.error("Getting transactions failed", reply.cause());
-        handleFailure(promise, reply);
-      } else {
-        List<Transaction> encumbrances = reply.result().getResults();
-        logger.info("Successfully retrieved {} transactions", encumbrances.size());
-        promise.complete(encumbrances);
-      }
-    };
+    return getTransactions(criterionBuilder.build(), conn);
   }
 
   @Override
-  public Future<Integer> saveTransactionsToPermanentTable(String summaryId, DBClient client) {
+  public Future<Integer> saveTransactionsToPermanentTable(String summaryId, DBConn conn) {
     logger.debug("Trying to save transactions to permanent table with summaryid {}", summaryId);
-    Promise<Integer> promise = Promise.promise();
-    client.getPgClient()
-      .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId()), Tuple.of(UUID.fromString(summaryId)), reply -> {
-        if (reply.failed()) {
-          logger.error("Saving transactions to permanent table with summaryid {} failed", summaryId, reply.cause());
-          handleFailure(promise, reply);
-        } else {
-          logger.info("Successfully saved {} transactions to permanent table with summaryid {}", reply.result().rowCount(), summaryId);
-          promise.complete(reply.result().rowCount());
-        }
-      });
-    return promise.future();
+    return conn.execute(createPermanentTransactionsQuery(conn.getTenantId()), Tuple.of(UUID.fromString(summaryId)))
+      .map(SqlResult::rowCount)
+      .onSuccess(rowCount -> logger.info("Successfully saved {} transactions to permanent table with summaryid {}",
+        rowCount, summaryId))
+      .onFailure(e -> logger.error("Saving transactions to permanent table with summaryid {} failed", summaryId, e));
   }
 
   @Override
-  public Future<Integer> saveTransactionsToPermanentTable(List<String> ids, DBClient client) {
+  public Future<Integer> saveTransactionsToPermanentTable(List<String> ids, DBConn conn) {
     logger.debug("Trying to save transactions to permanent table by ids = {}", ids);
-    Promise<Integer> promise = Promise.promise();
-    client.getPgClient()
-      .execute(client.getConnection(), createPermanentTransactionsQuery(client.getTenantId(), ids), reply -> {
-        if (reply.failed()) {
-          logger.error("Save transactions to permanent table by ids = {} failed", ids, reply.cause());
-          handleFailure(promise, reply);
-        } else {
-          logger.info("Successfully saved {} transactions to permanent table with ids = {}", reply.result().rowCount(), ids);
-          promise.complete(reply.result().rowCount());
-        }
-      });
-    return promise.future();
+    return conn.execute(createPermanentTransactionsQuery(conn.getTenantId(), ids))
+      .map(SqlResult::rowCount)
+      .onSuccess(rowCount -> logger.info("Successfully saved {} transactions to permanent table with ids = {}",
+        rowCount, ids))
+      .onFailure(e -> logger.error("Save transactions to permanent table by ids = {} failed", ids, e));
   }
 
   protected abstract String createPermanentTransactionsQuery(String tenantId);
@@ -116,26 +80,22 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
   }
 
   @Override
-  public Future<Void> updatePermanentTransactions(List<Transaction> transactions, DBClient client) {
+  public Future<Void> updatePermanentTransactions(List<Transaction> transactions, DBConn conn) {
     logger.debug("Trying to update permanent transactions");
-    Promise<Void> promise = Promise.promise();
     if (transactions.isEmpty()) {
-      promise.complete();
-    } else {
-      List<JsonObject> jsonTransactions = transactions.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
-      String sql = buildUpdatePermanentTransactionQuery(jsonTransactions, client.getTenantId());
-      client.getPgClient()
-        .execute(client.getConnection(), sql, reply -> handleVoidAsyncResult(promise, reply));
+      return Future.succeededFuture();
     }
-    return promise.future();
+    List<JsonObject> jsonTransactions = transactions.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
+    String sql = buildUpdatePermanentTransactionQuery(jsonTransactions, conn.getTenantId());
+    return conn.execute(sql)
+      .mapEmpty();
   }
 
   @Override
-  public Future<Void> deleteTransactions(Criterion criterion, DBClient client) {
+  public Future<Void> deleteTransactions(Criterion criterion, DBConn conn) {
     logger.debug("Trying to delete transactions by query: {}", criterion);
-    Promise<Void> promise = Promise.promise();
-    client.getPgClient().delete(client.getConnection(), TRANSACTIONS_TABLE, criterion, event -> handleVoidAsyncResult(promise, event));
-    return promise.future();
+    return conn.delete(TRANSACTIONS_TABLE, criterion)
+      .mapEmpty();
   }
 
   protected abstract String buildUpdatePermanentTransactionQuery(List<JsonObject> jsonTransactions, String tenantId);

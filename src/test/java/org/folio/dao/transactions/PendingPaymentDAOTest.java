@@ -18,7 +18,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,6 +33,7 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.DBConn;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -54,7 +54,7 @@ public class PendingPaymentDAOTest extends TestBase {
   static final String TEST_TENANT = "test_tenant";
   private static final Header TEST_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TEST_TENANT);
 
-  private PendingPaymentDAO pendingPaymentDAO = new PendingPaymentDAO();
+  final private PendingPaymentDAO pendingPaymentDAO = new PendingPaymentDAO();
   private static TenantJob tenantJob;
 
   @BeforeEach
@@ -87,8 +87,8 @@ public class PendingPaymentDAOTest extends TestBase {
     });
     Criterion criterion = new Criterion().addCriterion(new Criteria().addField("id").setOperation("=").setVal(id).setJSONB(false));
     testContext.assertComplete(promise1.future()
-      .compose(aVoid -> promise2.future())
-      .compose(o -> pendingPaymentDAO.getTransactions(criterion, client)))
+        .compose(aVoid -> promise2.future())
+        .compose(o -> client.withConn(conn -> pendingPaymentDAO.getTransactions(criterion, conn))))
       .onComplete(event -> {
         List<Transaction> transactions = event.result();
         testContext.verify(() -> {
@@ -114,33 +114,31 @@ public class PendingPaymentDAOTest extends TestBase {
       promise2.complete(event.result());
     });
     testContext.assertComplete(
-      client.startTx()
-      .compose(v -> promise1.future())
-      .compose(id1 -> promise2.future())
-      .compose(id2 -> pendingPaymentDAO.getTransactions(new Criterion(), client))
-      .compose(transactions -> {
-        assertThat(transactions, hasSize(2));
-        t1.setId(transactions.get(0).getId());
-        t2.setId(transactions.get(1).getId());
-        transactions.get(0).withTransactionType(PENDING_PAYMENT);
-        transactions.get(1).withTransactionType(ALLOCATION);
-        return pendingPaymentDAO.updatePermanentTransactions(transactions, client);
-      })
-      .compose(aVoid -> client.endTx())
-      .compose(o -> pendingPaymentDAO.getTransactions(new Criterion(), client)))
-      .onComplete(event -> {
-        List<Transaction> transactions = event.result();
-        testContext.verify(() -> {
+      client.withTrans(conn -> promise1.future()
+        .compose(id1 -> promise2.future())
+        .compose(id2 -> pendingPaymentDAO.getTransactions(new Criterion(), conn))
+        .compose(transactions -> {
           assertThat(transactions, hasSize(2));
-          Map<String, Transaction> transactionMap = transactions.stream().collect(toMap(Transaction::getId, Function.identity()));
-          assertThat(transactionMap.get(t1.getId()).getId(), is(t1.getId()));
-          assertThat(transactionMap.get(t2.getId()).getId(), is(t2.getId()));
-          assertThat(transactionMap.get(t1.getId()).getTransactionType(), is(PENDING_PAYMENT));
-          assertThat(transactionMap.get(t2.getId()).getTransactionType(), is(ALLOCATION));
-        });
-        testContext.completeNow();
+          t1.setId(transactions.get(0).getId());
+          t2.setId(transactions.get(1).getId());
+          transactions.get(0).withTransactionType(PENDING_PAYMENT);
+          transactions.get(1).withTransactionType(ALLOCATION);
+          return pendingPaymentDAO.updatePermanentTransactions(transactions, conn);
+        })
+      )
+      .compose(o -> client.withConn(conn -> pendingPaymentDAO.getTransactions(new Criterion(), conn)))
+    ).onComplete(event -> {
+      List<Transaction> transactions = event.result();
+      testContext.verify(() -> {
+        assertThat(transactions, hasSize(2));
+        Map<String, Transaction> transactionMap = transactions.stream().collect(toMap(Transaction::getId, Function.identity()));
+        assertThat(transactionMap.get(t1.getId()).getId(), is(t1.getId()));
+        assertThat(transactionMap.get(t2.getId()).getId(), is(t2.getId()));
+        assertThat(transactionMap.get(t1.getId()).getTransactionType(), is(PENDING_PAYMENT));
+        assertThat(transactionMap.get(t2.getId()).getTransactionType(), is(ALLOCATION));
       });
-
+      testContext.completeNow();
+    });
   }
 
   @Test
@@ -154,21 +152,19 @@ public class PendingPaymentDAOTest extends TestBase {
     final DBClient client = new DBClient(vertx, TEST_TENANT);
 
     testContext.assertComplete(
-      client.startTx()
-        .compose(client1 -> createSummary(summaryId, client))
-        .compose(s -> createTmpTransaction(tmpTransaction, client))
-        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, client))
-        .compose(aVoid -> client.endTx())
-        .compose(o -> pendingPaymentDAO.getTransactions(new Criterion(), new DBClient(vertx, TEST_TENANT))))
-      .onComplete(event -> {
-        List<Transaction> transactions = event.result();
-        testContext.verify(() -> {
-          assertThat(transactions, hasSize(1));
-          assertThat(transactions.get(0).getId(), is(tmpTransaction.getId()));
-          assertThat(transactions.get(0).getTransactionType(), is(PENDING_PAYMENT));
-        });
-        testContext.completeNow();
+      client.withTrans(conn -> createSummary(summaryId, conn)
+        .compose(s -> createTmpTransaction(tmpTransaction, conn))
+        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, conn))
+      ).compose(o -> client.withConn(conn -> pendingPaymentDAO.getTransactions(new Criterion(), conn)))
+    ).onComplete(event -> {
+      List<Transaction> transactions = event.result();
+      testContext.verify(() -> {
+        assertThat(transactions, hasSize(1));
+        assertThat(transactions.get(0).getId(), is(tmpTransaction.getId()));
+        assertThat(transactions.get(0).getTransactionType(), is(PENDING_PAYMENT));
       });
+      testContext.completeNow();
+    });
   }
 
   @Test
@@ -209,28 +205,26 @@ public class PendingPaymentDAOTest extends TestBase {
     final DBClient client = new DBClient(vertx, TEST_TENANT);
 
     testContext.assertComplete(
-      client.startTx()
-        .compose(client1 -> createFund(fund, client))
-        .compose(s -> createFiscalYear(fiscalYear, client))
-        .compose(s -> createExpenseClass(expenseClass, client))
-        .compose(client1 -> createSummary(summaryId, client))
-        .compose(s -> createTmpTransaction(tmpTransaction1, client))
-        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, client))
-        .compose(integer -> deleteTmpTransaction(tmpTransaction1, client))
-        .compose(aVoid -> createTmpTransaction(tmpTransaction2, client))
-        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, client))
-        .compose(aVoid -> client.endTx())
-        .compose(o -> pendingPaymentDAO.getTransactions(new Criterion(), new DBClient(vertx, TEST_TENANT))))
-      .onComplete(event -> {
-        List<Transaction> transactions = event.result();
-        testContext.verify(() -> {
-          assertThat(transactions, Matchers.hasSize(1));
-          assertThat(transactions.get(0).getId(), is(tmpTransaction1.getId()));
-          assertThat(transactions.get(0).getTransactionType(), is(PENDING_PAYMENT));
-          assertNull(transactions.get(0).getCurrency());
-        });
-        testContext.completeNow();
+      client.withTrans(conn -> createFund(fund, conn)
+        .compose(s -> createFiscalYear(fiscalYear, conn))
+        .compose(s -> createExpenseClass(expenseClass, conn))
+        .compose(client1 -> createSummary(summaryId, conn))
+        .compose(s -> createTmpTransaction(tmpTransaction1, conn))
+        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, conn))
+        .compose(integer -> deleteTmpTransaction(tmpTransaction1, conn))
+        .compose(aVoid -> createTmpTransaction(tmpTransaction2, conn))
+        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, conn))
+      ).compose(o -> client.withConn(conn -> pendingPaymentDAO.getTransactions(new Criterion(), conn)))
+    ).onComplete(event -> {
+      List<Transaction> transactions = event.result();
+      testContext.verify(() -> {
+        assertThat(transactions, Matchers.hasSize(1));
+        assertThat(transactions.get(0).getId(), is(tmpTransaction1.getId()));
+        assertThat(transactions.get(0).getTransactionType(), is(PENDING_PAYMENT));
+        assertNull(transactions.get(0).getCurrency());
       });
+      testContext.completeNow();
+    });
   }
 
   @Test
@@ -273,71 +267,46 @@ public class PendingPaymentDAOTest extends TestBase {
     final DBClient client = new DBClient(vertx, TEST_TENANT);
 
     testContext.assertComplete(
-      client.startTx()
-        .compose(client1 -> createFund(fund, client))
-        .compose(s -> createFiscalYear(fiscalYear, client))
-        .compose(s -> createExpenseClass(expenseClass1, client))
-        .compose(s -> createExpenseClass(expenseClass2, client))
-        .compose(client1 -> createSummary(summaryId, client))
-        .compose(s -> createTmpTransaction(tmpTransaction1, client))
-        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, client))
-        .compose(integer -> deleteTmpTransaction(tmpTransaction1, client))
-        .compose(aVoid -> createTmpTransaction(tmpTransaction2, client))
-        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, client))
-        .compose(aVoid -> client.endTx())
-        .compose(o -> pendingPaymentDAO.getTransactions(new Criterion(), new DBClient(vertx, TEST_TENANT))))
-      .onComplete(event -> {
-        List<Transaction> transactions = event.result();
-        testContext.verify(() -> {
-          assertThat(transactions, Matchers.hasSize(2));
-        });
-        testContext.completeNow();
-      });
-  }
-
-  private Future<String> createTmpTransaction(Transaction tmpTransaction, DBClient client) {
-    Promise<String> promise = Promise.promise();
-    client.getPgClient().save(client.getConnection(), TEMPORARY_INVOICE_TRANSACTIONS, tmpTransaction.getId(), tmpTransaction, event -> {
-      promise.complete(event.result());
+      client.withTrans(conn -> createFund(fund, conn)
+        .compose(s -> createFiscalYear(fiscalYear, conn))
+        .compose(s -> createExpenseClass(expenseClass1, conn))
+        .compose(s -> createExpenseClass(expenseClass2, conn))
+        .compose(client1 -> createSummary(summaryId, conn))
+        .compose(s -> createTmpTransaction(tmpTransaction1, conn))
+        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, conn))
+        .compose(integer -> deleteTmpTransaction(tmpTransaction1, conn))
+        .compose(aVoid -> createTmpTransaction(tmpTransaction2, conn))
+        .compose(id1 -> pendingPaymentDAO.saveTransactionsToPermanentTable(summaryId, conn))
+      ).compose(o -> client.withConn(conn -> pendingPaymentDAO.getTransactions(new Criterion(), conn)))
+    ).onComplete(event -> {
+      List<Transaction> transactions = event.result();
+      testContext.verify(() -> assertThat(transactions, Matchers.hasSize(2)));
+      testContext.completeNow();
     });
-    return promise.future();
   }
 
-  private Future<Void> deleteTmpTransaction(Transaction tmpTransaction, DBClient client) {
-    Promise<Void> promise = Promise.promise();
-    client.getPgClient().delete(client.getConnection(), TEMPORARY_INVOICE_TRANSACTIONS, tmpTransaction.getId(), event -> promise.complete());
-    return promise.future();
+  private Future<String> createTmpTransaction(Transaction tmpTransaction, DBConn conn) {
+    return conn.save(TEMPORARY_INVOICE_TRANSACTIONS, tmpTransaction.getId(), tmpTransaction);
   }
 
-  private Future<String> createSummary(String summaryId, DBClient client) {
-    Promise<String> promise = Promise.promise();
-    client.getPgClient().save(client.getConnection(), INVOICE_TRANSACTION_SUMMARIES, summaryId, new InvoiceTransactionSummary().withNumPendingPayments(1).withId(summaryId), event -> {
-      promise.complete(event.result());
-    });
-    return promise.future();
+  private Future<Void> deleteTmpTransaction(Transaction tmpTransaction, DBConn conn) {
+    return conn.delete(TEMPORARY_INVOICE_TRANSACTIONS, tmpTransaction.getId())
+      .mapEmpty();
   }
 
-  private Future<String> createFund(Fund fund, DBClient client) {
-    Promise<String> promise = Promise.promise();
-    client.getPgClient().save(FUND_TABLE, fund.getId(), fund, event -> {
-      promise.complete(event.result());
-    });
-    return promise.future();
+  private Future<String> createSummary(String summaryId, DBConn conn) {
+    return conn.save(INVOICE_TRANSACTION_SUMMARIES, summaryId, new InvoiceTransactionSummary().withNumPendingPayments(1).withId(summaryId));
   }
 
-  private Future<String> createFiscalYear(FiscalYear fiscalYear, DBClient client) {
-    Promise<String> promise = Promise.promise();
-    client.getPgClient().save(FISCAL_YEAR_TABLE, fiscalYear.getId(), fiscalYear, event -> {
-      promise.complete(event.result());
-    });
-    return promise.future();
+  private Future<String> createFund(Fund fund, DBConn conn) {
+    return conn.save(FUND_TABLE, fund.getId(), fund);
   }
 
-  private Future<String> createExpenseClass(ExpenseClass expenseClass, DBClient client) {
-    Promise<String> promise = Promise.promise();
-    client.getPgClient().save(EXPENSE_CLASS_TABLE, expenseClass.getId(), expenseClass, event -> {
-      promise.complete(event.result());
-    });
-    return promise.future();
+  private Future<String> createFiscalYear(FiscalYear fiscalYear, DBConn conn) {
+    return conn.save(FISCAL_YEAR_TABLE, fiscalYear.getId(), fiscalYear);
+  }
+
+  private Future<String> createExpenseClass(ExpenseClass expenseClass, DBConn conn) {
+    return conn.save(EXPENSE_CLASS_TABLE, expenseClass.getId(), expenseClass);
   }
 }

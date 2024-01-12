@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,8 +21,9 @@ import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,16 +32,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 
+import java.util.function.Function;
+
 @ExtendWith(VertxExtension.class)
 public class AllocationServiceTest {
 
+  private AutoCloseable mockitoMocks;
   @InjectMocks
   private AllocationService allocationService;
   @Mock
@@ -49,11 +52,16 @@ public class AllocationServiceTest {
   @Mock
   private DBClient dbClient;
   @Mock
-  private PostgresClient pgClient;
+  private DBConn conn;
 
   @BeforeEach
   public void initMocks() {
-    MockitoAnnotations.openMocks(this);
+    mockitoMocks = MockitoAnnotations.openMocks(this);
+  }
+
+  @AfterEach
+  public void afterEach() throws Exception {
+    mockitoMocks.close();
   }
 
   @Test
@@ -98,22 +106,22 @@ public class AllocationServiceTest {
     transactionSample.setToFundId(null);
     transactionSample.setAmount(40d);
 
-    when(dbClient.startTx()).thenReturn(Future.succeededFuture(dbClient));
-    when(requestContext.toDBClient()).thenReturn(dbClient);
-    when(budgetService.checkBudgetHaveMoneyForTransaction(any(), any())).thenReturn(Future.succeededFuture());
-    when(dbClient.getPgClient()).thenReturn(pgClient);
+    when(requestContext.toDBClient())
+      .thenReturn(dbClient);
     doAnswer(invocation -> {
-      Handler<AsyncResult<String>> handler = invocation.getArgument(4);
-      handler.handle(Future.succeededFuture(transactionSample.getId()));
-      return null;
-    }).when(pgClient)
-      .save(any(), any(), any(), any(), any(Handler.class));
+      Function<DBConn, Future<Transaction>> function = invocation.getArgument(0);
+      return function.apply(conn);
+    }).when(dbClient).withTrans(any());
+    when(budgetService.checkBudgetHaveMoneyForTransaction(any(), any()))
+      .thenReturn(Future.succeededFuture());
+    doReturn(Future.succeededFuture(transactionSample.getId()))
+      .when(conn).save(any(), any(), any());
     when(budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(anyString(), anyString(), any()))
       .thenReturn(Future.succeededFuture(new Budget().withInitialAllocation(50d)));
     doNothing().when(budgetService)
       .updateBudgetMetadata(any(), any());
-    when(budgetService.updateBatchBudgets(any(), any())).thenReturn(Future.succeededFuture(1));
-    when(dbClient.endTx()).thenReturn(Future.succeededFuture());
+    when(budgetService.updateBatchBudgets(any(), any()))
+      .thenReturn(Future.succeededFuture(1));
 
     testContext.assertComplete(allocationService.createTransaction(transactionSample, requestContext))
       .onSuccess(transaction -> {

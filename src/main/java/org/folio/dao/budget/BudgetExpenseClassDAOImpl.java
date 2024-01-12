@@ -1,18 +1,15 @@
 package org.folio.dao.budget;
 
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.BudgetExpenseClass;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 public class BudgetExpenseClassDAOImpl implements BudgetExpenseClassDAO {
 
@@ -24,23 +21,18 @@ public class BudgetExpenseClassDAOImpl implements BudgetExpenseClassDAO {
     + "FROM %s AS budget_expense_class "
     + "WHERE budget_expense_class.jsonb->>'budgetId' = $1";
 
-  public Future<List<BudgetExpenseClass>> getTemporaryBudgetExpenseClasses(String budgetId, DBClient client) {
+  public Future<List<BudgetExpenseClass>> getTemporaryBudgetExpenseClasses(String budgetId, DBConn conn) {
     logger.debug("Trying to get temporary budget expense classes by budgetid {}", budgetId);
-    Promise<List<BudgetExpenseClass>> promise = Promise.promise();
-    client.getPgClient()
-      .select(getSelectExpenseClassQueryByBudgetId(), Tuple.of(budgetId), reply -> {
-        if (reply.failed()) {
-          logger.error("Getting temporary budget expense classes by budgetid {} failed", budgetId, reply.cause());
-          handleFailure(promise, reply);
-        } else {
-          List<BudgetExpenseClass> budgets = new ArrayList<>();
-          reply.result().spliterator()
-            .forEachRemaining(row -> budgets.add(row.get(JsonObject.class, 0).mapTo(BudgetExpenseClass.class)));
-          logger.info("Successfully retrieved {} temporary budget expense classes with budgetid {}", budgets.size(), budgetId);
-          promise.complete(budgets);
-        }
-      });
-    return promise.future();
+    return conn.execute(getSelectExpenseClassQueryByBudgetId(), Tuple.of(budgetId))
+      .map(rowSet -> {
+        List<BudgetExpenseClass> becList = new ArrayList<>();
+        rowSet.spliterator().forEachRemaining(row ->
+          becList.add(row.get(JsonObject.class, 0).mapTo(BudgetExpenseClass.class)));
+        return becList;
+      })
+      .onSuccess(becList -> logger.info("Successfully retrieved {} temporary budget expense classes with budgetid {}",
+        becList.size(), budgetId))
+      .onFailure(e -> logger.error("Getting temporary budget expense classes by budgetId {} failed", budgetId, e));
   }
 
   private String getSelectExpenseClassQueryByBudgetId(){

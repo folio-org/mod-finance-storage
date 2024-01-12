@@ -9,7 +9,7 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.ledger.LedgerService;
 import org.javamoney.moneta.Money;
@@ -36,10 +36,10 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
 
 
   @Override
-  public Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, DBClient dbClient) {
+  public Future<Void> verifyBudgetHasEnoughMoney(Transaction transaction, DBConn conn) {
     String fundId = transaction.getTransactionType() == Transaction.TransactionType.CREDIT ? transaction.getToFundId() : transaction.getFromFundId();
 
-    return budgetService.getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), fundId, dbClient, false)
+    return budgetService.getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), fundId, conn)
       .compose(budget -> {
         if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
           Error error = buildBudgetIsInactiveError(budget);
@@ -49,8 +49,8 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
         if (transaction.getTransactionType() == Transaction.TransactionType.CREDIT || transaction.getAmount() <= 0) {
           return Future.succeededFuture();
         }
-        return getRelatedTransaction(transaction, dbClient)
-          .compose(relatedTransaction -> ledgerService.getLedgerByTransaction(transaction, dbClient)
+        return getRelatedTransaction(transaction, conn)
+          .compose(relatedTransaction -> ledgerService.getLedgerByTransaction(transaction, conn)
             .map(ledger -> checkTransactionAllowed(transaction, relatedTransaction, budget, ledger)));
       });
   }
@@ -62,7 +62,7 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
     return error;
   }
 
-  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBClient dbClient) {
+  protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBConn conn) {
     return Future.succeededFuture(null);
   }
 

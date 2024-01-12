@@ -2,7 +2,7 @@ package org.folio.service.transactions.cancel;
 
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.service.budget.BudgetService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,24 +11,28 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CancelPaymentCreditServiceTest {
 
+  private AutoCloseable mockitoMocks;
+
   @InjectMocks
   private CancelPaymentCreditService cancelPaymentCreditService;
 
-  @Mock
-  private BudgetService budgetService;
-
   private final String currency = "USD";
+
 
   @BeforeEach
   public void initMocks() {
-    MockitoAnnotations.openMocks(this);
+    mockitoMocks = MockitoAnnotations.openMocks(this);
+  }
+
+  @AfterEach
+  public void afterEach() throws Exception {
+    mockitoMocks.close();
   }
 
   @Test

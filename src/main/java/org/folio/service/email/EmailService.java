@@ -16,8 +16,7 @@ import org.folio.models.EmailEntity;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
-import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.DBClientFactory;
+import org.folio.rest.persist.DBConn;
 import org.folio.utils.EmailOkapiClient;
 
 import javax.ws.rs.core.MediaType;
@@ -50,23 +49,20 @@ public class EmailService {
 
   private final RestClient configurationRestClient;
   private final RestClient userRestClient;
-  private final DBClientFactory dbClientFactory;
   private final LedgerDAO ledgerDAO;
 
-  public EmailService(RestClient configurationRestClient, RestClient userRestClient, DBClientFactory dbClientFactory, LedgerDAO ledgerDAO) {
+  public EmailService(RestClient configurationRestClient, RestClient userRestClient, LedgerDAO ledgerDAO) {
     this.configurationRestClient = configurationRestClient;
     this.userRestClient = userRestClient;
-    this.dbClientFactory = dbClientFactory;
     this.ledgerDAO = ledgerDAO;
   }
 
-  public void createAndSendEmail(RequestContext requestContext, LedgerFiscalYearRollover rollover) {
+  public void createAndSendEmail(RequestContext requestContext, LedgerFiscalYearRollover rollover, DBConn conn) {
     logger.debug("createAndSendEmail:: Trying to create and send email");
     getHostAddress(requestContext)
       .onSuccess(hostAddressResponse -> getCurrentUser(requestContext)
         .onSuccess(userResponse -> {
-          DBClient client = dbClientFactory.getDbClient(requestContext);
-          ledgerDAO.getLedgerById(rollover.getLedgerId(), client)
+          ledgerDAO.getLedgerById(rollover.getLedgerId(), conn)
             .onSuccess(ledger -> {
               String hostAddress = hostAddressResponse.getJsonArray(CONFIGS_KEY).getJsonObject(0).getMap().get(VALUE_KEY).toString();
               String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());

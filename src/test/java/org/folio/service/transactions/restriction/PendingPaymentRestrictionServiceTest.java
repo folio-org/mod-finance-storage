@@ -16,6 +16,7 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,8 @@ import io.vertx.ext.web.handler.HttpException;
 
 public class PendingPaymentRestrictionServiceTest {
 
+  private AutoCloseable mockitoMocks;
+
   @InjectMocks
   private PendingPaymentRestrictionService restrictionService;
 
@@ -37,7 +40,7 @@ public class PendingPaymentRestrictionServiceTest {
 
   @BeforeEach
   public void initMocks(){
-    MockitoAnnotations.openMocks(this);
+    mockitoMocks = MockitoAnnotations.openMocks(this);
 
     budget = new Budget()
       .withFiscalYearId(fiscalYearId)
@@ -47,6 +50,11 @@ public class PendingPaymentRestrictionServiceTest {
       .withEncumbered(0d)
       .withUnavailable(0d)
       .withFundId(fundId);
+  }
+
+  @AfterEach
+  public void afterEach() throws Exception {
+    mockitoMocks.close();
   }
 
   @Test

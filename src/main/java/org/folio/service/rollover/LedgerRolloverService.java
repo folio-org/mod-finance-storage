@@ -24,6 +24,7 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.jaxrs.model.RolloverStatus;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.PostgresFunctionExecutionService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.email.EmailService;
@@ -78,30 +79,29 @@ public class LedgerRolloverService {
       .withOverallRolloverStatus(IN_PROGRESS)
       .withMetadata(rollover.getMetadata());
 
-    return rolloverPreparation(rollover, progress, requestContext)
-      .onSuccess(aVoid -> startRollover(rollover, progress, requestContext));
+    DBClient client = requestContext.toDBClient();
+    return client.withTrans(conn -> rolloverPreparation(rollover, progress, conn))
+      .compose(v -> client.withConn(conn -> startRollover(rollover, progress, requestContext, conn)));
   }
 
   public Future<Void> deleteRollover(String rolloverId, RequestContext requestContext) {
     DBClient client = requestContext.toDBClient();
-    return rolloverProgressService.getLedgerRolloverProgressForRollover(rolloverId, client)
+    return client.withTrans(conn -> rolloverProgressService.getLedgerRolloverProgressForRollover(rolloverId, conn)
       .compose(rolloverProgress ->
         checkCanDeleteRollover(rolloverProgress)
-        .compose(aVoid -> deleteRolloverWithProgressAndErrors(rolloverProgress, requestContext)));
+        .compose(aVoid -> deleteRolloverWithProgressAndErrors(rolloverProgress, requestContext)))
+    );
   }
 
   private  Future<Void> deleteRolloverWithProgressAndErrors(LedgerFiscalYearRolloverProgress rolloverProgress, RequestContext requestContext) {
     DBClient client = requestContext.toDBClient();
-    return client.startTx()
-      .compose(aVoid -> rolloverProgressService.deleteRolloverProgress(rolloverProgress.getId(), client))
-      .compose(aVoid -> rolloverErrorService.deleteRolloverErrors(rolloverProgress.getLedgerRolloverId(), client))
-      .compose(aVoid -> rolloverBudgetService.deleteRolloverBudgets(rolloverProgress.getLedgerRolloverId(), client))
-      .compose(aVoid -> ledgerFiscalYearRolloverDAO.delete(rolloverProgress.getLedgerRolloverId(), client))
-      .compose(aVoid -> client.endTx())
-      .onFailure(t -> {
-        logger.error("deleteRolloverWithProgressAndErrors:: Rollover delete failed for Ledger {}", rolloverProgress.getLedgerRolloverId(), t);
-        client.rollbackTransaction();
-    });
+    return client.withTrans(conn -> rolloverProgressService.deleteRolloverProgress(rolloverProgress.getId(), conn)
+      .compose(aVoid -> rolloverErrorService.deleteRolloverErrors(rolloverProgress.getLedgerRolloverId(), conn))
+      .compose(aVoid -> rolloverBudgetService.deleteRolloverBudgets(rolloverProgress.getLedgerRolloverId(), conn))
+      .compose(aVoid -> ledgerFiscalYearRolloverDAO.delete(rolloverProgress.getLedgerRolloverId(), conn))
+      .onFailure(t -> logger.error("deleteRolloverWithProgressAndErrors:: Rollover delete failed for Ledger {}",
+        rolloverProgress.getLedgerRolloverId(), t))
+    );
   }
 
   private Future<Void> checkCanDeleteRollover(LedgerFiscalYearRolloverProgress rolloverProgress) {
@@ -117,107 +117,101 @@ public class LedgerRolloverService {
   }
 
   public Future<Void> rolloverPreparation(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
-      RequestContext requestContext) {
-    DBClient client = requestContext.toDBClient();
-    return client.startTx()
-      .compose(aVoid -> rolloverValidationService.checkRolloverExists(rollover, client))
-      .compose(aVoid -> ledgerFiscalYearRolloverDAO.create(rollover, client))
-      .compose(aVoid -> rolloverProgressService.createRolloverProgress(progress, client))
-      .compose(aVoid -> fiscalYearService.populateRolloverWithCurrencyFactor(rollover, requestContext))
-      .compose(aVoid -> closeBudgets(rollover, client))
-      .compose(aVoid -> client.endTx())
-      .onFailure(t -> {
-        logger.error("rolloverPreparation:: Rollover preparation failed for Ledger {}", rollover.getLedgerId(), t);
-        client.rollbackTransaction();
-      });
+      DBConn conn) {
+    return rolloverValidationService.checkRolloverExists(rollover, conn)
+      .compose(aVoid -> ledgerFiscalYearRolloverDAO.create(rollover, conn))
+      .compose(aVoid -> rolloverProgressService.createRolloverProgress(progress, conn))
+      .compose(aVoid -> fiscalYearService.populateRolloverWithCurrencyFactor(rollover, conn))
+      .compose(aVoid -> closeBudgets(rollover, conn))
+      .onFailure(t -> logger.error("rolloverPreparation:: Rollover preparation failed for Ledger {}",
+        rollover.getLedgerId(), t));
   }
 
   public Future<Void> startRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
-      RequestContext requestContext) {
-    DBClient client = requestContext.toDBClient();
+      RequestContext requestContext, DBConn conn) {
     logger.info("startRollover:: Rollover started for ledger {}", rollover.getLedgerId());
 
-    return startFinancialRollover(rollover, progress, client)
-      .compose(rolloverProgress -> startOrdersRollover(rollover, progress, requestContext))
+    return startFinancialRollover(rollover, progress, conn)
+      .compose(rolloverProgress -> startOrdersRollover(rollover, progress, requestContext, conn))
       .onSuccess(aVoid -> logger.info("startRollover:: Rollover completed for Ledger {}", rollover.getLedgerId()))
-      .onSuccess(aVoid -> emailService.createAndSendEmail(requestContext, rollover));
+      .onSuccess(aVoid -> emailService.createAndSendEmail(requestContext, rollover, conn));
   }
 
-  private Future<Void> closeBudgets(LedgerFiscalYearRollover rollover, DBClient client) {
+  private Future<Void> closeBudgets(LedgerFiscalYearRollover rollover, DBConn conn) {
     if (LedgerFiscalYearRollover.RolloverType.PREVIEW.equals(rollover.getRolloverType()) || !Boolean.TRUE.equals(rollover.getNeedCloseBudgets())) {
       logger.info("closeBudgets:: Close budgets skipped for Ledger {} and rollover type {} and needCloseBudgets is {}",
         rollover.getLedgerId(), rollover.getRolloverType(), rollover.getNeedCloseBudgets());
       return Future.succeededFuture();
     }
-    return budgetService.closeBudgets(rollover, client);
+    return budgetService.closeBudgets(rollover, conn);
   }
 
   private Future<Void> startOrdersRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
-      RequestContext requestContext) {
-    DBClient client = requestContext.toDBClient();
+      RequestContext requestContext, DBConn conn) {
     if (LedgerFiscalYearRollover.RolloverType.PREVIEW.equals(rollover.getRolloverType()) || rollover.getEncumbrancesRollover().isEmpty()) {
       logger.info("startOrdersRollover:: Orders rollover skipped for Ledger {} and rollover type {}", rollover.getLedgerId(), rollover.getRolloverType());
-      return rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress.withOrdersRolloverStatus(SUCCESS), client);
+      return rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress.withOrdersRolloverStatus(SUCCESS), conn);
     }
     logger.info("startOrdersRollover:: Orders rollover started for Ledger {}", rollover.getLedgerId());
     return orderRolloverRestClient.postEmptyResponse(rollover, requestContext)
-      .recover(t -> handleOrderRolloverError(t, rollover, progress, client));
+      .recover(t -> handleOrderRolloverError(t, rollover, progress, conn));
   }
 
   private Future<Void> startFinancialRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
-      DBClient client) {
-    return rolloverProgressService.updateRolloverProgress(progress.withFinancialRolloverStatus(IN_PROGRESS), client)
-      .compose(aVoid -> runRolloverScript(rollover, client))
-      .recover(t -> handleFinancialRolloverError(t, rollover, progress, client))
-      .compose(aVoid -> updateRolloverBudgetsWithCalculatedAmounts(rollover.getId(), client))
-      .compose(aVoid -> updateRolloverBudgetsWithExpenseClassTotals(rollover.getId(), client))
-      .compose(aVoid -> dropRolloverTemporaryTables(client))
-      .compose(aVoid -> rolloverProgressService.calculateAndUpdateFinancialProgressStatus(progress.withOrdersRolloverStatus(IN_PROGRESS), client));
+      DBConn conn) {
+    return rolloverProgressService.updateRolloverProgress(progress.withFinancialRolloverStatus(IN_PROGRESS), conn)
+      .compose(aVoid -> runRolloverScript(rollover, conn))
+      .recover(t -> handleFinancialRolloverError(t, rollover, progress, conn))
+      .compose(aVoid -> updateRolloverBudgetsWithCalculatedAmounts(rollover.getId(), conn))
+      .compose(aVoid -> updateRolloverBudgetsWithExpenseClassTotals(rollover.getId(), conn))
+      .compose(aVoid -> dropRolloverTemporaryTables(conn))
+      .compose(aVoid -> rolloverProgressService.calculateAndUpdateFinancialProgressStatus(progress.withOrdersRolloverStatus(IN_PROGRESS), conn));
   }
 
-  private Future<Void> runRolloverScript(LedgerFiscalYearRollover rollover, DBClient client) {
-    return postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, client)
-      .onFailure(t -> logger.error("runRolloverScript:: Budget encumbrances rollover failed for Ledger {}:", rollover.getLedgerId(), t));
+  private Future<Void> runRolloverScript(LedgerFiscalYearRollover rollover, DBConn conn) {
+    return postgresFunctionExecutionService.runBudgetEncumbrancesRolloverScript(rollover, conn)
+      .onFailure(t -> logger.error("runRolloverScript:: Budget encumbrances rollover failed for Ledger {}:",
+        rollover.getLedgerId(), t));
   }
 
-  private Future<List<LedgerFiscalYearRolloverBudget>> updateRolloverBudgetsWithCalculatedAmounts(String rolloverId, DBClient dbClient) {
-    return rolloverBudgetService.getRolloverBudgets(rolloverId, dbClient)
+  private Future<List<LedgerFiscalYearRolloverBudget>> updateRolloverBudgetsWithCalculatedAmounts(String rolloverId, DBConn conn) {
+    return rolloverBudgetService.getRolloverBudgets(rolloverId, conn)
       .compose(budgets -> {
         budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
-        return rolloverBudgetService.updateBatch(budgets, dbClient);
+        return rolloverBudgetService.updateBatch(budgets, conn);
       });
   }
 
-  private Future<Void> updateRolloverBudgetsWithExpenseClassTotals(String rolloverId, DBClient dbClient) {
-    return rolloverBudgetService.getRolloverBudgets(rolloverId, dbClient)
-      .compose(budgets -> rolloverBudgetService.updateRolloverBudgetsExpenseClassTotals(budgets, dbClient));
+  private Future<Void> updateRolloverBudgetsWithExpenseClassTotals(String rolloverId, DBConn conn) {
+    return rolloverBudgetService.getRolloverBudgets(rolloverId, conn)
+      .compose(budgets -> rolloverBudgetService.updateRolloverBudgetsExpenseClassTotals(budgets, conn));
   }
 
-  private Future<Void> dropRolloverTemporaryTables(DBClient dbClient) {
-    return postgresFunctionExecutionService.dropTable(TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE, true, dbClient)
-      .compose(aVoid -> postgresFunctionExecutionService.dropTable(TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE, true, dbClient));
+  private Future<Void> dropRolloverTemporaryTables(DBConn conn) {
+    return postgresFunctionExecutionService.dropTable(TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE, true, conn)
+      .compose(aVoid -> postgresFunctionExecutionService.dropTable(TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE, true, conn));
   }
 
   private Future<Void> handleOrderRolloverError(Throwable t, LedgerFiscalYearRollover rollover,
-      LedgerFiscalYearRolloverProgress progress, DBClient client) {
+      LedgerFiscalYearRolloverProgress progress, DBConn conn) {
     logger.error("handleOrderRolloverError:: Orders rollover failed for ledger {}", rollover.getLedgerId(), t);
-    return saveRolloverError(rollover.getId(), t, ORDER_ROLLOVER, "Overall order rollover", client)
+    return saveRolloverError(rollover.getId(), t, ORDER_ROLLOVER, "Overall order rollover", conn)
       .compose(v -> rolloverProgressService.updateRolloverProgress(
-        progress.withOrdersRolloverStatus(ERROR).withOverallRolloverStatus(ERROR), client))
+        progress.withOrdersRolloverStatus(ERROR).withOverallRolloverStatus(ERROR), conn))
       .compose(v -> Future.failedFuture(t));
   }
 
   private Future<Void> handleFinancialRolloverError(Throwable t, LedgerFiscalYearRollover rollover,
-      LedgerFiscalYearRolloverProgress progress, DBClient client) {
+      LedgerFiscalYearRolloverProgress progress, DBConn conn) {
     logger.error("handleFinancialRolloverError:: Financial rollover failed for ledger {}", rollover.getLedgerId(), t);
-    return saveRolloverError(rollover.getId(), t, FINANCIAL_ROLLOVER, "Overall financial rollover", client)
+    return saveRolloverError(rollover.getId(), t, FINANCIAL_ROLLOVER, "Overall financial rollover", conn)
       .compose(v -> rolloverProgressService.updateRolloverProgress(
-        progress.withFinancialRolloverStatus(ERROR).withOverallRolloverStatus(ERROR), client))
+        progress.withFinancialRolloverStatus(ERROR).withOverallRolloverStatus(ERROR), conn))
       .compose(v -> Future.failedFuture(t));
   }
 
   private Future<Void> saveRolloverError(String rolloverId, Throwable t, ErrorType errorType,
-      String failedAction, DBClient client) {
+      String failedAction, DBConn conn) {
     String message;
     try {
       JsonObject errorObj = new JsonObject(t.getMessage());
@@ -232,6 +226,6 @@ public class LedgerRolloverService {
       .withErrorType(errorType)
       .withFailedAction(failedAction)
       .withErrorMessage(message);
-    return rolloverErrorService.createRolloverError(error, client);
+    return rolloverErrorService.createRolloverError(error, conn);
   }
 }
