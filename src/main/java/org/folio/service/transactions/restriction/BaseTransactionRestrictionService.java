@@ -62,6 +62,10 @@ public abstract class BaseTransactionRestrictionService implements TransactionRe
     return error;
   }
 
+  /**
+   * @param transaction Used in overrides
+   * @param conn Used in overrides
+   */
   protected Future<Transaction> getRelatedTransaction(Transaction transaction, DBConn conn) {
     return Future.succeededFuture(null);
   }

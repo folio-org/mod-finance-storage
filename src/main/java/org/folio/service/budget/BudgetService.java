@@ -48,7 +48,7 @@ public class BudgetService {
     + "WHERE jsonb->>'fiscalYearId' = $1 AND jsonb->>'fundId' = $2 "
     + "FOR UPDATE";
 
-  final private BudgetDAO budgetDAO;
+  private final BudgetDAO budgetDAO;
 
   public BudgetService(BudgetDAO budgetDAO) {
     this.budgetDAO = budgetDAO;

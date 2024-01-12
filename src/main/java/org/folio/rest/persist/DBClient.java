@@ -11,9 +11,9 @@ import java.util.function.Function;
 
 public class DBClient {
 
-  final private PostgresClient pgClient;
-  final private String tenantId;
-  final private Vertx vertx;
+  private final PostgresClient pgClient;
+  private final String tenantId;
+  private final Vertx vertx;
 
 
   public DBClient(Context context, Map<String, String> headers) {

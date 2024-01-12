@@ -11,7 +11,7 @@ public class StorageFundService implements FundService {
 
   private static final String FUND_NOT_FOUND_FOR_TRANSACTION = "Fund not found for transaction";
 
-  final private FundDAO fundDAO;
+  private final FundDAO fundDAO;
 
   public StorageFundService(FundDAO fundDAO) {
     this.fundDAO = fundDAO;

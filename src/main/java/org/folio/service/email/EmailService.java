@@ -61,18 +61,18 @@ public class EmailService {
     logger.debug("createAndSendEmail:: Trying to create and send email");
     getHostAddress(requestContext)
       .onSuccess(hostAddressResponse -> getCurrentUser(requestContext)
-        .onSuccess(userResponse -> {
-          ledgerDAO.getLedgerById(rollover.getLedgerId(), conn)
-            .onSuccess(ledger -> {
-              String hostAddress = hostAddressResponse.getJsonArray(CONFIGS_KEY).getJsonObject(0).getMap().get(VALUE_KEY).toString();
-              String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
-              Map<String, String> headers = getHeaders(requestContext);
-              EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
-              logger.info("createAndSendEmail:: Sending email");
+        .onSuccess(userResponse -> ledgerDAO.getLedgerById(rollover.getLedgerId(), conn)
+          .onSuccess(ledger -> {
+            String hostAddress = hostAddressResponse.getJsonArray(CONFIGS_KEY).getJsonObject(0).getMap().get(VALUE_KEY).toString();
+            String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
+            Map<String, String> headers = getHeaders(requestContext);
+            EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
+            logger.info("createAndSendEmail:: Sending email");
 
-              sendEmail(requestContext, headers, emailEntity);
-            }).onFailure(t -> logger.error("createAndSendEmail:: Getting ledger failed {}", t.getMessage()));
-        }).onFailure(t -> logger.error("createAndSendEmail:: Getting user failed {}", t.getMessage())))
+            sendEmail(requestContext, headers, emailEntity);
+          })
+          .onFailure(t -> logger.error("createAndSendEmail:: Getting ledger failed {}", t.getMessage())))
+        .onFailure(t -> logger.error("createAndSendEmail:: Getting user failed {}", t.getMessage())))
       .onFailure(t -> logger.error("createAndSendEmail:: Getting host address failed {}", t.getMessage()));
   }
 

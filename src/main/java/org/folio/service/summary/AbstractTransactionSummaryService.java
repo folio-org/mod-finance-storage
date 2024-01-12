@@ -19,7 +19,7 @@ public abstract class AbstractTransactionSummaryService implements TransactionSu
 
   private static final Logger logger = LogManager.getLogger(AbstractTransactionSummaryService.class);
 
-  final private TransactionSummaryDao transactionSummaryDao;
+  private final TransactionSummaryDao transactionSummaryDao;
 
   AbstractTransactionSummaryService(TransactionSummaryDao transactionSummaryDao) {
     this.transactionSummaryDao = transactionSummaryDao;

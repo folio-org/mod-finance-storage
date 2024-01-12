@@ -10,8 +10,8 @@ import io.vertx.core.Future;
 
 public class StorageLedgerService implements LedgerService {
 
-  final private LedgerDAO ledgerDAO;
-  final private FundService fundService;
+  private final LedgerDAO ledgerDAO;
+  private final FundService fundService;
 
   public StorageLedgerService(LedgerDAO ledgerDAO, FundService fundService) {
     this.ledgerDAO = ledgerDAO;

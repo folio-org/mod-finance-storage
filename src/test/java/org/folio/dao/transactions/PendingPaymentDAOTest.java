@@ -54,7 +54,7 @@ public class PendingPaymentDAOTest extends TestBase {
   static final String TEST_TENANT = "test_tenant";
   private static final Header TEST_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TEST_TENANT);
 
-  final private PendingPaymentDAO pendingPaymentDAO = new PendingPaymentDAO();
+  private final PendingPaymentDAO pendingPaymentDAO = new PendingPaymentDAO();
   private static TenantJob tenantJob;
 
   @BeforeEach
