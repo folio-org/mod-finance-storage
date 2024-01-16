@@ -104,21 +104,20 @@ public class AllOrNothingTransactionService {
     return transactionSummaryService.getAndCheckTransactionSummary(transaction, conn)
       .compose(summary -> addTempTransactionSequentially(transaction, conn)
         .compose(transactions -> {
-          if (transactions.size() == transactionSummaryService.getNumTransactions(summary)) {
-              // handle create or update
-            return operation.apply(transactions, conn)
-              .compose(ok -> finishAllOrNothing(summary, conn))
-              .onComplete(result -> {
-                if (result.failed()) {
-                  logger.error("processAllOrNothing:: Transactions with id {} or associated data failed to be processed",
-                    transaction.getId(), result.cause());
-                } else {
-                  logger.info("processAllOrNothing:: Transactions with id {} and associated data were successfully processed", transaction.getId());
-                }
-              });
-          } else {
+          if (transactions.size() != transactionSummaryService.getNumTransactions(summary)) {
             return Future.succeededFuture();
           }
+          // handle create or update
+          return operation.apply(transactions, conn)
+            .compose(ok -> finishAllOrNothing(summary, conn))
+            .onComplete(result -> {
+              if (result.failed()) {
+                logger.error("processAllOrNothing:: Transactions with id {} or associated data failed to be processed",
+                  transaction.getId(), result.cause());
+              } else {
+                logger.info("processAllOrNothing:: Transactions with id {} and associated data were successfully processed", transaction.getId());
+              }
+            });
         })
       );
   }

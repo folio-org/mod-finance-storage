@@ -65,8 +65,8 @@ public class BudgetService {
           .compose(t -> budgetDAO.deleteBudget(id, conn))
           .compose(t -> deleteAllocationTransactions(budget, conn))
           .onFailure(e -> logger.error("deleteById:: Deleting finance storage budgets with id {} failed", id, e))
-        ).onComplete(handleNoContentResponse(asyncResultHandler, id, "deleteById:: Budget {} {} deleted"))
-      );
+        )
+      ).onComplete(handleNoContentResponse(asyncResultHandler, id, "deleteById:: Budget {} {} deleted"));
     });
   }
 
@@ -141,6 +141,10 @@ public class BudgetService {
       .onFailure(e -> logger.error("getBudgetByFundIdAndFiscalYearId:: Getting budget by fund id {} and fiscal year id {} failed", fundId, fiscalYearId, e));
   }
 
+  /**
+   * Get budget by fiscal year id and fund id for update.
+   * This should only be called in a transactional context because it is using SELECT FOR UPDATE.
+   */
   public Future<Budget> getBudgetByFiscalYearIdAndFundIdForUpdate(String fiscalYearId, String fundId, DBConn conn) {
     logger.debug("getBudgetByFiscalYearIdAndFundIdForUpdate:: Trying to get budget by fund id {} and fiscal year id {} for update", fundId, fiscalYearId);
 
@@ -210,15 +214,15 @@ public class BudgetService {
     }
 
     return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), conn)
-      .compose(budget -> {
+      .map(budget -> {
         if (budget.getAvailable() < transaction.getAmount()) {
           ErrorCodes errorCode = transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION ?
             NOT_ENOUGH_MONEY_FOR_ALLOCATION : GENERIC_ERROR_CODE;
           logger.error(errorCode.getDescription());
-          return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
-            JsonObject.mapFrom(new Errors().withErrors(singletonList(errorCode.toError())).withTotalRecords(1)).encode()));
+          throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
+            JsonObject.mapFrom(new Errors().withErrors(singletonList(errorCode.toError())).withTotalRecords(1)).encode());
         }
-        return Future.succeededFuture();
+        return null;
       });
   }
 

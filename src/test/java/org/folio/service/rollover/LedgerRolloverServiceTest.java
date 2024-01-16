@@ -231,6 +231,8 @@ public class LedgerRolloverServiceTest {
       .thenReturn(Future.succeededFuture());
     when(rolloverBudgetService.updateRolloverBudgetsExpenseClassTotals(anyList(), eq(conn)))
       .thenReturn(Future.succeededFuture());
+    when(emailService.createAndSendEmail(eq(requestContext), eq(rollover), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext, conn))
       .onComplete(event -> {
@@ -352,6 +354,8 @@ public class LedgerRolloverServiceTest {
       .thenReturn(Future.succeededFuture());
     when(rolloverBudgetService.updateRolloverBudgetsExpenseClassTotals(anyList(), eq(conn)))
       .thenReturn(Future.succeededFuture());
+    when(emailService.createAndSendEmail(eq(requestContext), eq(rollover), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext, conn))
       .onComplete(event -> {
@@ -387,6 +391,8 @@ public class LedgerRolloverServiceTest {
     when(rolloverBudgetService.updateBatch(anyList(), eq(conn)))
       .thenReturn(Future.succeededFuture());
     when(rolloverBudgetService.updateRolloverBudgetsExpenseClassTotals(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
+    when(emailService.createAndSendEmail(eq(requestContext), eq(rollover), eq(conn)))
       .thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(ledgerRolloverService.startRollover(rollover, initialProgress, requestContext, conn))

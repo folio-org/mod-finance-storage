@@ -57,9 +57,7 @@ public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao
   public Future<Void> updateSummary(JsonObject summary, DBConn conn) {
     String id = summary.getString(ID_FIELD_NAME);
     logger.debug("Trying to update summary in transaction by id {}", id);
-    Criterion criterion = new CriterionBuilder().with(ID_FIELD_NAME, id).build();
-    CQLWrapper cql = new CQLWrapper(criterion);
-    return conn.update(getTableName(), summary, cql, false)
+    return conn.update(getTableName(), summary, id)
       .onSuccess(v -> logger.info("Summary with id {} successfully updated", id))
       .onFailure(e -> logger.error("Summary update with id {} failed", id, e))
       .mapEmpty();

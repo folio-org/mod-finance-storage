@@ -58,6 +58,7 @@ public class RolloverValidationService {
   private Future<Boolean> isRolloverExists(String query, Tuple parameters, DBConn conn) {
     logger.debug("isRolloverExists:: Is rollover exists by query {}", query);
 
+    // Note: the SELECT EXISTS query always returns exactly one result row
     return conn.execute(query, parameters)
       .map(rowSet -> rowSet.iterator().next().get(Boolean.class, 0))
       .onFailure(e -> logger.debug("isRolloverExists:: Getting rollover by query {}", query, e));

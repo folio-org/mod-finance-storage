@@ -89,19 +89,17 @@ public class LedgerRolloverService {
     return client.withTrans(conn -> rolloverProgressService.getLedgerRolloverProgressForRollover(rolloverId, conn)
       .compose(rolloverProgress ->
         checkCanDeleteRollover(rolloverProgress)
-        .compose(aVoid -> deleteRolloverWithProgressAndErrors(rolloverProgress, requestContext)))
+        .compose(aVoid -> deleteRolloverWithProgressAndErrors(rolloverProgress, conn)))
     );
   }
 
-  private  Future<Void> deleteRolloverWithProgressAndErrors(LedgerFiscalYearRolloverProgress rolloverProgress, RequestContext requestContext) {
-    DBClient client = requestContext.toDBClient();
-    return client.withTrans(conn -> rolloverProgressService.deleteRolloverProgress(rolloverProgress.getId(), conn)
+  private  Future<Void> deleteRolloverWithProgressAndErrors(LedgerFiscalYearRolloverProgress rolloverProgress, DBConn conn) {
+    return rolloverProgressService.deleteRolloverProgress(rolloverProgress.getId(), conn)
       .compose(aVoid -> rolloverErrorService.deleteRolloverErrors(rolloverProgress.getLedgerRolloverId(), conn))
       .compose(aVoid -> rolloverBudgetService.deleteRolloverBudgets(rolloverProgress.getLedgerRolloverId(), conn))
       .compose(aVoid -> ledgerFiscalYearRolloverDAO.delete(rolloverProgress.getLedgerRolloverId(), conn))
       .onFailure(t -> logger.error("deleteRolloverWithProgressAndErrors:: Rollover delete failed for Ledger {}",
-        rolloverProgress.getLedgerRolloverId(), t))
-    );
+        rolloverProgress.getLedgerRolloverId(), t));
   }
 
   private Future<Void> checkCanDeleteRollover(LedgerFiscalYearRolloverProgress rolloverProgress) {
@@ -133,8 +131,12 @@ public class LedgerRolloverService {
 
     return startFinancialRollover(rollover, progress, conn)
       .compose(rolloverProgress -> startOrdersRollover(rollover, progress, requestContext, conn))
-      .onSuccess(aVoid -> logger.info("startRollover:: Rollover completed for Ledger {}", rollover.getLedgerId()))
-      .onSuccess(aVoid -> emailService.createAndSendEmail(requestContext, rollover, conn));
+      .compose(aVoid -> emailService.createAndSendEmail(requestContext, rollover, conn)
+        .recover(t -> {
+          logger.warn("Ignoring error when sending an email after the rollover starts", t);
+          return Future.succeededFuture(null);
+        }))
+      .onSuccess(aVoid -> logger.info("startRollover:: Rollover completed for Ledger {}", rollover.getLedgerId()));
   }
 
   private Future<Void> closeBudgets(LedgerFiscalYearRollover rollover, DBConn conn) {
