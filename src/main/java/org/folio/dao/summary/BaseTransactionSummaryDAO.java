@@ -10,10 +10,7 @@ import javax.ws.rs.core.Response;
 import io.vertx.ext.web.handler.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.DBConn;
-import org.folio.rest.persist.cql.CQLWrapper;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
