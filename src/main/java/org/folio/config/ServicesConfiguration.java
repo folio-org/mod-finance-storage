@@ -40,6 +40,7 @@ import org.folio.service.summary.PendingPaymentTransactionSummaryService;
 import org.folio.service.summary.TransactionSummaryService;
 import org.folio.service.transactions.AllOrNothingTransactionService;
 import org.folio.service.transactions.AllocationService;
+import org.folio.service.transactions.BatchTransactionService;
 import org.folio.service.transactions.EncumbranceService;
 import org.folio.service.transactions.PaymentCreditService;
 import org.folio.service.transactions.PendingPaymentService;
@@ -199,6 +200,11 @@ public class ServicesConfiguration {
   @Bean
   public TransactionManagingStrategyFactory transactionManagingStrategyFactory(Set<TransactionManagingStrategy> transactionServices) {
     return new TransactionManagingStrategyFactory(transactionServices);
+  }
+
+  @Bean
+  public BatchTransactionService batchTransactionService() {
+    return new BatchTransactionService();
   }
 
   @Bean
