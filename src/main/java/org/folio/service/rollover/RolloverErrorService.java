@@ -5,7 +5,7 @@ import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,18 +18,18 @@ public class RolloverErrorService {
     this.rolloverErrorDAO = rolloverErrorDAO;
   }
 
-  public Future<List<LedgerFiscalYearRolloverError>> getRolloverErrors(Criterion filter, DBClient client) {
-    return rolloverErrorDAO.get(filter, client);
+  public Future<List<LedgerFiscalYearRolloverError>> getRolloverErrors(Criterion filter, DBConn conn) {
+    return rolloverErrorDAO.get(filter, conn);
   }
 
-  public Future<Void> createRolloverError(LedgerFiscalYearRolloverError rolloverError, DBClient client) {
+  public Future<Void> createRolloverError(LedgerFiscalYearRolloverError rolloverError, DBConn conn) {
     if (rolloverError.getId() == null)
       rolloverError.setId(UUID.randomUUID().toString());
-    return rolloverErrorDAO.create(rolloverError, client);
+    return rolloverErrorDAO.create(rolloverError, conn);
   }
 
-  public Future<Void> deleteRolloverErrors(String ledgerRolloverId, DBClient client) {
+  public Future<Void> deleteRolloverErrors(String ledgerRolloverId, DBConn conn) {
     Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, ledgerRolloverId).build();
-    return rolloverErrorDAO.deleteByQuery(criterion, client);
+    return rolloverErrorDAO.deleteByQuery(criterion, conn);
   }
 }

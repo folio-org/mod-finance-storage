@@ -2,6 +2,7 @@ package org.folio.utils;
 
 import java.util.Map;
 
+import io.vertx.core.Future;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.okapi.common.OkapiClient;
@@ -16,9 +17,10 @@ public class EmailOkapiClient extends OkapiClient {
     super(okapiUrl, vertx, headers);
   }
 
-  public void sendEmail(String url, String data) {
-    post(url, data)
+  public Future<Void> sendEmail(String url, String data) {
+    return post(url, data)
       .onSuccess(response -> logger.info("POST {} complete successfully: {}", url, response))
-      .onFailure(t -> logger.error("Email not delivered {}", t.getMessage()));
+      .onFailure(t -> logger.error("Email not delivered {}", t.getMessage()))
+      .mapEmpty();
   }
 }

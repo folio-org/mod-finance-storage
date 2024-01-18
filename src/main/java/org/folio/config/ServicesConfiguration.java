@@ -232,8 +232,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public EmailService emailService(RestClient configurationRestClient, RestClient userRestClient, DBClientFactory dbClientFactory, LedgerDAO ledgerDAO) {
-    return new EmailService(configurationRestClient, userRestClient, dbClientFactory, ledgerDAO);
+  public EmailService emailService(RestClient configurationRestClient, RestClient userRestClient, LedgerDAO ledgerDAO) {
+    return new EmailService(configurationRestClient, userRestClient, ledgerDAO);
   }
 
   @Bean

@@ -2,6 +2,7 @@ package org.folio.service.transactions.restriction;
 
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -15,6 +16,8 @@ import static org.hamcrest.Matchers.is;
 
 public class PaymentCreditRestrictionServiceTest {
 
+  private AutoCloseable mockitoMocks;
+
   @InjectMocks
   private PaymentCreditRestrictionService restrictionService;
 
@@ -23,9 +26,10 @@ public class PaymentCreditRestrictionServiceTest {
   private Budget budget;
   private String currency = "USD";
 
+
   @BeforeEach
   public void initMocks(){
-    MockitoAnnotations.openMocks(this);
+    mockitoMocks = MockitoAnnotations.openMocks(this);
 
     budget = new Budget()
       .withFiscalYearId(fiscalYearId)
@@ -35,6 +39,11 @@ public class PaymentCreditRestrictionServiceTest {
       .withEncumbered(0d)
       .withUnavailable(0d)
       .withFundId(fundId);
+  }
+
+  @AfterEach
+  public void afterEach() throws Exception {
+    mockitoMocks.close();
   }
 
   @Test

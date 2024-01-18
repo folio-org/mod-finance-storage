@@ -8,8 +8,9 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.Transaction.TransactionType;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.when;
 
 public class CancelTransactionServiceTest {
 
+  private AutoCloseable mockitoMocks;
   @InjectMocks
   CancelPendingPaymentService cancelPendingPaymentService;
   @InjectMocks
@@ -43,7 +45,7 @@ public class CancelTransactionServiceTest {
   @Mock
   BudgetService budgetService;
   @Mock
-  private DBClient client;
+  private DBConn conn;
 
   private static final String TENANT_ID = "tenant";
   private final String summaryId = UUID.randomUUID().toString();
@@ -53,10 +55,17 @@ public class CancelTransactionServiceTest {
   private Transaction transaction, encumbrance;
   private Budget budget;
 
+
   @BeforeEach
   public void initMocks() {
-    MockitoAnnotations.openMocks(this);
-    when(client.getTenantId()).thenReturn(TENANT_ID);
+    mockitoMocks = MockitoAnnotations.openMocks(this);
+    when(conn.getTenantId())
+      .thenReturn(TENANT_ID);
+  }
+
+  @AfterEach
+  public void afterEach() throws Exception {
+    mockitoMocks.close();
   }
 
   @BeforeEach
@@ -106,34 +115,39 @@ public class CancelTransactionServiceTest {
       .withExpenditures(100d);
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
-    when(encumbranceDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
-    when(encumbranceDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
+    when(encumbranceDAO.getTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture(encumbrances));
+    when(encumbranceDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    Future<Void> cancelResult = cancelPendingPaymentService.cancelTransactions(transactions, client);
+    Future<Void> cancelResult = cancelPendingPaymentService.cancelTransactions(transactions, conn);
     assertTrue(cancelResult.succeeded());
 
     verify(budgetService, times(1))
       .updateBatchBudgets(argThat(budgetColl -> budgetColl.stream().allMatch(
         b -> b.getAwaitingPayment() == 90d && b.getExpenditures() == 100d
-      )), eq(client));
+      )), eq(conn));
     verify(transactionsDAO, times(1)).updatePermanentTransactions(argThat(trList -> {
       if (trList.size() != 1)
         return false;
       Transaction first = trList.get(0);
       return first.getTransactionType() == TransactionType.PENDING_PAYMENT &&
         first.getInvoiceCancelled() && first.getVoidedAmount() == 10d;
-    }), eq(client));
+    }), eq(conn));
     verify(encumbranceDAO, times(1)).updatePermanentTransactions(argThat(trList -> {
       if (trList.size() != 1)
         return false;
       Transaction first = trList.get(0);
       return first.getTransactionType() == TransactionType.ENCUMBRANCE &&
         first.getEncumbrance().getAmountAwaitingPayment() == 0d;
-    }), eq(client));
+    }), eq(conn));
   }
 
   @Test
@@ -153,34 +167,39 @@ public class CancelTransactionServiceTest {
       .withExpenditures(100d);
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
-    when(encumbranceDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
-    when(encumbranceDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
+    when(encumbranceDAO.getTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture(encumbrances));
+    when(encumbranceDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    Future<Void> cancelResult = cancelPaymentCreditService.cancelTransactions(transactions, client);
+    Future<Void> cancelResult = cancelPaymentCreditService.cancelTransactions(transactions, conn);
     assertTrue(cancelResult.succeeded());
 
     verify(budgetService, times(1))
       .updateBatchBudgets(argThat(budgetColl -> budgetColl.stream().allMatch(
         b -> b.getAwaitingPayment() == 100d && b.getExpenditures() == 90d
-      )), eq(client));
+      )), eq(conn));
     verify(transactionsDAO, times(1)).updatePermanentTransactions(argThat(trList -> {
       if (trList.size() != 1)
         return false;
       Transaction first = trList.get(0);
       return first.getTransactionType() == TransactionType.PAYMENT &&
         first.getInvoiceCancelled() && first.getVoidedAmount() == 10d;
-    }), eq(client));
+    }), eq(conn));
     verify(encumbranceDAO, times(1)).updatePermanentTransactions(argThat(trList -> {
       if (trList.size() != 1)
         return false;
       Transaction first = trList.get(0);
       return first.getTransactionType() == TransactionType.ENCUMBRANCE &&
         first.getEncumbrance().getAmountExpended() == 0d;
-    }), eq(client));
+    }), eq(conn));
   }
 
   @Test
@@ -200,14 +219,19 @@ public class CancelTransactionServiceTest {
       .withExpenditures(100d);
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
-    when(encumbranceDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
-    when(encumbranceDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
+    when(encumbranceDAO.getTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture(encumbrances));
+    when(encumbranceDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    Future<Void> cancelResult = cancelPaymentCreditService.cancelTransactions(transactions, client);
+    Future<Void> cancelResult = cancelPaymentCreditService.cancelTransactions(transactions, conn);
     assertTrue(cancelResult.succeeded());
   }
 }

@@ -7,7 +7,7 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.jaxrs.model.RolloverStatus;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 
 public class RolloverProgressService {
 
@@ -20,18 +20,18 @@ public class RolloverProgressService {
     this.rolloverErrorService = rolloverErrorService;
   }
 
-  public Future<Void> createRolloverProgress(LedgerFiscalYearRolloverProgress progress, DBClient client) {
-    return rolloverProgressDAO.create(progress, client);
+  public Future<Void> createRolloverProgress(LedgerFiscalYearRolloverProgress progress, DBConn conn) {
+    return rolloverProgressDAO.create(progress, conn);
   }
 
-  public Future<Void> updateRolloverProgress(LedgerFiscalYearRolloverProgress progress, DBClient client) {
-    return rolloverProgressDAO.update(progress, client);
+  public Future<Void> updateRolloverProgress(LedgerFiscalYearRolloverProgress progress, DBConn conn) {
+    return rolloverProgressDAO.update(progress, conn);
   }
 
-  public Future<LedgerFiscalYearRolloverProgress> getLedgerRolloverProgressForRollover(String rolloverId, DBClient client){
+  public Future<LedgerFiscalYearRolloverProgress> getLedgerRolloverProgressForRollover(String rolloverId, DBConn conn){
     Criterion criterion = new CriterionBuilder()
       .with(LEDGER_ROLLOVER_ID, rolloverId).build();
-    return rolloverProgressDAO.get(criterion, client)
+    return rolloverProgressDAO.get(criterion, conn)
       .map(progresses -> {
         if (progresses.isEmpty()) {
           throw new HttpException(404, "Can't retrieve rollover progress by rolloverId");
@@ -41,35 +41,35 @@ public class RolloverProgressService {
       });
   }
 
-  public Future<Void> calculateAndUpdateFinancialProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
+  public Future<Void> calculateAndUpdateFinancialProgressStatus(LedgerFiscalYearRolloverProgress progress, DBConn conn) {
     Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, progress.getLedgerRolloverId())
       .build();
-    return rolloverErrorService.getRolloverErrors(criterion, client)
+    return rolloverErrorService.getRolloverErrors(criterion, conn)
       .compose(rolloverErrors -> {
         if (rolloverErrors.isEmpty()) {
           progress.setFinancialRolloverStatus(RolloverStatus.SUCCESS);
         } else {
           progress.setFinancialRolloverStatus(RolloverStatus.ERROR);
         }
-        return rolloverProgressDAO.update(progress, client);
+        return rolloverProgressDAO.update(progress, conn);
       });
   }
 
-  public Future<Void> calculateAndUpdateOverallProgressStatus(LedgerFiscalYearRolloverProgress progress, DBClient client) {
+  public Future<Void> calculateAndUpdateOverallProgressStatus(LedgerFiscalYearRolloverProgress progress, DBConn conn) {
     Criterion criterion = new CriterionBuilder().with(LEDGER_ROLLOVER_ID, progress.getLedgerRolloverId())
       .build();
-    return rolloverErrorService.getRolloverErrors(criterion, client)
+    return rolloverErrorService.getRolloverErrors(criterion, conn)
       .compose(rolloverErrors -> {
         if (rolloverErrors.isEmpty()) {
           progress.setOverallRolloverStatus(RolloverStatus.SUCCESS);
         } else {
           progress.setOverallRolloverStatus(RolloverStatus.ERROR);
         }
-        return rolloverProgressDAO.update(progress, client);
+        return rolloverProgressDAO.update(progress, conn);
       });
   }
 
-  public Future<Void> deleteRolloverProgress(String rolloverId, DBClient client) {
-    return rolloverProgressDAO.delete(rolloverId, client);
+  public Future<Void> deleteRolloverProgress(String rolloverId, DBConn conn) {
+    return rolloverProgressDAO.delete(rolloverId, conn);
   }
 }

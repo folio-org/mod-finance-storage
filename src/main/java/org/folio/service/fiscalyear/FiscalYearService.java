@@ -5,10 +5,9 @@ import java.util.Optional;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
-import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 
 public class FiscalYearService {
 
@@ -20,9 +19,8 @@ public class FiscalYearService {
     this.fyDAO = fyDAO;
   }
 
-  private Future<Integer> getCurrencyFactorNumber(String fiscalYearId, RequestContext requestContext) {
-    DBClient dbClient = new DBClient(requestContext);
-    return fyDAO.getFiscalYearById(fiscalYearId, dbClient)
+  private Future<Integer> getCurrencyFactorNumber(String fiscalYearId, DBConn conn) {
+    return fyDAO.getFiscalYearById(fiscalYearId, conn)
       .map(this::getFiscalYearCurrencyFactor);
   }
 
@@ -33,8 +31,8 @@ public class FiscalYearService {
       .orElse(DEFAULT_FACTOR);
   }
 
-  public Future<Void> populateRolloverWithCurrencyFactor(LedgerFiscalYearRollover rollover, RequestContext requestContext) {
-    return getCurrencyFactorNumber(rollover.getFromFiscalYearId(), requestContext)
+  public Future<Void> populateRolloverWithCurrencyFactor(LedgerFiscalYearRollover rollover, DBConn conn) {
+    return getCurrencyFactorNumber(rollover.getFromFiscalYearId(), conn)
       .map(factor -> {
         rollover.setCurrencyFactor(factor);
         return null;

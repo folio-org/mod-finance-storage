@@ -26,7 +26,9 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
+import org.folio.rest.persist.DBConn;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,10 +44,13 @@ import io.vertx.junit5.VertxExtension;
 @ExtendWith(VertxExtension.class)
 public class EmailServiceTest {
 
+  private AutoCloseable mockitoMocks;
   @InjectMocks
   private EmailService emailService;
   @Mock
   private RestClient restClient;
+  @Mock
+  private DBConn conn;
   @Mock
   private DBClientFactory dbClientFactory;
   @Mock
@@ -61,7 +66,7 @@ public class EmailServiceTest {
 
   @BeforeEach
   public void initMocks() {
-    MockitoAnnotations.openMocks(this);
+    mockitoMocks = MockitoAnnotations.openMocks(this);
     vertx = Vertx.vertx();
     Context context = vertx.getOrCreateContext();
     Map<String, String> okapiHeaders = new HashMap<>();
@@ -72,6 +77,11 @@ public class EmailServiceTest {
     mockRequestContext = new RequestContext(context, okapiHeaders);
   }
 
+  @AfterEach
+  public void afterEach() throws Exception {
+    mockitoMocks.close();
+  }
+
   @Test
   void shouldSendEmail(Vertx vertx) {
     when(restClient.get(anyString(), anyInt(), anyInt(), eq(mockRequestContext))).thenReturn(succeededFuture(getHostAddressJson()));
@@ -79,7 +89,7 @@ public class EmailServiceTest {
     when(ledgerDAO.getLedgerById(anyString(), any())).thenReturn(succeededFuture(new Ledger().withName("TestName")));
     when(dbClientFactory.getDbClient(mockRequestContext)).thenReturn(new DBClient(vertx, TEST_TENANT));
 
-    emailService.createAndSendEmail(mockRequestContext, getRollover());
+    emailService.createAndSendEmail(mockRequestContext, getRollover(), conn);
     verify(ledgerDAO, times(1)).getLedgerById(anyString(), any());
   }
 

@@ -28,11 +28,9 @@ import java.util.stream.Stream;
 import io.restassured.response.ExtractableResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverErrorCollection;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgressCollection;
 import org.folio.rest.jaxrs.model.RolloverStatus;
-import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.utils.TestEntities;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
@@ -117,22 +115,14 @@ public class EntitiesCrudTest extends TestBase {
 
       await().atMost(5, TimeUnit.SECONDS).until(() -> {
         LedgerFiscalYearRolloverProgress progress = getDataById(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS.getEndpointWithId(), progressId).as(LedgerFiscalYearRolloverProgress.class);
-        return Objects.equals(progress.getOverallRolloverStatus(), RolloverStatus.ERROR);
+        return Objects.equals(progress.getOverallRolloverStatus(), RolloverStatus.SUCCESS);
       });
 
       deleteData(LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS.getEndpointWithId(), progressId).then()
-              .log()
-              .ifValidationFails()
-              .statusCode(204);
-      // A rollover error will be generated because the order rollover cannot proceed, this is cleaning it up:
-      LedgerFiscalYearRolloverErrorCollection errorCollection = getData(
-        LEDGER_FISCAL_YEAR_ROLLOVER_ERROR.getEndpoint() + "?query=ledgerRolloverId==" +
-          testEntity.getId()).as(LedgerFiscalYearRolloverErrorCollection.class);
-      String errorId = errorCollection.getLedgerFiscalYearRolloverErrors().get(0).getId();
-      deleteData(LEDGER_FISCAL_YEAR_ROLLOVER_ERROR.getEndpointWithId(), errorId).then()
         .log()
         .ifValidationFails()
         .statusCode(204);
+      // We are now using a Preview rollover, so order rollover will not get started (it would cause an error otherwise).
       // Because the rollover log is combined using the view, we have to assign a rollover id.
       LEDGER_FISCAL_YEAR_ROLLOVER_LOG.setId(testEntity.getId());
     }
@@ -166,7 +156,9 @@ public class EntitiesCrudTest extends TestBase {
     logger.info(String.format("--- mod-finance-storage %s test: Verifying only 1 adjustment was created ... ", testEntity.name()));
     int quantity = 1;
     if(List.of(ALLOCATION_TRANSACTION, ENCUMBRANCE_TRANSACTION).contains(testEntity)) {
-      quantity = 3;
+      // both have the finance-storage/transactions endpoint in TestEntities, so each will return all transactions
+      // we use a preview for the fiscal year rollover, so a new encumbrance is not created
+      quantity = 2;
     }
     verifyCollectionQuantity(testEntity.getEndpoint(), quantity);
 
@@ -237,17 +229,6 @@ public class EntitiesCrudTest extends TestBase {
       .log()
       .ifValidationFails()
       .statusCode(204);
-
-    if(testEntity == ENCUMBRANCE_TRANSACTION) {
-      TransactionCollection transactionCollection = getData(
-        ENCUMBRANCE_TRANSACTION.getEndpoint() + "?query=transactionType==Encumbrance")
-        .as(TransactionCollection.class);
-      String transactionId = transactionCollection.getTransactions().get(0).getId();
-      deleteData(testEntity.getEndpointWithId(), transactionId).then()
-        .log()
-        .ifValidationFails()
-        .statusCode(204);
-    }
   }
 
   @ParameterizedTest

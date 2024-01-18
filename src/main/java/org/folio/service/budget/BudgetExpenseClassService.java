@@ -5,7 +5,7 @@ import org.folio.dao.budget.BudgetExpenseClassDAO;
 import org.folio.dao.expense.ExpenseClassDAO;
 import org.folio.rest.jaxrs.model.BudgetExpenseClass;
 import org.folio.rest.jaxrs.model.ExpenseClass;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 
 import java.util.List;
 
@@ -19,12 +19,12 @@ public class BudgetExpenseClassService {
     this.budgetExpenseClassDAO = budgetExpenseClassDAO;
   }
 
-  public Future<List<BudgetExpenseClass>> getTempBudgetExpenseClasses(String budgetId, DBClient client) {
-    return budgetExpenseClassDAO.getTemporaryBudgetExpenseClasses(budgetId, client);
+  public Future<List<BudgetExpenseClass>> getTempBudgetExpenseClasses(String budgetId, DBConn conn) {
+    return budgetExpenseClassDAO.getTemporaryBudgetExpenseClasses(budgetId, conn);
   }
 
-  public Future<List<ExpenseClass>> getExpenseClassesByTemporaryBudgetId(String budgetId, DBClient client) {
-    return expenseClassDAO.getExpenseClassesByTemporaryBudgetId(budgetId, client);
+  public Future<List<ExpenseClass>> getExpenseClassesByTemporaryBudgetId(String budgetId, DBConn conn) {
+    return expenseClassDAO.getExpenseClassesByTemporaryBudgetId(budgetId, conn);
   }
 
 }

@@ -3,7 +3,7 @@ package org.folio.service.rollover;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -13,21 +13,18 @@ import java.util.List;
 import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
-import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.rest.persist.helpers.LocalRowDesc;
 import org.folio.rest.persist.helpers.LocalRowSet;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.stubbing.Answer;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.ext.web.handler.HttpException;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -40,18 +37,23 @@ import io.vertx.sqlclient.impl.RowDesc;
 @ExtendWith(VertxExtension.class)
 public class RolloverValidationServiceTest {
 
+  private AutoCloseable mockitoMocks;
+
   @InjectMocks
   private RolloverValidationService rolloverValidationService;
 
   @Mock
-  private PostgresClient postgresClient;
+  private DBConn conn;
 
-  @Mock
-  private DBClient dbClient;
 
   @BeforeEach
   public void initMocks() {
-    MockitoAnnotations.openMocks(this);
+    mockitoMocks = MockitoAnnotations.openMocks(this);
+  }
+
+  @AfterEach
+  public void afterEach() throws Exception {
+    mockitoMocks.close();
   }
 
   @Test
@@ -62,23 +64,19 @@ public class RolloverValidationServiceTest {
       .withFromFiscalYearId(UUID.randomUUID().toString())
       .withRolloverType(LedgerFiscalYearRollover.RolloverType.COMMIT);
 
-    when(dbClient.getPgClient()).thenReturn(postgresClient);
-    when(dbClient.getTenantId()).thenReturn("test");
+    when(conn.getTenantId()).thenReturn("test");
 
-    doAnswer((Answer<Void>) invocation -> {
-      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(2);
-      RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
-      Row row = new RowImpl(rowDesc);
-      row.addBoolean(false);
-      RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
+    RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
+    Row row = new RowImpl(rowDesc);
+    row.addBoolean(false);
+    RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
+    doReturn(Future.succeededFuture(rows))
+      .when(conn).execute(anyString(), any(Tuple.class));
 
-      handler.handle(Future.succeededFuture(rows));
-      return null;
-    }).when(postgresClient).execute(anyString(), any(Tuple.class), any(Handler.class));
-
-    testContext.assertComplete(rolloverValidationService.checkRolloverExists(rollover, dbClient)
+    testContext.assertComplete(rolloverValidationService.checkRolloverExists(rollover, conn)
       .onComplete(event -> {
-        testContext.verify(() -> verify(postgresClient, times(1)).execute(anyString(), any(Tuple.class), any(Handler.class)));
+        testContext.verify(() -> verify(conn, times(1))
+          .execute(anyString(), any(Tuple.class)));
         testContext.completeNow();
       }));
   }
@@ -91,21 +89,16 @@ public class RolloverValidationServiceTest {
       .withFromFiscalYearId(UUID.randomUUID().toString())
       .withRolloverType(LedgerFiscalYearRollover.RolloverType.COMMIT);
 
-    when(dbClient.getTenantId()).thenReturn("test");
-    when(dbClient.getPgClient()).thenReturn(postgresClient);
+    when(conn.getTenantId()).thenReturn("test");
 
-    doAnswer((Answer<Void>) invocation -> {
-      Handler<AsyncResult<RowSet<Row>>> handler = invocation.getArgument(2);
-      RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
-      Row row = new RowImpl(rowDesc);
-      row.addBoolean(true);
-      RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
+    RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
+    Row row = new RowImpl(rowDesc);
+    row.addBoolean(true);
+    RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
+    doReturn(Future.succeededFuture(rows))
+      .when(conn).execute(anyString(), any(Tuple.class));
 
-      handler.handle(Future.succeededFuture(rows));
-      return null;
-    }).when(postgresClient).execute(anyString(), any(Tuple.class), any(Handler.class));
-
-    testContext.assertFailure(rolloverValidationService.checkRolloverExists(rollover, dbClient)
+    testContext.assertFailure(rolloverValidationService.checkRolloverExists(rollover, conn)
       .onComplete(event -> {
         HttpException exception = (HttpException) event.cause();
         testContext.verify(() -> {
@@ -124,9 +117,10 @@ public class RolloverValidationServiceTest {
       .withFromFiscalYearId(UUID.randomUUID().toString())
       .withRolloverType(LedgerFiscalYearRollover.RolloverType.PREVIEW);
 
-    testContext.assertComplete(rolloverValidationService.checkRolloverExists(rollover, dbClient)
+    testContext.assertComplete(rolloverValidationService.checkRolloverExists(rollover, conn)
       .onComplete(event -> {
-        testContext.verify(() -> verify(postgresClient, never()).execute(anyString(), any(Tuple.class), any(Handler.class)));
+        testContext.verify(() -> verify(conn, never())
+          .execute(anyString(), any(Tuple.class)));
         testContext.completeNow();
       }));
   }

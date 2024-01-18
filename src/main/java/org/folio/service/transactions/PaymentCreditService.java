@@ -1,7 +1,6 @@
 package org.folio.service.transactions;
 
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Tuple;
 import org.apache.commons.lang3.StringUtils;
@@ -12,7 +11,7 @@ import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.transactions.cancel.CancelTransactionService;
 import org.folio.utils.MoneyUtils;
 import org.folio.service.budget.BudgetService;
@@ -36,7 +35,6 @@ import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
 
 public class PaymentCreditService extends AbstractTransactionService implements TransactionManagingStrategy {
 
@@ -93,76 +91,75 @@ public class PaymentCreditService extends AbstractTransactionService implements 
    * database transaction
    *
    * @param transactions to be processed
-   * @param client
+   * @param conn - database connection
    */
 
-  public Future<Void> createTransactions(List<Transaction> transactions, DBClient client) {
+  public Future<Void> createTransactions(List<Transaction> transactions, DBConn conn) {
     String summaryId = getSummaryId(transactions.get(0));
-    return updateEncumbranceTotals(transactions, client)
-      .compose(dbc -> updateBudgetsTotals(transactions, client))
-      .compose(dbc -> transactionsDAO.saveTransactionsToPermanentTable(summaryId, client))
-      .compose(integer -> deletePendingPayments(summaryId, client));
+    return updateEncumbranceTotals(transactions, conn)
+      .compose(dbc -> updateBudgetsTotals(transactions, conn))
+      .compose(dbc -> transactionsDAO.saveTransactionsToPermanentTable(summaryId, conn))
+      .compose(integer -> deletePendingPayments(summaryId, conn));
   }
 
-  public Future<Void> updateTransactions(List<Transaction> tmpTransactions, DBClient client) {
-    return getTransactions(tmpTransactions, client)
+  public Future<Void> updateTransactions(List<Transaction> tmpTransactions, DBConn conn) {
+    return getTransactions(tmpTransactions, conn)
       .map(existingTransactions -> tmpTransactions.stream()
         .filter(tr -> TRUE.equals(tr.getInvoiceCancelled()))
         .filter(tr -> existingTransactions.stream().anyMatch(tr2 -> tr2.getId().equals(tr.getId()) &&
           !TRUE.equals(tr2.getInvoiceCancelled())))
         .collect(toList()))
-      .compose(transactionsToCancel -> cancelTransactionService.cancelTransactions(transactionsToCancel, client));
+      .compose(transactionsToCancel -> cancelTransactionService.cancelTransactions(transactionsToCancel, conn));
   }
 
-  private Future<List<Transaction>> getTransactions(List<Transaction> tmpTransactions, DBClient client) {
+  private Future<List<Transaction>> getTransactions(List<Transaction> tmpTransactions, DBConn conn) {
     List<String> ids = tmpTransactions.stream()
       .map(Transaction::getId)
       .collect(toList());
-    return transactionsDAO.getTransactions(ids, client);
+    return transactionsDAO.getTransactions(ids, conn);
   }
 
-  private Future<Void> deletePendingPayments(String summaryId, DBClient client) {
+  private Future<Void> deletePendingPayments(String summaryId, DBConn conn) {
     CriterionBuilder criterionBuilder = new CriterionBuilder();
     criterionBuilder.withJson(SOURCE_INVOICE_ID, "=", summaryId)
       .withJson(TRANSACTION_TYPE, "=", PENDING_PAYMENT.value());
-    return transactionsDAO.deleteTransactions(criterionBuilder.build(), client);
+    return transactionsDAO.deleteTransactions(criterionBuilder.build(), conn);
   }
 
   /**
    * Update the Encumbrance transaction attached to the payment/Credit(from paymentEncumbranceID)
    * in a transaction
    *
-   * @param transactions
-   * @param client : the list of payments and credits
+   * @param transactions to be processed
+   * @param conn - database connection
    */
-  private Future<DBClient> updateEncumbranceTotals(List<Transaction> transactions, DBClient client) {
+  private Future<DBConn> updateEncumbranceTotals(List<Transaction> transactions, DBConn conn) {
     boolean noEncumbrances = transactions
       .stream()
       .allMatch(transaction -> StringUtils.isBlank(transaction.getPaymentEncumbranceId()));
 
     if (noEncumbrances) {
-      return Future.succeededFuture(client);
+      return Future.succeededFuture(conn);
     }
     String summaryId = getSummaryId(transactions.get(0));
-    return getAllEncumbrances(summaryId, client).map(encumbrances -> encumbrances.stream()
+    return getAllEncumbrances(summaryId, conn).map(encumbrances -> encumbrances.stream()
       .collect(toMap(Transaction::getId, identity())))
       .map(encumbrancesMap -> applyPayments(transactions, encumbrancesMap))
       .map(encumbrancesMap -> applyCredits(transactions, encumbrancesMap))
       //update all the re-calculated encumbrances into the Transaction table
       .map(map -> new ArrayList<>(map.values()))
-      .compose(trns -> transactionsDAO.updatePermanentTransactions(trns, client))
-      .compose(ok -> Future.succeededFuture(client));
-
+      .compose(trns -> transactionsDAO.updatePermanentTransactions(trns, conn))
+      .compose(ok -> Future.succeededFuture(conn));
   }
 
-  private Future<Integer> updateBudgetsTotals(List<Transaction> transactions, DBClient client) {
+  private Future<Integer> updateBudgetsTotals(List<Transaction> transactions, DBConn conn) {
     String summaryId = getSummaryId(transactions.get(0));
-    String sql = getSelectBudgetsQueryForUpdate(client.getTenantId());
-    return budgetService.getBudgets(sql, Tuple.of(UUID.fromString(summaryId)), client)
+    String sql = getSelectBudgetsQueryForUpdate(conn.getTenantId());
+    return budgetService.getBudgets(sql, Tuple.of(UUID.fromString(summaryId)), conn)
       .map(budgets -> budgets.stream().collect(toMap(Budget::getFundId, Function.identity())))
       .map(groupedBudgets -> calculatePaymentBudgetsTotals(transactions, groupedBudgets))
       .map(grpBudgets -> calculateCreditBudgetsTotals(transactions, grpBudgets))
-      .compose(grpBudgets -> budgetService.updateBatchBudgets(grpBudgets.values(), client));
+      .compose(grpBudgets -> budgetService.updateBatchBudgets(grpBudgets.values(), conn));
   }
 
   private Map<String, Budget> calculatePaymentBudgetsTotals(List<Transaction> tempTransactions,
@@ -233,7 +230,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
 
     List<Transaction> tempCredits = tempTxns.stream()
       .filter(isCreditTransaction.and(hasEncumbrance))
-      .collect(toList());
+      .toList();
 
     if (tempCredits.isEmpty()) {
       return encumbrancesMap;
@@ -265,7 +262,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
   private Map<String, Transaction> applyPayments(List<Transaction> tempTxns, Map<String, Transaction> encumbrancesMap) {
     List<Transaction> tempPayments = tempTxns.stream()
       .filter(isPaymentTransaction.and(hasEncumbrance))
-      .collect(toList());
+      .toList();
     if (tempPayments.isEmpty()) {
       return encumbrancesMap;
     }
@@ -288,23 +285,18 @@ public class PaymentCreditService extends AbstractTransactionService implements 
     return encumbrancesMap;
   }
 
-  private Future<List<Transaction>> getAllEncumbrances(String summaryId, DBClient client) {
+  private Future<List<Transaction>> getAllEncumbrances(String summaryId, DBConn conn) {
     logger.debug("getAllEncumbrances:: Trying to get all encumbrances by summary id {}", summaryId);
-    Promise<List<Transaction>> promise = Promise.promise();
-    String sql = buildGetPermanentEncumbrancesQuery(client.getTenantId());
-    client.getPgClient()
-      .select(client.getConnection(), sql, Tuple.of(UUID.fromString(summaryId)), reply -> {
-        if (reply.failed()) {
-          logger.error("getAllEncumbrances:: Getting all encumbrances by summary id {} failed", summaryId, reply.cause());
-          handleFailure(promise, reply);
-        } else {
-          List<Transaction> encumbrances = new ArrayList<>();
-          reply.result().spliterator().forEachRemaining(row -> encumbrances.add(row.get(JsonObject.class, 0).mapTo(Transaction.class)));
-          logger.info("Successfully retrieved {} encumbrances by summary id {}", encumbrances.size(), summaryId);
-          promise.complete(encumbrances);
-        }
-      });
-    return promise.future();
+    String sql = buildGetPermanentEncumbrancesQuery(conn.getTenantId());
+    return conn.execute(sql, Tuple.of(UUID.fromString(summaryId)))
+      .map(rowSet -> {
+        List<Transaction> encumbrances = new ArrayList<>();
+        rowSet.spliterator().forEachRemaining(row -> encumbrances.add(row.get(JsonObject.class, 0).mapTo(Transaction.class)));
+        return encumbrances;
+      })
+      .onSuccess(encumbrances -> logger.info("Successfully retrieved {} encumbrances by summary id {}",
+        encumbrances.size(), summaryId))
+      .onFailure(e -> logger.error("getAllEncumbrances:: Getting all encumbrances by summary id {} failed", summaryId, e));
   }
 
   private String buildGetPermanentEncumbrancesQuery(String tenantId) {

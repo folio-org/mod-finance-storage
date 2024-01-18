@@ -17,12 +17,11 @@ import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.PgExceptionUtil;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 import org.folio.utils.CalculationUtils;
 
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
 
@@ -38,8 +37,6 @@ public class TransferService extends AbstractTransactionService implements Trans
 
   @Override
   public Future<Transaction> createTransaction(Transaction transfer, RequestContext requestContext) {
-    Promise<Transaction> promise = Promise.promise();
-
     try {
       handleValidationError(transfer);
     } catch (HttpException e) {
@@ -47,29 +44,20 @@ public class TransferService extends AbstractTransactionService implements Trans
     }
     DBClient client = new DBClient(requestContext);
 
-    client.startTx()
-      .compose(v -> createTransfer(transfer, client)
-        .compose(createdTransfer -> {
+    return client.withTrans(conn -> createTransfer(transfer, conn)
+      .compose(createdTransfer -> {
         if (transfer.getFromFundId() != null) {
-          return updateBudgetsTransferFrom(transfer, client);
+          return updateBudgetsTransferFrom(transfer, conn);
         }
         return Future.succeededFuture();
       })
-        .compose(toBudget -> updateBudgetsTransferTo(transfer, client))
-        .compose(ok -> client.endTx())
-        .onComplete(result -> {
-          if (result.failed()) {
-            logger.error("createTransaction:: Transfer  with id {} or associated data failed to be processed", transfer.getId(), result.cause());
-            client.rollbackTransaction();
-          } else {
-            promise.complete(transfer);
-            logger.info("createTransaction:: Transfer with id {} and associated data were successfully processed", transfer.getId());
-          }
-        })).onFailure(throwable -> {
-         client.rollbackTransaction();
-         promise.fail(throwable);
-    });
-    return promise.future();
+      .compose(toBudget -> updateBudgetsTransferTo(transfer, conn))
+      .onSuccess(v -> logger.info("createTransaction:: Transfer with id {} and associated data were successfully processed",
+        transfer.getId()))
+      .onFailure(e -> logger.error("createTransaction:: Transfer with id {} or associated data failed to be processed",
+        transfer.getId(), e))
+      .map(v -> transfer)
+    );
   }
 
   @Override
@@ -77,46 +65,37 @@ public class TransferService extends AbstractTransactionService implements Trans
     return Transaction.TransactionType.TRANSFER;
   }
 
-  public Future<Transaction> createTransfer(Transaction transaction, DBClient dbClient) {
-    Promise<Transaction> promise = Promise.promise();
+  public Future<Transaction> createTransfer(Transaction transaction, DBConn conn) {
     if (StringUtils.isEmpty(transaction.getId())) {
       transaction.setId(UUID.randomUUID().toString());
     }
-
-    dbClient.getPgClient()
-      .save(dbClient.getConnection(), TRANSACTION_TABLE, transaction.getId(), transaction, event -> {
-        if (event.succeeded()) {
-          logger.info("createTransfer:: Transfer transaction with id {} successfully created", transaction.getId());
-          promise.complete(transaction);
-        } else {
-          logger.error("createTransfer:: Creation transfer with id {} transaction failed", transaction.getId(), event.cause());
-          promise.fail(new HttpException(500, PgExceptionUtil.getMessage(event.cause())));
-        }
-      });
-    return promise.future();
+    return conn.save(TRANSACTION_TABLE, transaction.getId(), transaction)
+      .onSuccess(s -> logger.info("createTransfer:: Transfer transaction with id {} successfully created", transaction.getId()))
+      .onFailure(e -> logger.error("createTransfer:: Creation transfer with id {} transaction failed", transaction.getId(), e))
+      .map(s -> transaction);
   }
 
-  private Future<Void> updateBudgetsTransferFrom(Transaction transfer, DBClient dbClient) {
-    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(transfer.getFiscalYearId(), transfer.getFromFundId(), dbClient)
+  private Future<Void> updateBudgetsTransferFrom(Transaction transfer, DBConn conn) {
+    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(transfer.getFiscalYearId(), transfer.getFromFundId(), conn)
       .map(budgetFromOld -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFromOld).mapTo(Budget.class);
         CalculationUtils.recalculateBudgetTransfer(budgetFromNew, transfer, transfer.getAmount());
         budgetService.updateBudgetMetadata(budgetFromNew, transfer);
         return budgetFromNew;
       })
-      .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), dbClient))
+      .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), conn))
       .map(i -> null);
   }
 
-  private Future<Void> updateBudgetsTransferTo(Transaction transfer, DBClient dbClient) {
-    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(transfer.getFiscalYearId(), transfer.getToFundId(), dbClient)
+  private Future<Void> updateBudgetsTransferTo(Transaction transfer, DBConn conn) {
+    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(transfer.getFiscalYearId(), transfer.getToFundId(), conn)
       .map(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo).mapTo(Budget.class);
         CalculationUtils.recalculateBudgetTransfer(budgetToNew, transfer, -transfer.getAmount());
         budgetService.updateBudgetMetadata(budgetToNew, transfer);
         return budgetToNew;
       })
-      .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), dbClient))
+      .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), conn))
       .map(i -> null);
   }
 

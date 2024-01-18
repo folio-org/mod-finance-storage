@@ -57,14 +57,14 @@ public class ResponseUtils {
     if (cause instanceof PgException && "23F09".equals(((PgException)cause).getCode())) {
       String message = MessageFormat.format(ErrorCodes.CONFLICT.getDescription(), ((PgException)cause).getTable(),
         ((PgException)cause).getErrorMessage());
-      promise.fail(new HttpException(Response.Status.CONFLICT.getStatusCode(), message));
+      promise.fail(new HttpException(Response.Status.CONFLICT.getStatusCode(), message, cause));
       return;
     }
     String badRequestMessage = PgExceptionUtil.badRequestMessage(cause);
     if (badRequestMessage != null) {
-      promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), badRequestMessage));
+      promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), badRequestMessage, cause));
     } else {
-      promise.fail(new HttpException(INTERNAL_SERVER_ERROR.getStatusCode(), cause.getMessage()));
+      promise.fail(new HttpException(INTERNAL_SERVER_ERROR.getStatusCode(), cause.getMessage(), cause));
     }
   }
 
@@ -119,11 +119,4 @@ public class ResponseUtils {
     }
   }
 
-  public static  <T> void handleVoidAsyncResult(Promise<Void> promise, AsyncResult<T> reply) {
-    if(reply.failed()) {
-      handleFailure(promise, reply);
-    } else {
-      promise.complete();
-    }
-  }
 }

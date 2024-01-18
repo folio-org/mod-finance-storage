@@ -5,7 +5,7 @@ import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 
 import java.util.List;
 
@@ -17,7 +17,7 @@ public class TemporaryTransactionService {
     this.temporaryTransactionDAO = temporaryTransactionDAO;
   }
 
-  public Future<List<Transaction>> getTransactions(LedgerFiscalYearRolloverBudget budget, DBClient client) {
+  public Future<List<Transaction>> getTransactions(LedgerFiscalYearRolloverBudget budget, DBConn conn) {
     CriterionBuilder criterionBuilder = new CriterionBuilder("AND");
     criterionBuilder.withJson("toFundId", "=", budget.getFundId())
       .withJson("fiscalYearId", "=", budget.getFiscalYearId())
@@ -26,8 +26,7 @@ public class TemporaryTransactionService {
       .withOperation("AND")
       .withJson("fromFundId", "=", budget.getFundId());
 
-    return client.getPgClient()
-      .withConn(conn -> temporaryTransactionDAO.getTempTransactions(criterionBuilder.build(), conn));
+    return temporaryTransactionDAO.getTempTransactions(criterionBuilder.build(), conn);
   }
 
 }

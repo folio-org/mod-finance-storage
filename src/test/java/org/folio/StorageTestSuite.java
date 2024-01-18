@@ -17,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
 import org.folio.dao.rollover.RolloverErrorDAOTest;
 import org.folio.dao.rollover.RolloverProgressDAOTest;
+import org.folio.dao.transactions.BaseTransactionDAOTest;
 import org.folio.dao.transactions.PendingPaymentDAOTest;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
@@ -207,6 +208,9 @@ public class StorageTestSuite {
   @Nested
   class PendingPaymentServiceTestNested extends PendingPaymentServiceTest {
   }
+
+  @Nested
+  class BaseTransactionDAOTestNested extends BaseTransactionDAOTest {}
 
   @Nested
   class PendingPaymentDAOTestNested extends PendingPaymentDAOTest {}
