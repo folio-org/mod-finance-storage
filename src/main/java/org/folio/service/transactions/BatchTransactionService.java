@@ -34,6 +34,7 @@ public class BatchTransactionService {
   private void sanityChecks(Batch batch) {
     checkIdIsPresent(batch.getTransactionsToCreate(), "create");
     checkIdIsPresent(batch.getTransactionsToUpdate(), "update");
+    // ids of patches are already checked with the schema
     if (batch.getTransactionsToCreate().isEmpty() && batch.getTransactionsToUpdate().isEmpty() &&
         batch.getIdsOfTransactionsToDelete().isEmpty() && batch.getTransactionPatches().isEmpty()) {
       throw new HttpException(400, "At least one of the batch operations needs to be used.");

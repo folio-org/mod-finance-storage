@@ -1,0 +1,10 @@
+{
+  "transactionPatches": [
+    {
+      "id": "570b95a8-ebe1-41f9-a96d-87a863606f82",
+      "encumbrance": {
+        "orderStatus": "Closed"
+      }
+    }
+  ]
+}

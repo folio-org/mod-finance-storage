@@ -45,6 +45,7 @@ import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.rollover.RolloverValidationServiceTest;
 import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
 import org.folio.service.transactions.AllocationServiceTest;
+import org.folio.service.transactions.BatchTransactionServiceTest;
 import org.folio.service.transactions.EncumbranceServiceTest;
 import org.folio.service.transactions.PaymentCreditServiceTest;
 import org.folio.service.transactions.PendingPaymentServiceTest;
@@ -265,4 +266,7 @@ public class StorageTestSuite {
 
   @Nested
   class EmailServiceTestNested extends EmailServiceTest {}
+
+  @Nested
+  class BatchTransactionServiceTestNested extends BatchTransactionServiceTest {}
 }

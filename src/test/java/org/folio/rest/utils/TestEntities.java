@@ -4,6 +4,7 @@ import org.folio.rest.jaxrs.model.*;
 import org.folio.rest.jaxrs.resource.*;
 import org.folio.rest.persist.HelperUtils;
 
+import static org.folio.rest.impl.TransactionTest.BATCH_TRANSACTION_ENDPOINT;
 import static org.folio.rest.impl.TransactionTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 
 public enum TestEntities {
@@ -23,7 +24,8 @@ public enum TestEntities {
   LEDGER_FISCAL_YEAR_ROLLOVER(HelperUtils.getEndpoint(FinanceStorageLedgerRollovers.class), LedgerFiscalYearRollover.class, "data/ledger-fiscal-year-rollovers/", "main-library.json", "restrictEncumbrance", "true", 0, true),
   LEDGER_FISCAL_YEAR_ROLLOVER_LOG(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversLogs.class), LedgerFiscalYearRolloverLog.class, null, null, null, null, 0, false),
   LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversProgress.class), LedgerFiscalYearRolloverProgress.class, "data/ledger-fiscal-year-rollovers/", "main-library-progress.json", "financialRolloverStatus", "Success", 0, false),
-  LEDGER_FISCAL_YEAR_ROLLOVER_ERROR(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversErrors.class), LedgerFiscalYearRolloverError.class, "data/ledger-fiscal-year-rollovers/", "main-library-errors.json", "errorType", "Fund", 0, false);
+  LEDGER_FISCAL_YEAR_ROLLOVER_ERROR(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversErrors.class), LedgerFiscalYearRolloverError.class, "data/ledger-fiscal-year-rollovers/", "main-library-errors.json", "errorType", "Fund", 0, false),
+  TRANSACTION_BATCH_WITH_PATCH(BATCH_TRANSACTION_ENDPOINT, Batch.class, "data/transactions/", "batch/batch_with_patch.json", null, null, 0, false);
 
 
   TestEntities(String endpoint, Class<?> clazz, String pathToSamples, String sampleFileName, String updatedFieldName,
