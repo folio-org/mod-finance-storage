@@ -33,10 +33,11 @@ import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.transactions.cancel.CancelTransactionService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -53,6 +54,8 @@ public class PendingPaymentServiceTest {
 
   private static final String TENANT_ID = "tenant";
 
+  private AutoCloseable mockitoMocks;
+
   @InjectMocks
   private PendingPaymentService pendingPaymentService;
 
@@ -63,7 +66,7 @@ public class PendingPaymentServiceTest {
   @Mock
   private EncumbranceDAO transactionsDAO;
   @Mock
-  private DBClient client;
+  private DBConn conn;
 
   private final String summaryId = UUID.randomUUID().toString();
   private final String encumbranceId = UUID.randomUUID().toString();
@@ -75,10 +78,11 @@ public class PendingPaymentServiceTest {
   private Transaction encumbrance;
   private Budget budget;
 
+
   @BeforeEach
   public void initMocks(){
-    MockitoAnnotations.openMocks(this);
-    when(client.getTenantId()).thenReturn(TENANT_ID);
+    mockitoMocks = MockitoAnnotations.openMocks(this);
+    when(conn.getTenantId()).thenReturn(TENANT_ID);
   }
 
   @BeforeEach
@@ -117,6 +121,11 @@ public class PendingPaymentServiceTest {
       .withFundId(fundId);
   }
 
+  @AfterEach
+  public void afterEach() throws Exception {
+    mockitoMocks.close();
+  }
+
   @Test
   void testProcessTemporaryToPermanentTransactionsWithLinkedAndNotLinkedPendingPayments() {
     BigDecimal linkedAmount = BigDecimal.valueOf(9.1);
@@ -136,50 +145,55 @@ public class PendingPaymentServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     encumbrance.withAmount(encumbered.doubleValue());
     List<Transaction> encumbrances = Collections.singletonList(encumbrance);
 
-    when(transactionsDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
+    when(transactionsDAO.getTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture(encumbrances));
 
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
 
-    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.createTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, conn);
 
     assertTrue(result.succeeded());
 
     final ArgumentCaptor<List<String>> idsArgumentCaptor = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO).getTransactions(idsArgumentCaptor.capture(), eq(client));
+    verify(transactionsDAO).getTransactions(idsArgumentCaptor.capture(), eq(conn));
     final List<String> ids = idsArgumentCaptor.getValue();
     assertThat(ids, contains(encumbranceId));
 
     final ArgumentCaptor<List<Transaction>> encumbranceUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
+    verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(conn));
     Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
     assertThat(updatedEncumbrance.getAmount(), is(encumbered.subtract(linkedAmount).doubleValue()));
     assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(BigDecimal.ZERO.add(linkedAmount).doubleValue()));
 
-    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
+    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(conn));
 
     String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
     String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
     String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
-    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(conn));
 
     Tuple params = paramsArgumentCapture.getValue();
     assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(conn));
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
@@ -209,50 +223,55 @@ public class PendingPaymentServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     encumbrance.withAmount(encumbered.doubleValue());
     encumbrance.getEncumbrance().setAmountAwaitingPayment(awaitingPayment.doubleValue());
     List<Transaction> encumbrances = Collections.singletonList(encumbrance);
 
-    when(transactionsDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
+    when(transactionsDAO.getTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture(encumbrances));
 
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.createTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, conn);
 
     assertTrue(result.succeeded());
 
     final ArgumentCaptor<List<String>> idsArgumentCaptor = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO).getTransactions(idsArgumentCaptor.capture(), eq(client));
+    verify(transactionsDAO).getTransactions(idsArgumentCaptor.capture(), eq(conn));
     final List<String> ids = idsArgumentCaptor.getValue();
     assertThat(ids, contains(encumbranceId));
 
     final ArgumentCaptor<List<Transaction>> encumbranceUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
+    verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(conn));
     Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
     assertThat(updatedEncumbrance.getAmount(), is(0.0));
     assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(10.1d));
 
-    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
+    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(conn));
 
     String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
     String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
     String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
-    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(conn));
 
     Tuple params = paramsArgumentCapture.getValue();
     assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(conn));
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
@@ -281,49 +300,54 @@ public class PendingPaymentServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     encumbrance.withAmount(encumbered.doubleValue());
     List<Transaction> encumbrances = Collections.singletonList(encumbrance);
 
-    when(transactionsDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
+    when(transactionsDAO.getTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture(encumbrances));
 
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.createTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, conn);
 
     assertTrue(result.succeeded());
 
     final ArgumentCaptor<List<String>> listArgumentCaptor = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO).getTransactions(listArgumentCaptor.capture(), eq(client));
+    verify(transactionsDAO).getTransactions(listArgumentCaptor.capture(), eq(conn));
     final List<String> idsArgument = listArgumentCaptor.getValue();
     assertThat(idsArgument, contains(linkedTransaction.getAwaitingPayment().getEncumbranceId()));
 
     final ArgumentCaptor<List<Transaction>> encumbranceUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
+    verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(conn));
     Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
     assertThat(updatedEncumbrance.getAmount(), is(0.0));
     assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(linkedAmount.doubleValue()));
 
-    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
+    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(conn));
 
     String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
     String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
     String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
-    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(conn));
 
     Tuple params = paramsArgumentCapture.getValue();
     assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(conn));
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
@@ -354,49 +378,54 @@ public class PendingPaymentServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     encumbrance.withAmount(encumbered.doubleValue());
     List<Transaction> encumbrances = Collections.singletonList(encumbrance);
 
-    when(transactionsDAO.getTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture(encumbrances));
+    when(transactionsDAO.getTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture(encumbrances));
 
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.createTransactions(transactions, client);
+    Future<Void> result = spyService.createTransactions(transactions, conn);
 
     assertTrue(result.succeeded());
 
     final ArgumentCaptor<List<String>> listArgumentCaptor = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO).getTransactions(listArgumentCaptor.capture(), eq(client));
+    verify(transactionsDAO).getTransactions(listArgumentCaptor.capture(), eq(conn));
     final List<String> idsArgument = listArgumentCaptor.getValue();
     assertThat(idsArgument, contains(linkedTransaction.getAwaitingPayment().getEncumbranceId()));
 
     final ArgumentCaptor<List<Transaction>> encumbranceUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(client));
+    verify(transactionsDAO).updatePermanentTransactions(encumbranceUpdateArgumentCapture.capture(), eq(conn));
     Transaction updatedEncumbrance = encumbranceUpdateArgumentCapture.getValue().get(0);
     assertThat(updatedEncumbrance.getAmount(), is(0.0));
     assertThat(updatedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), is(linkedAmount.doubleValue()));
 
-    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
+    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(conn));
 
     String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
     String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
     String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
-    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(conn));
 
     Tuple params = paramsArgumentCapture.getValue();
     assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(conn));
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
@@ -424,34 +453,37 @@ public class PendingPaymentServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    spyService.createTransactions(transactions, client)
+    spyService.createTransactions(transactions, conn)
       .onComplete(res -> assertTrue(res.succeeded()));
 
 
     verify(transactionsDAO, never()).getTransactions(anyList(), any());
     verify(transactionsDAO, never()).updatePermanentTransactions(anyList(), any());
 
-    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
+    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(conn));
 
     String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
     String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
     String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
-    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(conn));
 
     Tuple params = paramsArgumentCapture.getValue();
     assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(conn));
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
@@ -480,34 +512,37 @@ public class PendingPaymentServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    spyService.createTransactions(transactions, client)
+    spyService.createTransactions(transactions, conn)
       .onComplete(res -> assertTrue(res.succeeded()));
 
 
     verify(transactionsDAO, never()).getTransactions(anyList(), any());
     verify(transactionsDAO, never()).updatePermanentTransactions(anyList(), any());
 
-    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(client));
+    verify(transactionsDAO).saveTransactionsToPermanentTable(eq(summaryId), eq(conn));
 
     String budgetTableName = HelperUtils.getFullTableName(TENANT_ID, BUDGET_TABLE);
     String transactionTableName = HelperUtils.getFullTableName(TENANT_ID, TEMPORARY_INVOICE_TRANSACTIONS);
     String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
-    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(conn));
 
     Tuple params = paramsArgumentCapture.getValue();
     assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(conn));
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
@@ -537,15 +572,19 @@ public class PendingPaymentServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
-    when(transactionsDAO.getTransactions(anyList(), any())).thenReturn(Future.succeededFuture(Collections.singletonList(existingTransaction)));
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
+    when(transactionsDAO.getTransactions(anyList(), any()))
+      .thenReturn(Future.succeededFuture(Collections.singletonList(existingTransaction)));
 
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    spyService.cancelAndUpdateTransactions(transactions, client)
+    spyService.cancelAndUpdateTransactions(transactions, conn)
       .onComplete(res -> assertTrue(res.succeeded()));
 
     verify(transactionsDAO).getTransactions(anyList(), any());
@@ -556,13 +595,13 @@ public class PendingPaymentServiceTest {
     String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
-    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(conn));
 
     Tuple params = paramsArgumentCapture.getValue();
     assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(conn));
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
@@ -598,34 +637,38 @@ public class PendingPaymentServiceTest {
       .withUnavailable(unavailable.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
+      .thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     encumbrance.withAmount(encumbered.doubleValue());
     List<Transaction> encumbrances = Collections.singletonList(encumbrance);
 
-    when(transactionsDAO.getTransactions(eq(Collections.singletonList(linkedTransaction.getAwaitingPayment().getEncumbranceId())), eq(client)))
+    when(transactionsDAO.getTransactions(eq(Collections.singletonList(linkedTransaction.getAwaitingPayment().getEncumbranceId())), eq(conn)))
       .thenReturn(Future.succeededFuture(encumbrances));
     when(transactionsDAO.getTransactions(eq(Collections.singletonList(linkedTransaction.getId())), any()))
       .thenReturn(Future.succeededFuture(Collections.singletonList(existingTransaction)));
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.saveTransactionsToPermanentTable(anyString(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
-    Future<Void> result = spyService.cancelAndUpdateTransactions(transactions, client);
+    Future<Void> result = spyService.cancelAndUpdateTransactions(transactions, conn);
 
     assertTrue(result.succeeded());
 
     final ArgumentCaptor<List<String>> criterionArgumentCaptor = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO, times(2)).getTransactions(criterionArgumentCaptor.capture(), eq(client));
+    verify(transactionsDAO, times(2)).getTransactions(criterionArgumentCaptor.capture(), eq(conn));
     final List<List<String>> idsArguments = criterionArgumentCaptor.getAllValues();
     assertThat(idsArguments, containsInAnyOrder(Collections.singletonList(linkedTransaction.getId()),
       Collections.singletonList(linkedTransaction.getAwaitingPayment().getEncumbranceId())));
 
     final ArgumentCaptor<List<Transaction>> updateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(transactionsDAO, times(2)).updatePermanentTransactions(updateArgumentCapture.capture(), eq(client));
+    verify(transactionsDAO, times(2)).updatePermanentTransactions(updateArgumentCapture.capture(), eq(conn));
     List<List<Transaction>> updateArguments = updateArgumentCapture.getAllValues();
     Transaction updatedEncumbrance = updateArguments.stream().flatMap(Collection::stream)
       .filter(transaction -> transaction.getTransactionType() == Transaction.TransactionType.ENCUMBRANCE)
@@ -646,13 +689,13 @@ public class PendingPaymentServiceTest {
     String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
-    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(conn));
 
     Tuple params = paramsArgumentCapture.getValue();
     assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(conn));
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
@@ -688,15 +731,18 @@ public class PendingPaymentServiceTest {
       .withOverExpended(overExpended.doubleValue());
     List<Budget> budgets = Collections.singletonList(budget);
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client))).thenReturn(Future.succeededFuture(budgets));
-    when(budgetService.updateBatchBudgets(anyList(), eq(client))).thenReturn(Future.succeededFuture());
-    when(transactionsDAO.getTransactions(anyList(), any())).thenReturn(Future.succeededFuture(Collections.singletonList(existingTransaction)));
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn))).thenReturn(Future.succeededFuture(budgets));
+    when(budgetService.updateBatchBudgets(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
+    when(transactionsDAO.getTransactions(anyList(), any()))
+      .thenReturn(Future.succeededFuture(Collections.singletonList(existingTransaction)));
 
-    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(client))).thenReturn(Future.succeededFuture());
+    when(transactionsDAO.updatePermanentTransactions(anyList(), eq(conn)))
+      .thenReturn(Future.succeededFuture());
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    spyService.cancelAndUpdateTransactions(transactions, client)
+    spyService.cancelAndUpdateTransactions(transactions, conn)
       .onComplete(res -> assertTrue(res.succeeded()));
 
     verify(transactionsDAO).getTransactions(anyList(), any());
@@ -707,13 +753,13 @@ public class PendingPaymentServiceTest {
     String sql = String.format(SELECT_BUDGETS_BY_INVOICE_ID_FOR_UPDATE, budgetTableName, budgetTableName, transactionTableName);
 
     final ArgumentCaptor<Tuple> paramsArgumentCapture = ArgumentCaptor.forClass(Tuple.class);
-    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(client));
+    verify(budgetService).getBudgets(eq(sql), paramsArgumentCapture.capture(), eq(conn));
 
     Tuple params = paramsArgumentCapture.getValue();
     assertThat(params.get(UUID.class, 0), is(UUID.fromString(summaryId)));
 
     final ArgumentCaptor<List<Budget>> budgetUpdateArgumentCapture = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(client));
+    verify(budgetService).updateBatchBudgets(budgetUpdateArgumentCapture.capture(), eq(conn));
     List<Budget> updatedBudgets = budgetUpdateArgumentCapture.getValue();
     Budget updatedBudget = updatedBudgets.get(0);
 
@@ -744,11 +790,11 @@ public class PendingPaymentServiceTest {
 
     PendingPaymentService spyService = Mockito.spy(pendingPaymentService);
 
-    spyService.cancelAndUpdateTransactions(newTransactions, client)
+    spyService.cancelAndUpdateTransactions(newTransactions, conn)
       .onComplete(res -> assertTrue(res.succeeded()));
 
     verify(transactionsDAO).getTransactions(anyList(), any());
-    verify(cancelTransactionService, times(1)).cancelTransactions(anyList(), eq(client));
+    verify(cancelTransactionService, times(1)).cancelTransactions(anyList(), eq(conn));
   }
 
   @Test
@@ -761,12 +807,12 @@ public class PendingPaymentServiceTest {
     List<Transaction> encumbrances = Collections.singletonList(encumbrance);
     List<Budget> budgets = List.of();
 
-    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(client)))
+    when(budgetService.getBudgets(anyString(), any(Tuple.class), eq(conn)))
       .thenReturn(Future.succeededFuture(budgets));
-    when(transactionsDAO.getTransactions(anyList(), eq(client)))
+    when(transactionsDAO.getTransactions(anyList(), eq(conn)))
       .thenReturn(Future.succeededFuture(encumbrances));
 
-    pendingPaymentService.createTransactions(pendingPayments, client)
+    pendingPaymentService.createTransactions(pendingPayments, conn)
         .onComplete(event -> {
           assertThat(event.cause(), instanceOf(HttpException.class));
           HttpException thrown = (HttpException)event.cause();

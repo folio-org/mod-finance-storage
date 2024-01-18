@@ -16,8 +16,7 @@ import org.folio.models.EmailEntity;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
-import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.DBClientFactory;
+import org.folio.rest.persist.DBConn;
 import org.folio.utils.EmailOkapiClient;
 
 import javax.ws.rs.core.MediaType;
@@ -50,39 +49,35 @@ public class EmailService {
 
   private final RestClient configurationRestClient;
   private final RestClient userRestClient;
-  private final DBClientFactory dbClientFactory;
   private final LedgerDAO ledgerDAO;
 
-  public EmailService(RestClient configurationRestClient, RestClient userRestClient, DBClientFactory dbClientFactory, LedgerDAO ledgerDAO) {
+  public EmailService(RestClient configurationRestClient, RestClient userRestClient, LedgerDAO ledgerDAO) {
     this.configurationRestClient = configurationRestClient;
     this.userRestClient = userRestClient;
-    this.dbClientFactory = dbClientFactory;
     this.ledgerDAO = ledgerDAO;
   }
 
-  public void createAndSendEmail(RequestContext requestContext, LedgerFiscalYearRollover rollover) {
+  public Future<Void> createAndSendEmail(RequestContext requestContext, LedgerFiscalYearRollover rollover, DBConn conn) {
     logger.debug("createAndSendEmail:: Trying to create and send email");
-    getHostAddress(requestContext)
-      .onSuccess(hostAddressResponse -> getCurrentUser(requestContext)
-        .onSuccess(userResponse -> {
-          DBClient client = dbClientFactory.getDbClient(requestContext);
-          ledgerDAO.getLedgerById(rollover.getLedgerId(), client)
-            .onSuccess(ledger -> {
-              String hostAddress = hostAddressResponse.getJsonArray(CONFIGS_KEY).getJsonObject(0).getMap().get(VALUE_KEY).toString();
-              String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
-              Map<String, String> headers = getHeaders(requestContext);
-              EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
-              logger.info("createAndSendEmail:: Sending email");
+    return getHostAddress(requestContext)
+      .compose(hostAddressResponse -> getCurrentUser(requestContext)
+        .compose(userResponse -> ledgerDAO.getLedgerById(rollover.getLedgerId(), conn)
+          .compose(ledger -> {
+            String hostAddress = hostAddressResponse.getJsonArray(CONFIGS_KEY).getJsonObject(0).getMap().get(VALUE_KEY).toString();
+            String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
+            Map<String, String> headers = getHeaders(requestContext);
+            EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
+            logger.info("createAndSendEmail:: Sending email");
 
-              sendEmail(requestContext, headers, emailEntity);
-            }).onFailure(t -> logger.error("createAndSendEmail:: Getting ledger failed {}", t.getMessage()));
-        }).onFailure(t -> logger.error("createAndSendEmail:: Getting user failed {}", t.getMessage())))
-      .onFailure(t -> logger.error("createAndSendEmail:: Getting host address failed {}", t.getMessage()));
+            return sendEmail(requestContext, headers, emailEntity);
+          })))
+      .onSuccess(v -> logger.info("createAndSendEmail:: Email sent"))
+      .onFailure(t -> logger.error("createAndSendEmail failed", t));
   }
 
-  private void sendEmail(RequestContext requestContext, Map<String, String> headers, EmailEntity emailEntity) {
+  private Future<Void> sendEmail(RequestContext requestContext, Map<String, String> headers, EmailEntity emailEntity) {
     EmailOkapiClient emailOkapiClient = new EmailOkapiClient(requestContext.getHeaders().get(OKAPI_URL), requestContext.getContext().owner(), headers);
-    emailOkapiClient.sendEmail(EMAIL_ENDPOINT, JsonObject.mapFrom(emailEntity).toString());
+    return emailOkapiClient.sendEmail(EMAIL_ENDPOINT, JsonObject.mapFrom(emailEntity).toString());
   }
 
   private EmailEntity getEmailEntity(LedgerFiscalYearRollover rollover, String linkToRolloverLedger, String ledgerName, JsonObject user) {

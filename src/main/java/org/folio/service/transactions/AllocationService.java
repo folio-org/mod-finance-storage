@@ -17,12 +17,11 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.PgExceptionUtil;
+import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 import org.folio.utils.CalculationUtils;
 
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 
 public class AllocationService extends DefaultTransactionService implements TransactionManagingStrategy {
@@ -42,8 +41,6 @@ public class AllocationService extends DefaultTransactionService implements Tran
 
   @Override
   public Future<Transaction> createTransaction(Transaction allocation, RequestContext requestContext) {
-    Promise<Transaction> promise = Promise.promise();
-
     try {
       handleValidationError(allocation);
     } catch (HttpException e) {
@@ -51,50 +48,33 @@ public class AllocationService extends DefaultTransactionService implements Tran
     }
     DBClient client = requestContext.toDBClient();
 
-    client.startTx()
-      .compose(v -> budgetService.checkBudgetHaveMoneyForTransaction(allocation, client))
-      .compose(v -> createAllocation(allocation, client))
-      .compose(v -> updateFromBudget(allocation, client))
-      .compose(v -> updateBudgetTo(allocation, client))
-      .compose(ok -> client.endTx())
-      .onComplete(result -> {
-        if (result.failed()) {
-          logger.error("createTransaction:: Allocation with id {} or associated data failed to be processed", allocation.getId(), result.cause());
-          client.rollbackTransaction();
-          promise.fail(result.cause());
-        } else {
-          logger.info("createTransaction:: Allocation with id {} and associated data were successfully processed", allocation.getId());
-          promise.complete(allocation);
-        }
-      });
-    return promise.future();
+    return client.withTrans(conn -> budgetService.checkBudgetHaveMoneyForTransaction(allocation, conn)
+      .compose(v -> createAllocation(allocation, conn))
+      .compose(v -> updateFromBudget(allocation, conn))
+      .compose(v -> updateBudgetTo(allocation, conn))
+      .map(v -> allocation)
+    ).onSuccess(v -> logger.info("createTransaction:: Allocation with id {} and associated data were successfully processed",
+      allocation.getId()))
+    .onFailure(e -> logger.error("createTransaction:: Allocation with id {} or associated data failed to be processed",
+      allocation.getId(), e));
   }
 
-  private Future<Transaction> createAllocation(Transaction transaction, DBClient client) {
+  private Future<Transaction> createAllocation(Transaction transaction, DBConn conn) {
     logger.debug("createAllocation:: Trying to created allocation");
-    Promise<Transaction> promise = Promise.promise();
     if (StringUtils.isEmpty(transaction.getId())) {
       transaction.setId(UUID.randomUUID().toString());
     }
-
-    client.getPgClient()
-      .save(client.getConnection(), TRANSACTION_TABLE, transaction.getId(), transaction, event -> {
-        if (event.succeeded()) {
-          logger.info("createAllocation:: Allocation with id {} successfully created", transaction.getId());
-          promise.complete(transaction);
-        } else {
-          logger.error("createAllocation:: Creating the allocation with id {} failed", transaction.getId(), event.cause());
-          promise.fail(new HttpException(500, PgExceptionUtil.getMessage(event.cause())));
-        }
-      });
-    return promise.future();
+    return conn.save(TRANSACTION_TABLE, transaction.getId(), transaction)
+      .onSuccess(s -> logger.info("createAllocation:: Allocation with id {} successfully created", transaction.getId()))
+      .onFailure(e -> logger.error("createAllocation:: Creating the allocation with id {} failed", transaction.getId(), e))
+      .map(s -> transaction);
   }
 
-  private Future<Void> updateBudgetTo(Transaction allocation, DBClient client) {
+  private Future<Void> updateBudgetTo(Transaction allocation, DBConn conn) {
     if (StringUtils.isEmpty(allocation.getToFundId())) {
       return Future.succeededFuture();
     }
-    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(allocation.getFiscalYearId(), allocation.getToFundId(), client)
+    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(allocation.getFiscalYearId(), allocation.getToFundId(), conn)
       .map(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo)
           .mapTo(Budget.class);
@@ -102,22 +82,22 @@ public class AllocationService extends DefaultTransactionService implements Tran
         budgetService.updateBudgetMetadata(budgetToNew, allocation);
         return budgetToNew;
       })
-      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), client))
+      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), conn))
       .map(i -> null);
   }
 
-  private Future<Void> updateFromBudget(Transaction allocation, DBClient client) {
+  private Future<Void> updateFromBudget(Transaction allocation, DBConn conn) {
     if (StringUtils.isEmpty(allocation.getFromFundId())) {
       return Future.succeededFuture();
     }
-    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(allocation.getFiscalYearId(), allocation.getFromFundId(), client)
+    return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(allocation.getFiscalYearId(), allocation.getFromFundId(), conn)
       .map(budgetFrom -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFrom).mapTo(Budget.class);
         CalculationUtils.recalculateBudgetAllocationFrom(budgetFromNew, allocation, allocation.getAmount());
         budgetService.updateBudgetMetadata(budgetFromNew, allocation);
         return budgetFromNew;
       })
-      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), client))
+      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), conn))
       .map(i -> null);
   }
 

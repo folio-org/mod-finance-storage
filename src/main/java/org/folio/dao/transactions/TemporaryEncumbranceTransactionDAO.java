@@ -5,8 +5,8 @@ import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.Conn;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.DBConn;
 import org.folio.rest.util.ResponseUtils;
 
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ public class TemporaryEncumbranceTransactionDAO extends BaseTemporaryTransaction
   }
 
   @Override
-  public Future<List<Transaction>> getTempTransactions(Criterion criterion, Conn conn) {
+  public Future<List<Transaction>> getTempTransactions(Criterion criterion, DBConn conn) {
     logger.debug("Trying to get temp transactions by query: {}", criterion);
     return conn.execute(format(TEMPORARY_ENCUMBRANCE_TRANSACTIONS_QUERY, criterion.getWhere()))
       .map(result -> {

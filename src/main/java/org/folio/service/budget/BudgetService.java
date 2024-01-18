@@ -7,7 +7,6 @@ import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.persist.HelperUtils.getQueryValues;
 import static org.folio.rest.util.ErrorCodes.*;
-import static org.folio.rest.util.ResponseUtils.handleFailure;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
 import java.util.*;
@@ -24,6 +23,7 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.util.ErrorCodes;
 import org.folio.utils.CalculationUtils;
@@ -32,7 +32,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
 import io.vertx.sqlclient.Tuple;
@@ -49,7 +48,7 @@ public class BudgetService {
     + "WHERE jsonb->>'fiscalYearId' = $1 AND jsonb->>'fundId' = $2 "
     + "FOR UPDATE";
 
-  private BudgetDAO budgetDAO;
+  private final BudgetDAO budgetDAO;
 
   public BudgetService(BudgetDAO budgetDAO) {
     this.budgetDAO = budgetDAO;
@@ -60,146 +59,113 @@ public class BudgetService {
     logger.debug("deleteById:: Trying to delete finance storage budgets with id {}", id);
     vertxContext.runOnContext(v -> {
       DBClient client = new DBClient(vertxContext, headers);
-      budgetDAO.getBudgetById(id, client)
-        .compose(budget -> checkTransactions(budget, client).map(budget))
-        .compose(budget -> client.startTx()
-          .compose(t -> unlinkGroupFundFiscalYears(id, client))
-          .compose(t -> budgetDAO.deleteBudget(id, client))
-          .compose(t -> deleteAllocationTransactions(budget, client))
-          .compose(t -> client.endTx())
-          .onComplete(reply -> {
-            if (reply.failed()) {
-              logger.error("deleteById:: Deleting finance storage budgets with id {} failed", id, reply.cause());
-              client.rollbackTransaction();
-            }
-          }))
-        .onComplete(handleNoContentResponse(asyncResultHandler, id, "deleteById:: Budget {} {} deleted"));
+      client.withTrans(conn -> budgetDAO.getBudgetById(id, conn)
+        .compose(budget -> checkTransactions(budget, conn).map(budget)
+          .compose(t -> unlinkGroupFundFiscalYears(id, conn))
+          .compose(t -> budgetDAO.deleteBudget(id, conn))
+          .compose(t -> deleteAllocationTransactions(budget, conn))
+          .onFailure(e -> logger.error("deleteById:: Deleting finance storage budgets with id {} failed", id, e))
+        )
+      ).onComplete(handleNoContentResponse(asyncResultHandler, id, "deleteById:: Budget {} {} deleted"));
     });
   }
 
-  private Future<Void> deleteAllocationTransactions(Budget budget, DBClient client) {
+  private Future<Void> deleteAllocationTransactions(Budget budget, DBConn conn) {
     logger.debug("deleteAllocationTransactions:: Trying to delete allocation transactions with fund id {}", budget.getFundId());
-    Promise<Void> promise = Promise.promise();
 
-    String sql ="DELETE FROM "+ getFullTableName(client.getTenantId(), TRANSACTIONS_TABLE)
+    String sql ="DELETE FROM "+ getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
       + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() +"' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "')"
       + " AND (jsonb->>'fiscalYearId')::text = '" + budget.getFiscalYearId() + "' AND (jsonb->>'transactionType')::text = 'Allocation'";
 
-    client.getPgClient().execute(client.getConnection(), sql, reply -> {
-      if (reply.failed()) {
-        logger.error("deleteAllocationTransactions:: Allocation transaction deletion by query {} failed for budget with id {}", sql, budget.getId(), reply.cause());
-        handleFailure(promise, reply);
-      } else {
-        logger.info("deleteAllocationTransactions:: Allocation transaction for budget with id {} successfully deleted", budget.getId());
-        promise.complete();
-      }
-    });
-    return promise.future();
+    return conn.execute(sql)
+      .onSuccess(ecList -> logger.info("deleteAllocationTransactions:: Allocation transaction for budget with id {} successfully deleted",
+        budget.getId()))
+      .onFailure(e -> logger.error("deleteAllocationTransactions:: Allocation transaction deletion by query {} failed for budget with id {}",
+        sql, budget.getId(), e))
+      .mapEmpty();
   }
 
-  private Future<Void> checkTransactions(Budget budget, DBClient client) {
+  private Future<Void> checkTransactions(Budget budget, DBConn conn) {
     logger.debug("checkTransactions:: Checking transactions with fund id {}", budget.getFundId());
-    Promise<Void> promise = Promise.promise();
 
-    String sql ="SELECT jsonb FROM "+ getFullTableName(client.getTenantId(), TRANSACTIONS_TABLE)
+    String sql ="SELECT jsonb FROM "+ getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
       + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() + "' AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId()
       + "' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "'"
       + " AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId() + "') AND ((jsonb->>'transactionType')::text<>'Allocation'"
       + " OR ((jsonb->>'transactionType')::text='Allocation' AND (jsonb->'toFundId') is not null AND (jsonb->'fromFundId') is not null))";
 
-    client.getPgClient().execute(sql, reply -> {
-        if (reply.failed()) {
-          logger.error("checkTransactions:: Transaction retrieval by query {} failed for FundId {}", sql, budget.getFundId(), reply.cause());
-          handleFailure(promise, reply);
-        } else {
-          if (reply.result().size() > 0) {
-            logger.error("checkTransactions:: Transaction is present");
-            promise.fail(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR));
-          }
-          logger.info("checkTransactions:: Transactions for FundId {} have been successfully checked", budget.getFundId());
-          promise.complete();
+    return conn.execute(sql)
+      .map(rowSet -> {
+        if (rowSet.size() > 0) {
+          logger.error("checkTransactions:: Transaction is present");
+          throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR);
         }
-      });
-    return promise.future();
+        return null;
+      })
+      .onSuccess(rowSet -> logger.info("checkTransactions:: Transactions for FundId {} have been successfully checked",
+        budget.getFundId()))
+      .onFailure(e -> logger.error("checkTransactions:: Transaction retrieval by query {} failed for FundId {}",
+        sql, budget.getFundId(), e))
+      .mapEmpty();
   }
 
-  private Future<Void> unlinkGroupFundFiscalYears(String id, DBClient client) {
+  private Future<Void> unlinkGroupFundFiscalYears(String id, DBConn conn) {
     logger.debug("unlinkGroupFundFiscalYears:: Trying to unlink group fund fiscal years with budget id {}", id);
-    Promise<Void> promise = Promise.promise();
 
-    String sql = "UPDATE " + getFullTableName(client.getTenantId(), GROUP_FUND_FY_TABLE)
+    String sql = "UPDATE " + getFullTableName(conn.getTenantId(), GROUP_FUND_FY_TABLE)
         + " SET jsonb = jsonb - 'budgetId' WHERE budgetId=$1;";
 
-    client.getPgClient()
-      .execute(client.getConnection(), sql, Tuple.of(UUID.fromString(id)), reply -> {
-        if (reply.failed()) {
-          logger.error("unlinkGroupFundFiscalYears:: Failed to update group_fund_fiscal_year by budget id {}", id, reply.cause());
-          handleFailure(promise, reply);
-        } else {
-          logger.info("unlinkGroupFundFiscalYears:: Group fund fiscal years have been successfully unlinked by budget id {}", id);
-          promise.complete();
-        }
-      });
-    return promise.future();
+    return conn.execute(sql, Tuple.of(UUID.fromString(id)))
+      .onSuccess(ecList -> logger.info("unlinkGroupFundFiscalYears:: Group fund fiscal years have been successfully unlinked by budget id {}", id))
+      .onFailure(e -> logger.error("unlinkGroupFundFiscalYears:: Failed to update group_fund_fiscal_year by budget id {}", id, e))
+      .mapEmpty();
   }
 
-  public Future<Budget> getBudgetByFundIdAndFiscalYearId(String fiscalYearId, String fundId, DBClient dbClient, boolean withTx) {
+  public Future<Budget> getBudgetByFundIdAndFiscalYearId(String fiscalYearId, String fundId, DBConn conn) {
     logger.debug("getBudgetByFundIdAndFiscalYearId:: Trying to get budget by fund id {} and fiscal year id {}", fundId, fiscalYearId);
-    Promise<Budget> promise = Promise.promise();
 
     Criterion criterion = new CriterionBuilder().with("fundId", fundId)
       .with("fiscalYearId", fiscalYearId)
       .build();
-    Future.succeededFuture()
-      .compose(v -> {
-        if (withTx) {
-          return budgetDAO.getBudgetsTx(criterion, dbClient);
-        }
-        return budgetDAO.getBudgets(criterion, dbClient);
-      })
-      .onComplete(reply -> {
-        if (reply.failed()) {
-          logger.error("getBudgetByFundIdAndFiscalYearId:: Getting budget by fund id {} and fiscal year id {} failed", fundId, fiscalYearId, reply.cause());
-          handleFailure(promise, reply);
-        } else if (reply.result().isEmpty()) {
+    return budgetDAO.getBudgets(criterion, conn)
+      .map(budgets -> {
+        if (budgets.isEmpty()) {
           logger.error("getBudgetByFundIdAndFiscalYearId:: Budget not found for fundId {} and fiscalYearId {}", fundId, fiscalYearId);
-          promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(),
-              JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily()));
+          throw new HttpException(Response.Status.NOT_FOUND.getStatusCode(),
+            JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily());
         } else {
           logger.info("getBudgetByFundIdAndFiscalYearId:: Successfully retrieved budget by fund id {} and fiscal year id {}", fundId, fiscalYearId);
-          promise.complete(reply.result().get(0));
+          return budgets.get(0);
         }
-      });
-
-    return promise.future();
+      })
+      .onFailure(e -> logger.error("getBudgetByFundIdAndFiscalYearId:: Getting budget by fund id {} and fiscal year id {} failed", fundId, fiscalYearId, e));
   }
 
-  public Future<Budget> getBudgetByFiscalYearIdAndFundIdForUpdate(String fiscalYearId, String fundId, DBClient dbClient) {
+  /**
+   * Get budget by fiscal year id and fund id for update.
+   * This should only be called in a transactional context because it is using SELECT FOR UPDATE.
+   */
+  public Future<Budget> getBudgetByFiscalYearIdAndFundIdForUpdate(String fiscalYearId, String fundId, DBConn conn) {
     logger.debug("getBudgetByFiscalYearIdAndFundIdForUpdate:: Trying to get budget by fund id {} and fiscal year id {} for update", fundId, fiscalYearId);
-    Promise<Budget> promise = Promise.promise();
 
-    String sql = getSelectBudgetQueryByFyAndFundForUpdate(dbClient.getTenantId());
-    budgetDAO.getBudgetsTx(sql, Tuple.of(fiscalYearId, fundId), dbClient)
-      .onComplete(reply -> {
-        if (reply.failed()) {
-          logger.error("getBudgetByFiscalYearIdAndFundIdForUpdate:: Getting budget by fund id {} and fiscal year id {} failed", fundId, fiscalYearId, reply.cause());
-          handleFailure(promise, reply);
-        } else if (reply.result().isEmpty()) {
+    String sql = getSelectBudgetQueryByFyAndFundForUpdate(conn.getTenantId());
+    return budgetDAO.getBudgetsBySql(sql, Tuple.of(fiscalYearId, fundId), conn)
+      .map(budgets -> {
+        if (budgets.isEmpty()) {
           logger.error("getBudgetByFiscalYearIdAndFundIdForUpdate:: Budget for update not found for fundId {} and fiscalYearId {}", fundId, fiscalYearId);
-          promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(),
-            JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily()));
+          throw new HttpException(Response.Status.NOT_FOUND.getStatusCode(),
+            JsonObject.mapFrom(BUDGET_NOT_FOUND_FOR_TRANSACTION.toError()).encodePrettily());
         } else {
-          logger.info("getBudgetByFiscalYearIdAndFundIdForUpdate:: Successfully retrieved budget for update by fund id {} and fiscal year id {}", fundId, fiscalYearId);
-          promise.complete(reply.result().get(0));
+          return budgets.get(0);
         }
-      });
-
-    return promise.future();
+      })
+      .onFailure(e -> logger.error("getBudgetByFiscalYearIdAndFundIdForUpdate:: Getting budget by fund id {} and fiscal year id {} failed",
+        fundId, fiscalYearId, e));
   }
 
-  public Future<Integer> updateBatchBudgets(Collection<Budget> budgets, DBClient client) {
+  public Future<Integer> updateBatchBudgets(Collection<Budget> budgets, DBConn conn) {
     budgets.forEach(this::clearReadOnlyFields);
-    return budgetDAO.updateBatchBudgets(buildUpdateBudgetsQuery(budgets, client.getTenantId()), client);
+    return budgetDAO.updateBatchBudgets(buildUpdateBudgetsQuery(budgets, conn.getTenantId()), conn);
   }
 
   private String buildUpdateBudgetsQuery(Collection<Budget> budgets, String tenantId) {
@@ -211,8 +177,8 @@ public class BudgetService {
         getFullTableName(tenantId, BUDGET_TABLE), getQueryValues(jsonBudgets));
   }
 
-  public Future<List<Budget>> getBudgets(String sql, Tuple params, DBClient client) {
-    return budgetDAO.getBudgetsTx(sql, params, client);
+  public Future<List<Budget>> getBudgets(String sql, Tuple params, DBConn conn) {
+    return budgetDAO.getBudgetsBySql(sql, params, conn);
   }
 
   public void updateBudgetMetadata(Budget budget, Transaction transaction) {
@@ -238,40 +204,41 @@ public class BudgetService {
    * This method is used exclusively for "Move allocation" action and is skipped for other types.
    *
    * @param transaction The transaction to be checked.
-   * @param client      The database client used for database operations.
+   * @param conn      database connection
    * @return A {@link Future} that completes successfully if there is enough money available,
    * or fails with a {@link HttpException} if not enough money is available.
    */
-  public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBClient client) {
+  public Future<Void> checkBudgetHaveMoneyForTransaction(Transaction transaction, DBConn conn) {
     if (isNotMoveAllocation(transaction)) {
       return Future.succeededFuture();
     }
 
-    return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), client, true).compose(budget -> {
-      if (budget.getAvailable() < transaction.getAmount()) {
-        ErrorCodes errorCode = transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION ?
-          NOT_ENOUGH_MONEY_FOR_ALLOCATION : GENERIC_ERROR_CODE;
-        logger.error(errorCode.getDescription());
-        return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
-          JsonObject.mapFrom(new Errors().withErrors(singletonList(errorCode.toError())).withTotalRecords(1)).encode()));
-      }
-      return Future.succeededFuture();
-    });
+    return getBudgetByFundIdAndFiscalYearId(transaction.getFiscalYearId(), transaction.getFromFundId(), conn)
+      .map(budget -> {
+        if (budget.getAvailable() < transaction.getAmount()) {
+          ErrorCodes errorCode = transaction.getTransactionType() == Transaction.TransactionType.ALLOCATION ?
+            NOT_ENOUGH_MONEY_FOR_ALLOCATION : GENERIC_ERROR_CODE;
+          logger.error(errorCode.getDescription());
+          throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
+            JsonObject.mapFrom(new Errors().withErrors(singletonList(errorCode.toError())).withTotalRecords(1)).encode());
+        }
+        return null;
+      });
   }
 
   public void updateBudgetsWithCalculatedFields(List<Budget> budgets){
     budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
   }
 
-  public Future<Void> closeBudgets(LedgerFiscalYearRollover rollover, DBClient client) {
+  public Future<Void> closeBudgets(LedgerFiscalYearRollover rollover, DBConn conn) {
     String sql = String.format(
         "UPDATE %s AS budgets SET jsonb = budgets.jsonb || jsonb_build_object('budgetStatus', 'Closed') "
             + "FROM %s AS fund  WHERE fund.ledgerId::text ='%s' AND budgets.fiscalYearId::text='%s' AND fund.id=budgets.fundId;",
-        getFullTableName(client.getTenantId(), BUDGET_TABLE), getFullTableName(client.getTenantId(), FUND_TABLE),
+        getFullTableName(conn.getTenantId(), BUDGET_TABLE), getFullTableName(conn.getTenantId(), FUND_TABLE),
         rollover.getLedgerId(), rollover.getFromFiscalYearId());
 
-    return budgetDAO.updateBatchBudgets(sql, client)
-      .map(integer -> null);
+    return budgetDAO.updateBatchBudgets(sql, conn)
+      .mapEmpty();
   }
 
   private String getSelectBudgetQueryByFyAndFundForUpdate(String tenantId){

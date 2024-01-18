@@ -3,6 +3,7 @@
   "ledgerId": "133a7916-f05e-4df4-8f7f-09eb2a7076d1",
   "fromFiscalYearId": "7a4c4d30-3b63-4102-8e2d-3ee5792d7d02",
   "toFiscalYearId": "7a4c4d30-3b63-4102-8e2d-3ee5792d7d02",
+  "rolloverType": "Preview",
   "restrictEncumbrance": false,
   "restrictExpenditures": false,
   "needCloseBudgets": true,

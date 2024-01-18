@@ -13,7 +13,8 @@ import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.jaxrs.model.RolloverStatus;
-import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBConn;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,8 @@ import io.vertx.junit5.VertxTestContext;
 @ExtendWith(VertxExtension.class)
 public class RolloverProgressServiceTest {
 
+  private AutoCloseable mockitoMocks;
+
   @InjectMocks
   private RolloverProgressService rolloverProgressService;
 
@@ -36,11 +39,17 @@ public class RolloverProgressServiceTest {
   @Mock
   private RolloverErrorService rolloverErrorService;
   @Mock
-  private DBClient client;
+  private DBConn conn;
+
 
   @BeforeEach
   public void initMocks() {
-    MockitoAnnotations.openMocks(this);
+    mockitoMocks = MockitoAnnotations.openMocks(this);
+  }
+
+  @AfterEach
+  public void afterEach() throws Exception {
+    mockitoMocks.close();
   }
 
   @Test
@@ -54,7 +63,7 @@ public class RolloverProgressServiceTest {
       .thenReturn(Future.succeededFuture(Collections.singletonList(error)));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
-    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))
+    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, conn))
       .onComplete(event -> {
         testContext.verify(() -> {
           assertEquals(ERROR, progress.getOverallRolloverStatus());
@@ -75,7 +84,7 @@ public class RolloverProgressServiceTest {
       .thenReturn(Future.succeededFuture(Collections.emptyList()));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
-    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))
+    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, conn))
       .onComplete(event -> {
         testContext.verify(() -> {
           assertEquals(SUCCESS, progress.getOverallRolloverStatus());
@@ -97,7 +106,7 @@ public class RolloverProgressServiceTest {
       .thenReturn(Future.succeededFuture(Collections.singletonList(error)));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
-    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))
+    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, conn))
       .onComplete(event -> {
         testContext.verify(() -> {
           assertEquals(ERROR, progress.getOverallRolloverStatus());
@@ -118,7 +127,7 @@ public class RolloverProgressServiceTest {
       .thenReturn(Future.succeededFuture(Collections.emptyList()));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
-    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, client))
+    testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, conn))
       .onComplete(event -> {
         testContext.verify(() -> {
           assertEquals(SUCCESS, progress.getOverallRolloverStatus());
