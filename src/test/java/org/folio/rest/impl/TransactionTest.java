@@ -11,7 +11,6 @@ import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
-import static org.folio.rest.utils.TestEntities.TRANSACTION_BATCH_WITH_PATCH;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,7 +54,8 @@ public class TransactionTest extends TestBase {
   public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets-8.4.0/ANZHIST-FY24.json";
   public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations-8.4.0/allocation_CANLATHIST-FY24.json";
   public static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
-  public static final String BATCH_TRANSACTION_ENDPOINT = "/finance-storage/transactions/batch-all-or-nothing";
+  private static final String BATCH_TRANSACTION_SAMPLE = "data/transactions/batch/batch_with_patch.json";
+  private static final String BATCH_TRANSACTION_ENDPOINT = "/finance-storage/transactions/batch-all-or-nothing";
   private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
   private static TenantJob tenantJob;
 
@@ -418,7 +418,7 @@ public class TransactionTest extends TestBase {
 
   @Test
   void testBatchTransactionsPatch() {
-    String batchAsString = getFile(TRANSACTION_BATCH_WITH_PATCH.getSampleFileName());
+    String batchAsString = getFile(BATCH_TRANSACTION_SAMPLE);
     postData(BATCH_TRANSACTION_ENDPOINT, batchAsString, TRANSACTION_TENANT_HEADER).then()
       .statusCode(500);
   }
