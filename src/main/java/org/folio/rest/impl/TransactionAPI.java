@@ -12,10 +12,12 @@ import javax.ws.rs.core.Response;
 
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.PgUtil;
+import org.folio.service.transactions.BatchTransactionService;
 import org.folio.service.transactions.TransactionManagingStrategyFactory;
 import org.folio.service.transactions.TransactionService;
 import org.folio.spring.SpringContextUtil;
@@ -32,6 +34,8 @@ public class TransactionAPI implements FinanceStorageTransactions {
 
   @Autowired
   private TransactionManagingStrategyFactory managingServiceFactory;
+  @Autowired
+  private BatchTransactionService batchTransactionService;
 
 
   public TransactionAPI() {
@@ -86,9 +90,22 @@ public class TransactionAPI implements FinanceStorageTransactions {
     });
   }
 
+  @Override
+  @Validate
+  public void postFinanceStorageTransactionsBatchAllOrNothing(Batch batch, Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    batchTransactionService.processBatch(batch, new RequestContext(vertxContext, okapiHeaders))
+      .onComplete(event -> {
+        if (event.succeeded()) {
+          asyncResultHandler.handle(buildNoContentResponse());
+        } else {
+          asyncResultHandler.handle(buildErrorResponse(event.cause()));
+        }
+      });
+  }
+
   private TransactionService getTransactionService(Transaction transaction) {
     return managingServiceFactory.findStrategy(transaction.getTransactionType());
   }
-
 
 }

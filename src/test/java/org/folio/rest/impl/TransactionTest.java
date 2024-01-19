@@ -54,6 +54,8 @@ public class TransactionTest extends TestBase {
   public static final String ALLOCATION_TO_BUDGET_SAMPLE_PATH = "data/budgets-8.4.0/ANZHIST-FY24.json";
   public static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations-8.4.0/allocation_CANLATHIST-FY24.json";
   public static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT = "/finance-storage/order-transaction-summaries";
+  private static final String BATCH_TRANSACTION_SAMPLE = "data/transactions/batch/batch_with_patch.json";
+  private static final String BATCH_TRANSACTION_ENDPOINT = "/finance-storage/transactions/batch-all-or-nothing";
   private static final String ORDER_TRANSACTION_SUMMARIES_ENDPOINT_WITH_ID = ORDER_TRANSACTION_SUMMARIES_ENDPOINT + "/{id}";
   private static TenantJob tenantJob;
 
@@ -412,6 +414,13 @@ public class TransactionTest extends TestBase {
       .then().statusCode(204);
     putData(TRANSACTION_ENDPOINT_BY_ID, encumbranceId, JsonObject.mapFrom(encumbrance3).encodePrettily(), TRANSACTION_TENANT_HEADER)
       .then().statusCode(409);
+  }
+
+  @Test
+  void testBatchTransactionsPatch() {
+    String batchAsString = getFile(BATCH_TRANSACTION_SAMPLE);
+    postData(BATCH_TRANSACTION_ENDPOINT, batchAsString, TRANSACTION_TENANT_HEADER).then()
+      .statusCode(500);
   }
 
 }
