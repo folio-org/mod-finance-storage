@@ -203,8 +203,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public BatchTransactionService batchTransactionService() {
-    return new BatchTransactionService();
+  public BatchTransactionService batchTransactionService(DBClientFactory dbClientFactory) {
+    return new BatchTransactionService(dbClientFactory);
   }
 
   @Bean

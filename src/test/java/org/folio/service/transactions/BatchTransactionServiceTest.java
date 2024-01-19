@@ -1,5 +1,6 @@
 package org.folio.service.transactions;
 
+import io.vertx.core.Future;
 import io.vertx.ext.web.handler.HttpException;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -8,32 +9,51 @@ import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionPatch;
+import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBClientFactory;
+import org.folio.rest.persist.DBConn;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.LinkedHashMap;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 
 @ExtendWith(VertxExtension.class)
 public class BatchTransactionServiceTest {
   private AutoCloseable mockitoMocks;
-  @InjectMocks
   private BatchTransactionService batchTransactionService;
   @Mock
+  private DBClientFactory dbClientFactory;
+  @Mock
   private RequestContext requestContext;
+  @Mock
+  private DBClient dbClient;
+  @Mock
+  private DBConn conn;
 
   @BeforeEach
   public void initMocks() {
     mockitoMocks = MockitoAnnotations.openMocks(this);
+    batchTransactionService = new BatchTransactionService(dbClientFactory);
+    doReturn(dbClient)
+      .when(dbClientFactory).getDbClient(eq(requestContext));
+    doAnswer(invocation -> {
+      Function<DBConn, Future<Void>> function = invocation.getArgument(0);
+      return function.apply(conn);
+    }).when(dbClient).withTrans(any());
   }
 
   @AfterEach
