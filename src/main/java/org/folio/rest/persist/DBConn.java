@@ -2,14 +2,17 @@ package org.folio.rest.persist;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.HttpException;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
 import org.folio.rest.util.ResponseUtils;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 
 /**
@@ -17,6 +20,8 @@ import java.util.List;
  * on failure.
  */
 public class DBConn {
+  private static final Logger logger = LogManager.getLogger();
+
   private final DBClient dbClient;
   private final Conn conn;
 
@@ -67,17 +72,26 @@ public class DBConn {
 
   public Future<RowSet<Row>> update(String table, Object entity, String id) {
     return conn.update(table, entity, id)
-        .recover(ResponseUtils::handleFailure);
-  }
-
-  public Future<RowSet<Row>> update(String table, Object entity, CQLWrapper filter, boolean returnUpdatedIds) {
-    return conn.update(table, entity, filter, returnUpdatedIds)
-      .recover(ResponseUtils::handleFailure);
+      .recover(ResponseUtils::handleFailure)
+      .map(rowSet -> {
+        if (rowSet.rowCount() == 0) {
+          logger.error("Entity with id {} not found for update", id);
+          throw new HttpException(Response.Status.NOT_FOUND.getStatusCode(), "Entity was not found for update");
+        }
+        return rowSet;
+      });
   }
 
   public Future<RowSet<Row>> delete(String table, String id) {
     return conn.delete(table, id)
-      .recover(ResponseUtils::handleFailure);
+      .recover(ResponseUtils::handleFailure)
+      .map(rowSet -> {
+        if (rowSet.rowCount() == 0) {
+          logger.error("Entity with id {} not found for deletion", id);
+          throw new HttpException(Response.Status.NOT_FOUND.getStatusCode(), "Entity was not found for deletion");
+        }
+        return rowSet;
+      });
   }
 
   public Future<RowSet<Row>> delete(String table, Criterion filter) {
@@ -87,6 +101,11 @@ public class DBConn {
 
   public Future<String> save(String table, String id, Object entity) {
     return conn.save(table, id, entity)
+      .recover(ResponseUtils::handleFailure);
+  }
+
+  public <T> Future<T> saveAndReturnUpdatedEntity(String table, String id, T entity) {
+    return conn.saveAndReturnUpdatedEntity(table, id, entity)
       .recover(ResponseUtils::handleFailure);
   }
 

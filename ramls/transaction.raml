@@ -34,6 +34,7 @@ resourceTypes:
       schemaCollection: transaction-collection
       schemaItem: transaction
   post:
+    description: Deprecated for encumbrances, pending payments, payments and credits - use batch-all-or-nothing instead.
     is: [validate]
   get:
     description: Get list of transactions
@@ -51,6 +52,7 @@ resourceTypes:
         exampleItem: !include acq-models/mod-finance/examples/transaction.sample
         schema: transaction
     put:
+      description: Deprecated for encumbrances, pending payments, payments and credits - use batch-all-or-nothing instead.
       is: [validate]
   /batch-all-or-nothing:
     displayName: Batch processing of transactions

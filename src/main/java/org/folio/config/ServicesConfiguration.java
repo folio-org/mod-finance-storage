@@ -12,6 +12,8 @@ import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.dao.rollover.RolloverBudgetDAO;
 import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
+import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
+import org.folio.dao.summary.OrderTransactionSummaryDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
@@ -41,6 +43,7 @@ import org.folio.service.summary.TransactionSummaryService;
 import org.folio.service.transactions.AllOrNothingTransactionService;
 import org.folio.service.transactions.AllocationService;
 import org.folio.service.transactions.BatchTransactionService;
+import org.folio.service.transactions.DefaultTransactionService;
 import org.folio.service.transactions.EncumbranceService;
 import org.folio.service.transactions.PaymentCreditService;
 import org.folio.service.transactions.PendingPaymentService;
@@ -119,30 +122,27 @@ public class ServicesConfiguration {
   public AllOrNothingTransactionService allOrNothingEncumbranceService(TransactionDAO encumbranceDAO,
                                                                        TemporaryOrderTransactionDAO orderTransactionSummaryDao,
                                                                        EncumbranceTransactionSummaryService encumbranceSummaryService,
-                                                                       EncumbranceRestrictionService encumbranceRestrictionService,
-                                                                       DBClientFactory dbClientFactory) {
+                                                                       EncumbranceRestrictionService encumbranceRestrictionService) {
     return new AllOrNothingTransactionService(encumbranceDAO, orderTransactionSummaryDao, encumbranceSummaryService,
-                                            encumbranceRestrictionService, dbClientFactory);
+                                            encumbranceRestrictionService);
   }
 
   @Bean
   public AllOrNothingTransactionService allOrNothingPaymentCreditService(TransactionDAO paymentCreditDAO,
                                                                          TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO,
                                                                          PaymentCreditTransactionSummaryService paymentCreditSummaryService,
-                                                                         PaymentCreditRestrictionService paymentCreditRestrictionService,
-                                                                         DBClientFactory dbClientFactory) {
+                                                                         PaymentCreditRestrictionService paymentCreditRestrictionService) {
     return new AllOrNothingTransactionService(paymentCreditDAO, temporaryInvoiceTransactionDAO, paymentCreditSummaryService,
-                                              paymentCreditRestrictionService, dbClientFactory);
+                                              paymentCreditRestrictionService);
   }
 
   @Bean
   public AllOrNothingTransactionService allOrNothingPendingPaymentService(TransactionDAO pendingPaymentDAO,
                                                                           TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO,
                                                                           PendingPaymentTransactionSummaryService pendingPaymentSummaryService,
-                                                                          PendingPaymentRestrictionService pendingPaymentRestrictionService,
-                                                                          DBClientFactory dbClientFactory) {
+                                                                          PendingPaymentRestrictionService pendingPaymentRestrictionService) {
     return new AllOrNothingTransactionService(pendingPaymentDAO, temporaryInvoiceTransactionDAO, pendingPaymentSummaryService,
-                                              pendingPaymentRestrictionService, dbClientFactory);
+                                              pendingPaymentRestrictionService);
   }
 
   @Bean
@@ -188,13 +188,13 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public TransactionService allocationService(BudgetService budgetService) {
-    return new AllocationService(budgetService);
+  public TransactionService allocationService(BudgetService budgetService, TransactionDAO defaultTransactionDAO) {
+    return new AllocationService(budgetService, defaultTransactionDAO);
   }
 
   @Bean
-  public TransactionService transferService(BudgetService budgetService) {
-    return new TransferService(budgetService);
+  public TransactionService transferService(BudgetService budgetService, TransactionDAO defaultTransactionDAO) {
+    return new TransferService(budgetService, defaultTransactionDAO);
   }
 
   @Bean
@@ -203,8 +203,17 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public BatchTransactionService batchTransactionService(DBClientFactory dbClientFactory) {
-    return new BatchTransactionService(dbClientFactory);
+  public DefaultTransactionService defaultTransactionService(TransactionDAO defaultTransactionDAO) {
+    return new DefaultTransactionService(defaultTransactionDAO);
+  }
+
+  @Bean
+  public BatchTransactionService batchTransactionService(DBClientFactory dbClientFactory,
+      TransactionManagingStrategyFactory managingServiceFactory, TransactionService defaultTransactionService,
+      OrderTransactionSummaryDAO orderTransactionSummaryDAO, InvoiceTransactionSummaryDAO invoiceTransactionSummaryDAO,
+      TemporaryOrderTransactionDAO temporaryOrderTransactionDAO, TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO) {
+    return new BatchTransactionService(dbClientFactory, managingServiceFactory, defaultTransactionService,
+      orderTransactionSummaryDAO, invoiceTransactionSummaryDAO, temporaryOrderTransactionDAO, temporaryInvoiceTransactionDAO);
   }
 
   @Bean

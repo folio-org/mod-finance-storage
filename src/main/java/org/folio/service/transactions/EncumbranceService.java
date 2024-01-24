@@ -4,7 +4,6 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Tuple;
 import org.folio.dao.transactions.TransactionDAO;
-import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -32,7 +31,7 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
-public class EncumbranceService implements TransactionManagingStrategy {
+public class EncumbranceService extends AbstractTransactionService implements TransactionManagingStrategy {
 
   private static final String TEMPORARY_ORDER_TRANSACTIONS = "temporary_order_transactions";
 
@@ -46,25 +45,24 @@ public class EncumbranceService implements TransactionManagingStrategy {
   public static final String EXISTING = "EXISTING";
 
   private final AllOrNothingTransactionService allOrNothingEncumbranceService;
-  private final TransactionDAO transactionDAO;
   private final BudgetService budgetService;
 
   public EncumbranceService(AllOrNothingTransactionService allOrNothingEncumbranceService,
-                            TransactionDAO transactionsDAO,
+                            TransactionDAO transactionDAO,
                             BudgetService budgetService) {
+    super(transactionDAO);
     this.allOrNothingEncumbranceService = allOrNothingEncumbranceService;
-    this.transactionDAO = transactionsDAO;
     this.budgetService = budgetService;
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
-    return allOrNothingEncumbranceService.createTransaction(transaction, requestContext, this::processEncumbrances);
+  public Future<Transaction> createTransaction(Transaction transaction, DBConn conn) {
+    return allOrNothingEncumbranceService.createTransaction(transaction, conn, this::processEncumbrances);
   }
 
   @Override
-  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
-    return allOrNothingEncumbranceService.updateTransaction(transaction, requestContext, this::processEncumbrances);
+  public Future<Void> updateTransaction(Transaction transaction, DBConn conn) {
+    return allOrNothingEncumbranceService.updateTransaction(transaction, conn, this::processEncumbrances);
   }
 
   private Map<Budget, List<Transaction>> groupTransactionsByBudget(List<Transaction> existingTransactions, List<Budget> budgets) {

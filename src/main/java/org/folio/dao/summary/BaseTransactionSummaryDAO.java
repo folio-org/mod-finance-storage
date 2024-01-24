@@ -42,12 +42,22 @@ public abstract class BaseTransactionSummaryDAO implements TransactionSummaryDao
 
       if (summary == null) {
         logger.warn("Transaction summary with id {} not found for transaction", summaryId, reply.cause());
-        return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
+        return Future.failedFuture(new HttpException(Response.Status.NOT_FOUND.getStatusCode(), TRANSACTION_SUMMARY_NOT_FOUND_FOR_TRANSACTION));
       } else {
         logger.info("Summary with id {} successfully extracted", summaryId);
         return Future.succeededFuture(summary);
       }
     }
+  }
+
+  @Override
+  public Future<Void> createSummary(JsonObject summary, DBConn conn) {
+    String id = summary.getString(ID_FIELD_NAME);
+    logger.debug("Trying to create summary in transaction by id {}", id);
+    return conn.save(getTableName(), id, summary)
+      .onSuccess(v -> logger.info("Summary with id {} successfully created", id))
+      .onFailure(e -> logger.error("Summary creation with id {} failed", id, e))
+      .mapEmpty();
   }
 
   @Override

@@ -12,11 +12,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
-import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
-import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.DBConn;
 import org.folio.service.summary.TransactionSummaryService;
 import org.folio.service.transactions.restriction.TransactionRestrictionService;
@@ -36,41 +33,30 @@ public class AllOrNothingTransactionService {
   private final TemporaryTransactionDAO temporaryTransactionDAO;
   private final TransactionSummaryService transactionSummaryService;
   private final TransactionRestrictionService transactionRestrictionService;
-  private final DBClientFactory dbClientFactory;
 
   public AllOrNothingTransactionService(TransactionDAO transactionDAO,
                                         TemporaryTransactionDAO temporaryTransactionDAO,
                                         TransactionSummaryService transactionSummaryService,
-                                        TransactionRestrictionService transactionRestrictionService,
-                                        DBClientFactory dbClientFactory) {
+                                        TransactionRestrictionService transactionRestrictionService) {
     this.transactionDAO = transactionDAO;
     this.temporaryTransactionDAO = temporaryTransactionDAO;
     this.transactionSummaryService = transactionSummaryService;
     this.transactionRestrictionService = transactionRestrictionService;
-    this.dbClientFactory = dbClientFactory;
   }
 
-  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext,
-          BiFunction<List<Transaction>, DBConn, Future<Void>> operation) {
-    DBClient client = dbClientFactory.getDbClient(requestContext);
+  public Future<Transaction> createTransaction(Transaction transaction, DBConn conn,
+      BiFunction<List<Transaction>, DBConn, Future<Void>> operation) {
     return validateTransactionAsFuture(transaction)
-      .compose(v1 -> client.withTrans(conn -> transactionRestrictionService.verifyBudgetHasEnoughMoney(transaction, conn)
-          .compose(v -> processAllOrNothing(transaction, conn, operation)))
-        .map(transaction)
-        .recover(throwable -> client.withConn(conn -> cleanupTempTransactions(transaction, conn))
-          .compose(v -> Future.failedFuture(throwable), v -> Future.failedFuture(throwable)))
-      );
+      .compose(v -> transactionRestrictionService.verifyBudgetHasEnoughMoney(transaction, conn))
+      .compose(v -> processAllOrNothing(transaction, conn, operation))
+      .map(transaction);
   }
 
-  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext,
-          BiFunction<List<Transaction>, DBConn, Future<Void>> operation) {
-    DBClient client = dbClientFactory.getDbClient(requestContext);
+  public Future<Void> updateTransaction(Transaction transaction, DBConn conn,
+      BiFunction<List<Transaction>, DBConn, Future<Void>> operation) {
     return validateTransactionAsFuture(transaction)
-      .compose(v1 -> client.withTrans(conn -> verifyTransactionExistence(transaction.getId(), conn)
-          .compose(v -> processAllOrNothing(transaction, conn, operation)))
-        .recover(throwable -> client.withConn(conn -> cleanupTempTransactions(transaction, conn))
-          .compose(v -> Future.failedFuture(throwable), v -> Future.failedFuture(throwable)))
-      );
+      .compose(v -> verifyTransactionExistence(transaction.getId(), conn))
+      .compose(v -> processAllOrNothing(transaction, conn, operation));
   }
 
   private Future<Void> validateTransactionAsFuture(Transaction transaction) {
@@ -79,16 +65,6 @@ public class AllOrNothingTransactionService {
         transactionRestrictionService.handleValidationError(transaction);
         return null;
       });
-  }
-
-  private Future<Void> cleanupTempTransactions(Transaction transaction, DBConn conn) {
-    final String summaryId = transactionSummaryService.getSummaryId(transaction);
-    return temporaryTransactionDAO.deleteTempTransactions(summaryId, conn)
-      .recover(t -> {
-        logger.error("cleanupTempTransactions:: Can't delete temporary transaction for {}", summaryId, t);
-        return Future.failedFuture(t);
-      })
-      .mapEmpty();
   }
 
   /**
@@ -102,6 +78,13 @@ public class AllOrNothingTransactionService {
    */
   private Future<Void> processAllOrNothing(Transaction transaction, DBConn conn, BiFunction<List<Transaction>, DBConn, Future<Void>> operation) {
     return transactionSummaryService.getAndCheckTransactionSummary(transaction, conn)
+      .recover(t -> {
+        if (t instanceof HttpException && ((HttpException)t).getStatusCode() == 404) {
+          return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
+            "Cannot process the transaction because the summary was not found.", t));
+        }
+        return Future.failedFuture(t);
+      })
       .compose(summary -> addTempTransactionSequentially(transaction, conn)
         .compose(transactions -> {
           if (transactions.size() != transactionSummaryService.getNumTransactions(summary)) {

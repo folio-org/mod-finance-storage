@@ -11,12 +11,11 @@ import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.rest.core.model.RequestContext;
+import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 import org.folio.utils.CalculationUtils;
@@ -31,20 +30,19 @@ public class TransferService extends AbstractTransactionService implements Trans
 
   private final BudgetService budgetService;
 
-  public TransferService(BudgetService budgetService) {
+  public TransferService(BudgetService budgetService, TransactionDAO transactionDAO) {
+    super(transactionDAO);
     this.budgetService = budgetService;
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transfer, RequestContext requestContext) {
+  public Future<Transaction> createTransaction(Transaction transfer, DBConn conn) {
     try {
       handleValidationError(transfer);
     } catch (HttpException e) {
       return Future.failedFuture(e);
     }
-    DBClient client = new DBClient(requestContext);
-
-    return client.withTrans(conn -> createTransfer(transfer, conn)
+    return createTransfer(transfer, conn)
       .compose(createdTransfer -> {
         if (transfer.getFromFundId() != null) {
           return updateBudgetsTransferFrom(transfer, conn);
@@ -56,8 +54,7 @@ public class TransferService extends AbstractTransactionService implements Trans
         transfer.getId()))
       .onFailure(e -> logger.error("createTransaction:: Transfer with id {} or associated data failed to be processed",
         transfer.getId(), e))
-      .map(v -> transfer)
-    );
+      .map(v -> transfer);
   }
 
   @Override

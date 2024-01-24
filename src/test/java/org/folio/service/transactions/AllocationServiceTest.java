@@ -10,17 +10,14 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.vertx.ext.web.handler.HttpException;
-import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 import org.junit.jupiter.api.AfterEach;
@@ -37,8 +34,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 
-import java.util.function.Function;
-
 @ExtendWith(VertxExtension.class)
 public class AllocationServiceTest {
 
@@ -47,10 +42,6 @@ public class AllocationServiceTest {
   private AllocationService allocationService;
   @Mock
   private BudgetService budgetService;
-  @Mock
-  private RequestContext requestContext;
-  @Mock
-  private DBClient dbClient;
   @Mock
   private DBConn conn;
 
@@ -71,7 +62,7 @@ public class AllocationServiceTest {
     jsonTx.remove("toFundId");
     jsonTx.remove("fromFundId");
     Transaction transactionSample = jsonTx.mapTo(Transaction.class);
-    testContext.assertFailure(allocationService.createTransaction(transactionSample, requestContext))
+    testContext.assertFailure(allocationService.createTransaction(transactionSample, conn))
       .onFailure(thrown -> {
         testContext.verify(() -> {
           assertThat(thrown, instanceOf(HttpException.class));
@@ -87,7 +78,7 @@ public class AllocationServiceTest {
     JsonObject jsonTx = new JsonObject(getFile(ALLOCATION_SAMPLE));
     Transaction transactionSample = jsonTx.mapTo(Transaction.class);
     transactionSample.setAmount(-10d);
-    testContext.assertFailure(allocationService.createTransaction(transactionSample, requestContext))
+    testContext.assertFailure(allocationService.createTransaction(transactionSample, conn))
       .onFailure(thrown -> {
         testContext.verify(() -> {
           assertThat(thrown, instanceOf(HttpException.class));
@@ -106,12 +97,6 @@ public class AllocationServiceTest {
     transactionSample.setToFundId(null);
     transactionSample.setAmount(40d);
 
-    when(requestContext.toDBClient())
-      .thenReturn(dbClient);
-    doAnswer(invocation -> {
-      Function<DBConn, Future<Transaction>> function = invocation.getArgument(0);
-      return function.apply(conn);
-    }).when(dbClient).withTrans(any());
     when(budgetService.checkBudgetHaveMoneyForTransaction(any(), any()))
       .thenReturn(Future.succeededFuture());
     doReturn(Future.succeededFuture(transactionSample.getId()))
@@ -123,7 +108,7 @@ public class AllocationServiceTest {
     when(budgetService.updateBatchBudgets(any(), any()))
       .thenReturn(Future.succeededFuture(1));
 
-    testContext.assertComplete(allocationService.createTransaction(transactionSample, requestContext))
+    testContext.assertComplete(allocationService.createTransaction(transactionSample, conn))
       .onSuccess(transaction -> {
         testContext.verify(() -> {
           ArgumentCaptor<Budget> argumentCaptor = ArgumentCaptor.forClass(Budget.class);

@@ -1,6 +1,5 @@
 package org.folio.dao.budget;
 
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.util.ErrorCodes.BUDGET_EXPENSE_CLASS_REFERENCE_ERROR;
 
@@ -95,13 +94,6 @@ public class BudgetPostgresDAO implements BudgetDAO {
             buildErrorForBudgetExpenseClassReferenceError()));
         }
         return Future.failedFuture(t);
-      })
-      .map(rowSet -> {
-        if (rowSet.rowCount() == 0) {
-          logger.warn("Budget with id {} not found for deletion", id);
-          throw new HttpException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase());
-        }
-        return null;
       })
       .onSuccess(v -> logger.info("Successfully deleted a budget with id {}", id))
       .onFailure(e -> logger.error("Deleting a budget by id {} failed", id, e))

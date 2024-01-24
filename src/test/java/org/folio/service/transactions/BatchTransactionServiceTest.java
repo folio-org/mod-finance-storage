@@ -1,13 +1,20 @@
 package org.folio.service.transactions;
 
 import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
+import org.folio.dao.summary.OrderTransactionSummaryDAO;
+import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
+import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Encumbrance;
+import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 import org.folio.rest.jaxrs.model.TransactionPatch;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
@@ -27,6 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -38,6 +46,22 @@ public class BatchTransactionServiceTest {
   @Mock
   private DBClientFactory dbClientFactory;
   @Mock
+  private TransactionManagingStrategyFactory managingServiceFactory;
+  @Mock
+  private DefaultTransactionService defaultTransactionService;
+  @Mock
+  private EncumbranceService encumbranceService;
+  @Mock
+  private PendingPaymentService pendingPaymentService;
+  @Mock
+  private OrderTransactionSummaryDAO orderTransactionSummaryDAO;
+  @Mock
+  private InvoiceTransactionSummaryDAO invoiceTransactionSummaryDAO;
+  @Mock
+  private TemporaryOrderTransactionDAO temporaryOrderTransactionDAO;
+  @Mock
+  private TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO;
+  @Mock
   private RequestContext requestContext;
   @Mock
   private DBClient dbClient;
@@ -47,7 +71,8 @@ public class BatchTransactionServiceTest {
   @BeforeEach
   public void initMocks() {
     mockitoMocks = MockitoAnnotations.openMocks(this);
-    batchTransactionService = new BatchTransactionService(dbClientFactory);
+    batchTransactionService = new BatchTransactionService(dbClientFactory, managingServiceFactory, defaultTransactionService,
+      orderTransactionSummaryDAO, invoiceTransactionSummaryDAO, temporaryOrderTransactionDAO, temporaryInvoiceTransactionDAO);
     doReturn(dbClient)
       .when(dbClientFactory).getDbClient(eq(requestContext));
     doAnswer(invocation -> {
@@ -72,7 +97,7 @@ public class BatchTransactionServiceTest {
       .withFromFundId(fundId)
       .withFiscalYearId(fiscalYearId)
       .withCurrency(currency)
-      .withTransactionType(Transaction.TransactionType.PENDING_PAYMENT);
+      .withTransactionType(TransactionType.PENDING_PAYMENT);
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(pendingPayment);
     testContext.assertFailure(batchTransactionService.processBatch(batch, requestContext))
@@ -87,34 +112,47 @@ public class BatchTransactionServiceTest {
   }
 
   @Test
-  void testCreateTransaction(VertxTestContext testContext) {
+  void testCreateEncumbrance(VertxTestContext testContext) {
     String transactionId = UUID.randomUUID().toString();
-    String invoiceId = UUID.randomUUID().toString();
+    String orderId = UUID.randomUUID().toString();
+    String orderLineId = UUID.randomUUID().toString();
     String fundId = UUID.randomUUID().toString();
     String fiscalYearId = UUID.randomUUID().toString();
-    String currency = "USD";
-    Transaction pendingPayment = new Transaction()
+    Transaction encumbrance = new Transaction()
       .withId(transactionId)
-      .withSourceInvoiceId(invoiceId)
+      .withCurrency("USD")
       .withFromFundId(fundId)
+      .withTransactionType(Transaction.TransactionType.ENCUMBRANCE)
+      .withAmount(10.0)
       .withFiscalYearId(fiscalYearId)
-      .withCurrency(currency)
-      .withTransactionType(Transaction.TransactionType.PENDING_PAYMENT);
+      .withSource(Transaction.Source.PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withOrderType(Encumbrance.OrderType.ONE_TIME)
+        .withOrderStatus(Encumbrance.OrderStatus.OPEN)
+        .withSourcePurchaseOrderId(orderId)
+        .withSourcePoLineId(orderLineId)
+        .withInitialAmountEncumbered(10d)
+        .withSubscription(false)
+        .withReEncumber(false));
     Batch batch = new Batch();
-    batch.getTransactionsToCreate().add(pendingPayment);
-    testContext.assertFailure(batchTransactionService.processBatch(batch, requestContext))
-      .onFailure(thrown -> {
-        testContext.verify(() -> {
-          assertThat(thrown, instanceOf(HttpException.class));
-          assertThat(((HttpException) thrown).getStatusCode(), equalTo(500));
-          assertThat(((HttpException) thrown).getPayload(), equalTo("transactionsToCreate: not implemented"));
-        });
-        testContext.completeNow();
-      });
+    batch.getTransactionsToCreate().add(encumbrance);
+    doReturn(encumbranceService)
+      .when(managingServiceFactory).findStrategy(any());
+    doReturn(Future.succeededFuture(null))
+      .when(orderTransactionSummaryDAO).getSummaryById(eq(orderId), eq(conn));
+    doReturn(Future.succeededFuture())
+      .when(orderTransactionSummaryDAO).createSummary(argThat(jsonObject -> orderId.equals(jsonObject.getString("id"))),
+        eq(conn));
+    doReturn(Future.succeededFuture(encumbrance))
+      .when(encumbranceService).createTransaction(eq(encumbrance), eq(conn));
+    doReturn(Future.succeededFuture(0))
+      .when(temporaryOrderTransactionDAO).deleteTempTransactions(eq(orderId), eq(conn));
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> testContext.completeNow());
   }
 
   @Test
-  void testUpdateTransaction(VertxTestContext testContext) {
+  void testUpdatePendingPayment(VertxTestContext testContext) {
     String transactionId = UUID.randomUUID().toString();
     String invoiceId = UUID.randomUUID().toString();
     String fundId = UUID.randomUUID().toString();
@@ -126,18 +164,26 @@ public class BatchTransactionServiceTest {
       .withFromFundId(fundId)
       .withFiscalYearId(fiscalYearId)
       .withCurrency(currency)
-      .withTransactionType(Transaction.TransactionType.PENDING_PAYMENT);
+      .withTransactionType(TransactionType.PENDING_PAYMENT);
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(pendingPayment);
-    testContext.assertFailure(batchTransactionService.processBatch(batch, requestContext))
-      .onFailure(thrown -> {
-        testContext.verify(() -> {
-          assertThat(thrown, instanceOf(HttpException.class));
-          assertThat(((HttpException) thrown).getStatusCode(), equalTo(500));
-          assertThat(((HttpException) thrown).getPayload(), equalTo("transactionsToUpdate: not implemented"));
-        });
-        testContext.completeNow();
-      });
+    InvoiceTransactionSummary invoiceTransactionSummary = new InvoiceTransactionSummary()
+      .withId(UUID.randomUUID().toString())
+      .withNumPaymentsCredits(1)
+      .withNumPendingPayments(1);
+    doReturn(pendingPaymentService)
+      .when(managingServiceFactory).findStrategy(any());
+    doReturn(Future.succeededFuture(JsonObject.mapFrom(invoiceTransactionSummary)))
+      .when(invoiceTransactionSummaryDAO).getSummaryById(eq(invoiceId), eq(conn));
+    doReturn(Future.succeededFuture())
+      .when(invoiceTransactionSummaryDAO).updateSummary(argThat(jsonObject -> invoiceId.equals(jsonObject.getString("id"))),
+        eq(conn));
+    doReturn(Future.succeededFuture())
+      .when(pendingPaymentService).updateTransaction(eq(pendingPayment), eq(conn));
+    doReturn(Future.succeededFuture(0))
+      .when(temporaryInvoiceTransactionDAO).deleteTempTransactions(eq(invoiceId), eq(conn));
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> testContext.completeNow());
   }
 
   @Test
@@ -145,15 +191,10 @@ public class BatchTransactionServiceTest {
     String transactionId = UUID.randomUUID().toString();
     Batch batch = new Batch();
     batch.getIdsOfTransactionsToDelete().add(transactionId);
-    testContext.assertFailure(batchTransactionService.processBatch(batch, requestContext))
-      .onFailure(thrown -> {
-        testContext.verify(() -> {
-          assertThat(thrown, instanceOf(HttpException.class));
-          assertThat(((HttpException) thrown).getStatusCode(), equalTo(500));
-          assertThat(((HttpException) thrown).getPayload(), equalTo("idsOfTransactionsToDelete: not implemented"));
-        });
-        testContext.completeNow();
-      });
+    doReturn(Future.succeededFuture())
+      .when(defaultTransactionService).deleteTransactionById(eq(transactionId), eq(conn));
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> testContext.completeNow());
   }
 
   @Test

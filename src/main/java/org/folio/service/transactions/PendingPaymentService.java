@@ -34,7 +34,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.exception.HttpException;
 import org.folio.dao.transactions.TransactionDAO;
-import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Error;
@@ -50,7 +49,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Tuple;
 import org.javamoney.moneta.function.MonetaryFunctions;
 
-public class PendingPaymentService implements TransactionManagingStrategy {
+public class PendingPaymentService extends AbstractTransactionService implements TransactionManagingStrategy {
 
   private static final Logger logger = LogManager.getLogger(PendingPaymentService.class);
 
@@ -62,28 +61,27 @@ public class PendingPaymentService implements TransactionManagingStrategy {
     + "FOR UPDATE OF b";
 
   private final AllOrNothingTransactionService allOrNothingTransactionService;
-  private final TransactionDAO transactionsDAO;
   private final BudgetService budgetService;
   private final CancelTransactionService cancelTransactionService;
 
   public PendingPaymentService(AllOrNothingTransactionService allOrNothingTransactionService,
-                               TransactionDAO transactionsDAO,
+                               TransactionDAO transactionDAO,
                                BudgetService budgetService,
                                CancelTransactionService cancelTransactionService) {
+    super(transactionDAO);
     this.allOrNothingTransactionService = allOrNothingTransactionService;
-    this.transactionsDAO = transactionsDAO;
     this.budgetService = budgetService;
     this.cancelTransactionService = cancelTransactionService;
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
-    return allOrNothingTransactionService.createTransaction(transaction, requestContext, this::createTransactions);
+  public Future<Transaction> createTransaction(Transaction transaction, DBConn conn) {
+    return allOrNothingTransactionService.createTransaction(transaction, conn, this::createTransactions);
   }
 
   @Override
-  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
-    return allOrNothingTransactionService.updateTransaction(transaction, requestContext, this::cancelAndUpdateTransactions);
+  public Future<Void> updateTransaction(Transaction transaction, DBConn conn) {
+    return allOrNothingTransactionService.updateTransaction(transaction, conn, this::cancelAndUpdateTransactions);
   }
 
   @Override
@@ -93,7 +91,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
 
   public Future<Void> createTransactions(List<Transaction> transactions, DBConn conn) {
     return processPendingPayments(transactions, conn)
-      .compose(aVoid -> transactionsDAO.saveTransactionsToPermanentTable(transactions.get(0).getSourceInvoiceId(), conn))
+      .compose(aVoid -> transactionDAO.saveTransactionsToPermanentTable(transactions.get(0).getSourceInvoiceId(), conn))
       .mapEmpty();
   }
 
@@ -134,7 +132,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
     List<Transaction> transactions = createDifferenceTransactions(tmpTransactions, existingTransactions);
     return processPendingPayments(transactions, conn)
       .map(processedTransactions -> null)
-      .compose(v -> transactionsDAO.updatePermanentTransactions(tmpTransactions, conn));
+      .compose(v -> transactionDAO.updatePermanentTransactions(tmpTransactions, conn));
   }
 
   private Future<List<Transaction>> processPendingPayments(List<Transaction> transactions, DBConn conn) {
@@ -175,7 +173,7 @@ public class PendingPaymentService implements TransactionManagingStrategy {
       .map(Transaction::getId)
       .collect(toList());
 
-    return transactionsDAO.getTransactions(ids, conn);
+    return transactionDAO.getTransactions(ids, conn);
   }
 
   private List<Budget> processNotLinkedPendingPayments(List<Transaction> pendingPayments, List<Budget> oldBudgets) {
@@ -221,11 +219,11 @@ public class PendingPaymentService implements TransactionManagingStrategy {
         .map(transaction -> transaction.getAwaitingPayment().getEncumbranceId())
         .collect(toList());
 
-      return transactionsDAO.getTransactions(ids, conn)
+      return transactionDAO.getTransactions(ids, conn)
         .map(encumbrances -> updateEncumbrancesTotals(encumbrances, pendingPayments))
         .compose(encumbrances -> {
           List<Budget> newBudgets = updateBudgetsTotalsWithLinkedPendingPayments(pendingPayments, encumbrances, oldBudgets);
-          return transactionsDAO.updatePermanentTransactions(encumbrances, conn)
+          return transactionDAO.updatePermanentTransactions(encumbrances, conn)
             .map(newBudgets);
         });
     }

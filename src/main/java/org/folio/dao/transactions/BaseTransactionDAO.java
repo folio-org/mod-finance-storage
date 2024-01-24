@@ -88,6 +88,8 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
     List<JsonObject> jsonTransactions = transactions.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
     String sql = buildUpdatePermanentTransactionQuery(jsonTransactions, conn.getTenantId());
     return conn.execute(sql)
+      .onSuccess(rowSet -> logger.info("updatePermanentTransactions:: success updating permanent transactions"))
+      .onFailure(t -> logger.error("updatePermanentTransactions:: failed updating permanent transactions", t))
       .mapEmpty();
   }
 
@@ -95,6 +97,37 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
   public Future<Void> deleteTransactions(Criterion criterion, DBConn conn) {
     logger.debug("Trying to delete transactions by query: {}", criterion);
     return conn.delete(TRANSACTIONS_TABLE, criterion)
+      .onSuccess(rowSet -> logger.info("deleteTransactions:: success deleting transactions"))
+      .onFailure(t -> logger.error("deleteTransactions:: failed deleting transactions", t))
+      .mapEmpty();
+  }
+
+  @Override
+  public Future<Transaction> createTransaction(Transaction transaction, DBConn conn) {
+    logger.debug("createTransaction:: Trying to create transaction");
+    if (StringUtils.isEmpty(transaction.getId())) {
+      transaction.setId(UUID.randomUUID().toString());
+    }
+    return conn.saveAndReturnUpdatedEntity(TRANSACTIONS_TABLE, transaction.getId(), transaction)
+      .onSuccess(id -> logger.info("createTransaction:: Transaction with id {} successfully created", id))
+      .onFailure(t -> logger.error("createTransaction:: Creating transaction  with id {} failed", transaction.getId(), t));
+  }
+
+  @Override
+  public Future<Void> deleteTransactionById(String id, DBConn conn) {
+    logger.debug("Trying to delete transaction by id {}", id);
+    return conn.delete(TRANSACTIONS_TABLE, id)
+      .onSuccess(s -> logger.info("Successfully deleted a transaction with id {}", id))
+      .onFailure(t -> logger.error("Deleting transaction by id {} failed", id, t))
+      .mapEmpty();
+  }
+
+  @Override
+  public Future<Void> updateTransaction(Transaction transaction, DBConn conn) {
+    logger.debug("updateTransaction:: Trying to update transaction with id {}", transaction.getId());
+    return conn.update(TRANSACTIONS_TABLE, transaction, transaction.getId())
+      .onSuccess(rowSet -> logger.info("updateTransaction:: Transaction with id {} successfully updated", transaction.getId()))
+      .onFailure(t -> logger.error("updateTransaction:: Updating transaction with id {} failed", transaction.getId(), t))
       .mapEmpty();
   }
 

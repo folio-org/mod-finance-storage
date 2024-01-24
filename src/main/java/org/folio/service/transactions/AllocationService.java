@@ -11,12 +11,11 @@ import io.vertx.ext.web.handler.HttpException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.rest.core.model.RequestContext;
+import org.folio.dao.transactions.TransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 import org.folio.utils.CalculationUtils;
@@ -30,7 +29,8 @@ public class AllocationService extends DefaultTransactionService implements Tran
 
   private final BudgetService budgetService;
 
-  public AllocationService(BudgetService budgetService) {
+  public AllocationService(BudgetService budgetService, TransactionDAO transactionDAO) {
+    super(transactionDAO);
     this.budgetService = budgetService;
   }
 
@@ -40,23 +40,21 @@ public class AllocationService extends DefaultTransactionService implements Tran
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction allocation, RequestContext requestContext) {
+  public Future<Transaction> createTransaction(Transaction allocation, DBConn conn) {
     try {
       handleValidationError(allocation);
     } catch (HttpException e) {
       return Future.failedFuture(e);
     }
-    DBClient client = requestContext.toDBClient();
-
-    return client.withTrans(conn -> budgetService.checkBudgetHaveMoneyForTransaction(allocation, conn)
+    return budgetService.checkBudgetHaveMoneyForTransaction(allocation, conn)
       .compose(v -> createAllocation(allocation, conn))
       .compose(v -> updateFromBudget(allocation, conn))
       .compose(v -> updateBudgetTo(allocation, conn))
       .map(v -> allocation)
-    ).onSuccess(v -> logger.info("createTransaction:: Allocation with id {} and associated data were successfully processed",
-      allocation.getId()))
-    .onFailure(e -> logger.error("createTransaction:: Allocation with id {} or associated data failed to be processed",
-      allocation.getId(), e));
+      .onSuccess(v -> logger.info("createTransaction:: Allocation with id {} and associated data were successfully processed",
+        allocation.getId()))
+      .onFailure(e -> logger.error("createTransaction:: Allocation with id {} or associated data failed to be processed",
+        allocation.getId(), e));
   }
 
   private Future<Transaction> createAllocation(Transaction transaction, DBConn conn) {
