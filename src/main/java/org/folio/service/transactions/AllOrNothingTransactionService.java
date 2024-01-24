@@ -79,7 +79,7 @@ public class AllOrNothingTransactionService {
   private Future<Void> processAllOrNothing(Transaction transaction, DBConn conn, BiFunction<List<Transaction>, DBConn, Future<Void>> operation) {
     return transactionSummaryService.getAndCheckTransactionSummary(transaction, conn)
       .recover(t -> {
-        if (t instanceof HttpException && ((HttpException)t).getStatusCode() == 404) {
+        if (t instanceof HttpException he && he.getStatusCode() == 404) {
           return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
             "Cannot process the transaction because the summary was not found.", t));
         }

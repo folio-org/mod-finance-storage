@@ -44,19 +44,19 @@ public class BatchTransactionService {
   private static final List<TransactionType> TYPES_WITH_SUMMARIES = List.of(ENCUMBRANCE, PENDING_PAYMENT, PAYMENT, CREDIT);
   private final DBClientFactory dbClientFactory;
   private final TransactionManagingStrategyFactory managingServiceFactory;
-  private final TransactionService transactionService;
+  private final TransactionService defaultTransactionService;
   private final OrderTransactionSummaryDAO orderTransactionSummaryDAO;
   private final InvoiceTransactionSummaryDAO invoiceTransactionSummaryDAO;
   private final TemporaryOrderTransactionDAO temporaryOrderTransactionDAO;
   private final TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO;
 
   public BatchTransactionService(DBClientFactory dbClientFactory, TransactionManagingStrategyFactory managingServiceFactory,
-      TransactionService transactionService, OrderTransactionSummaryDAO orderTransactionSummaryDAO,
+      TransactionService defaultTransactionService, OrderTransactionSummaryDAO orderTransactionSummaryDAO,
       InvoiceTransactionSummaryDAO invoiceTransactionSummaryDAO, TemporaryOrderTransactionDAO temporaryOrderTransactionDAO,
       TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO) {
     this.dbClientFactory = dbClientFactory;
     this.managingServiceFactory = managingServiceFactory;
-    this.transactionService = transactionService;
+    this.defaultTransactionService = defaultTransactionService;
     this.orderTransactionSummaryDAO = orderTransactionSummaryDAO;
     this.invoiceTransactionSummaryDAO = invoiceTransactionSummaryDAO;
     this.temporaryOrderTransactionDAO = temporaryOrderTransactionDAO;
@@ -124,7 +124,7 @@ public class BatchTransactionService {
   private Future<Void> deleteTransactions(List<String> ids, DBConn conn) {
     Future<Void> f = Future.succeededFuture();
     for (String id : ids) {
-      f = f.compose(v -> transactionService.deleteTransactionById(id, conn));
+      f = f.compose(v -> defaultTransactionService.deleteTransactionById(id, conn));
     }
     return f.onSuccess(v -> logger.info("Batch transactions: successfully deleted transactions"))
       .onFailure(t -> logger.error("Batch transactions: failed to delete transactions", t));
@@ -146,6 +146,7 @@ public class BatchTransactionService {
           try {
             userId = (new OkapiToken(okapiHeaders.get("X-Okapi-Token"))).getUserIdWithoutValidation();
           } catch (Exception ignored) {
+            // could not find user id - ignoring
           }
         }
         Metadata md = new Metadata();
@@ -213,7 +214,7 @@ public class BatchTransactionService {
     }
     return dao.getSummaryById(summaryId, conn)
       .recover(t -> {
-        if (t instanceof HttpException && ((HttpException)t).getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
+        if (t instanceof HttpException he && he.getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
           return Future.succeededFuture(null);
         }
         return Future.failedFuture(t);

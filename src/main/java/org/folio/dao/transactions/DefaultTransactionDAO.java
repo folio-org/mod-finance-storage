@@ -7,11 +7,11 @@ import java.util.List;
 public class DefaultTransactionDAO extends BaseTransactionDAO {
   @Override
   protected String createPermanentTransactionsQuery(String tenantId) {
-    throw new RuntimeException("createPermanentTransactionsQuery: not implemented in DefaultTransactionDAO");
+    return null;
   }
 
   @Override
   protected String buildUpdatePermanentTransactionQuery(List<JsonObject> transactions, String tenantId) {
-    throw new RuntimeException("buildUpdatePermanentTransactionQuery: not implemented in DefaultTransactionDAO");
+    return null;
   }
 }
