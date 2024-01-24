@@ -19,6 +19,11 @@ public abstract class AbstractTransactionService implements TransactionService {
   }
 
   @Override
+  public Future<Transaction> createTransaction(Transaction transaction, DBConn conn) {
+    return transactionDAO.createTransaction(transaction, conn);
+  }
+
+  @Override
   public Future<Void> updateTransaction(Transaction transaction, DBConn conn) {
     return transactionDAO.updateTransaction(transaction, conn);
   }

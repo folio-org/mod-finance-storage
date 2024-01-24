@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.vertx.ext.web.handler.HttpException;
+import org.folio.dao.transactions.DefaultTransactionDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBConn;
@@ -25,7 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -38,7 +38,6 @@ import io.vertx.junit5.VertxTestContext;
 public class AllocationServiceTest {
 
   private AutoCloseable mockitoMocks;
-  @InjectMocks
   private AllocationService allocationService;
   @Mock
   private BudgetService budgetService;
@@ -48,6 +47,8 @@ public class AllocationServiceTest {
   @BeforeEach
   public void initMocks() {
     mockitoMocks = MockitoAnnotations.openMocks(this);
+    DefaultTransactionDAO defaultTransactionDAO = new DefaultTransactionDAO();
+    allocationService = new AllocationService(budgetService, defaultTransactionDAO);
   }
 
   @AfterEach
@@ -99,8 +100,8 @@ public class AllocationServiceTest {
 
     when(budgetService.checkBudgetHaveMoneyForTransaction(any(), any()))
       .thenReturn(Future.succeededFuture());
-    doReturn(Future.succeededFuture(transactionSample.getId()))
-      .when(conn).save(any(), any(), any());
+    doReturn(Future.succeededFuture(transactionSample))
+      .when(conn).saveAndReturnUpdatedEntity(any(), any(), any());
     when(budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(anyString(), anyString(), any()))
       .thenReturn(Future.succeededFuture(new Budget().withInitialAllocation(50d)));
     doNothing().when(budgetService)

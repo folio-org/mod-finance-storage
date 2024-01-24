@@ -6,9 +6,7 @@ import static org.folio.rest.persist.HelperUtils.buildNullValidationError;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.TransactionDAO;
@@ -42,7 +40,7 @@ public class TransferService extends AbstractTransactionService implements Trans
     } catch (HttpException e) {
       return Future.failedFuture(e);
     }
-    return createTransfer(transfer, conn)
+    return super.createTransaction(transfer, conn)
       .compose(createdTransfer -> {
         if (transfer.getFromFundId() != null) {
           return updateBudgetsTransferFrom(transfer, conn);
@@ -60,16 +58,6 @@ public class TransferService extends AbstractTransactionService implements Trans
   @Override
   public Transaction.TransactionType getStrategyName() {
     return Transaction.TransactionType.TRANSFER;
-  }
-
-  public Future<Transaction> createTransfer(Transaction transaction, DBConn conn) {
-    if (StringUtils.isEmpty(transaction.getId())) {
-      transaction.setId(UUID.randomUUID().toString());
-    }
-    return conn.save(TRANSACTION_TABLE, transaction.getId(), transaction)
-      .onSuccess(s -> logger.info("createTransfer:: Transfer transaction with id {} successfully created", transaction.getId()))
-      .onFailure(e -> logger.error("createTransfer:: Creation transfer with id {} transaction failed", transaction.getId(), e))
-      .map(s -> transaction);
   }
 
   private Future<Void> updateBudgetsTransferFrom(Transaction transfer, DBConn conn) {

@@ -5,7 +5,6 @@ import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
 import static org.folio.rest.util.ErrorCodes.MUST_BE_POSITIVE;
 
 import java.util.List;
-import java.util.UUID;
 
 import io.vertx.ext.web.handler.HttpException;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +22,7 @@ import org.folio.utils.CalculationUtils;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 
-public class AllocationService extends DefaultTransactionService implements TransactionManagingStrategy {
+public class AllocationService extends AbstractTransactionService implements TransactionManagingStrategy {
 
   private static final Logger logger = LogManager.getLogger(AllocationService.class);
 
@@ -47,7 +46,7 @@ public class AllocationService extends DefaultTransactionService implements Tran
       return Future.failedFuture(e);
     }
     return budgetService.checkBudgetHaveMoneyForTransaction(allocation, conn)
-      .compose(v -> createAllocation(allocation, conn))
+      .compose(v -> super.createTransaction(allocation, conn))
       .compose(v -> updateFromBudget(allocation, conn))
       .compose(v -> updateBudgetTo(allocation, conn))
       .map(v -> allocation)
@@ -55,17 +54,6 @@ public class AllocationService extends DefaultTransactionService implements Tran
         allocation.getId()))
       .onFailure(e -> logger.error("createTransaction:: Allocation with id {} or associated data failed to be processed",
         allocation.getId(), e));
-  }
-
-  private Future<Transaction> createAllocation(Transaction transaction, DBConn conn) {
-    logger.debug("createAllocation:: Trying to created allocation");
-    if (StringUtils.isEmpty(transaction.getId())) {
-      transaction.setId(UUID.randomUUID().toString());
-    }
-    return conn.save(TRANSACTION_TABLE, transaction.getId(), transaction)
-      .onSuccess(s -> logger.info("createAllocation:: Allocation with id {} successfully created", transaction.getId()))
-      .onFailure(e -> logger.error("createAllocation:: Creating the allocation with id {} failed", transaction.getId(), e))
-      .map(s -> transaction);
   }
 
   private Future<Void> updateBudgetTo(Transaction allocation, DBConn conn) {
