@@ -3,7 +3,6 @@ package org.folio.service.transactions;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.HttpException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
@@ -13,6 +12,7 @@ import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.okapi.common.OkapiToken;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.InvoiceTransactionSummary;
@@ -34,14 +34,17 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.groupingBy;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
+import static org.folio.rest.persist.HelperUtils.chainCall;
 
 public class BatchTransactionService {
   private static final Logger logger = LogManager.getLogger();
   private static final List<TransactionType> TYPES_WITH_SUMMARIES = List.of(ENCUMBRANCE, PENDING_PAYMENT, PAYMENT, CREDIT);
+  private static final String NO_SUMMARY_ID = "no summary id";
   private final DBClientFactory dbClientFactory;
   private final TransactionManagingStrategyFactory managingServiceFactory;
   private final TransactionService defaultTransactionService;
@@ -91,11 +94,11 @@ public class BatchTransactionService {
 
   private void checkIdIsPresent(List<Transaction> transactions, String operation) {
     for (Transaction transaction : transactions) {
-      if (StringUtils.isBlank(transaction.getId())) {
+      if (isBlank(transaction.getId())) {
         throw new HttpException(400, String.format("Id is required in transactions to %s.", operation));
       }
-      if (TYPES_WITH_SUMMARIES.contains(transaction.getTransactionType()) && transaction.getSourceInvoiceId() == null &&
-          (transaction.getEncumbrance() == null || transaction.getEncumbrance().getSourcePurchaseOrderId() == null)) {
+      if (TYPES_WITH_SUMMARIES.contains(transaction.getTransactionType()) && isBlank(transaction.getSourceInvoiceId()) &&
+          (transaction.getEncumbrance() == null || isBlank(transaction.getEncumbrance().getSourcePurchaseOrderId()))) {
         throw new HttpException(400, String.format("Missing invoice id or order id in transaction %s", transaction.getId()));
       }
     }
@@ -122,11 +125,8 @@ public class BatchTransactionService {
   }
 
   private Future<Void> deleteTransactions(List<String> ids, DBConn conn) {
-    Future<Void> f = Future.succeededFuture();
-    for (String id : ids) {
-      f = f.compose(v -> defaultTransactionService.deleteTransactionById(id, conn));
-    }
-    return f.onSuccess(v -> logger.info("Batch transactions: successfully deleted transactions"))
+    return chainCall(ids, id -> defaultTransactionService.deleteTransactionById(id, conn))
+      .onSuccess(v -> logger.info("Batch transactions: successfully deleted transactions"))
       .onFailure(t -> logger.error("Batch transactions: failed to delete transactions", t));
   }
 
@@ -141,10 +141,10 @@ public class BatchTransactionService {
     // But in the case of the batch API there is no top-level metadata, so it is not populated automatically.
     for (Transaction tr : transactions) {
       if (tr.getMetadata() == null) {
-        String userId = okapiHeaders.get("X-Okapi-User-Id");
+        String userId = okapiHeaders.get(XOkapiHeaders.USER_ID);
         if (userId == null) {
           try {
-            userId = (new OkapiToken(okapiHeaders.get("X-Okapi-Token"))).getUserIdWithoutValidation();
+            userId = (new OkapiToken(okapiHeaders.get(XOkapiHeaders.TOKEN))).getUserIdWithoutValidation();
           } catch (Exception ignored) {
             // could not find user id - ignoring
           }
@@ -182,6 +182,7 @@ public class BatchTransactionService {
   }
 
   private Map<TransactionType, List<Transaction>> groupByType(List<Transaction> transactions) {
+    // group by transaction type; group PAYMENT and CREDIT together under PAYMENT
     return transactions.stream().collect(groupingBy(tr -> tr.getTransactionType() == TransactionType.CREDIT ?
       TransactionType.PAYMENT : tr.getTransactionType()));
   }
@@ -193,7 +194,7 @@ public class BatchTransactionService {
       } else if (tr.getEncumbrance() != null) {
         return tr.getEncumbrance().getSourcePurchaseOrderId();
       } else {
-        return "no summary id";
+        return NO_SUMMARY_ID;
       }
     }));
   }
@@ -219,22 +220,13 @@ public class BatchTransactionService {
         }
         return Future.failedFuture(t);
       })
-      .compose(obj -> {
-        if (obj == null) {
-          return dao.createSummary(JsonObject.mapFrom(summary), conn);
-        } else {
-          return dao.updateSummary(JsonObject.mapFrom(summary), conn);
-        }
-      });
+      .compose(obj -> obj == null ? dao.createSummary(JsonObject.mapFrom(summary), conn) :
+        dao.updateSummary(JsonObject.mapFrom(summary), conn));
   }
 
   private Future<Void> removeTemporaryTransactions(String summaryId, TransactionType transactionType, DBConn conn) {
-    TemporaryTransactionDAO temporaryTransactionDAO;
-    if (transactionType == ENCUMBRANCE) {
-      temporaryTransactionDAO = temporaryOrderTransactionDAO;
-    } else {
-      temporaryTransactionDAO = temporaryInvoiceTransactionDAO;
-    }
+    TemporaryTransactionDAO temporaryTransactionDAO = transactionType == ENCUMBRANCE ? temporaryOrderTransactionDAO :
+      temporaryInvoiceTransactionDAO;
     return temporaryTransactionDAO.deleteTempTransactions(summaryId, conn)
       .mapEmpty();
   }

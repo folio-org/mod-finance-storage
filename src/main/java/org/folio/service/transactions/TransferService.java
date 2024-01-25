@@ -42,17 +42,16 @@ public class TransferService extends AbstractTransactionService implements Trans
     }
     return super.createTransaction(transfer, conn)
       .compose(createdTransfer -> {
-        if (transfer.getFromFundId() != null) {
-          return updateBudgetsTransferFrom(transfer, conn);
+        if (createdTransfer.getFromFundId() != null) {
+          return updateBudgetsTransferFrom(createdTransfer, conn);
         }
-        return Future.succeededFuture();
+        return Future.succeededFuture(createdTransfer);
       })
-      .compose(toBudget -> updateBudgetsTransferTo(transfer, conn))
+      .compose(createdTransfer -> updateBudgetsTransferTo(createdTransfer, conn))
       .onSuccess(v -> logger.info("createTransaction:: Transfer with id {} and associated data were successfully processed",
         transfer.getId()))
       .onFailure(e -> logger.error("createTransaction:: Transfer with id {} or associated data failed to be processed",
-        transfer.getId(), e))
-      .map(v -> transfer);
+        transfer.getId(), e));
   }
 
   @Override
@@ -60,7 +59,7 @@ public class TransferService extends AbstractTransactionService implements Trans
     return Transaction.TransactionType.TRANSFER;
   }
 
-  private Future<Void> updateBudgetsTransferFrom(Transaction transfer, DBConn conn) {
+  private Future<Transaction> updateBudgetsTransferFrom(Transaction transfer, DBConn conn) {
     return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(transfer.getFiscalYearId(), transfer.getFromFundId(), conn)
       .map(budgetFromOld -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFromOld).mapTo(Budget.class);
@@ -69,10 +68,10 @@ public class TransferService extends AbstractTransactionService implements Trans
         return budgetFromNew;
       })
       .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), conn))
-      .map(i -> null);
+      .map(i -> transfer);
   }
 
-  private Future<Void> updateBudgetsTransferTo(Transaction transfer, DBConn conn) {
+  private Future<Transaction> updateBudgetsTransferTo(Transaction transfer, DBConn conn) {
     return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(transfer.getFiscalYearId(), transfer.getToFundId(), conn)
       .map(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo).mapTo(Budget.class);
@@ -81,7 +80,7 @@ public class TransferService extends AbstractTransactionService implements Trans
         return budgetToNew;
       })
       .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), conn))
-      .map(i -> null);
+      .map(i -> transfer);
   }
 
   private void handleValidationError(Transaction transfer) {

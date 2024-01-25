@@ -85,11 +85,14 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
     if (transactions.isEmpty()) {
       return Future.succeededFuture();
     }
+    List<String> ids = transactions.stream().map(Transaction::getId).toList();
     List<JsonObject> jsonTransactions = transactions.stream().map(JsonObject::mapFrom).collect(Collectors.toList());
     String sql = buildUpdatePermanentTransactionQuery(jsonTransactions, conn.getTenantId());
     return conn.execute(sql)
-      .onSuccess(rowSet -> logger.info("updatePermanentTransactions:: success updating permanent transactions"))
-      .onFailure(t -> logger.error("updatePermanentTransactions:: failed updating permanent transactions", t))
+      .onSuccess(rowSet -> logger.info("updatePermanentTransactions:: success updating permanent transactions, ids = {}",
+        ids))
+      .onFailure(t -> logger.error("updatePermanentTransactions:: failed updating permanent transactions, ids = {}",
+        ids, t))
       .mapEmpty();
   }
 
@@ -97,8 +100,8 @@ public abstract class BaseTransactionDAO implements TransactionDAO {
   public Future<Void> deleteTransactions(Criterion criterion, DBConn conn) {
     logger.debug("Trying to delete transactions by query: {}", criterion);
     return conn.delete(TRANSACTIONS_TABLE, criterion)
-      .onSuccess(rowSet -> logger.info("deleteTransactions:: success deleting transactions"))
-      .onFailure(t -> logger.error("deleteTransactions:: failed deleting transactions", t))
+      .onSuccess(rowSet -> logger.info("deleteTransactions:: success deleting {} transactions", rowSet.rowCount()))
+      .onFailure(t -> logger.error("deleteTransactions:: failed deleting transactions, criterion = {}", criterion, t))
       .mapEmpty();
   }
 

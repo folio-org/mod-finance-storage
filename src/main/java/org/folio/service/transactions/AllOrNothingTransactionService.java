@@ -80,6 +80,7 @@ public class AllOrNothingTransactionService {
     return transactionSummaryService.getAndCheckTransactionSummary(transaction, conn)
       .recover(t -> {
         if (t instanceof HttpException he && he.getStatusCode() == 404) {
+          logger.error("Summary was not found when processing transaction with id {}", transaction.getId());
           return Future.failedFuture(new HttpException(Response.Status.BAD_REQUEST.getStatusCode(),
             "Cannot process the transaction because the summary was not found.", t));
         }

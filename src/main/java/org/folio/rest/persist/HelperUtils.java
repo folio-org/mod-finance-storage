@@ -155,10 +155,12 @@ public final class HelperUtils {
    * @param  method  action that will be executed sequentially based on the number of list items
    * @return         the last composed element(Feature result)
    */
-  public static <T, R> Future<R> chainCall(List<T> list, Function<T, Future<R>> method){
-    return list.stream().reduce(Future.succeededFuture(),
-      (acc, item) -> acc.compose(v -> method.apply(item)),
-      (a,b) -> Future.succeededFuture());
+  public static <T, R> Future<R> chainCall(List<T> list, Function<T, Future<R>> method) {
+    Future<R> f = Future.succeededFuture();
+    for (T item : list) {
+      f = f.compose(v -> method.apply(item));
+    }
+    return f;
   }
 
 }
