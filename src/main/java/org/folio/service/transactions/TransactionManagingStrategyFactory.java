@@ -1,6 +1,6 @@
 package org.folio.service.transactions;
 
-import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -8,19 +8,22 @@ import java.util.Set;
 
 public class TransactionManagingStrategyFactory {
 
-  private Map<Transaction.TransactionType, TransactionManagingStrategy> strategies;
+  private Map<TransactionType, TransactionManagingStrategy> strategies;
 
   public TransactionManagingStrategyFactory(Set<TransactionManagingStrategy> strategySet) {
     createStrategy(strategySet);
   }
 
-  public TransactionManagingStrategy findStrategy(Transaction.TransactionType transactionType) {
-    Transaction.TransactionType type = transactionType == Transaction.TransactionType.CREDIT ? Transaction.TransactionType.PAYMENT : transactionType;
-    return strategies.get(type);
+  public static TransactionType transactionTypeWithoutCredit(TransactionType transactionType) {
+    return transactionType == TransactionType.CREDIT ? TransactionType.PAYMENT : transactionType;
+  }
+
+  public TransactionManagingStrategy findStrategy(TransactionType transactionType) {
+    return strategies.get(transactionTypeWithoutCredit(transactionType));
   }
 
   private void createStrategy(Set<TransactionManagingStrategy> strategySet) {
-    strategies = new EnumMap<>(Transaction.TransactionType.class);
+    strategies = new EnumMap<>(TransactionType.class);
     strategySet.forEach(
       strategy -> strategies.put(strategy.getStrategyName(), strategy));
   }

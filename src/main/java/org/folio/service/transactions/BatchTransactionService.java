@@ -35,11 +35,13 @@ import java.util.function.Function;
 
 import static java.util.stream.Collectors.groupingBy;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.persist.HelperUtils.chainCall;
+import static org.folio.service.transactions.TransactionManagingStrategyFactory.transactionTypeWithoutCredit;
 
 public class BatchTransactionService {
   private static final Logger logger = LogManager.getLogger();
@@ -185,15 +187,14 @@ public class BatchTransactionService {
 
   private Map<TransactionType, List<Transaction>> groupByType(List<Transaction> transactions) {
     // group by transaction type; group PAYMENT and CREDIT together under PAYMENT
-    return transactions.stream().collect(groupingBy(tr -> tr.getTransactionType() == TransactionType.CREDIT ?
-      TransactionType.PAYMENT : tr.getTransactionType()));
+    return transactions.stream().collect(groupingBy(tr -> transactionTypeWithoutCredit(tr.getTransactionType())));
   }
 
   private Map<String, List<Transaction>> groupBySummaryId(List<Transaction> transactions) {
     return transactions.stream().collect(groupingBy(tr -> {
-      if (!isBlank(tr.getSourceInvoiceId())) {
+      if (isNotBlank(tr.getSourceInvoiceId())) {
         return tr.getSourceInvoiceId();
-      } else if (tr.getEncumbrance() != null && !isBlank(tr.getEncumbrance().getSourcePurchaseOrderId())) {
+      } else if (tr.getEncumbrance() != null && isNotBlank(tr.getEncumbrance().getSourcePurchaseOrderId())) {
         return tr.getEncumbrance().getSourcePurchaseOrderId();
       } else {
         return NO_SUMMARY_ID;
