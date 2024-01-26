@@ -21,4 +21,10 @@ public interface TransactionDAO {
   Future<Void> updatePermanentTransactions(List<Transaction> transactions, DBConn conn);
 
   Future<Void> deleteTransactions(Criterion build, DBConn conn);
+
+  Future<Transaction> createTransaction(Transaction transaction, DBConn conn);
+
+  Future<Void> deleteTransactionById(String id, DBConn conn);
+
+  Future<Void> updateTransaction(Transaction transaction, DBConn conn);
 }

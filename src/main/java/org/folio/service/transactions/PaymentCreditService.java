@@ -7,7 +7,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.TransactionDAO;
-import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
@@ -61,28 +60,27 @@ public class PaymentCreditService extends AbstractTransactionService implements 
   Predicate<Transaction> isCreditTransaction = txn -> txn.getTransactionType().equals(Transaction.TransactionType.CREDIT);
 
   private final AllOrNothingTransactionService allOrNothingTransactionService;
-  private final TransactionDAO transactionsDAO;
   private final BudgetService budgetService;
   private final CancelTransactionService cancelTransactionService;
 
   public PaymentCreditService(AllOrNothingTransactionService allOrNothingTransactionService,
-                              TransactionDAO transactionsDAO,
+                              TransactionDAO transactionDAO,
                               BudgetService budgetService,
                               CancelTransactionService cancelTransactionService) {
+    super(transactionDAO);
     this.allOrNothingTransactionService = allOrNothingTransactionService;
-    this.transactionsDAO = transactionsDAO;
     this.budgetService = budgetService;
     this.cancelTransactionService = cancelTransactionService;
   }
 
   @Override
-  public Future<Transaction> createTransaction(Transaction transaction, RequestContext requestContext) {
-    return allOrNothingTransactionService.createTransaction(transaction, requestContext, this::createTransactions);
+  public Future<Transaction> createTransaction(Transaction transaction, DBConn conn) {
+    return allOrNothingTransactionService.createTransaction(transaction, conn, this::createTransactions);
   }
 
   @Override
-  public Future<Void> updateTransaction(Transaction transaction, RequestContext requestContext) {
-    return allOrNothingTransactionService.updateTransaction(transaction, requestContext, this::updateTransactions);
+  public Future<Void> updateTransaction(Transaction transaction, DBConn conn) {
+    return allOrNothingTransactionService.updateTransaction(transaction, conn, this::updateTransactions);
   }
 
   /**
@@ -98,7 +96,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
     String summaryId = getSummaryId(transactions.get(0));
     return updateEncumbranceTotals(transactions, conn)
       .compose(dbc -> updateBudgetsTotals(transactions, conn))
-      .compose(dbc -> transactionsDAO.saveTransactionsToPermanentTable(summaryId, conn))
+      .compose(dbc -> transactionDAO.saveTransactionsToPermanentTable(summaryId, conn))
       .compose(integer -> deletePendingPayments(summaryId, conn));
   }
 
@@ -116,14 +114,14 @@ public class PaymentCreditService extends AbstractTransactionService implements 
     List<String> ids = tmpTransactions.stream()
       .map(Transaction::getId)
       .collect(toList());
-    return transactionsDAO.getTransactions(ids, conn);
+    return transactionDAO.getTransactions(ids, conn);
   }
 
   private Future<Void> deletePendingPayments(String summaryId, DBConn conn) {
     CriterionBuilder criterionBuilder = new CriterionBuilder();
     criterionBuilder.withJson(SOURCE_INVOICE_ID, "=", summaryId)
       .withJson(TRANSACTION_TYPE, "=", PENDING_PAYMENT.value());
-    return transactionsDAO.deleteTransactions(criterionBuilder.build(), conn);
+    return transactionDAO.deleteTransactions(criterionBuilder.build(), conn);
   }
 
   /**
@@ -148,7 +146,7 @@ public class PaymentCreditService extends AbstractTransactionService implements 
       .map(encumbrancesMap -> applyCredits(transactions, encumbrancesMap))
       //update all the re-calculated encumbrances into the Transaction table
       .map(map -> new ArrayList<>(map.values()))
-      .compose(trns -> transactionsDAO.updatePermanentTransactions(trns, conn))
+      .compose(trns -> transactionDAO.updatePermanentTransactions(trns, conn))
       .compose(ok -> Future.succeededFuture(conn));
   }
 

@@ -16,6 +16,8 @@ import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
+import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.PgUtil;
 import org.folio.service.transactions.BatchTransactionService;
 import org.folio.service.transactions.TransactionManagingStrategyFactory;
@@ -36,6 +38,8 @@ public class TransactionAPI implements FinanceStorageTransactions {
   private TransactionManagingStrategyFactory managingServiceFactory;
   @Autowired
   private BatchTransactionService batchTransactionService;
+  @Autowired
+  private DBClientFactory dbClientFactory;
 
 
   public TransactionAPI() {
@@ -53,7 +57,8 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Override
   @Validate
   public void postFinanceStorageTransactions(Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    getTransactionService(transaction).createTransaction(transaction, new RequestContext(vertxContext, okapiHeaders))
+    DBClient client = dbClientFactory.getDbClient(new RequestContext(vertxContext, okapiHeaders));
+    client.withTrans(conn -> getTransactionService(transaction).createTransaction(transaction, conn))
       .onComplete(event -> {
         if (event.succeeded()) {
           asyncResultHandler.handle(succeededFuture(buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/transactions", event.result())));
@@ -61,7 +66,6 @@ public class TransactionAPI implements FinanceStorageTransactions {
           asyncResultHandler.handle(buildErrorResponse(event.cause()));
         }
       });
-
   }
 
   @Override
@@ -80,14 +84,15 @@ public class TransactionAPI implements FinanceStorageTransactions {
   @Validate
   public void putFinanceStorageTransactionsById(String id, Transaction transaction, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     transaction.setId(id);
-    getTransactionService(transaction).updateTransaction(transaction, new RequestContext(vertxContext, okapiHeaders))
-    .onComplete(event -> {
-      if (event.succeeded()) {
-        asyncResultHandler.handle(buildNoContentResponse());
-      } else {
-        asyncResultHandler.handle(buildErrorResponse(event.cause()));
-      }
-    });
+    DBClient client = dbClientFactory.getDbClient(new RequestContext(vertxContext, okapiHeaders));
+    client.withTrans(conn -> getTransactionService(transaction).updateTransaction(transaction, conn))
+      .onComplete(event -> {
+        if (event.succeeded()) {
+          asyncResultHandler.handle(buildNoContentResponse());
+        } else {
+          asyncResultHandler.handle(buildErrorResponse(event.cause()));
+        }
+      });
   }
 
   @Override

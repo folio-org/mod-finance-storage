@@ -19,6 +19,7 @@ import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
 import org.folio.dao.summary.OrderTransactionSummaryDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
+import org.folio.dao.transactions.DefaultTransactionDAO;
 import org.folio.dao.transactions.EncumbranceDAO;
 import org.folio.dao.transactions.PaymentCreditDAO;
 import org.folio.dao.transactions.PendingPaymentDAO;
@@ -88,6 +89,11 @@ public class DAOConfiguration {
   @Bean
   public TransactionDAO pendingPaymentDAO() {
     return new PendingPaymentDAO();
+  }
+
+  @Bean
+  public TransactionDAO defaultTransactionDAO() {
+    return new DefaultTransactionDAO();
   }
 
   @Bean

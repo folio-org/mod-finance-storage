@@ -11,5 +11,7 @@ public interface TransactionSummaryDao {
 
   Future<JsonObject> getSummaryByIdWithLocking(String summaryId, DBConn conn);
 
+  Future<Void> createSummary(JsonObject summary, DBConn conn);
+
   Future<Void> updateSummary(JsonObject summary, DBConn conn);
 }

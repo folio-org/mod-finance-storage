@@ -19,12 +19,10 @@ import java.util.function.Function;
 
 import org.folio.dao.transactions.TemporaryTransactionDAO;
 import org.folio.dao.transactions.TransactionDAO;
-import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
-import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.summary.TransactionSummaryService;
@@ -50,8 +48,6 @@ public class EncumbranceServiceTest {
 
   private AutoCloseable mockitoMocks;
   @Mock
-  private RequestContext requestContext;
-  @Mock
   private TransactionDAO transactionDAO;
   @Mock
   private TemporaryTransactionDAO temporaryTransactionDAO;
@@ -62,8 +58,6 @@ public class EncumbranceServiceTest {
   @Mock
   private BudgetService budgetService;
   @Mock
-  private DBClientFactory dbClientFactory;
-  @Mock
   private DBClient dbClient;
   @Mock
   private DBConn conn;
@@ -73,7 +67,7 @@ public class EncumbranceServiceTest {
     mockitoMocks = MockitoAnnotations.openMocks(this);
 
     mockAllOrNothingEncumbranceService = spy(new AllOrNothingTransactionService(transactionDAO, temporaryTransactionDAO,
-      transactionSummaryService, transactionRestrictionService, dbClientFactory));
+      transactionSummaryService, transactionRestrictionService));
 
     encumbranceService = new EncumbranceService(mockAllOrNothingEncumbranceService, transactionDAO, budgetService);
   }
@@ -110,8 +104,6 @@ public class EncumbranceServiceTest {
     doReturn(succeededFuture(1))
       .when(budgetService).updateBatchBudgets(any(Collection.class), eq(conn));
 
-    doReturn(dbClient)
-      .when(dbClientFactory).getDbClient(eq(requestContext));
     doReturn(succeededFuture(List.of(tmpTransaction)))
       .when(transactionDAO).getTransactions(any(Criterion.class), eq(conn));
     doReturn(succeededFuture(null))
@@ -138,7 +130,7 @@ public class EncumbranceServiceTest {
     doReturn(succeededFuture(1))
       .when(temporaryTransactionDAO).deleteTempTransactions(eq(orderId), eq(conn));
 
-    encumbranceService.updateTransaction(incomingTransaction, requestContext)
+    encumbranceService.updateTransaction(incomingTransaction, conn)
       .onComplete(event -> {
         testContext.verify(() -> {
           ArgumentCaptor<List> argumentCaptor = ArgumentCaptor.forClass(List.class);
