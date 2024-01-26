@@ -158,7 +158,7 @@ public final class HelperUtils {
   public static <T, R> Future<R> chainCall(List<T> list, Function<T, Future<R>> method) {
     Future<R> f = Future.succeededFuture();
     for (T item : list) {
-      f = f.compose(v -> method.apply(item));
+      f = f.compose(r -> method.apply(item));
     }
     return f;
   }

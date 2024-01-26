@@ -111,8 +111,11 @@ public class BatchTransactionService {
     populateMetadata(transactions, okapiHeaders);
     return createOrUpdate(transactions,
         (transactionService, transaction) -> transactionService.createTransaction(transaction, conn).mapEmpty(), conn)
-      .onSuccess(v -> logger.info("Batch transactions: successfully created transactions"))
-      .onFailure(t -> logger.error("Batch transactions: failed to create transactions", t));
+      .onSuccess(v -> logger.info("Batch transactions: successfully created {} transactions", transactions.size()))
+      .onFailure(t -> {
+        List<String> ids = transactions.stream().map(Transaction::getId).toList();
+        logger.error("Batch transactions: failed to create transactions, ids = {}", ids, t);
+      });
   }
 
   private Future<Void> updateTransactions(List<Transaction> transactions, DBConn conn) {
@@ -120,14 +123,17 @@ public class BatchTransactionService {
       return Future.succeededFuture();
     return createOrUpdate(transactions,
         (transactionService, transaction) -> transactionService.updateTransaction(transaction, conn), conn)
-      .onSuccess(v -> logger.info("Batch transactions: successfully updated transactions"))
-      .onFailure(t -> logger.error("Batch transactions: failed to update transactions", t));
+      .onSuccess(v -> logger.info("Batch transactions: successfully updated {} transactions", transactions.size()))
+      .onFailure(t -> {
+        List<String> ids = transactions.stream().map(Transaction::getId).toList();
+        logger.error("Batch transactions: failed to update transactions, ids = {}", ids, t);
+      });
   }
 
   private Future<Void> deleteTransactions(List<String> ids, DBConn conn) {
     return chainCall(ids, id -> defaultTransactionService.deleteTransactionById(id, conn))
-      .onSuccess(v -> logger.info("Batch transactions: successfully deleted transactions"))
-      .onFailure(t -> logger.error("Batch transactions: failed to delete transactions", t));
+      .onSuccess(v -> logger.info("Batch transactions: successfully deleted {} transactions", ids.size()))
+      .onFailure(t -> logger.error("Batch transactions: failed to delete transactions, ids = {}", ids, t));
   }
 
   private Future<Void> patchTransactions(List<TransactionPatch> patches, DBConn conn) {
@@ -174,11 +180,7 @@ public class BatchTransactionService {
         transactionsForSummary.forEach(tr -> functions.add(v -> createOrUpdateFct.apply(transactionService, tr)));
       });
     });
-    Future<Void> future = Future.succeededFuture();
-    for (Function<Void, Future<Void>> fct : functions) {
-      future = future.compose(v -> fct.apply(null));
-    }
-    return future;
+    return chainCall(functions, fct -> fct.apply(null));
   }
 
   private Map<TransactionType, List<Transaction>> groupByType(List<Transaction> transactions) {
@@ -189,9 +191,9 @@ public class BatchTransactionService {
 
   private Map<String, List<Transaction>> groupBySummaryId(List<Transaction> transactions) {
     return transactions.stream().collect(groupingBy(tr -> {
-      if (tr.getSourceInvoiceId() != null) {
+      if (!isBlank(tr.getSourceInvoiceId())) {
         return tr.getSourceInvoiceId();
-      } else if (tr.getEncumbrance() != null) {
+      } else if (tr.getEncumbrance() != null && !isBlank(tr.getEncumbrance().getSourcePurchaseOrderId())) {
         return tr.getEncumbrance().getSourcePurchaseOrderId();
       } else {
         return NO_SUMMARY_ID;
