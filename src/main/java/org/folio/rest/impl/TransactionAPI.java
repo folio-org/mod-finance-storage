@@ -19,7 +19,7 @@ import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.PgUtil;
-import org.folio.service.transactions.BatchTransactionService;
+import org.folio.service.transactions.batch.BatchTransactionService;
 import org.folio.service.transactions.TransactionManagingStrategyFactory;
 import org.folio.service.transactions.TransactionService;
 import org.folio.spring.SpringContextUtil;

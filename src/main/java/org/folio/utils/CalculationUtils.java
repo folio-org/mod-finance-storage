@@ -33,19 +33,18 @@ public final class CalculationUtils {
     budgetFromNew.setNetTransfers(newNetTransfers);
   }
 
-  public static void recalculateBudgetAllocationFrom(Budget budget, Transaction allocation, Double allocatedAmount) {
+  public static void recalculateBudgetAllocationFrom(Budget budget, Transaction allocation) {
     CurrencyUnit currency = Monetary.getCurrency(allocation.getCurrency());
-    double newAllocation = sumMoney(budget.getAllocationFrom(), allocatedAmount, currency);
+    double newAllocation = sumMoney(budget.getAllocationFrom(), allocation.getAmount(), currency);
     budget.setAllocationFrom(newAllocation);
   }
 
-  public static void recalculateBudgetAllocationTo(Budget budget, Transaction allocation, Double allocatedAmount) {
+  public static void recalculateBudgetAllocationTo(Budget budget, Transaction allocation) {
     CurrencyUnit currency = Monetary.getCurrency(allocation.getCurrency());
-    double newAllocation = sumMoney(budget.getAllocationTo(), allocatedAmount, currency);
     if (budget.getInitialAllocation() > 0 || Objects.nonNull(allocation.getFromFundId())) {
-      budget.setAllocationTo(newAllocation);
+      budget.setAllocationTo(sumMoney(budget.getAllocationTo(), allocation.getAmount(), currency));
     } else {
-      budget.setInitialAllocation(allocatedAmount);
+      budget.setInitialAllocation(allocation.getAmount());
     }
   }
 

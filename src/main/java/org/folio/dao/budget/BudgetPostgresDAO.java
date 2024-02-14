@@ -25,10 +25,20 @@ import io.vertx.sqlclient.Tuple;
 
 public class BudgetPostgresDAO implements BudgetDAO {
 
-  private static final Logger logger = LogManager.getLogger(BudgetPostgresDAO.class);
+  private static final Logger logger = LogManager.getLogger();
 
   @Override
-  public Future<Integer> updateBatchBudgets(String sql, DBConn conn) {
+  public Future<Void> updateBatchBudgets(List<Budget> budgets, DBConn conn) {
+    List<String> ids = budgets.stream().map(Budget::getId).toList();
+    logger.debug("Trying update batch budgets, ids={}", ids);
+    return conn.updateBatch(BUDGET_TABLE, budgets)
+      .onSuccess(rowSet -> logger.info("Updated {} batch budgets", budgets.size()))
+      .onFailure(e -> logger.error("Update batch budgets by failed, ids={}", ids, e))
+      .mapEmpty();
+  }
+
+  @Override
+  public Future<Integer> updateBatchBudgetsBySql(String sql, DBConn conn) {
     logger.debug("Trying update batch budgets by query: {}", sql);
     return conn.execute(sql)
       .map(SqlResult::rowCount)
@@ -43,6 +53,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
       .map(rowSet -> {
         List<Budget> budgets = new ArrayList<>();
         rowSet.spliterator().forEachRemaining(row -> budgets.add(row.get(JsonObject.class, 0).mapTo(Budget.class)));
+        budgets.forEach(CalculationUtils::calculateBudgetSummaryFields);
         return budgets;
       })
       .onSuccess(budgets -> logger.info("Successfully retrieved {} budgets in transactional by sql", budgets.size()))

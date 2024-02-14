@@ -1,8 +1,8 @@
 package org.folio.service.transactions;
 
 import static java.util.Collections.singletonList;
+import static org.folio.rest.util.ErrorCodes.ALLOCATION_MUST_BE_POSITIVE;
 import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
-import static org.folio.rest.util.ErrorCodes.MUST_BE_POSITIVE;
 
 import java.util.List;
 
@@ -64,12 +64,11 @@ public class AllocationService extends AbstractTransactionService implements Tra
       .map(budgetTo -> {
         Budget budgetToNew = JsonObject.mapFrom(budgetTo)
           .mapTo(Budget.class);
-        CalculationUtils.recalculateBudgetAllocationTo(budgetToNew, allocation, allocation.getAmount());
+        CalculationUtils.recalculateBudgetAllocationTo(budgetToNew, allocation);
         budgetService.updateBudgetMetadata(budgetToNew, allocation);
         return budgetToNew;
       })
-      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), conn))
-      .map(i -> null);
+      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), conn));
   }
 
   private Future<Void> updateFromBudget(Transaction allocation, DBConn conn) {
@@ -79,12 +78,11 @@ public class AllocationService extends AbstractTransactionService implements Tra
     return budgetService.getBudgetByFiscalYearIdAndFundIdForUpdate(allocation.getFiscalYearId(), allocation.getFromFundId(), conn)
       .map(budgetFrom -> {
         Budget budgetFromNew = JsonObject.mapFrom(budgetFrom).mapTo(Budget.class);
-        CalculationUtils.recalculateBudgetAllocationFrom(budgetFromNew, allocation, allocation.getAmount());
+        CalculationUtils.recalculateBudgetAllocationFrom(budgetFromNew, allocation);
         budgetService.updateBudgetMetadata(budgetFromNew, allocation);
         return budgetFromNew;
       })
-      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), conn))
-      .map(i -> null);
+      .compose(budgetFrom -> budgetService.updateBatchBudgets(singletonList(budgetFrom), conn));
   }
 
   private void handleValidationError(Transaction transaction) {
@@ -96,7 +94,7 @@ public class AllocationService extends AbstractTransactionService implements Tra
     if (transaction.getAmount() <= 0) {
       List<Parameter> parameters = singletonList(new Parameter().withKey("fieldName")
         .withValue("amount"));
-      Errors errors = new Errors().withErrors(singletonList(MUST_BE_POSITIVE.toError()
+      Errors errors = new Errors().withErrors(singletonList(ALLOCATION_MUST_BE_POSITIVE.toError()
         .withParameters(parameters)))
         .withTotalRecords(1);
       throw new HttpException(422, JsonObject.mapFrom(errors)

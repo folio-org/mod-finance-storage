@@ -68,7 +68,7 @@ public class TransferService extends AbstractTransactionService implements Trans
         return budgetFromNew;
       })
       .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), conn))
-      .map(i -> transfer);
+      .map(v -> transfer);
   }
 
   private Future<Transaction> updateBudgetsTransferTo(Transaction transfer, DBConn conn) {
@@ -80,7 +80,7 @@ public class TransferService extends AbstractTransactionService implements Trans
         return budgetToNew;
       })
       .compose(budgetFrom -> budgetService.updateBatchBudgets(Collections.singletonList(budgetFrom), conn))
-      .map(i -> transfer);
+      .map(v -> transfer);
   }
 
   private void handleValidationError(Transaction transfer) {

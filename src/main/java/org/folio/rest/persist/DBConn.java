@@ -109,6 +109,11 @@ public class DBConn {
       .recover(ResponseUtils::handleFailure);
   }
 
+  public <T> Future<RowSet<Row>> saveBatch(String table, List<T> entities) {
+    return conn.saveBatch(table, entities)
+      .recover(ResponseUtils::handleFailure);
+  }
+
   public String getTenantId() {
     return dbClient.getTenantId();
   }

@@ -89,7 +89,7 @@ public class CalculationUtilsTest {
       .withFromFundId(UUID.randomUUID().toString())
       .withCurrency("USD");
 
-    CalculationUtils.recalculateBudgetAllocationTo(budget, allocation, 100d);
+    CalculationUtils.recalculateBudgetAllocationTo(budget, allocation);
 
     assertEquals(100d, budget.getAllocationTo(), 0d);
   }

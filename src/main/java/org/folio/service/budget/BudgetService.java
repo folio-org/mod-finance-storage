@@ -1,11 +1,9 @@
 package org.folio.service.budget;
 
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
-import static org.folio.rest.persist.HelperUtils.getQueryValues;
 import static org.folio.rest.util.ErrorCodes.*;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
@@ -70,57 +68,6 @@ public class BudgetService {
     });
   }
 
-  private Future<Void> deleteAllocationTransactions(Budget budget, DBConn conn) {
-    logger.debug("deleteAllocationTransactions:: Trying to delete allocation transactions with fund id {}", budget.getFundId());
-
-    String sql ="DELETE FROM "+ getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
-      + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() +"' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "')"
-      + " AND (jsonb->>'fiscalYearId')::text = '" + budget.getFiscalYearId() + "' AND (jsonb->>'transactionType')::text = 'Allocation'";
-
-    return conn.execute(sql)
-      .onSuccess(ecList -> logger.info("deleteAllocationTransactions:: Allocation transaction for budget with id {} successfully deleted",
-        budget.getId()))
-      .onFailure(e -> logger.error("deleteAllocationTransactions:: Allocation transaction deletion by query {} failed for budget with id {}",
-        sql, budget.getId(), e))
-      .mapEmpty();
-  }
-
-  private Future<Void> checkTransactions(Budget budget, DBConn conn) {
-    logger.debug("checkTransactions:: Checking transactions with fund id {}", budget.getFundId());
-
-    String sql ="SELECT jsonb FROM "+ getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
-      + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() + "' AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId()
-      + "' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "'"
-      + " AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId() + "') AND ((jsonb->>'transactionType')::text<>'Allocation'"
-      + " OR ((jsonb->>'transactionType')::text='Allocation' AND (jsonb->'toFundId') is not null AND (jsonb->'fromFundId') is not null))";
-
-    return conn.execute(sql)
-      .map(rowSet -> {
-        if (rowSet.size() > 0) {
-          logger.error("checkTransactions:: Transaction is present");
-          throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR);
-        }
-        return null;
-      })
-      .onSuccess(rowSet -> logger.info("checkTransactions:: Transactions for FundId {} have been successfully checked",
-        budget.getFundId()))
-      .onFailure(e -> logger.error("checkTransactions:: Transaction retrieval by query {} failed for FundId {}",
-        sql, budget.getFundId(), e))
-      .mapEmpty();
-  }
-
-  private Future<Void> unlinkGroupFundFiscalYears(String id, DBConn conn) {
-    logger.debug("unlinkGroupFundFiscalYears:: Trying to unlink group fund fiscal years with budget id {}", id);
-
-    String sql = "UPDATE " + getFullTableName(conn.getTenantId(), GROUP_FUND_FY_TABLE)
-        + " SET jsonb = jsonb - 'budgetId' WHERE budgetId=$1;";
-
-    return conn.execute(sql, Tuple.of(UUID.fromString(id)))
-      .onSuccess(ecList -> logger.info("unlinkGroupFundFiscalYears:: Group fund fiscal years have been successfully unlinked by budget id {}", id))
-      .onFailure(e -> logger.error("unlinkGroupFundFiscalYears:: Failed to update group_fund_fiscal_year by budget id {}", id, e))
-      .mapEmpty();
-  }
-
   public Future<Budget> getBudgetByFundIdAndFiscalYearId(String fiscalYearId, String fundId, DBConn conn) {
     logger.debug("getBudgetByFundIdAndFiscalYearId:: Trying to get budget by fund id {} and fiscal year id {}", fundId, fiscalYearId);
 
@@ -163,18 +110,9 @@ public class BudgetService {
         fundId, fiscalYearId, e));
   }
 
-  public Future<Integer> updateBatchBudgets(Collection<Budget> budgets, DBConn conn) {
+  public Future<Void> updateBatchBudgets(List<Budget> budgets, DBConn conn) {
     budgets.forEach(this::clearReadOnlyFields);
-    return budgetDAO.updateBatchBudgets(buildUpdateBudgetsQuery(budgets, conn.getTenantId()), conn);
-  }
-
-  private String buildUpdateBudgetsQuery(Collection<Budget> budgets, String tenantId) {
-    List<JsonObject> jsonBudgets = budgets.stream()
-      .map(JsonObject::mapFrom)
-      .collect(toList());
-    return String.format(
-        "UPDATE %s AS budgets SET jsonb = b.jsonb FROM (VALUES  %s) AS b (id, jsonb) WHERE b.id::uuid = budgets.id;",
-        getFullTableName(tenantId, BUDGET_TABLE), getQueryValues(jsonBudgets));
+    return budgetDAO.updateBatchBudgets(budgets, conn);
   }
 
   public Future<List<Budget>> getBudgets(String sql, Tuple params, DBConn conn) {
@@ -237,7 +175,91 @@ public class BudgetService {
         getFullTableName(conn.getTenantId(), BUDGET_TABLE), getFullTableName(conn.getTenantId(), FUND_TABLE),
         rollover.getLedgerId(), rollover.getFromFiscalYearId());
 
-    return budgetDAO.updateBatchBudgets(sql, conn)
+    return budgetDAO.updateBatchBudgetsBySql(sql, conn)
+      .mapEmpty();
+  }
+
+  public Future<List<Budget>> getBudgetsByFiscalYearIdsAndFundIdsForUpdate(
+      Map<String, Set<String>> fiscalYearIdToFundIds, DBConn conn) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("SELECT jsonb FROM ")
+      .append(getFullTableName(conn.getTenantId(), BUDGET_TABLE))
+      .append(" WHERE ");
+    Iterator<String> fiscalYearIterator = fiscalYearIdToFundIds.keySet().iterator();
+    while (fiscalYearIterator.hasNext()) {
+      String fiscalYearId = fiscalYearIterator.next();
+      Set<String> fundIds = fiscalYearIdToFundIds.get(fiscalYearId);
+      sb.append("(jsonb->>'fiscalYearId' = '")
+        .append(fiscalYearId)
+        .append("' AND (");
+      Iterator<String> fundIterator = fundIds.iterator();
+      while (fundIterator.hasNext()) {
+        String fundId = fundIterator.next();
+        sb.append("jsonb->>'fundId' = '")
+          .append(fundId)
+          .append("'");
+        if (fundIterator.hasNext()) {
+          sb.append(" OR ");
+        }
+      }
+      sb.append("))");
+      if (fiscalYearIterator.hasNext()) {
+        sb.append(" OR ");
+      }
+    }
+    sb.append(" FOR UPDATE");
+    String sql = sb.toString();
+    return budgetDAO.getBudgetsBySql(sql, Tuple.tuple(), conn);
+  }
+
+  private Future<Void> deleteAllocationTransactions(Budget budget, DBConn conn) {
+    logger.debug("deleteAllocationTransactions:: Trying to delete allocation transactions with fund id {}", budget.getFundId());
+
+    String sql ="DELETE FROM "+ getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
+      + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() +"' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "')"
+      + " AND (jsonb->>'fiscalYearId')::text = '" + budget.getFiscalYearId() + "' AND (jsonb->>'transactionType')::text = 'Allocation'";
+
+    return conn.execute(sql)
+      .onSuccess(ecList -> logger.info("deleteAllocationTransactions:: Allocation transaction for budget with id {} successfully deleted",
+        budget.getId()))
+      .onFailure(e -> logger.error("deleteAllocationTransactions:: Allocation transaction deletion by query {} failed for budget with id {}",
+        sql, budget.getId(), e))
+      .mapEmpty();
+  }
+
+  private Future<Void> checkTransactions(Budget budget, DBConn conn) {
+    logger.debug("checkTransactions:: Checking transactions with fund id {}", budget.getFundId());
+
+    String sql ="SELECT jsonb FROM "+ getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
+      + " WHERE  (jsonb->>'fromFundId' = '"+ budget.getFundId() + "' AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId()
+      + "' OR jsonb->>'toFundId' = '"+ budget.getFundId() + "'"
+      + " AND jsonb->>'fiscalYearId' = '" + budget.getFiscalYearId() + "') AND ((jsonb->>'transactionType')::text<>'Allocation'"
+      + " OR ((jsonb->>'transactionType')::text='Allocation' AND (jsonb->'toFundId') is not null AND (jsonb->'fromFundId') is not null))";
+
+    return conn.execute(sql)
+      .map(rowSet -> {
+        if (rowSet.size() > 0) {
+          logger.error("checkTransactions:: Transaction is present");
+          throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR);
+        }
+        return null;
+      })
+      .onSuccess(rowSet -> logger.info("checkTransactions:: Transactions for FundId {} have been successfully checked",
+        budget.getFundId()))
+      .onFailure(e -> logger.error("checkTransactions:: Transaction retrieval by query {} failed for FundId {}",
+        sql, budget.getFundId(), e))
+      .mapEmpty();
+  }
+
+  private Future<Void> unlinkGroupFundFiscalYears(String id, DBConn conn) {
+    logger.debug("unlinkGroupFundFiscalYears:: Trying to unlink group fund fiscal years with budget id {}", id);
+
+    String sql = "UPDATE " + getFullTableName(conn.getTenantId(), GROUP_FUND_FY_TABLE)
+      + " SET jsonb = jsonb - 'budgetId' WHERE budgetId=$1;";
+
+    return conn.execute(sql, Tuple.of(UUID.fromString(id)))
+      .onSuccess(ecList -> logger.info("unlinkGroupFundFiscalYears:: Group fund fiscal years have been successfully unlinked by budget id {}", id))
+      .onFailure(e -> logger.error("unlinkGroupFundFiscalYears:: Failed to update group_fund_fiscal_year by budget id {}", id, e))
       .mapEmpty();
   }
 
