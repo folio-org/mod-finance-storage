@@ -6,9 +6,9 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.utils.CalculationUtils;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
+import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 
 public class BatchAllocationService extends AbstractBatchTransactionService {
 
@@ -28,17 +28,12 @@ public class BatchAllocationService extends AbstractBatchTransactionService {
   }
 
   private void calculateBudgetsTotals(List<Transaction> transactions, BatchTransactionHolder holder) {
-    Map<Budget, List<Transaction>> budgetToTransactions = createBudgetMapForAllocationsAndTransfers(transactions, holder.getBudgets());
-    if (!budgetToTransactions.isEmpty()) {
-      budgetToTransactions.forEach(this::updateBudgetTotals);
-    }
-  }
-
-  private void updateBudgetTotals(Budget budget, List<Transaction> transactions) {
-    for (Transaction transaction : transactions) {
-      applyTransaction(budget, transaction);
-    }
-    updateBudgetMetadata(budget, transactions.get(0));
+    createBudgetMapForAllocationsAndTransfers(transactions, holder.getBudgets())
+      .forEach((budget, budgetTransactions) -> {
+        budgetTransactions.forEach(tr -> applyTransaction(budget, tr));
+        calculateBudgetSummaryFields(budget);
+        updateBudgetMetadata(budget, budgetTransactions.get(0));
+      });
   }
 
   private void applyTransaction(Budget budget, Transaction allocation) {

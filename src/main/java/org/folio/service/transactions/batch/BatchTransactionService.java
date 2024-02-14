@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static io.vertx.core.Future.succeededFuture;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
@@ -135,7 +134,7 @@ public class BatchTransactionService {
     if (transactionPatches.isEmpty()) {
       return;
     }
-    throw new HttpException(INTERNAL_SERVER_ERROR.getStatusCode(), "transactionPatches: not implemented");
+    throw new HttpException(500, "transactionPatches: not implemented");
   }
 
   private Future<Void> applyChanges(BatchTransactionHolder holder, DBConn conn) {

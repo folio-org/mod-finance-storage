@@ -10,7 +10,7 @@ import javax.money.Monetary;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
 import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.sumMoney;
@@ -19,97 +19,95 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
 
   @Override
   public TransactionType getTransactionType() {
-    return TransactionType.ENCUMBRANCE;
+    return ENCUMBRANCE;
   }
 
   @Override
   public void updatesForCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder) {
-    Map<Budget, List<Transaction>> budgetToTransactions = createBudgetMapForTransactions(transactionsToCreate,
-      holder.getBudgets());
-    budgetToTransactions.forEach(this::updateBudgetTotalsForCreation);
+    createBudgetMapForTransactions(transactionsToCreate, holder.getBudgets())
+      .forEach(this::updateBudgetForEncumbranceCreation);
   }
 
   @Override
   public void updatesForUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder) {
-    Map<Budget, List<Transaction>> budgetToTransactions = createBudgetMapForTransactions(transactionsToUpdate,
-      holder.getBudgets());
-    budgetToTransactions.forEach((budget, transactions) -> updateBudgetTotalsForUpdate(budget, transactions,
-      holder.getExistingTransactionMap()));
+    createBudgetMapForTransactions(transactionsToUpdate, holder.getBudgets())
+      .forEach((budget, encumbrances) -> updateBudgetForEncumbranceUpdate(budget, encumbrances,
+        holder.getExistingTransactionMap()));
   }
 
-  private void updateBudgetTotalsForCreation(Budget budget, List<Transaction> transactions) {
-    CurrencyUnit currency = Monetary.getCurrency(transactions.get(0).getCurrency());
-    transactions.forEach(transaction -> {
-      double newEncumbered = sumMoney(budget.getEncumbered(), transaction.getAmount(), currency);
+  private void updateBudgetForEncumbranceCreation(Budget budget, List<Transaction> encumbrances) {
+    CurrencyUnit currency = Monetary.getCurrency(encumbrances.get(0).getCurrency());
+    encumbrances.forEach(encumbrance -> {
+      double newEncumbered = sumMoney(budget.getEncumbered(), encumbrance.getAmount(), currency);
       budget.setEncumbered(newEncumbered);
     });
-    updateBudgetMetadata(budget, transactions.get(0));
+    calculateBudgetSummaryFields(budget);
+    updateBudgetMetadata(budget, encumbrances.get(0));
   }
 
-  private void updateBudgetTotalsForUpdate(Budget budget, List<Transaction> transactions,
+  private void updateBudgetForEncumbranceUpdate(Budget budget, List<Transaction> encumbrances,
       Map<String, Transaction> existingTransactions) {
-    if (isNotEmpty(transactions)) {
-      CurrencyUnit currency = Monetary.getCurrency(transactions.get(0).getCurrency());
-      transactions.forEach(transaction -> {
-        Transaction existingTransaction = existingTransactions.get(transaction.getId());
-        if (existingTransaction != null && isNotFromReleasedExceptToUnreleased(transaction, existingTransaction)) {
-          processBudget(budget, currency, transaction, existingTransaction);
-        }
-      });
-      calculateBudgetSummaryFields(budget);
-      updateBudgetMetadata(budget, transactions.get(0));
-    }
+    CurrencyUnit currency = Monetary.getCurrency(encumbrances.get(0).getCurrency());
+    encumbrances.forEach(encumbrance -> {
+      Transaction existingEncumbrance = existingTransactions.get(encumbrance.getId());
+      if (existingEncumbrance != null && isNotFromReleasedExceptToUnreleased(encumbrance, existingEncumbrance)) {
+        updateBudget(budget, currency, encumbrance, existingEncumbrance);
+      }
+    });
+    calculateBudgetSummaryFields(budget);
+    updateBudgetMetadata(budget, encumbrances.get(0));
   }
 
-  private void processBudget(Budget budget, CurrencyUnit currency, Transaction transaction, Transaction existingTransaction) {
+  private void updateBudget(Budget budget, CurrencyUnit currency, Transaction encumbrance, Transaction existingEncumbrance) {
     double newEncumbered = budget.getEncumbered();
-    if (isEncumbranceReleased(transaction)) {
-      newEncumbered = subtractMoney(newEncumbered, existingTransaction.getAmount(), currency);
-      transaction.setAmount(0d);
-    } else  if (isTransitionFromUnreleasedToPending(transaction, existingTransaction)) {
-      transaction.setAmount(0d);
-      transaction.getEncumbrance().setInitialAmountEncumbered(0d);
-      newEncumbered = subtractMoney(newEncumbered, existingTransaction.getAmount(), currency);
-    } else if (isTransitionFromPendingToUnreleased(transaction, existingTransaction)) {
-      double newAmount = subtractMoney(transaction.getEncumbrance().getInitialAmountEncumbered(), existingTransaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-      newAmount = subtractMoney(newAmount, existingTransaction.getEncumbrance().getAmountExpended(), currency);
-      transaction.setAmount(newAmount);
+    if (isEncumbranceReleased(encumbrance)) {
+      newEncumbered = subtractMoney(newEncumbered, existingEncumbrance.getAmount(), currency);
+      encumbrance.setAmount(0d);
+    } else  if (isTransitionFromUnreleasedToPending(encumbrance, existingEncumbrance)) {
+      encumbrance.setAmount(0d);
+      encumbrance.getEncumbrance().setInitialAmountEncumbered(0d);
+      newEncumbered = subtractMoney(newEncumbered, existingEncumbrance.getAmount(), currency);
+    } else if (isTransitionFromPendingToUnreleased(encumbrance, existingEncumbrance)) {
+      double newAmount = subtractMoney(encumbrance.getEncumbrance().getInitialAmountEncumbered(),
+        existingEncumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
+      newAmount = subtractMoney(newAmount, existingEncumbrance.getEncumbrance().getAmountExpended(), currency);
+      encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(currency, newEncumbered, newAmount);
-    } else if (isTransitionFromReleasedToUnreleased(transaction, existingTransaction)) {
-      double newAmount = subtractMoney(transaction.getEncumbrance().getInitialAmountEncumbered(),
-        transaction.getEncumbrance().getAmountAwaitingPayment(), currency);
-      newAmount = subtractMoney(newAmount, transaction.getEncumbrance().getAmountExpended(), currency);
-      transaction.setAmount(newAmount);
+    } else if (isTransitionFromReleasedToUnreleased(encumbrance, existingEncumbrance)) {
+      double newAmount = subtractMoney(encumbrance.getEncumbrance().getInitialAmountEncumbered(),
+        encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
+      newAmount = subtractMoney(newAmount, encumbrance.getEncumbrance().getAmountExpended(), currency);
+      encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(newEncumbered, newAmount, currency);
     } else {
-      newEncumbered = sumMoney(newEncumbered, transaction.getAmount(), currency);
-      newEncumbered = subtractMoney(newEncumbered, existingTransaction.getAmount(), currency);
+      newEncumbered = sumMoney(newEncumbered, encumbrance.getAmount(), currency);
+      newEncumbered = subtractMoney(newEncumbered, existingEncumbrance.getAmount(), currency);
     }
     budget.setEncumbered(newEncumbered);
   }
 
 
-  private boolean isEncumbranceReleased(Transaction transaction) {
-    return transaction.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED;
+  private boolean isEncumbranceReleased(Transaction encumbrance) {
+    return encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED;
   }
 
-  private boolean isNotFromReleasedExceptToUnreleased(Transaction newTransaction, Transaction existingTransaction) {
-    return existingTransaction.getEncumbrance().getStatus() != Encumbrance.Status.RELEASED ||
-      newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
+  private boolean isNotFromReleasedExceptToUnreleased(Transaction newEncumbrance, Transaction existingEncumbrance) {
+    return existingEncumbrance.getEncumbrance().getStatus() != Encumbrance.Status.RELEASED ||
+      newEncumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
   }
 
-  private boolean isTransitionFromUnreleasedToPending(Transaction newTransaction, Transaction existingTransaction) {
-    return existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED
-      && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.PENDING;
+  private boolean isTransitionFromUnreleasedToPending(Transaction newEncumbrance, Transaction existingEncumbrance) {
+    return existingEncumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED
+      && newEncumbrance.getEncumbrance().getStatus() == Encumbrance.Status.PENDING;
   }
 
-  private boolean isTransitionFromPendingToUnreleased(Transaction newTransaction, Transaction existingTransaction) {
-    return existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.PENDING
-      && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
+  private boolean isTransitionFromPendingToUnreleased(Transaction newEncumbrance, Transaction existingEncumbrance) {
+    return existingEncumbrance.getEncumbrance().getStatus() == Encumbrance.Status.PENDING
+      && newEncumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
   }
 
-  private boolean isTransitionFromReleasedToUnreleased(Transaction newTransaction, Transaction existingTransaction) {
-    return existingTransaction.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED
-      && newTransaction.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
+  private boolean isTransitionFromReleasedToUnreleased(Transaction newEncumbrance, Transaction existingEncumbrance) {
+    return existingEncumbrance.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED
+      && newEncumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED;
   }
 }

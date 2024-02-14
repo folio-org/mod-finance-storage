@@ -80,15 +80,13 @@ public class BatchTransactionHolder {
     idsOfTransactionsToDelete = new HashSet<>(batch.getIdsOfTransactionsToDelete());
     allTransactionsToCreateOrUpdate = Stream.concat(allTransactionsToCreate.stream(), allTransactionsToUpdate.stream())
       .collect(toCollection(ArrayList::new));
+
     return BatchTransactionChecks.checkTransactionsToDelete(idsOfTransactionsToDelete, transactionDAO, conn)
       .compose(v -> loadExistingTransactions(conn))
       .compose(v -> loadLinkedEncumbrances(conn))
       .compose(v -> loadLinkedPendingPayments(conn))
       .map(v -> {
-        allTransactions = Stream.of(allTransactionsToCreateOrUpdate.stream(), existingTransactions.stream(),
-          linkedEncumbrances.stream())
-          .flatMap(Function.identity())
-          .toList();
+        setAllTransactions();
         return null;
       })
       .compose(v -> loadFunds(conn))
@@ -224,6 +222,13 @@ public class BatchTransactionHolder {
         linkedPendingPayments = transactions;
         return null;
       });
+  }
+
+  private void setAllTransactions() {
+    allTransactions = Stream.of(allTransactionsToCreateOrUpdate.stream(), existingTransactions.stream(),
+        linkedEncumbrances.stream())
+      .flatMap(Function.identity())
+      .toList();
   }
 
   private Future<Void> loadFunds(DBConn conn) {

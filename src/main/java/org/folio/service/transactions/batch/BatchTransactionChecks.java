@@ -24,6 +24,7 @@ import java.util.Set;
 import static io.vertx.core.Future.succeededFuture;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.ACTIVE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
@@ -64,14 +65,15 @@ public class BatchTransactionChecks {
 
   public static void checkBudgetsAreActive(BatchTransactionHolder holder) {
     holder.getBudgets().forEach(budget -> {
-      if (budget.getBudgetStatus() != Budget.BudgetStatus.ACTIVE) {
+      if (budget.getBudgetStatus() != ACTIVE) {
         throw new HttpException(400, String.format("Cannot process transactions because of an inactive budget for fund %s",
           holder.getFundCodeForBudget(budget)));
       }
     });
   }
 
-  public static Future<Void> checkTransactionsToDelete(Set<String> idsOfTransactionsToDelete, BatchTransactionDAO transactionDAO, DBConn conn) {
+  public static Future<Void> checkTransactionsToDelete(Set<String> idsOfTransactionsToDelete,
+      BatchTransactionDAO transactionDAO, DBConn conn) {
     // There is currently no budget update when a transaction is deleted.
     // Batch delete should only be used to delete released encumbrances.
     if (idsOfTransactionsToDelete.isEmpty()) {

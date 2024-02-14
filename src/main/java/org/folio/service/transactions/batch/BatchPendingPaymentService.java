@@ -41,21 +41,24 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
     List<Transaction> encumbrances = prepareEncumbrancesToProcess(pendingPayments, holder,
       tr -> tr.getAwaitingPayment() != null ? tr.getAwaitingPayment().getEncumbranceId() : null);
     if (!encumbrances.isEmpty()) {
-      updateEncumbrancesTotals(encumbrances, existingTransactionMap, pendingPayments);
+      updateEncumbrances(encumbrances, existingTransactionMap, pendingPayments);
     }
-    updateBudgetsTotalsWithPendingPayments(pendingPayments, encumbrances, holder);
+    applyPendingPayments(pendingPayments, holder);
   }
 
-  private void updateEncumbrancesTotals(List<Transaction> encumbrances,
+  private void updateEncumbrances(List<Transaction> encumbrances,
       Map<String, Transaction> existingTransactionMap, List<Transaction> pendingPayments) {
     Map<String, List<Transaction>> pendingPaymentsByEncumbranceId = pendingPayments.stream()
       .filter(tr -> tr.getAwaitingPayment() != null && tr.getAwaitingPayment().getEncumbranceId() != null)
       .collect(groupingBy(tr -> tr.getAwaitingPayment().getEncumbranceId()));
-    encumbrances.forEach(encumbrance -> updateEncumbranceTotals(encumbrance,
+    encumbrances.forEach(encumbrance -> updateEncumbrance(encumbrance,
       pendingPaymentsByEncumbranceId.get(encumbrance.getId()), existingTransactionMap));
+    encumbrances.stream()
+      .filter(encumbrance -> encumbrance.getAmount() < 0)
+      .forEach(encumbrance -> encumbrance.setAmount(0d));
   }
 
-  private void updateEncumbranceTotals(Transaction encumbrance, List<Transaction> pendingPayments,
+  private void updateEncumbrance(Transaction encumbrance, List<Transaction> pendingPayments,
       Map<String, Transaction> existingTransactionMap) {
     boolean releaseEncumbrance = false;
     for (Transaction pendingPayment : pendingPayments) {
@@ -91,24 +94,15 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
     encumbrance.setAmount(subtractMoney(encumbrance.getAmount(), amount, currency));
   }
 
-  private void updateBudgetsTotalsWithPendingPayments(List<Transaction> pendingPayments,
-      List<Transaction> encumbrances, BatchTransactionHolder holder) {
-    encumbrances.stream()
-      .filter(tr -> tr.getAmount() < 0)
-      .forEach(tr -> tr.setAmount(0d));
-    applyPendingPayments(pendingPayments, holder);
-  }
-
   private void applyPendingPayments(List<Transaction> pendingPayments, BatchTransactionHolder holder) {
     Map<String, Transaction> existingTransactionMap = holder.getExistingTransactionMap();
-    List<Budget> budgets = holder.getBudgets();
-    Map<Budget, List<Transaction>> budgetToTransactions = createBudgetMapForTransactions(pendingPayments, budgets);
+    Map<Budget, List<Transaction>> budgetToTransactions = createBudgetMapForTransactions(pendingPayments, holder.getBudgets());
     if (budgetToTransactions.isEmpty()) {
       return;
     }
-    budgetToTransactions.forEach((budget, transactions) -> {
+    budgetToTransactions.forEach((budget, budgetPendingPayments) -> {
       // sort pending payments by amount to apply negative amounts first
-      List<Transaction> sortedPendingPayments = transactions.stream()
+      List<Transaction> sortedPendingPayments = budgetPendingPayments.stream()
         .sorted(Comparator.comparing(Transaction::getAmount))
         .toList();
       for (Transaction pendingPayment : sortedPendingPayments) {
@@ -120,7 +114,7 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
         }
       }
       calculateBudgetSummaryFields(budget);
-      updateBudgetMetadata(budget, transactions.get(0));
+      updateBudgetMetadata(budget, budgetPendingPayments.get(0));
     });
   }
 

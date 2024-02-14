@@ -28,18 +28,18 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
 
   @Override
   public void updatesForCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder) {
-    updateEncumbranceTotals(transactionsToCreate, holder);
-    calculateBudgetsTotals(transactionsToCreate, holder);
+    updateEncumbrances(transactionsToCreate, holder);
+    updateBudgets(transactionsToCreate, holder);
     markPendingPaymentsForDeletion(holder);
   }
 
   @Override
   public void updatesForUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder) {
-    updateEncumbranceTotals(transactionsToUpdate, holder);
-    calculateBudgetsTotals(transactionsToUpdate, holder);
+    updateEncumbrances(transactionsToUpdate, holder);
+    updateBudgets(transactionsToUpdate, holder);
   }
 
-  private void updateEncumbranceTotals(List<Transaction> transactions, BatchTransactionHolder holder) {
+  private void updateEncumbrances(List<Transaction> transactions, BatchTransactionHolder holder) {
     List<Transaction> encumbrances = prepareEncumbrancesToProcess(transactions, holder, Transaction::getPaymentEncumbranceId);
     if (encumbrances.isEmpty()) {
       return;
@@ -59,13 +59,13 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
         }
       })
       .toList();
-    transactionsWithAnEncumbrance.forEach(transaction -> {
-      CurrencyUnit currency = Monetary.getCurrency(transaction.getCurrency());
-      Transaction encumbrance = encumbranceMap.get(transaction.getPaymentEncumbranceId());
-      if (cancelledTransaction(transaction, existingTransactionMap)) {
-        updateEncumbranceToCancelTransaction(transaction, encumbrance, currency);
+    transactionsWithAnEncumbrance.forEach(tr -> {
+      CurrencyUnit currency = Monetary.getCurrency(tr.getCurrency());
+      Transaction encumbrance = encumbranceMap.get(tr.getPaymentEncumbranceId());
+      if (cancelledTransaction(tr, existingTransactionMap)) {
+        updateEncumbranceToCancelTransaction(tr, encumbrance, currency);
       } else {
-        updateEncumbranceToApplyTransaction(transaction, encumbrance, currency, existingTransactionMap);
+        updateEncumbranceToApplyTransaction(tr, encumbrance, currency, existingTransactionMap);
       }
     });
   }
@@ -109,24 +109,23 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
       .withAmountAwaitingPayment(awaitingPayment.getNumber().doubleValue());
   }
 
-  private void calculateBudgetsTotals(List<Transaction> transactions, BatchTransactionHolder holder) {
+  private void updateBudgets(List<Transaction> transactions, BatchTransactionHolder holder) {
     Map<Budget, List<Transaction>> budgetToTransactions = createBudgetMapForTransactions(transactions, holder.getBudgets());
-    if (!budgetToTransactions.isEmpty()) {
-      budgetToTransactions.forEach((budget, transactionsForBudget) -> updateBudgetTotals(budget, transactionsForBudget,
-        holder.getExistingTransactionMap()));
+    if (budgetToTransactions.isEmpty()) {
+      return;
     }
-  }
-
-  private void updateBudgetTotals(Budget budget, List<Transaction> transactions, Map<String, Transaction> existingTransactionMap) {
-    for (Transaction transaction : transactions) {
-      if (cancelledTransaction(transaction, existingTransactionMap)) {
-        cancelTransaction(budget, transaction);
-      } else {
-        applyTransaction(budget, transaction, existingTransactionMap.get(transaction.getId()));
-      }
-    }
-    calculateBudgetSummaryFields(budget);
-    updateBudgetMetadata(budget, transactions.get(0));
+    Map<String, Transaction>  existingTransactionMap = holder.getExistingTransactionMap();
+    budgetToTransactions.forEach((budget, transactionsForBudget) -> {
+      transactionsForBudget.forEach(transaction -> {
+        if (cancelledTransaction(transaction, existingTransactionMap)) {
+          cancelTransaction(budget, transaction);
+        } else {
+          applyTransaction(budget, transaction, existingTransactionMap.get(transaction.getId()));
+        }
+      });
+      calculateBudgetSummaryFields(budget);
+      updateBudgetMetadata(budget, transactionsForBudget.get(0));
+    });
   }
 
   private void cancelTransaction(Budget budget, Transaction transaction) {
