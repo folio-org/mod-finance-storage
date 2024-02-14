@@ -1,5 +1,6 @@
 package org.folio.service.transactions.batch;
 
+import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.groupingBy;
 import static org.folio.rest.jaxrs.model.Encumbrance.Status.RELEASED;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
@@ -66,7 +67,7 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
       } else {
         double amount = subtractMoney(pendingPayment.getAmount(), existingAmount, currency);
         updateEncumbranceToApplyTransaction(encumbrance, amount, currency);
-        if (!releaseEncumbrance && pendingPayment.getAwaitingPayment().getReleaseEncumbrance()) {
+        if (!releaseEncumbrance && TRUE.equals(pendingPayment.getAwaitingPayment().getReleaseEncumbrance())) {
           releaseEncumbrance = true;
         }
       }

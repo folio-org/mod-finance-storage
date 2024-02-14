@@ -4,7 +4,6 @@ import io.vertx.core.json.JsonObject;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
-import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 
 import java.util.List;
 import java.util.Map;
@@ -20,13 +19,6 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 
 public abstract class AbstractBatchTransactionService implements BatchTransactionServiceInterface {
-
-  public abstract void updatesForCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder);
-
-  public abstract void updatesForUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder);
-
-  public abstract TransactionType getTransactionType();
-
 
   Map<Budget, List<Transaction>> createBudgetMapForTransactions(List<Transaction> transactions, List<Budget> budgets) {
     return transactions.stream()

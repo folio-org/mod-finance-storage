@@ -38,6 +38,10 @@ import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
 public class BatchTransactionChecks {
   private static final Logger logger = LogManager.getLogger();
 
+  // Private constructor because there are only static methods, so we never need to create instances of this class.
+  private BatchTransactionChecks() {
+  }
+
   public static void sanityChecks(Batch batch) {
     // NOTE: This is just for checks that don't require database access, there are others after data is loaded
     if (batch.getTransactionsToCreate().isEmpty() && batch.getTransactionsToUpdate().isEmpty() &&
@@ -131,7 +135,7 @@ public class BatchTransactionChecks {
     budgets.forEach(budget -> {
       if (holder.budgetExpendituresAreRestricted(budget.getId())) {
         checkRestrictedExpenditures(budget, currency, holder);
-      };
+      }
       if (holder.budgetEncumbranceIsRestricted(budget.getId())) {
         checkRestrictedEncumbrance(budget, currency, holder);
       }
