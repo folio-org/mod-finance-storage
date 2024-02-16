@@ -8,7 +8,6 @@ import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -101,11 +100,7 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
       return;
     }
     budgetToTransactions.forEach((budget, budgetPendingPayments) -> {
-      // sort pending payments by amount to apply negative amounts first
-      List<Transaction> sortedPendingPayments = budgetPendingPayments.stream()
-        .sorted(Comparator.comparing(Transaction::getAmount))
-        .toList();
-      for (Transaction pendingPayment : sortedPendingPayments) {
+      for (Transaction pendingPayment : budgetPendingPayments) {
         CurrencyUnit currency = Monetary.getCurrency(pendingPayment.getCurrency());
         if (cancelledTransaction(pendingPayment, existingTransactionMap)) {
           cancelPendingPayment(budget, pendingPayment, currency);
