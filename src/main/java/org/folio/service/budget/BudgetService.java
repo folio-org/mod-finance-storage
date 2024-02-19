@@ -43,7 +43,7 @@ public class BudgetService {
   public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
 
   public static final String SELECT_BUDGETS_BY_FY_AND_FUND_FOR_UPDATE = "SELECT jsonb FROM %s "
-    + "WHERE fiscalYearId::text = $1 AND fundId::text = $2 FOR UPDATE";
+    + "WHERE fiscalYearId = $1 AND fundId = $2 FOR UPDATE";
 
   private final BudgetDAO budgetDAO;
 
@@ -170,7 +170,7 @@ public class BudgetService {
   public Future<Void> closeBudgets(LedgerFiscalYearRollover rollover, DBConn conn) {
     String sql = String.format(
         "UPDATE %s AS budgets SET jsonb = budgets.jsonb || jsonb_build_object('budgetStatus', 'Closed') "
-            + "FROM %s AS fund  WHERE fund.ledgerId::text ='%s' AND budgets.fiscalYearId::text='%s' AND fund.id=budgets.fundId;",
+            + "FROM %s AS fund  WHERE fund.ledgerId = '%s' AND budgets.fiscalYearId = '%s' AND fund.id = budgets.fundId;",
         getFullTableName(conn.getTenantId(), BUDGET_TABLE), getFullTableName(conn.getTenantId(), FUND_TABLE),
         rollover.getLedgerId(), rollover.getFromFiscalYearId());
 
@@ -188,13 +188,13 @@ public class BudgetService {
     while (fiscalYearIterator.hasNext()) {
       String fiscalYearId = fiscalYearIterator.next();
       Set<String> fundIds = fiscalYearIdToFundIds.get(fiscalYearId);
-      sb.append("(fiscalYearId::text = '")
+      sb.append("(fiscalYearId = '")
         .append(fiscalYearId)
         .append("' AND (");
       Iterator<String> fundIterator = fundIds.iterator();
       while (fundIterator.hasNext()) {
         String fundId = fundIterator.next();
-        sb.append("fundId::text = '")
+        sb.append("fundId = '")
           .append(fundId)
           .append("'");
         if (fundIterator.hasNext()) {
@@ -215,8 +215,8 @@ public class BudgetService {
     logger.debug("deleteAllocationTransactions:: Trying to delete allocation transactions with fund id {}", budget.getFundId());
 
     String sql ="DELETE FROM "+ getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
-      + " WHERE  (fromFundId::text = '" + budget.getFundId() +"' OR toFundId::text = '" + budget.getFundId() + "')"
-      + " AND fiscalYearId::text = '" + budget.getFiscalYearId() + "' AND lower(f_unaccent(jsonb->>'transactionType'::text)) = 'allocation'";
+      + " WHERE  (fromFundId = '" + budget.getFundId() + "' OR toFundId = '" + budget.getFundId() + "')"
+      + " AND fiscalYearId = '" + budget.getFiscalYearId() + "' AND lower(f_unaccent(jsonb->>'transactionType'::text)) = 'allocation'";
 
     return conn.execute(sql)
       .onSuccess(ecList -> logger.info("deleteAllocationTransactions:: Allocation transaction for budget with id {} successfully deleted",
@@ -230,10 +230,10 @@ public class BudgetService {
     logger.debug("checkTransactions:: Checking transactions with fund id {}", budget.getFundId());
 
     String sql ="SELECT jsonb FROM " + getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
-      + " WHERE fiscalYearId::text = '" + budget.getFiscalYearId() + "'"
-      + " AND (fromFundId::text = '" + budget.getFundId() + "' OR toFundId::text = '" + budget.getFundId() + "')"
+      + " WHERE fiscalYearId = '" + budget.getFiscalYearId() + "'"
+      + " AND (fromFundId = '" + budget.getFundId() + "' OR toFundId = '" + budget.getFundId() + "')"
       + " AND (lower(f_unaccent(jsonb->>'transactionType'::text)) <> 'allocation'"
-      + " OR (lower(f_unaccent(jsonb->>'transactionType'::text)) = 'allocation' AND toFundId::text IS NOT NULL AND fromFundId::text IS NOT NULL))";
+      + " OR (lower(f_unaccent(jsonb->>'transactionType'::text)) = 'allocation' AND toFundId IS NOT NULL AND fromFundId IS NOT NULL))";
 
     return conn.execute(sql)
       .map(rowSet -> {
