@@ -1,6 +1,7 @@
 package org.folio.service.transactions.batch;
 
 import io.vertx.core.Future;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,9 +74,9 @@ public class BatchTransactionService {
     return client.withTrans(conn -> holder.setup(batch, conn)
       .map(v -> {
         BatchTransactionChecks.checkBudgetsAreActive(holder);
-        updatesForCreatingTransactions(holder);
-        updatesForUpdatingTransactions(holder);
-        updatesForPatchingTransactions(holder);
+        prepareCreatingTransactions(holder);
+        prepareUpdatingTransactions(holder);
+        preparePatchingTransactions(holder);
         BatchTransactionChecks.checkRestrictedBudgets(holder);
         return null;
       })
@@ -85,7 +86,7 @@ public class BatchTransactionService {
         JsonObject.mapFrom(batch).encodePrettily(), t));
   }
 
-  private void updatesForCreatingTransactions(BatchTransactionHolder holder) {
+  private void prepareCreatingTransactions(BatchTransactionHolder holder) {
     if (holder.getAllTransactionsToCreate().isEmpty()) {
       return;
     }
@@ -106,7 +107,7 @@ public class BatchTransactionService {
     }
   }
 
-  private void updatesForUpdatingTransactions(BatchTransactionHolder holder) {
+  private void prepareUpdatingTransactions(BatchTransactionHolder holder) {
     if (holder.getAllTransactionsToUpdate().isEmpty()) {
       return;
     }
@@ -129,7 +130,7 @@ public class BatchTransactionService {
     }
   }
 
-  private void updatesForPatchingTransactions(BatchTransactionHolder holder) {
+  private void preparePatchingTransactions(BatchTransactionHolder holder) {
     List<TransactionPatch> transactionPatches = holder.getAllTransactionPatches();
     if (transactionPatches.isEmpty()) {
       return;
@@ -152,7 +153,7 @@ public class BatchTransactionService {
     return transactionDAO.createTransactions(transactions, conn)
       .onSuccess(ids -> logger.info("Batch transactions: successfully created {} transactions", transactions.size()))
       .onFailure(t -> logger.error("Batch transactions: failed to create transactions, transactions = {}",
-        transactions, t))
+        Json.encode(transactions), t))
       .mapEmpty();
   }
 
@@ -164,7 +165,7 @@ public class BatchTransactionService {
     return transactionDAO.updateTransactions(transactions, conn)
       .onSuccess(v -> logger.info("Batch transactions: successfully updated {} transactions", transactions.size()))
       .onFailure(t -> logger.error("Batch transactions: failed to update transactions, transactions = {}",
-        transactions, t));
+        Json.encode(transactions), t));
   }
 
   private Future<Void> deleteTransactions(BatchTransactionHolder holder, DBConn conn) {
@@ -184,7 +185,8 @@ public class BatchTransactionService {
     }
     return budgetService.updateBatchBudgets(budgets, conn)
       .onSuccess(v -> logger.info("Batch transactions: successfully updated {} budgets", budgets.size()))
-      .onFailure(t -> logger.error("Batch transactions: failed to update budgets, budgets = {}", budgets, t))
+      .onFailure(t -> logger.error("Batch transactions: failed to update budgets, budgets = {}",
+        Json.encode(budgets), t))
       .mapEmpty();
   }
 
@@ -223,7 +225,6 @@ public class BatchTransactionService {
   }
 
   private BatchTransactionServiceInterface getBatchServiceForType(TransactionType trType) {
-    TransactionType trType2 = trType == CREDIT ? PAYMENT : trType;
-    return serviceMap.get(trType2);
+    return serviceMap.get(trType == CREDIT ? PAYMENT : trType);
   }
 }
