@@ -255,9 +255,8 @@ public class BatchTransactionHolder {
   }
 
   private Future<Void> loadBudgets(DBConn conn) {
-    // NOTE: (Stream<String>) is redundant but needed by the Java compiler
     Map<String, Set<String>> fiscalYearIdToFundIds = allTransactions.stream().collect(groupingBy(Transaction::getFiscalYearId,
-      flatMapping(tr -> (Stream<String>)Stream.of(tr.getFromFundId(), tr.getToFundId()).filter(Objects::nonNull), toSet())));
+      flatMapping(tr -> Stream.of(tr.getFromFundId(), tr.getToFundId()).filter(Objects::nonNull), toSet())));
     if (fiscalYearIdToFundIds.isEmpty()) {
       allBudgets = emptyList();
       return succeededFuture();
