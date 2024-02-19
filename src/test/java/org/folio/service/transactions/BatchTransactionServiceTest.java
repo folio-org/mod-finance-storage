@@ -1202,7 +1202,7 @@ public class BatchTransactionServiceTest {
       .when(conn).get(eq(FUND_TABLE), eq(Fund.class), argThat(
         crit -> crit.toString().equals(fundCriterion.toString())), eq(false));
 
-    String sql = "SELECT jsonb FROM " + tenantId + "_mod_finance_storage.budget WHERE (jsonb->>'fiscalYearId' = '" + fiscalYearId + "' AND (jsonb->>'fundId' = '" + fundId + "')) FOR UPDATE";
+    String sql = "SELECT jsonb FROM " + tenantId + "_mod_finance_storage.budget WHERE (fiscalYearId::text = '" + fiscalYearId + "' AND (fundId::text = '" + fundId + "')) FOR UPDATE";
     doReturn(succeededFuture(createRowSet(List.of(budget))))
       .when(conn).execute(eq(sql), any(Tuple.class));
 
@@ -1253,7 +1253,7 @@ public class BatchTransactionServiceTest {
       .when(conn).get(eq(FUND_TABLE), eq(Fund.class), argThat(
         crit -> crit.toString().equals(fundCriterion.toString())), eq(false));
 
-    String sql = "SELECT jsonb FROM " + tenantId + "_mod_finance_storage.budget WHERE (jsonb->>'fiscalYearId' = '" + fiscalYearId + "' AND (jsonb->>'fundId' = '%s' OR jsonb->>'fundId' = '%s')) FOR UPDATE";
+    String sql = "SELECT jsonb FROM " + tenantId + "_mod_finance_storage.budget WHERE (fiscalYearId::text = '" + fiscalYearId + "' AND (fundId::text = '%s' OR fundId::text = '%s')) FOR UPDATE";
     doReturn(succeededFuture(createRowSet(List.of(budget1, budget2))))
       .when(conn).execute(argThat(s ->
           s.equals(String.format(sql, fundId1, fundId2)) || s.equals(String.format(sql, fundId2, fundId1))),

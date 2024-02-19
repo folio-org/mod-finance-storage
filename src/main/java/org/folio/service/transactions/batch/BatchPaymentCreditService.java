@@ -27,14 +27,14 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
   }
 
   @Override
-  public void updatesForCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder) {
+  public void prepareCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder) {
     updateEncumbrances(transactionsToCreate, holder);
     updateBudgets(transactionsToCreate, holder);
     markPendingPaymentsForDeletion(holder);
   }
 
   @Override
-  public void updatesForUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder) {
+  public void prepareUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder) {
     updateEncumbrances(transactionsToUpdate, holder);
     updateBudgets(transactionsToUpdate, holder);
   }

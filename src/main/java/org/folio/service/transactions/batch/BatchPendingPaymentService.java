@@ -26,12 +26,12 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
   }
 
   @Override
-  public void updatesForCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder) {
+  public void prepareCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder) {
     processPendingPayments(transactionsToCreate, holder);
   }
 
   @Override
-  public void updatesForUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder) {
+  public void prepareUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder) {
     processPendingPayments(transactionsToUpdate, holder);
   }
 

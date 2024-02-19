@@ -23,13 +23,13 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
   }
 
   @Override
-  public void updatesForCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder) {
+  public void prepareCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder) {
     createBudgetMapForTransactions(transactionsToCreate, holder.getBudgets())
       .forEach(this::updateBudgetForEncumbranceCreation);
   }
 
   @Override
-  public void updatesForUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder) {
+  public void prepareUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder) {
     createBudgetMapForTransactions(transactionsToUpdate, holder.getBudgets())
       .forEach((budget, encumbrances) -> updateBudgetForEncumbranceUpdate(budget, encumbrances,
         holder.getExistingTransactionMap()));
@@ -50,7 +50,7 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
     CurrencyUnit currency = Monetary.getCurrency(encumbrances.get(0).getCurrency());
     encumbrances.forEach(encumbrance -> {
       Transaction existingEncumbrance = existingTransactions.get(encumbrance.getId());
-      if (existingEncumbrance != null && isNotFromReleasedExceptToUnreleased(encumbrance, existingEncumbrance)) {
+      if (isNotFromReleasedExceptToUnreleased(encumbrance, existingEncumbrance)) {
         updateBudget(budget, currency, encumbrance, existingEncumbrance);
       }
     });

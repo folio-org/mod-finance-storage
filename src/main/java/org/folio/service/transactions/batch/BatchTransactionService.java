@@ -94,7 +94,7 @@ public class BatchTransactionService {
       for (TransactionType trType : transactionTypesInOrder) {
         List<Transaction> transactionsForType = getByType(trType, holder.getAllTransactionsToCreate());
         if (!transactionsForType.isEmpty()) {
-          getBatchServiceForType(trType).updatesForCreatingTransactions(transactionsForType, holder);
+          getBatchServiceForType(trType).prepareCreatingTransactions(transactionsForType, holder);
           totalPrepared += transactionsForType.size();
         }
       }
@@ -117,7 +117,7 @@ public class BatchTransactionService {
       for (TransactionType trType : transactionTypesInOrder) {
         List<Transaction> transactionsForType = getByType(trType, holder.getAllTransactionsToUpdate());
         if (!transactionsForType.isEmpty()) {
-          getBatchServiceForType(trType).updatesForUpdatingTransactions(transactionsForType, holder);
+          getBatchServiceForType(trType).prepareUpdatingTransactions(transactionsForType, holder);
           totalPrepared += transactionsForType.size();
         }
       }

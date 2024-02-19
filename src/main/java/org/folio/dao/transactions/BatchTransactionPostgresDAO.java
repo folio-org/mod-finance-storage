@@ -18,11 +18,11 @@ public class BatchTransactionPostgresDAO implements BatchTransactionDAO {
 
   @Override
   public Future<List<Transaction>> getTransactionsByCriterion(Criterion criterion, DBConn conn) {
-    logger.debug("Trying to get transactions by query: {}", criterion);
+    logger.debug("Trying to get transactions by criterion: {}", criterion);
     return conn.get(TRANSACTIONS_TABLE, Transaction.class, criterion)
       .map(Results::getResults)
       .onSuccess(transactions -> logger.info("Successfully retrieved {} transactions", transactions.size()))
-      .onFailure(e -> logger.error("Getting transactions failed", e));
+      .onFailure(e -> logger.error("Getting transactions by criterion failed, criterion: {}", criterion, e));
   }
 
   @Override
@@ -58,7 +58,7 @@ public class BatchTransactionPostgresDAO implements BatchTransactionDAO {
     ids.forEach(id -> criterionBuilder.with("id", id));
     return conn.delete(TRANSACTIONS_TABLE, criterionBuilder.build())
       .onSuccess(transactions -> logger.info("Successfully deleted {} transactions", ids.size()))
-      .onFailure(e -> logger.error("Deleting transactions failed", e))
+      .onFailure(e -> logger.error("Deleting transactions failed, ids: {}", ids, e))
       .mapEmpty();
   }
 }

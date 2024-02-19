@@ -7,9 +7,9 @@ import java.util.List;
 
 public interface BatchTransactionServiceInterface {
 
-  void updatesForCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder);
+  void prepareCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder);
 
-  void updatesForUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder);
+  void prepareUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder);
 
   TransactionType getTransactionType();
 

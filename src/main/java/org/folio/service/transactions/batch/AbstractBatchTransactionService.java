@@ -22,14 +22,14 @@ public abstract class AbstractBatchTransactionService implements BatchTransactio
 
   Map<Budget, List<Transaction>> createBudgetMapForTransactions(List<Transaction> transactions, List<Budget> budgets) {
     return transactions.stream()
-      .collect(groupingBy(tr -> budgetForTransaction(budgets, tr)))
+      .collect(groupingBy(tr -> getBudgetForTransaction(budgets, tr)))
       .entrySet()
       .stream()
       .filter(entry -> entry.getKey().isPresent())
       .collect(toMap(entry -> entry.getKey().get(), Map.Entry::getValue));
   }
 
-  Optional<Budget> budgetForTransaction(List<Budget> budgets, Transaction tr) {
+  Optional<Budget> getBudgetForTransaction(List<Budget> budgets, Transaction tr) {
     String fundId = tr.getTransactionType() == CREDIT ? tr.getToFundId() : tr.getFromFundId();
     String fiscalYearId = tr.getFiscalYearId();
     Optional<Budget> optionalBudget = budgets.stream()
