@@ -65,7 +65,7 @@ public class BatchTransactionService {
     try {
       BatchTransactionChecks.sanityChecks(batch);
     } catch (Exception ex) {
-      logger.error(ex);
+      logger.error("Sanity checks before processing batch transactions failed", ex);
       return Future.failedFuture(ex);
     }
     populateMetadata(batch, requestContext.getHeaders());
