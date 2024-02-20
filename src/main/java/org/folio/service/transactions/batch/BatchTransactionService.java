@@ -2,7 +2,6 @@ package org.folio.service.transactions.batch;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.BatchTransactionDAO;
@@ -65,7 +64,7 @@ public class BatchTransactionService {
     try {
       BatchTransactionChecks.sanityChecks(batch);
     } catch (Exception ex) {
-      logger.error("Sanity checks before processing batch transactions failed", ex);
+      logger.error("Sanity checks before processing batch transactions failed, batch={}", Json.encode(batch), ex);
       return Future.failedFuture(ex);
     }
     populateMetadata(batch, requestContext.getHeaders());
@@ -83,7 +82,7 @@ public class BatchTransactionService {
       .compose(v -> applyChanges(holder, conn))
     ).onSuccess(v -> logger.info("All batch transaction operations were successful."))
       .onFailure(t -> logger.error("Error when batch processing transactions, batch={}",
-        JsonObject.mapFrom(batch).encodePrettily(), t));
+        Json.encode(batch), t));
   }
 
   private void prepareCreatingTransactions(BatchTransactionHolder holder) {

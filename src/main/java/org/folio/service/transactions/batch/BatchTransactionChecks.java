@@ -17,9 +17,11 @@ import org.javamoney.moneta.Money;
 
 import javax.money.MonetaryAmount;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.vertx.core.Future.succeededFuture;
 import static java.util.Collections.emptyList;
@@ -52,6 +54,8 @@ public class BatchTransactionChecks {
     checkIdIsPresent(batch.getTransactionsToCreate(), "create");
     checkIdIsPresent(batch.getTransactionsToUpdate(), "update");
     // ids of patches are already checked with the schema
+    checkSingleUpdates(batch.getTransactionsToCreate(), "create");
+    checkSingleUpdates(batch.getTransactionsToUpdate(), "update");
     checkTransactionsToUpdateHaveMetadata(batch.getTransactionsToUpdate());
     batch.getTransactionsToCreate()
       .forEach(transaction -> {
@@ -158,6 +162,16 @@ public class BatchTransactionChecks {
           transaction.getSourceInvoiceId() == null) {
         throw new HttpException(400, String.format("Missing invoice id in transaction %s", transaction.getId()));
       }
+    }
+  }
+
+  private static void checkSingleUpdates(List<Transaction> transactions, String operation) {
+    List<String> distinctIds = transactions.stream().map(Transaction::getId).distinct().toList();
+    if (distinctIds.size() != transactions.size()) {
+      List<String> ids = transactions.stream().map(Transaction::getId).toList();
+      Set<String> duplicates = ids.stream().filter(id -> Collections.frequency(ids, id) > 1).collect(Collectors.toSet());
+      throw new HttpException(400,
+        String.format("At least one transaction is present twice in transactions to %s, duplicates: %s", operation, duplicates));
     }
   }
 
