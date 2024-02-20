@@ -31,9 +31,7 @@ public class BatchTransactionPostgresDAO implements BatchTransactionDAO {
     if (ids.isEmpty()) {
       return Future.succeededFuture(Collections.emptyList());
     }
-    CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
-    ids.forEach(id -> criterionBuilder.with("id", id));
-    return getTransactionsByCriterion(criterionBuilder.build(), conn);
+    return getTransactionsByCriterion(buildCriterionByIds(ids), conn);
   }
 
   @Override
@@ -54,11 +52,15 @@ public class BatchTransactionPostgresDAO implements BatchTransactionDAO {
     if (ids.isEmpty()) {
       return Future.succeededFuture();
     }
-    CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
-    ids.forEach(id -> criterionBuilder.with("id", id));
-    return conn.delete(TRANSACTIONS_TABLE, criterionBuilder.build())
+    return conn.delete(TRANSACTIONS_TABLE, buildCriterionByIds(ids))
       .onSuccess(transactions -> logger.info("Successfully deleted {} transactions", ids.size()))
       .onFailure(e -> logger.error("Deleting transactions failed, ids: {}", ids, e))
       .mapEmpty();
+  }
+
+  private Criterion buildCriterionByIds(List<String> ids) {
+    CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
+    ids.forEach(id -> criterionBuilder.with("id", id));
+    return criterionBuilder.build();
   }
 }
