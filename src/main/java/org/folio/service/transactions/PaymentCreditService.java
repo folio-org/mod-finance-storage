@@ -150,14 +150,14 @@ public class PaymentCreditService extends AbstractTransactionService implements 
       .compose(ok -> Future.succeededFuture(conn));
   }
 
-  private Future<Integer> updateBudgetsTotals(List<Transaction> transactions, DBConn conn) {
+  private Future<Void> updateBudgetsTotals(List<Transaction> transactions, DBConn conn) {
     String summaryId = getSummaryId(transactions.get(0));
     String sql = getSelectBudgetsQueryForUpdate(conn.getTenantId());
     return budgetService.getBudgets(sql, Tuple.of(UUID.fromString(summaryId)), conn)
       .map(budgets -> budgets.stream().collect(toMap(Budget::getFundId, Function.identity())))
       .map(groupedBudgets -> calculatePaymentBudgetsTotals(transactions, groupedBudgets))
       .map(grpBudgets -> calculateCreditBudgetsTotals(transactions, grpBudgets))
-      .compose(grpBudgets -> budgetService.updateBatchBudgets(grpBudgets.values(), conn));
+      .compose(grpBudgets -> budgetService.updateBatchBudgets(grpBudgets.values().stream().toList(), conn));
   }
 
   private Map<String, Budget> calculatePaymentBudgetsTotals(List<Transaction> tempTransactions,

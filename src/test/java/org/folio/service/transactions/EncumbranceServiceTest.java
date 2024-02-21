@@ -6,6 +6,7 @@ import io.vertx.core.Future;
 import org.folio.rest.persist.DBConn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -101,13 +102,13 @@ public class EncumbranceServiceTest {
       .when(conn).getTenantId();
     doReturn(succeededFuture(List.of(budget)))
       .when(budgetService).getBudgets(any(String.class), any(Tuple.class), eq(conn));
-    doReturn(succeededFuture(1))
-      .when(budgetService).updateBatchBudgets(any(Collection.class), eq(conn));
+    doReturn(succeededFuture())
+      .when(budgetService).updateBatchBudgets(anyList(), eq(conn));
 
     doReturn(succeededFuture(List.of(tmpTransaction)))
       .when(transactionDAO).getTransactions(any(Criterion.class), eq(conn));
     doReturn(succeededFuture(null))
-      .when(transactionDAO).updatePermanentTransactions(any(List.class), eq(conn));
+      .when(transactionDAO).updatePermanentTransactions(anyList(), eq(conn));
 
     doReturn(succeededFuture(trSummary))
       .when(transactionSummaryService).getAndCheckTransactionSummary(eq(incomingTransaction), eq(conn));

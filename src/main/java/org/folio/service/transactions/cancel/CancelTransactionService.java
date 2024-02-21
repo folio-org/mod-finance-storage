@@ -53,7 +53,7 @@ public abstract class CancelTransactionService {
         Tuple.of(UUID.fromString(summaryId)), conn))
       .map(budgets -> budgetsMoneyBack(transactions, budgets))
       .compose(newBudgets -> budgetService.updateBatchBudgets(newBudgets, conn))
-      .compose(n -> paymentCreditDAO.updatePermanentTransactions(transactions, conn));
+      .compose(v -> paymentCreditDAO.updatePermanentTransactions(transactions, conn));
   }
 
   private List<Budget> budgetsMoneyBack(List<Transaction> transactions, List<Budget> budgets) {

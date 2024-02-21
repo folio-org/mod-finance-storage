@@ -2,8 +2,8 @@ package org.folio.service.transactions;
 
 import static org.folio.rest.impl.TestBase.getFile;
 import static org.folio.rest.impl.TransactionTest.ALLOCATION_SAMPLE;
+import static org.folio.rest.util.ErrorCodes.ALLOCATION_MUST_BE_POSITIVE;
 import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
-import static org.folio.rest.util.ErrorCodes.MUST_BE_POSITIVE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -83,7 +83,7 @@ public class AllocationServiceTest {
       .onFailure(thrown -> {
         testContext.verify(() -> {
           assertThat(thrown, instanceOf(HttpException.class));
-          assertThat(((HttpException) thrown).getPayload(), containsString(MUST_BE_POSITIVE.getCode()));
+          assertThat(((HttpException) thrown).getPayload(), containsString(ALLOCATION_MUST_BE_POSITIVE.getCode()));
         });
         testContext.completeNow();
       });
@@ -107,7 +107,7 @@ public class AllocationServiceTest {
     doNothing().when(budgetService)
       .updateBudgetMetadata(any(), any());
     when(budgetService.updateBatchBudgets(any(), any()))
-      .thenReturn(Future.succeededFuture(1));
+      .thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(allocationService.createTransaction(transactionSample, conn))
       .onSuccess(transaction -> {

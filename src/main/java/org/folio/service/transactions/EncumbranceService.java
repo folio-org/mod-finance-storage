@@ -174,7 +174,7 @@ public class EncumbranceService extends AbstractTransactionService implements Tr
                 && Encumbrance.OrderStatus.OPEN == existingTransaction.getEncumbrance().getOrderStatus();
   }
 
-  private Future<Integer> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions,
+  private Future<Void> updateBudgetsTotals(Map<String, List<Transaction>> groupedTransactions,
       List<Transaction> newTransactions, DBConn conn) {
 
     return budgetService.getBudgets(getSelectBudgetsQueryForUpdate(conn.getTenantId()),

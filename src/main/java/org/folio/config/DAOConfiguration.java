@@ -19,6 +19,8 @@ import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
 import org.folio.dao.summary.OrderTransactionSummaryDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
+import org.folio.dao.transactions.BatchTransactionDAO;
+import org.folio.dao.transactions.BatchTransactionPostgresDAO;
 import org.folio.dao.transactions.DefaultTransactionDAO;
 import org.folio.dao.transactions.EncumbranceDAO;
 import org.folio.dao.transactions.PaymentCreditDAO;
@@ -94,6 +96,11 @@ public class DAOConfiguration {
   @Bean
   public TransactionDAO defaultTransactionDAO() {
     return new DefaultTransactionDAO();
+  }
+
+  @Bean
+  public BatchTransactionDAO batchTransactionDAO() {
+    return new BatchTransactionPostgresDAO();
   }
 
   @Bean

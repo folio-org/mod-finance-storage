@@ -11,7 +11,9 @@ import io.vertx.core.Future;
 
 public interface BudgetDAO {
 
-  Future<Integer> updateBatchBudgets(String sql, DBConn conn);
+  Future<Void> updateBatchBudgets(List<Budget> budgets, DBConn conn);
+
+  Future<Integer> updateBatchBudgetsBySql(String sql, DBConn conn);
 
   Future<List<Budget>> getBudgetsBySql(String sql, Tuple params, DBConn conn);
 

@@ -12,9 +12,8 @@ import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.dao.rollover.RolloverBudgetDAO;
 import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
-import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
-import org.folio.dao.summary.OrderTransactionSummaryDAO;
 import org.folio.dao.summary.TransactionSummaryDao;
+import org.folio.dao.transactions.BatchTransactionDAO;
 import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
 import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
 import org.folio.dao.transactions.TemporaryEncumbranceTransactionDAO;
@@ -42,7 +41,6 @@ import org.folio.service.summary.PendingPaymentTransactionSummaryService;
 import org.folio.service.summary.TransactionSummaryService;
 import org.folio.service.transactions.AllOrNothingTransactionService;
 import org.folio.service.transactions.AllocationService;
-import org.folio.service.transactions.BatchTransactionService;
 import org.folio.service.transactions.DefaultTransactionService;
 import org.folio.service.transactions.EncumbranceService;
 import org.folio.service.transactions.PaymentCreditService;
@@ -52,6 +50,13 @@ import org.folio.service.transactions.TransactionManagingStrategyFactory;
 import org.folio.service.transactions.TransactionService;
 import org.folio.service.transactions.TemporaryTransactionService;
 import org.folio.service.transactions.TransferService;
+import org.folio.service.transactions.batch.BatchAllocationService;
+import org.folio.service.transactions.batch.BatchEncumbranceService;
+import org.folio.service.transactions.batch.BatchPaymentCreditService;
+import org.folio.service.transactions.batch.BatchPendingPaymentService;
+import org.folio.service.transactions.batch.BatchTransactionService;
+import org.folio.service.transactions.batch.BatchTransactionServiceInterface;
+import org.folio.service.transactions.batch.BatchTransferService;
 import org.folio.service.transactions.cancel.CancelPaymentCreditService;
 import org.folio.service.transactions.cancel.CancelPendingPaymentService;
 import org.folio.service.transactions.cancel.CancelTransactionService;
@@ -208,12 +213,36 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public BatchTransactionService batchTransactionService(DBClientFactory dbClientFactory,
-      TransactionManagingStrategyFactory managingServiceFactory, TransactionService defaultTransactionService,
-      OrderTransactionSummaryDAO orderTransactionSummaryDAO, InvoiceTransactionSummaryDAO invoiceTransactionSummaryDAO,
-      TemporaryOrderTransactionDAO temporaryOrderTransactionDAO, TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO) {
-    return new BatchTransactionService(dbClientFactory, managingServiceFactory, defaultTransactionService,
-      orderTransactionSummaryDAO, invoiceTransactionSummaryDAO, temporaryOrderTransactionDAO, temporaryInvoiceTransactionDAO);
+  public BatchAllocationService batchAllocationService() {
+    return new BatchAllocationService();
+  }
+
+  @Bean
+  public BatchEncumbranceService batchEncumbranceService() {
+    return new BatchEncumbranceService();
+  }
+
+  @Bean
+  public BatchPaymentCreditService batchPaymentCreditService() {
+    return new BatchPaymentCreditService();
+  }
+
+  @Bean
+  public BatchPendingPaymentService batchPendingPaymentService() {
+    return new BatchPendingPaymentService();
+  }
+
+  @Bean
+  public BatchTransferService batchTransferService() {
+    return new BatchTransferService();
+  }
+
+  @Bean
+  public BatchTransactionService batchTransactionService(DBClientFactory dbClientFactory, BatchTransactionDAO batchTransactionDAO,
+      FundService fundService, BudgetService budgetService, LedgerService ledgerService,
+      Set<BatchTransactionServiceInterface> batchTransactionStrategies) {
+    return new BatchTransactionService(dbClientFactory, batchTransactionDAO, fundService, budgetService, ledgerService,
+      batchTransactionStrategies);
   }
 
   @Bean

@@ -30,6 +30,7 @@ public class HttpException extends RuntimeException {
   }
 
   public HttpException(int code, Error error) {
+    super(error.getMessage());
     this.code = code;
     this.errors = new Errors()
       .withErrors(Collections.singletonList(error))
