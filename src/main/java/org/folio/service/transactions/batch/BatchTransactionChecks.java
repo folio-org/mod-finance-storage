@@ -92,6 +92,8 @@ public class BatchTransactionChecks {
         // from working, so instead we just log a warning.
         // Also in the future we could support auto-releasing encumbrances to delete, but this would not work well
         // when there are duplicate encumbrances (released/unreleased), so we don't do it yet.
+        // Also note that the check for connected invoices is also done in mod-finance, and it throws an exception there
+        // (the encumbrance script is using mod-finance-storage directly).
         transactionsToDelete.forEach(tr -> {
           if (tr.getTransactionType() != ENCUMBRANCE || tr.getEncumbrance().getStatus() != Encumbrance.Status.RELEASED) {
             logger.warn("A transaction to delete is not a released encumbrance, id={}", tr.getId());
