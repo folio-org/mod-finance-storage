@@ -656,9 +656,9 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
               );
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
-          -- TODO: Need to rewrite with MERGE command after complete migration of PostgreSQL to version 16
-          -- Merge command: https://www.postgresql.org/docs/16/sql-merge.html
-          -- Confluence page about PostgreSQL migration: https://folio-org.atlassian.net/wiki/spaces/TC/pages/5057452/DR-000038+-+PostgreSQL+Upgrade+to+16#DR-000038-PostgreSQLUpgradeto16-16
+            -- TODO: Need to rewrite with MERGE command after complete migration of PostgreSQL to version 16
+            -- Merge command: https://www.postgresql.org/docs/16/sql-merge.html
+            -- Confluence page about PostgreSQL migration: https://folio-org.atlassian.net/wiki/spaces/TC/pages/5057452/DR-000038+-+PostgreSQL+Upgrade+to+16#DR-000038-PostgreSQLUpgradeto16-16
             INSERT INTO ${myuniversity}_${mymodule}.transaction
             SELECT * FROM tmp_transaction t
             WHERE NOT EXISTS (
