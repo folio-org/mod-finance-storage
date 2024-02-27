@@ -330,7 +330,17 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 -- tmp_encumbered_transactions contains data for all orders with updated encumbered field
                 INSERT INTO tmp_encumbered_transactions SELECT * FROM tmp_transaction;
             ELSE
-                INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction ON CONFLICT (id) DO NOTHING;
+                -- TODO: Need to rewrite with MERGE command after complete migration of PostgreSQL to version 16
+                -- Merge command: https://www.postgresql.org/docs/16/sql-merge.html
+                -- Confluence page about PostgreSQL migration: https://folio-org.atlassian.net/wiki/spaces/TC/pages/5057452/DR-000038+-+PostgreSQL+Upgrade+to+16#DR-000038-PostgreSQLUpgradeto16-16
+                INSERT INTO ${myuniversity}_${mymodule}.transaction
+                SELECT * FROM tmp_transaction t
+                WHERE NOT EXISTS (
+                  SELECT 1
+                  FROM ${myuniversity}_${mymodule}.transaction tr
+                  WHERE tr.id = t.id
+                  )
+                ON CONFLICT ON CONSTRAINT transaction_encumbrance_idx_unique DO NOTHING;
             END IF;
         END IF;
 
@@ -646,7 +656,17 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
               );
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
-            INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction ON CONFLICT (id) DO NOTHING;
+          -- TODO: Need to rewrite with MERGE command after complete migration of PostgreSQL to version 16
+          -- Merge command: https://www.postgresql.org/docs/16/sql-merge.html
+          -- Confluence page about PostgreSQL migration: https://folio-org.atlassian.net/wiki/spaces/TC/pages/5057452/DR-000038+-+PostgreSQL+Upgrade+to+16#DR-000038-PostgreSQLUpgradeto16-16
+            INSERT INTO ${myuniversity}_${mymodule}.transaction
+            SELECT * FROM tmp_transaction t
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM ${myuniversity}_${mymodule}.transaction tr
+              WHERE tr.id = t.id
+            )
+            ON CONFLICT ON CONSTRAINT transaction_encumbrance_idx_unique DO NOTHING;
         END IF;
 
         DROP TABLE IF EXISTS tmp_transaction;
