@@ -333,6 +333,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 -- TODO: Need to rewrite with MERGE command after complete migration of PostgreSQL to version 16
                 -- Merge command: https://www.postgresql.org/docs/16/sql-merge.html
                 -- Confluence page about PostgreSQL migration: https://folio-org.atlassian.net/wiki/spaces/TC/pages/5057452/DR-000038+-+PostgreSQL+Upgrade+to+16#DR-000038-PostgreSQLUpgradeto16-16
+                -- ON CONFLICT (id) was replaced using WHERE NOT EXISTS due to unability PostgreSQL handling two or more unique indexes
+                -- At the moment ON CONFLICT refers to index definition of partial unique index with name transaction_encumbrance_idx_unique
                 INSERT INTO ${myuniversity}_${mymodule}.transaction
                 SELECT * FROM tmp_transaction t
                 WHERE NOT EXISTS (
@@ -670,6 +672,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             -- TODO: Need to rewrite with MERGE command after complete migration of PostgreSQL to version 16
             -- Merge command: https://www.postgresql.org/docs/16/sql-merge.html
             -- Confluence page about PostgreSQL migration: https://folio-org.atlassian.net/wiki/spaces/TC/pages/5057452/DR-000038+-+PostgreSQL+Upgrade+to+16#DR-000038-PostgreSQLUpgradeto16-16
+            -- ON CONFLICT (id) was replaced using WHERE NOT EXISTS due to unability PostgreSQL handling two or more unique indexes
+            -- At the moment ON CONFLICT refers to index definition of partial unique index with name transaction_encumbrance_idx_unique
             INSERT INTO ${myuniversity}_${mymodule}.transaction
             SELECT * FROM tmp_transaction t
             WHERE NOT EXISTS (
