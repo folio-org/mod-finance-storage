@@ -336,11 +336,22 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 INSERT INTO ${myuniversity}_${mymodule}.transaction
                 SELECT * FROM tmp_transaction t
                 WHERE NOT EXISTS (
-                  SELECT 1
-                  FROM ${myuniversity}_${mymodule}.transaction tr
-                  WHERE tr.id = t.id
-                  )
-                ON CONFLICT ON CONSTRAINT transaction_encumbrance_idx_unique DO NOTHING;
+                    SELECT 1
+                    FROM ${myuniversity}_${mymodule}.transaction tr
+                    WHERE tr.id = t.id
+                )
+                ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(${myuniversity}_${mymodule}.concat_space_sql(
+                    VARIADIC ARRAY[
+                        (jsonb ->> 'amount'::text),
+                        (jsonb ->> 'fromFundId'::text),
+                        ((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text),
+                        ((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text),
+                        ((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text),
+                        ((jsonb -> 'encumbrance'::text) ->> 'status'::text),
+                        (jsonb ->> 'expenseClassId'::text),
+                        (jsonb ->> 'fiscalYearId'::text)
+                    ]))))
+                WHERE ((jsonb ->> 'transactionType'::text) = 'Encumbrance'::text) DO NOTHING;
             END IF;
         END IF;
 
@@ -662,11 +673,22 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
             INSERT INTO ${myuniversity}_${mymodule}.transaction
             SELECT * FROM tmp_transaction t
             WHERE NOT EXISTS (
-              SELECT 1
-              FROM ${myuniversity}_${mymodule}.transaction tr
-              WHERE tr.id = t.id
+                SELECT 1
+                FROM ${myuniversity}_${mymodule}.transaction tr
+                WHERE tr.id = t.id
             )
-            ON CONFLICT ON CONSTRAINT transaction_encumbrance_idx_unique DO NOTHING;
+            ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(${myuniversity}_${mymodule}.concat_space_sql(
+                VARIADIC ARRAY[
+                    (jsonb ->> 'amount'::text),
+                    (jsonb ->> 'fromFundId'::text),
+                    ((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text),
+                    ((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text),
+                    ((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text),
+                    ((jsonb -> 'encumbrance'::text) ->> 'status'::text),
+                    (jsonb ->> 'expenseClassId'::text),
+                    (jsonb ->> 'fiscalYearId'::text)
+                ]))))
+            WHERE ((jsonb ->> 'transactionType'::text) = 'Encumbrance'::text) DO NOTHING;
         END IF;
 
         DROP TABLE IF EXISTS tmp_transaction;
