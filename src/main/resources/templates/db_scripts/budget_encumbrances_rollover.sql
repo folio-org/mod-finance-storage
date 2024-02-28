@@ -340,7 +340,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                   FROM ${myuniversity}_${mymodule}.transaction tr
                   WHERE tr.id = t.id
                   )
-                ON CONFLICT ON CONSTRAINT transaction_encumbrance_unique DO NOTHING;
+                ON CONFLICT ON CONSTRAINT transaction_encumbrance_idx_unique DO NOTHING;
             END IF;
         END IF;
 
@@ -666,7 +666,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
               FROM ${myuniversity}_${mymodule}.transaction tr
               WHERE tr.id = t.id
             )
-            ON CONFLICT ON CONSTRAINT transaction_encumbrance_unique DO NOTHING;
+            ON CONFLICT ON CONSTRAINT transaction_encumbrance_idx_unique DO NOTHING;
         END IF;
 
         DROP TABLE IF EXISTS tmp_transaction;

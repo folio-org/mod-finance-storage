@@ -366,7 +366,7 @@
     },
     {
       "tableName": "transaction",
-      "fromModuleVersion": "mod-finance-storage-8.6.0",
+      "fromModuleVersion": "mod-finance-storage-7.1.0",
       "withMetadata": true,
       "withOptimisticLocking": "failOnConflict",
       "customSnippetPath": "transactions.sql",
