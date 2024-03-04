@@ -1,5 +1,13 @@
 ## 8.6.0 - Unreleased
 
+## 8.5.1 - Released (Poppy R2 2023)
+The primary focus of this release was to provide ability to skip duplicate encumbrances when running finance rollover
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.5.0...v8.5.1)
+
+### Bug Fixes
+* [MODFISTO-461](https://issues.folio.org/browse/MODFISTO-461) FYRO fails on duplicate encumbrance
+
 ## 8.5.0 - Released (Poppy R2 2023)
 The primary focus of this release was to improve finance rollover script performance
 

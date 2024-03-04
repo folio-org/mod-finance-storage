@@ -330,7 +330,30 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 -- tmp_encumbered_transactions contains data for all orders with updated encumbered field
                 INSERT INTO tmp_encumbered_transactions SELECT * FROM tmp_transaction;
             ELSE
-                INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction ON CONFLICT (id) DO NOTHING;
+                -- TODO: Need to rewrite with MERGE command after complete migration of PostgreSQL to version 16
+                -- Merge command: https://www.postgresql.org/docs/16/sql-merge.html
+                -- Confluence page about PostgreSQL migration: https://folio-org.atlassian.net/wiki/spaces/TC/pages/5057452/DR-000038+-+PostgreSQL+Upgrade+to+16#DR-000038-PostgreSQLUpgradeto16-16
+                -- ON CONFLICT (id) was replaced using WHERE NOT EXISTS due to unability PostgreSQL handling two or more unique indexes
+                -- At the moment ON CONFLICT refers to index definition of partial unique index with name transaction_encumbrance_idx_unique
+                INSERT INTO ${myuniversity}_${mymodule}.transaction
+                SELECT * FROM tmp_transaction t
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM ${myuniversity}_${mymodule}.transaction tr
+                    WHERE tr.id = t.id
+                )
+                ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(${myuniversity}_${mymodule}.concat_space_sql(
+                    VARIADIC ARRAY[
+                        (jsonb ->> 'amount'::text),
+                        (jsonb ->> 'fromFundId'::text),
+                        ((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text),
+                        ((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text),
+                        ((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text),
+                        ((jsonb -> 'encumbrance'::text) ->> 'status'::text),
+                        (jsonb ->> 'expenseClassId'::text),
+                        (jsonb ->> 'fiscalYearId'::text)
+                    ]))))
+                WHERE ((jsonb ->> 'transactionType'::text) = 'Encumbrance'::text) DO NOTHING;
             END IF;
         END IF;
 
@@ -644,7 +667,30 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
               );
 
         IF _rollover_record->>'rolloverType' <> 'Preview' THEN
-            INSERT INTO ${myuniversity}_${mymodule}.transaction SELECT * FROM tmp_transaction ON CONFLICT (id) DO NOTHING;
+            -- TODO: Need to rewrite with MERGE command after complete migration of PostgreSQL to version 16
+            -- Merge command: https://www.postgresql.org/docs/16/sql-merge.html
+            -- Confluence page about PostgreSQL migration: https://folio-org.atlassian.net/wiki/spaces/TC/pages/5057452/DR-000038+-+PostgreSQL+Upgrade+to+16#DR-000038-PostgreSQLUpgradeto16-16
+            -- ON CONFLICT (id) was replaced using WHERE NOT EXISTS due to unability PostgreSQL handling two or more unique indexes
+            -- At the moment ON CONFLICT refers to index definition of partial unique index with name transaction_encumbrance_idx_unique
+            INSERT INTO ${myuniversity}_${mymodule}.transaction
+            SELECT * FROM tmp_transaction t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM ${myuniversity}_${mymodule}.transaction tr
+                WHERE tr.id = t.id
+            )
+            ON CONFLICT (lower(${myuniversity}_${mymodule}.f_unaccent(${myuniversity}_${mymodule}.concat_space_sql(
+                VARIADIC ARRAY[
+                    (jsonb ->> 'amount'::text),
+                    (jsonb ->> 'fromFundId'::text),
+                    ((jsonb -> 'encumbrance'::text) ->> 'sourcePurchaseOrderId'::text),
+                    ((jsonb -> 'encumbrance'::text) ->> 'sourcePoLineId'::text),
+                    ((jsonb -> 'encumbrance'::text) ->> 'initialAmountEncumbered'::text),
+                    ((jsonb -> 'encumbrance'::text) ->> 'status'::text),
+                    (jsonb ->> 'expenseClassId'::text),
+                    (jsonb ->> 'fiscalYearId'::text)
+                ]))))
+            WHERE ((jsonb ->> 'transactionType'::text) = 'Encumbrance'::text) DO NOTHING;
         END IF;
 
         DROP TABLE IF EXISTS tmp_transaction;
