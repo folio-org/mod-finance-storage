@@ -205,7 +205,7 @@ public class BatchTransactionChecks {
   }
 
   private static void checkRestrictedExpenditures(Budget budget, String currency, BatchTransactionHolder holder) {
-    // [remaining amount] = (allocated + netTransfers) * allowableExpenditure - (encumbered + awaitingPayment + expended)
+    // [remaining amount] = (allocated + netTransfers) * allowableExpenditure - (awaitingPayment + expended)
     MonetaryAmount allocated = Money.of(budget.getAllocated(), currency);
     // get allowableExpenditure from percentage value
     double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d)
@@ -213,11 +213,10 @@ public class BatchTransactionChecks {
 
     MonetaryAmount expended = Money.of(budget.getExpenditures(), currency);
     MonetaryAmount awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
-    MonetaryAmount encumbered = Money.of(budget.getEncumbered(), currency);
     MonetaryAmount netTransfers = Money.of(budget.getNetTransfers(), currency);
 
     MonetaryAmount totalFunding = allocated.add(netTransfers);
-    MonetaryAmount unavailable = encumbered.add(awaitingPayment).add(expended);
+    MonetaryAmount unavailable = awaitingPayment.add(expended);
 
     double remaining = totalFunding.multiply(allowableExpenditure).subtract(unavailable).getNumber().doubleValue();
     if (remaining < 0) {
@@ -228,7 +227,6 @@ public class BatchTransactionChecks {
       parameters.add(new Parameter().withKey("allocated").withValue(Double.toString(allocated.getNumber().doubleValue())));
       parameters.add(new Parameter().withKey("netTransfers").withValue(Double.toString(netTransfers.getNumber().doubleValue())));
       parameters.add(new Parameter().withKey("allowableExpenditure").withValue(Double.toString(allowableExpenditure)));
-      parameters.add(new Parameter().withKey("encumbered").withValue(Double.toString(encumbered.getNumber().doubleValue())));
       parameters.add(new Parameter().withKey("awaitingPayment").withValue(Double.toString(awaitingPayment.getNumber().doubleValue())));
       parameters.add(new Parameter().withKey("expended").withValue(Double.toString(expended.getNumber().doubleValue())));
       Error error = BUDGET_RESTRICTED_EXPENDITURES_ERROR.toError().withParameters(parameters);
