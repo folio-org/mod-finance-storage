@@ -373,7 +373,7 @@
       "uniqueIndex": [
         {
           "fieldName": "encumbrance",
-          "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status, expenseClassId, fiscalYearId",
+          "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, expenseClassId, fiscalYearId",
           "tOps": "ADD",
           "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
         },
@@ -423,6 +423,10 @@
         },
         {
           "fieldName": "encumbrance.sourcePoLineId",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "encumbrance.status",
           "tOps": "ADD"
         }
       ],
@@ -627,6 +631,12 @@
       "fromModuleVersion": "mod-finance-storage-8.3.0",
       "withMetadata": true,
       "withOptimisticLocking": "failOnConflict",
+      "index": [
+        {
+          "fieldName": "rolloverType",
+          "tOps": "ADD"
+        }
+      ],
       "foreignKeys": [
         {
           "fieldName": "ledgerId",
