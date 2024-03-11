@@ -984,6 +984,11 @@
       "description" : "Delete a transaction"
     },
     {
+      "permissionName" : "finance-storage.transactions.batch",
+      "displayName" : "process transactions in batch",
+      "description" : "Process transactions in batch"
+    },
+    {
       "permissionName" : "finance-storage.transactions.all",
       "displayName" : "All transaction perms",
       "description" : "All permissions for the transaction",
@@ -992,6 +997,7 @@
         "finance-storage.transactions.item.post",
         "finance-storage.transactions.item.get",
         "finance-storage.transactions.item.put",
+        "finance-storage.transactions.item.delete",
         "finance-storage.transactions.batch"
       ]
     },
