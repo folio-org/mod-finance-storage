@@ -6,7 +6,6 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 import org.folio.utils.MoneyUtils;
 import org.javamoney.moneta.Money;
-import org.javamoney.moneta.function.MonetaryFunctions;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -101,7 +100,7 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
       expended = expended.add(amount);
       awaitingPayment = awaitingPayment.subtract(amount);
     } else {
-      expended = MonetaryFunctions.max().apply(expended.subtract(amount), Money.zero(currency));
+      expended = expended.subtract(amount);
       awaitingPayment = awaitingPayment.add(amount);
     }
     encumbrance.getEncumbrance()
