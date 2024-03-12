@@ -8,6 +8,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.Map;
 import java.util.UUID;
+
+import io.vertx.core.Context;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
@@ -23,7 +25,6 @@ import io.restassured.http.Header;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.impl.EventLoopContext;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 
@@ -34,7 +35,7 @@ public class RestClientTest {
   public static final Header X_OKAPI_USER_ID = new Header(OKAPI_USERID_HEADER, "d1d0a10b-c563-4c4b-ae22-e5a0c11623eb");
 
   @Mock
-  private EventLoopContext ctxMock;
+  private Context ctxMock;
 
   @BeforeEach
   public void initMocks() {
