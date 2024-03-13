@@ -833,7 +833,8 @@ async def release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, f
 async def all_operations(closed_orders_ids, open_orders_ids, open_and_closed_orders_ids, fiscal_year_id, fy_is_current):
     await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id)
     await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, fy_is_current)
-    await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
+    if fy_is_current:
+        await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
     await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
     await release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids)
     await release_cancelled_order_line_encumbrances(fiscal_year_id, open_orders_ids)
@@ -892,8 +893,11 @@ async def run_operation(choice, fiscal_year_code, tenant, username, password):
         open_orders_ids = get_open_orders_ids()
         await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, fy_is_current)
     elif choice == 4:
-        closed_orders_ids = get_closed_orders_ids()
-        await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
+        if not fy_is_current:
+            print('Fiscal year is not current - fixing encumbrance order status is not needed.')
+        else:
+            closed_orders_ids = get_closed_orders_ids()
+            await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
     elif choice == 5:
         open_orders_ids = get_open_orders_ids()
         await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
@@ -921,7 +925,7 @@ def menu(fiscal_year_code, tenant, username):
     print('1) Run all fixes (can be long)')
     print('2) Remove duplicate encumbrances')
     print('3) Fix order line - encumbrance relations')
-    print('4) Fix encumbrance order status for closed orders')
+    print('4) Fix encumbrance order status for closed orders (current fiscal year only)')
     print('5) Unrelease open order encumbrances with nonzero amounts')
     print('6) Release open order encumbrances with negative amounts')
     print('7) Release cancelled order line encumbrances')
