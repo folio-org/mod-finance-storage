@@ -193,6 +193,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
+          <parameters>true</parameters>
           <release>${java.version}</release>
           <encoding>UTF-8</encoding>
         </configuration>
