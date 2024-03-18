@@ -27,7 +27,7 @@
     <aspectj.version>1.9.21.1</aspectj.version>
     <java.version>17</java.version>
     <jackson-bom.version>2.15.2</jackson-bom.version>
-    <folio-di-support.version>2.0.1</folio-di-support.version>
+    <folio-di-support.version>2.1.0</folio-di-support.version>
 
     <!--Maven plugin properties-->
     <aspectj-maven-plugin.version>1.14</aspectj-maven-plugin.version>
@@ -193,6 +193,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
+          <parameters>true</parameters>
           <release>${java.version}</release>
           <encoding>UTF-8</encoding>
         </configuration>
