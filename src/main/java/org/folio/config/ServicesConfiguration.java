@@ -64,6 +64,7 @@ import org.folio.service.transactions.restriction.EncumbranceRestrictionService;
 import org.folio.service.transactions.restriction.PaymentCreditRestrictionService;
 import org.folio.service.transactions.restriction.PendingPaymentRestrictionService;
 import org.folio.service.transactions.restriction.TransactionRestrictionService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 
 public class ServicesConfiguration {
@@ -89,17 +90,17 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public TransactionSummaryService encumbranceSummaryService(TransactionSummaryDao orderTransactionSummaryDao) {
+  public TransactionSummaryService encumbranceSummaryService(@Qualifier("orderTransactionSummaryDao") TransactionSummaryDao orderTransactionSummaryDao) {
     return new EncumbranceTransactionSummaryService(orderTransactionSummaryDao);
   }
 
   @Bean
-  public TransactionSummaryService paymentCreditSummaryService(TransactionSummaryDao invoiceTransactionSummaryDao) {
+  public TransactionSummaryService paymentCreditSummaryService(@Qualifier("invoiceTransactionSummaryDao") TransactionSummaryDao invoiceTransactionSummaryDao) {
     return new PaymentCreditTransactionSummaryService(invoiceTransactionSummaryDao);
   }
 
   @Bean
-  public TransactionSummaryService pendingPaymentSummaryService(TransactionSummaryDao invoiceTransactionSummaryDao) {
+  public TransactionSummaryService pendingPaymentSummaryService(@Qualifier("invoiceTransactionSummaryDao") TransactionSummaryDao invoiceTransactionSummaryDao) {
     return new PendingPaymentTransactionSummaryService(invoiceTransactionSummaryDao);
   }
 
@@ -109,12 +110,12 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public TransactionRestrictionService pendingPaymentRestrictionService(BudgetService budgetService, LedgerService ledgerService, TransactionDAO pendingPaymentDAO) {
+  public TransactionRestrictionService pendingPaymentRestrictionService(BudgetService budgetService, LedgerService ledgerService, @Qualifier("pendingPaymentDAO") TransactionDAO pendingPaymentDAO) {
     return new PendingPaymentRestrictionService(budgetService, ledgerService, pendingPaymentDAO);
   }
 
   @Bean
-  public TransactionRestrictionService paymentCreditRestrictionService(BudgetService budgetService, LedgerService ledgerService, TransactionDAO paymentCreditDAO) {
+  public TransactionRestrictionService paymentCreditRestrictionService(BudgetService budgetService, LedgerService ledgerService, @Qualifier("paymentCreditDAO") TransactionDAO paymentCreditDAO) {
     return new PaymentCreditRestrictionService(budgetService, ledgerService, paymentCreditDAO);
   }
 
@@ -124,7 +125,7 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public AllOrNothingTransactionService allOrNothingEncumbranceService(TransactionDAO encumbranceDAO,
+  public AllOrNothingTransactionService allOrNothingEncumbranceService(@Qualifier("encumbranceDAO") TransactionDAO encumbranceDAO,
                                                                        TemporaryOrderTransactionDAO orderTransactionSummaryDao,
                                                                        EncumbranceTransactionSummaryService encumbranceSummaryService,
                                                                        EncumbranceRestrictionService encumbranceRestrictionService) {
@@ -133,7 +134,7 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public AllOrNothingTransactionService allOrNothingPaymentCreditService(TransactionDAO paymentCreditDAO,
+  public AllOrNothingTransactionService allOrNothingPaymentCreditService(@Qualifier("paymentCreditDAO") TransactionDAO paymentCreditDAO,
                                                                          TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO,
                                                                          PaymentCreditTransactionSummaryService paymentCreditSummaryService,
                                                                          PaymentCreditRestrictionService paymentCreditRestrictionService) {
@@ -142,7 +143,7 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public AllOrNothingTransactionService allOrNothingPendingPaymentService(TransactionDAO pendingPaymentDAO,
+  public AllOrNothingTransactionService allOrNothingPendingPaymentService(@Qualifier("pendingPaymentDAO") TransactionDAO pendingPaymentDAO,
                                                                           TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO,
                                                                           PendingPaymentTransactionSummaryService pendingPaymentSummaryService,
                                                                           PendingPaymentRestrictionService pendingPaymentRestrictionService) {
@@ -151,54 +152,54 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public TransactionService pendingPaymentService(AllOrNothingTransactionService allOrNothingPendingPaymentService,
-                                                  TransactionDAO pendingPaymentDAO,
+  public TransactionService pendingPaymentService(@Qualifier("allOrNothingPendingPaymentService") AllOrNothingTransactionService allOrNothingPendingPaymentService,
+                                                  @Qualifier("pendingPaymentDAO") TransactionDAO pendingPaymentDAO,
                                                   BudgetService budgetService,
-                                                  CancelTransactionService cancelPendingPaymentService) {
+                                                  @Qualifier("cancelPendingPaymentService") CancelTransactionService cancelPendingPaymentService) {
 
     return new PendingPaymentService(allOrNothingPendingPaymentService, pendingPaymentDAO, budgetService, cancelPendingPaymentService);
   }
 
   @Bean
   public CancelTransactionService cancelPendingPaymentService(BudgetService budgetService,
-                                                                 TransactionDAO paymentCreditDAO,
-                                                                 TransactionDAO encumbranceDAO) {
+                                                                 @Qualifier("paymentCreditDAO") TransactionDAO paymentCreditDAO,
+                                                                 @Qualifier("encumbranceDAO") TransactionDAO encumbranceDAO) {
 
     return new CancelPendingPaymentService(budgetService, paymentCreditDAO, encumbranceDAO);
   }
 
   @Bean
-  public TransactionService paymentCreditService(AllOrNothingTransactionService allOrNothingPaymentCreditService,
+  public TransactionService paymentCreditService(@Qualifier("allOrNothingPaymentCreditService") AllOrNothingTransactionService allOrNothingPaymentCreditService,
                                                  BudgetService budgetService,
-                                                 TransactionDAO paymentCreditDAO,
-                                                 CancelTransactionService cancelPaymentCreditService) {
+                                                 @Qualifier("paymentCreditDAO") TransactionDAO paymentCreditDAO,
+                                                 @Qualifier("cancelPaymentCreditService") CancelTransactionService cancelPaymentCreditService) {
 
     return new PaymentCreditService(allOrNothingPaymentCreditService, paymentCreditDAO, budgetService, cancelPaymentCreditService);
   }
 
   @Bean
   public CancelTransactionService cancelPaymentCreditService(BudgetService budgetService,
-                                                               TransactionDAO paymentCreditDAO,
-                                                               TransactionDAO encumbranceDAO) {
+                                                               @Qualifier("paymentCreditDAO") TransactionDAO paymentCreditDAO,
+                                                               @Qualifier("encumbranceDAO") TransactionDAO encumbranceDAO) {
 
     return new CancelPaymentCreditService(budgetService, paymentCreditDAO, encumbranceDAO);
   }
 
   @Bean
-  public TransactionService encumbranceService(AllOrNothingTransactionService allOrNothingEncumbranceService,
-                                               TransactionDAO encumbranceDAO,
+  public TransactionService encumbranceService(@Qualifier("allOrNothingEncumbranceService") AllOrNothingTransactionService allOrNothingEncumbranceService,
+                                               @Qualifier("encumbranceDAO") TransactionDAO encumbranceDAO,
                                                BudgetService budgetService) {
 
     return new EncumbranceService(allOrNothingEncumbranceService, encumbranceDAO, budgetService);
   }
 
   @Bean
-  public TransactionService allocationService(BudgetService budgetService, TransactionDAO defaultTransactionDAO) {
+  public TransactionService allocationService(BudgetService budgetService, @Qualifier("defaultTransactionDAO") TransactionDAO defaultTransactionDAO) {
     return new AllocationService(budgetService, defaultTransactionDAO);
   }
 
   @Bean
-  public TransactionService transferService(BudgetService budgetService, TransactionDAO defaultTransactionDAO) {
+  public TransactionService transferService(BudgetService budgetService, @Qualifier("defaultTransactionDAO") TransactionDAO defaultTransactionDAO) {
     return new TransferService(budgetService, defaultTransactionDAO);
   }
 
@@ -208,7 +209,7 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public DefaultTransactionService defaultTransactionService(TransactionDAO defaultTransactionDAO) {
+  public DefaultTransactionService defaultTransactionService(@Qualifier("defaultTransactionDAO") TransactionDAO defaultTransactionDAO) {
     return new DefaultTransactionService(defaultTransactionDAO);
   }
 
@@ -264,7 +265,7 @@ public class ServicesConfiguration {
     RolloverBudgetService rolloverBudgetService,
     PostgresFunctionExecutionService postgresFunctionExecutionService,
     RolloverValidationService rolloverValidationService,
-    RestClient orderRolloverRestClient,
+    @Qualifier("orderRolloverRestClient") RestClient orderRolloverRestClient,
     EmailService emailService) {
     return new LedgerRolloverService(fiscalYearService, ledgerFiscalYearRolloverDAO, budgetService, rolloverProgressService, rolloverErrorService,
       rolloverBudgetService, postgresFunctionExecutionService, rolloverValidationService, orderRolloverRestClient, emailService);
@@ -276,7 +277,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public EmailService emailService(RestClient configurationRestClient, RestClient userRestClient, LedgerDAO ledgerDAO) {
+  public EmailService emailService(@Qualifier("configurationRestClient") RestClient configurationRestClient,
+                                   @Qualifier("userRestClient") RestClient userRestClient, LedgerDAO ledgerDAO) {
     return new EmailService(configurationRestClient, userRestClient, ledgerDAO);
   }
 
