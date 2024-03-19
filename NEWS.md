@@ -1,6 +1,6 @@
 ## 8.7.0 - Unreleased
 
-## 8.6.0 - Released (Quesnelia R2 2023)
+## 8.6.0 - Released (Quesnelia R1 2024)
 The primary focus of this release was to introduce Batch Transactions API
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.5.0...v8.6.0)
 
