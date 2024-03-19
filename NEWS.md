@@ -1,4 +1,28 @@
-## 8.6.0 - Unreleased
+## 8.7.0 - Unreleased
+
+## 8.6.0 - Released (Quesnelia R2 2023)
+The primary focus of this release was to introduce Batch Transactions API
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.5.0...v8.6.0)
+
+### Stories
+* [MODFISTO-472](https://folio-org.atlassian.net/browse/MODFISTO-472) Change restricted expenditures calculations
+* [MODFISTO-470](https://folio-org.atlassian.net/browse/MODFISTO-470) Upgrade RAML Module Builder
+* [MODFISTO-458](https://folio-org.atlassian.net/browse/MODFISTO-458) Implementation for the new transaction API
+* [MODFISTO-457](https://folio-org.atlassian.net/browse/MODFISTO-457) Update database API usage
+* [MODFISTO-449](https://folio-org.atlassian.net/browse/MODFISTO-449) Upgrading tenant resets reference and sample records
+* [MODFISTO-432](https://folio-org.atlassian.net/browse/MODFISTO-432) Implement logic to replace AllOrNothing to process list of transaction from request payload
+
+### Bug fixes
+* [MODFISTO-475](https://folio-org.atlassian.net/browse/MODFISTO-475) Wrong encumbrance calculation when paying a credit
+* [MODFISTO-455](https://folio-org.atlassian.net/browse/MODFISTO-455) Failed invoice approval creates pending payment transactions and updates budget record
+* [MODFISTO-452](https://folio-org.atlassian.net/browse/MODFISTO-452) Error message contains wrong fund name when moving allocation
+* [MODFISTO-259](https://folio-org.atlassian.net/browse/MODFISTO-259) Releasing 2 transactions at the same time can fail to update budgets
+* [MODFISTO-133](https://folio-org.atlassian.net/browse/MODFISTO-133) Remove use of "extends" property from JSON schemas, invoice_transaction_summary.json is missing an id property
+
+### Dependencies
+* Bump `raml` from `35.0.1` to `35.2.0`
+* Bump `vertx` from `4.3.4` to `4.5.4`
+
 
 ## 8.5.0 - Released (Poppy R2 2023)
 The primary focus of this release was to improve finance rollover script performance
