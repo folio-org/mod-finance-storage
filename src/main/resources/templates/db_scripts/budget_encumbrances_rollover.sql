@@ -36,6 +36,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
 		input_fromFiscalYearId uuid := (_rollover_record->>'fromFiscalYearId')::uuid;
 	BEGIN
 
+    IF
+      NOT((_transaction->'encumbrance'->>'reEncumber')::boolean)
+    THEN
+      RETURN 0.0;
+    END IF;
+
 	    SELECT sum((jsonb->'encumbrance'->>'initialAmountEncumbered')::decimal) INTO po_line_cost
 	        FROM ${myuniversity}_${mymodule}.transaction
             WHERE input_fromFiscalYearId=fiscalYearId AND ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')=_transaction->'encumbrance'->>'sourcePoLineId'
@@ -125,16 +131,10 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER1', tr.id)), tr.jsonb - 'id' || jsonb_build_object
             (
                 'fiscalYearId', _rollover_record->>'toFiscalYearId',
-                'amount', CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
-                              THEN ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true)
-                              ELSE 0
-                          END,
+                'amount', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                 'encumbrance', tr.jsonb->'encumbrance' || jsonb_build_object
                     (
-                        'initialAmountEncumbered', CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
-                                                       THEN ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true)
-                                                       ELSE 0
-                                                   END,
+                        'initialAmountEncumbered', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                         'amountAwaitingPayment', 0,
                         'amountExpended', 0,
                         'status', CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
