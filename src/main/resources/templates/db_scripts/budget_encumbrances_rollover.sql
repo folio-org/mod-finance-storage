@@ -125,13 +125,22 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         SELECT public.uuid_generate_v5(public.uuid_nil(), concat('BER1', tr.id)), tr.jsonb - 'id' || jsonb_build_object
             (
                 'fiscalYearId', _rollover_record->>'toFiscalYearId',
-                'amount', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
+                'amount', CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
+                              THEN ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true)
+                              ELSE 0
+                          END,
                 'encumbrance', tr.jsonb->'encumbrance' || jsonb_build_object
                     (
-                        'initialAmountEncumbered', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
+                        'initialAmountEncumbered', CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
+                                                       THEN ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true)
+                                                       ELSE 0
+                                                   END,
                         'amountAwaitingPayment', 0,
                         'amountExpended', 0,
-                        'status', 'Unreleased'
+                        'status', CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
+                                      THEN 'Unreleased'
+                                      ELSE 'Released'
+                                  END
                     ),
                 'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', to_char(clock_timestamp(),'YYYY-MM-DD"T"HH24:MI:SS.MSTZHTZM'))
 
@@ -140,7 +149,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
         WHERE ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId')=_order_id
           AND tr.fiscalYearId=input_fromFiscalYearId
-          AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean AND tr.jsonb->'encumbrance'->>'orderStatus'='Open'
+          AND tr.jsonb->'encumbrance'->>'orderStatus'='Open'
           AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId = input_ledgerId));
 
         -- #9.1 calculate and add missing penny to appropriate temp transaction
@@ -708,7 +717,6 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                 WHERE tr.jsonb->>'transactionType' = 'Encumbrance'
                     AND tr.fiscalYearId = input_fromFiscalYearId
                     AND tr.jsonb->'encumbrance'->>'orderStatus' = 'Open'
-                    AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
                     AND ledger.id=input_ledgerId
                 GROUP BY order_id
                 ORDER BY date
