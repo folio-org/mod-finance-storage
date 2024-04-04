@@ -1,5 +1,12 @@
 ## 8.7.0 - Unreleased
 
+## 8.6.1 - Released (Quesnelia R1 2024)
+The primary focus of this release was to improve the flow of editing PO fund distribution where the re-encumber flag is disabled
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.6.0...v8.6.1)
+
+### Bug fixes
+* [MODFISTO-477](https://folio-org.atlassian.net/browse/MODFISTO-477) A new encumbrance is needed during FYRO for orders with "Re-encumber" = false
+
 ## 8.6.0 - Released (Quesnelia R1 2024)
 The primary focus of this release was to introduce Batch Transactions API
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.5.0...v8.6.0)

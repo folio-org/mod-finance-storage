@@ -36,6 +36,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
 		input_fromFiscalYearId uuid := (_rollover_record->>'fromFiscalYearId')::uuid;
 	BEGIN
 
+    IF
+      NOT((_transaction->'encumbrance'->>'reEncumber')::boolean)
+    THEN
+      RETURN 0.0;
+    END IF;
+
 	    SELECT sum((jsonb->'encumbrance'->>'initialAmountEncumbered')::decimal) INTO po_line_cost
 	        FROM ${myuniversity}_${mymodule}.transaction
             WHERE input_fromFiscalYearId=fiscalYearId AND ${myuniversity}_${mymodule}.to_btree_format(jsonb->'encumbrance'->>'sourcePoLineId')=_transaction->'encumbrance'->>'sourcePoLineId'
@@ -131,7 +137,10 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         'initialAmountEncumbered', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                         'amountAwaitingPayment', 0,
                         'amountExpended', 0,
-                        'status', 'Unreleased'
+                        'status', CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
+                                      THEN 'Unreleased'
+                                      ELSE 'Released'
+                                  END
                     ),
                 'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', to_char(clock_timestamp(),'YYYY-MM-DD"T"HH24:MI:SS.MSTZHTZM'))
 
@@ -140,7 +149,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON fund.id = tr.fromFundId
         WHERE ${myuniversity}_${mymodule}.to_btree_format(tr.jsonb->'encumbrance'->>'sourcePurchaseOrderId')=_order_id
           AND tr.fiscalYearId=input_fromFiscalYearId
-          AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean AND tr.jsonb->'encumbrance'->>'orderStatus'='Open'
+          AND tr.jsonb->'encumbrance'->>'orderStatus'='Open'
           AND (_rollover_record->>'rolloverType' <> 'Preview' OR (_rollover_record->>'rolloverType' = 'Preview' AND fund.ledgerId = input_ledgerId));
 
         -- #9.1 calculate and add missing penny to appropriate temp transaction
@@ -708,7 +717,6 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                 WHERE tr.jsonb->>'transactionType' = 'Encumbrance'
                     AND tr.fiscalYearId = input_fromFiscalYearId
                     AND tr.jsonb->'encumbrance'->>'orderStatus' = 'Open'
-                    AND (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
                     AND ledger.id=input_ledgerId
                 GROUP BY order_id
                 ORDER BY date
