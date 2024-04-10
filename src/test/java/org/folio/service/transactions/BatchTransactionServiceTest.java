@@ -1166,6 +1166,39 @@ public class BatchTransactionServiceTest {
       });
   }
 
+  @Test
+  void testCreatePaymentWithNegativeAmount(VertxTestContext testContext) {
+    String paymentId = UUID.randomUUID().toString();
+    String encumbranceId = UUID.randomUUID().toString();
+    String invoiceId = UUID.randomUUID().toString();
+    String fundId = UUID.randomUUID().toString();
+    String fiscalYearId = UUID.randomUUID().toString();
+    String currency = "USD";
+
+    Transaction payment = new Transaction()
+      .withId(paymentId)
+      .withTransactionType(PAYMENT)
+      .withSourceInvoiceId(invoiceId)
+      .withFromFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(-5d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withPaymentEncumbranceId(encumbranceId);
+
+    Batch batch = new Batch();
+    batch.getTransactionsToCreate().add(payment);
+
+    testContext.assertFailure(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          assertThat(event.cause(), instanceOf(HttpException.class));
+          assertThat(((HttpException) event.cause()).getCode(), equalTo(422));
+        });
+        testContext.completeNow();
+      });
+  }
+
   private void setupFundBudgetLedger(String fundId, String fiscalYearId, double budgetEncumbered,
       double budgetAwaitingPayment, double budgetExpenditures, boolean restrictExpenditures, boolean restrictEncumbrance) {
     String tenantId = "tenantname";
