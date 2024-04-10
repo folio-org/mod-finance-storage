@@ -164,7 +164,7 @@
     },
     {
       "id": "finance-storage.funds",
-      "version": "4.0",
+      "version": "5.0",
       "handlers": [
         {
           "methods": ["GET"],
