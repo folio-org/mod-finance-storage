@@ -27,6 +27,7 @@ import static io.vertx.core.Future.succeededFuture;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.ACTIVE;
+import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.PLANNED;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
@@ -37,6 +38,7 @@ import static org.folio.rest.util.ErrorCodes.ALLOCATION_MUST_BE_POSITIVE;
 import static org.folio.rest.util.ErrorCodes.BUDGET_RESTRICTED_ENCUMBRANCE_ERROR;
 import static org.folio.rest.util.ErrorCodes.BUDGET_RESTRICTED_EXPENDITURES_ERROR;
 import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
+import static org.folio.rest.util.ErrorCodes.PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT;
 
 public class BatchTransactionChecks {
   private static final Logger logger = LogManager.getLogger();
@@ -65,11 +67,12 @@ public class BatchTransactionChecks {
           checkTransfer(transaction);
         }
       });
+    checkPaymentsAndCreditsAmounts(batch);
   }
 
   public static void checkBudgetsAreActive(BatchTransactionHolder holder) {
     holder.getBudgets().forEach(budget -> {
-      if (budget.getBudgetStatus() != ACTIVE) {
+      if (!List.of(ACTIVE, PLANNED).contains(budget.getBudgetStatus())) {
         throw new HttpException(400, String.format("Cannot process transactions because of an inactive budget for fund %s",
           holder.getFundCodeForBudget(budget)));
       }
@@ -261,6 +264,20 @@ public class BatchTransactionChecks {
       parameters.add(new Parameter().withKey("expended").withValue(Double.toString(expended.getNumber().doubleValue())));
       Error error = BUDGET_RESTRICTED_ENCUMBRANCE_ERROR.toError().withParameters(parameters);
       throw new HttpException(422, error);
+    }
+  }
+
+  private static void checkPaymentsAndCreditsAmounts(Batch batch) {
+    List<Transaction> newPaymentsAndCredits = batch.getTransactionsToCreate().stream()
+      .filter(tr -> List.of(PAYMENT, CREDIT).contains(tr.getTransactionType()))
+      .toList();
+    for (Transaction tr : newPaymentsAndCredits) {
+      if (tr.getAmount() < 0) {
+        List<Parameter> parameters = new ArrayList<>();
+        parameters.add(new Parameter().withKey("id").withValue(tr.getId()));
+        Error error = PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT.toError().withParameters(parameters);
+        throw new HttpException(422, error);
+      }
     }
   }
 }
