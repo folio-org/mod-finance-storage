@@ -90,6 +90,11 @@
       "run": "after",
       "snippetPath": "migration/update_budget_rollover.sql",
       "fromModuleVersion": "mod-finance-storage-8.4.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/transform_location_ids_array.sql",
+      "fromModuleVersion": "mod-finance-storage-8.7.0"
     }
   ],
   "tables": [
