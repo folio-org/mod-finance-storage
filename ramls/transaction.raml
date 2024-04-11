@@ -1,7 +1,7 @@
 #%RAML 1.0
 title: "mod-finance-storage"
 baseUri: https://github.com/folio-org/mod-finance-storage
-version: v3
+version: v4
 
 documentation:
   - title: mod-finance-storage (Transactions)
@@ -22,20 +22,15 @@ traits:
   validate: !include raml-util/traits/validation.raml
 
 resourceTypes:
-  collection: !include raml-util/rtypes/collection.raml
-  collection-item: !include raml-util/rtypes/item-collection.raml
+  collection-get: !include raml-util/rtypes/collection-get.raml
+  collection-item-get: !include raml-util/rtypes/item-collection-get-with-json-response.raml
 
 
 /finance-storage/transactions:
   type:
-    collection:
+    collection-get:
       exampleCollection: !include acq-models/mod-finance/examples/transaction_collection.sample
-      exampleItem: !include acq-models/mod-finance/examples/transaction.sample
       schemaCollection: transaction-collection
-      schemaItem: transaction
-  post:
-    description: Deprecated for encumbrances, pending payments, payments and credits - use batch-all-or-nothing instead.
-    is: [validate]
   get:
     description: Get list of transactions
     is: [
@@ -48,12 +43,9 @@ resourceTypes:
         description: The UUID of a transaction
         type: UUID
     type:
-      collection-item:
+      collection-item-get:
         exampleItem: !include acq-models/mod-finance/examples/transaction.sample
         schema: transaction
-    put:
-      description: Deprecated for encumbrances, pending payments, payments and credits - use batch-all-or-nothing instead.
-      is: [validate]
   /batch-all-or-nothing:
     displayName: Batch processing of transactions
     post:

@@ -4,8 +4,6 @@ import org.folio.rest.jaxrs.model.*;
 import org.folio.rest.jaxrs.resource.*;
 import org.folio.rest.persist.HelperUtils;
 
-import static org.folio.rest.impl.TransactionTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
-
 public enum TestEntities {
   //The Order is important because of the foreign key relationships
   EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageExpenseClasses.class), ExpenseClass.class, "data/expense-classes-4.0.0/", "elec.json", "name", "Electronic", 2, true),
@@ -15,9 +13,6 @@ public enum TestEntities {
   FUND(HelperUtils.getEndpoint(FinanceStorageFunds.class), Fund.class, "data/funds-8.4.0/", "AFRICAHIST.json", "name", "African History", 23, true),
   BUDGET(HelperUtils.getEndpoint(FinanceStorageBudgets.class), Budget.class, "data/budgets-8.4.0/", "AFRICAHIST-FY24.json", "name", "AFRICAHIST-FY24", 23, true),
   BUDGET_EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageBudgetExpenseClasses.class), BudgetExpenseClass.class, "data/budget-expense-classes-8.4.0/", "AFRICAHIST-FY24-elec.json", "status", "Inactive", 1, true),
-  ORDER_SUMMARY(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, OrderTransactionSummary.class, "data/order-transaction-summaries/", "order-306857_transaction-summary.json", "numTransactions", "1", 1, false),
-  ALLOCATION_TRANSACTION(HelperUtils.getEndpoint(FinanceStorageTransactions.class), Transaction.class, "data/transactions/", "allocations-8.4.0/allocation_AFRICAHIST-FY24.json", "source", "Invoice", 16, true),
-  ENCUMBRANCE_TRANSACTION(HelperUtils.getEndpoint(FinanceStorageTransactions.class), Transaction.class, "data/transactions/", "encumbrances/encumbrance_AFRICAHIST_306857_2.json", "source", "Invoice", 16, true),
   GROUP(HelperUtils.getEndpoint(FinanceStorageGroups.class), Group.class, "data/groups-3.2.0/", "HIST.json", "name", "New name", 1, true),
   GROUP_FUND_FY(HelperUtils.getEndpoint(FinanceStorageGroupFundFiscalYears.class), GroupFundFiscalYear.class, "data/group-fund-fiscal-years-8.4.0/", "AFRICAHIST-FY24.json", "fundId", "7fbd5d84-62d1-44c6-9c45-6cb173998bbd", 12, true),
   LEDGER_FISCAL_YEAR_ROLLOVER(HelperUtils.getEndpoint(FinanceStorageLedgerRollovers.class), LedgerFiscalYearRollover.class, "data/ledger-fiscal-year-rollovers/", "main-library.json", "restrictEncumbrance", "true", 0, true),
@@ -42,7 +37,6 @@ public enum TestEntities {
   private String endpoint;
   private String sampleFileName;
   private String sampleId;
-  private Integer version;
   private String pathToSamples;
   private String updatedFieldName;
   private String updatedFieldValue;

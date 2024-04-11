@@ -1,8 +1,7 @@
 package org.folio.rest.impl;
 
+import static java.util.Collections.singletonList;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
-import static org.folio.rest.impl.TransactionsSummariesTest.ORDERS_SUMMARY_SAMPLE;
-import static org.folio.rest.impl.TransactionsSummariesTest.ORDER_TRANSACTION_SUMMARIES_ENDPOINT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
@@ -13,7 +12,6 @@ import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.GROUP;
 import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
 import static org.folio.rest.utils.TestEntities.LEDGER;
-import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
 import static org.folio.service.budget.BudgetService.TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -22,10 +20,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.UUID;
 
+import io.vertx.core.json.Json;
 import org.apache.commons.lang3.tuple.Pair;
+import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
-import org.folio.rest.jaxrs.model.OrderTransactionSummary;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.util.ErrorCodes;
@@ -40,10 +39,12 @@ import io.vertx.core.json.JsonObject;
 
 public class BudgetTest extends TestBase {
 
+  private static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations-8.4.0/allocation_AFRICAHIST-FY24.json";
+  private static final String ENCUMBRANCE_SAMPLE_PATH = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
+  private static final String BATCH_TRANSACTION_ENDPOINT = "/finance-storage/transactions/batch-all-or-nothing";
   private static final String BUDGET_ENDPOINT = TestEntities.BUDGET.getEndpoint();
   private static final String BUDGET_TEST_TENANT = "budgettesttenantapi";
   private static final Header BUDGET_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, BUDGET_TEST_TENANT);
-  private static final String ENCUMBR_SAMPLE = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
   private static TenantJob tenantJob;
 
   @AfterAll
@@ -80,8 +81,14 @@ public class BudgetTest extends TestBase {
       Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
       Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
       Pair.of(FUND, FUND.getPathToSampleFile()),
-      Pair.of(BUDGET, BUDGET.getPathToSampleFile()),
-      Pair.of(ALLOCATION_TRANSACTION, ALLOCATION_TRANSACTION.getPathToSampleFile()));
+      Pair.of(BUDGET, BUDGET.getPathToSampleFile()));
+
+    String allocationSample = getFile(ALLOCATION_SAMPLE_PATH);
+    Transaction allocation = Json.decodeValue(allocationSample, Transaction.class);
+    Batch batch = new Batch().withTransactionsToCreate(singletonList(allocation));
+    postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch).encodePrettily(), BUDGET_TENANT_HEADER)
+      .then()
+      .statusCode(204);
 
     deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then()
       .statusCode(204);
@@ -101,18 +108,14 @@ public class BudgetTest extends TestBase {
 
     String orderId = UUID.randomUUID().toString();
 
-    OrderTransactionSummary sample = new JsonObject(getFile(ORDERS_SUMMARY_SAMPLE)).mapTo(OrderTransactionSummary.class);
-    sample.setId(orderId);
-    postData(ORDER_TRANSACTION_SUMMARIES_ENDPOINT, JsonObject.mapFrom(sample)
-      .encodePrettily(), BUDGET_TENANT_HEADER).as(OrderTransactionSummary.class);
-
-
-    Transaction transaction = new JsonObject(getFile(ENCUMBR_SAMPLE)).mapTo(Transaction.class);
+    Transaction transaction = new JsonObject(getFile(ENCUMBRANCE_SAMPLE_PATH)).mapTo(Transaction.class);
     transaction.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
-    postData(ALLOCATION_TRANSACTION.getEndpoint(), JsonObject.mapFrom(transaction).encodePrettily(), BUDGET_TENANT_HEADER)
+    Batch batch = new Batch().withTransactionsToCreate(singletonList(transaction));
+
+    postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch).encodePrettily(), BUDGET_TENANT_HEADER)
       .then()
-      .statusCode(201);
+      .statusCode(204);
 
     deleteData(BUDGET.getEndpointWithId(), BUDGET.getId(), BUDGET_TENANT_HEADER).then()
       .statusCode(400)

@@ -8,6 +8,8 @@ import org.folio.rest.persist.DBConn;
 import java.util.List;
 
 public interface BatchTransactionDAO {
+  String TRANSACTIONS_TABLE = "transaction";
+
   Future<List<Transaction>> getTransactionsByCriterion(Criterion criterion, DBConn conn);
   Future<List<Transaction>> getTransactionsByIds(List<String> ids, DBConn conn);
   Future<Void> createTransactions(List<Transaction> transactions, DBConn conn);

@@ -412,7 +412,7 @@
     },
     {
       "id": "finance-storage.transactions",
-      "version": "4.1",
+      "version": "5.0",
       "handlers": [
         {
           "methods": ["GET"],
@@ -420,81 +420,14 @@
           "permissionsRequired": ["finance-storage.transactions.collection.get"]
         },
         {
-          "methods": ["POST"],
-          "pathPattern": "/finance-storage/transactions",
-          "permissionsRequired": ["finance-storage.transactions.item.post"]
-        },
-        {
           "methods": ["GET"],
           "pathPattern": "/finance-storage/transactions/{id}",
           "permissionsRequired": ["finance-storage.transactions.item.get"]
         },
         {
-          "methods": ["PUT"],
-          "pathPattern": "/finance-storage/transactions/{id}",
-          "permissionsRequired": ["finance-storage.transactions.item.put"]
-        },
-        {
-          "methods": ["DELETE"],
-          "pathPattern": "/finance-storage/transactions/{id}",
-          "permissionsRequired": ["finance-storage.transactions.item.delete"]
-        },
-        {
           "methods": ["POST"],
           "pathPattern": "/finance-storage/transactions/batch-all-or-nothing",
           "permissionsRequired": ["finance-storage.transactions.batch"]
-        }
-      ]
-    },
-    {
-      "id": "finance-storage.order-transaction-summaries",
-      "version": "1.1",
-      "handlers": [
-        {
-          "methods": ["POST"],
-          "pathPattern": "/finance-storage/order-transaction-summaries",
-          "permissionsRequired": ["finance-storage.order-transaction-summaries.item.post"]
-        },
-        {
-          "methods": ["GET"],
-          "pathPattern": "/finance-storage/order-transaction-summaries/{id}",
-          "permissionsRequired": ["finance-storage.order-transaction-summaries.item.get"]
-        },
-        {
-          "methods": ["PUT"],
-          "pathPattern": "/finance-storage/order-transaction-summaries/{id}",
-          "permissionsRequired": ["finance-storage.order-transaction-summaries.item.put"]
-        },
-        {
-          "methods": ["DELETE"],
-          "pathPattern": "/finance-storage/order-transaction-summaries/{id}",
-          "permissionsRequired": ["finance-storage.order-transaction-summaries.item.delete"]
-        }
-      ]
-    },
-    {
-      "id": "finance-storage.invoice-transaction-summaries",
-      "version": "2.1",
-      "handlers": [
-        {
-          "methods": ["POST"],
-          "pathPattern": "/finance-storage/invoice-transaction-summaries",
-          "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.post"]
-        },
-        {
-          "methods": ["GET"],
-          "pathPattern": "/finance-storage/invoice-transaction-summaries/{id}",
-          "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.get"]
-        },
-        {
-          "methods": ["PUT"],
-          "pathPattern": "/finance-storage/invoice-transaction-summaries/{id}",
-          "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.put"]
-        },
-        {
-          "methods": ["DELETE"],
-          "pathPattern": "/finance-storage/invoice-transaction-summaries/{id}",
-          "permissionsRequired": ["finance-storage.invoice-transaction-summaries.item.delete"]
         }
       ]
     },
@@ -964,24 +897,9 @@
       "description" : "Get collection of transactions"
     },
     {
-      "permissionName" : "finance-storage.transactions.item.post",
-      "displayName" : "finance-storage.transactions.-item post",
-      "description" : "Create a new transaction"
-    },
-    {
       "permissionName" : "finance-storage.transactions.item.get",
       "displayName" : "finance-storage.transactions.-item get",
       "description" : "Fetch a transaction"
-    },
-    {
-      "permissionName" : "finance-storage.transactions.item.put",
-      "displayName" : "finance-storage.transactions.-item put",
-      "description" : "Update a transaction"
-    },
-    {
-      "permissionName" : "finance-storage.transactions.item.delete",
-      "displayName" : "finance-storage.transactions.-item delete",
-      "description" : "Delete a transaction"
     },
     {
       "permissionName" : "finance-storage.transactions.batch",
@@ -994,73 +912,8 @@
       "description" : "All permissions for the transaction",
       "subPermissions" : [
         "finance-storage.transactions.collection.get",
-        "finance-storage.transactions.item.post",
         "finance-storage.transactions.item.get",
-        "finance-storage.transactions.item.put",
-        "finance-storage.transactions.item.delete",
         "finance-storage.transactions.batch"
-      ]
-    },
-    {
-      "permissionName" : "finance-storage.order-transaction-summaries.item.get",
-      "displayName" : "Retrieve a new order transaction summary record",
-      "description" : "Retrieve a new order transaction summary record"
-    },
-    {
-      "permissionName" : "finance-storage.order-transaction-summaries.item.post",
-      "displayName" : "Create a new order transaction summary record",
-      "description" : "Create a new order transaction summary record"
-    },
-    {
-      "permissionName" : "finance-storage.order-transaction-summaries.item.put",
-      "displayName" : "Update order transaction summary record",
-      "description" : "Update order transaction summary record"
-    },
-    {
-      "permissionName" : "finance-storage.order-transaction-summaries.item.delete",
-      "displayName" : "Delete a new order transaction summary record",
-      "description" : "Delete a new order transaction summary record"
-    },
-    {
-      "permissionName" : "finance-storage.order-transaction-summaries.all",
-      "displayName" : "All order transaction summary perms",
-      "description" : "All permissions for the order transaction summary",
-      "subPermissions" : [
-        "finance-storage.order-transaction-summaries.item.get",
-        "finance-storage.order-transaction-summaries.item.post",
-        "finance-storage.order-transaction-summaries.item.put",
-        "finance-storage.order-transaction-summaries.item.delete"
-      ]
-    },
-    {
-      "permissionName" : "finance-storage.invoice-transaction-summaries.item.get",
-      "displayName" : "Retrieve an invoice transaction summary record",
-      "description" : "Retrieve an invoice transaction summary record"
-    },
-    {
-      "permissionName" : "finance-storage.invoice-transaction-summaries.item.post",
-      "displayName" : "Create a new invoice transaction summary record",
-      "description" : "Create a new invoice transaction summary record"
-    },
-    {
-      "permissionName" : "finance-storage.invoice-transaction-summaries.item.put",
-      "displayName" : "Update invoice transaction summary record",
-      "description" : "Update invoice transaction summary record"
-    },
-    {
-      "permissionName" : "finance-storage.invoice-transaction-summaries.item.delete",
-      "displayName" : "Delete an invoice transaction summary record",
-      "description" : "Delete an  invoice transaction summary record"
-    },
-    {
-      "permissionName" : "finance-storage.invoice-transaction-summaries.all",
-      "displayName" : "All invoice transaction summary perms",
-      "description" : "All permissions for the invoice transaction summary",
-      "subPermissions" : [
-        "finance-storage.invoice-transaction-summaries.item.get",
-        "finance-storage.invoice-transaction-summaries.item.post",
-        "finance-storage.invoice-transaction-summaries.item.put",
-        "finance-storage.invoice-transaction-summaries.item.delete"
       ]
     },
     {
@@ -1076,9 +929,7 @@
         "finance-storage.groups.all",
         "finance-storage.ledgers.all",
         "finance-storage.transactions.all",
-        "finance-storage.fund-types.all",
-        "finance-storage.order-transaction-summaries.all",
-        "finance-storage.invoice-transaction-summaries.all"
+        "finance-storage.fund-types.all"
       ]
     }
   ],

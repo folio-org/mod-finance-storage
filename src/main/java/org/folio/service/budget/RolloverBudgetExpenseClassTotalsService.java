@@ -7,7 +7,7 @@ import org.folio.rest.jaxrs.model.BudgetExpenseClass;
 import org.folio.rest.jaxrs.model.BudgetExpenseClassTotal;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import org.folio.rest.persist.DBConn;
-import org.folio.service.transactions.TemporaryTransactionService;
+import org.folio.service.transactions.TemporaryEncumbranceService;
 import org.folio.utils.MoneyUtils;
 
 import javax.money.CurrencyUnit;
@@ -27,17 +27,17 @@ import static java.util.stream.Collectors.groupingBy;
 public class RolloverBudgetExpenseClassTotalsService {
 
   private final BudgetExpenseClassService budgetExpenseClassService;
-  private final TemporaryTransactionService temporaryTransactionService;
+  private final TemporaryEncumbranceService temporaryEncumbranceService;
 
-  public RolloverBudgetExpenseClassTotalsService(BudgetExpenseClassService budgetExpenseClassService, TemporaryTransactionService temporaryTransactionService) {
+  public RolloverBudgetExpenseClassTotalsService(BudgetExpenseClassService budgetExpenseClassService, TemporaryEncumbranceService temporaryEncumbranceService) {
     this.budgetExpenseClassService = budgetExpenseClassService;
-    this.temporaryTransactionService = temporaryTransactionService;
+    this.temporaryEncumbranceService = temporaryEncumbranceService;
   }
 
   public Future<LedgerFiscalYearRolloverBudget> getBudgetWithUpdatedExpenseClassTotals(LedgerFiscalYearRolloverBudget budget,
       DBConn conn) {
     return budgetExpenseClassService.getExpenseClassesByTemporaryBudgetId(budget.getBudgetId(), conn)
-      .compose(expenseClasses -> temporaryTransactionService.getTransactions(budget, conn)
+      .compose(expenseClasses -> temporaryEncumbranceService.getTransactions(budget, conn)
         .map(transactions -> buildBudgetExpenseClassesTotals(expenseClasses, transactions, budget)))
       .compose(budgetExpenseClassTotals -> budgetExpenseClassService.getTempBudgetExpenseClasses(budget.getBudgetId(), conn)
         .map(budgetExpenseClasses -> updateExpenseClassStatus(budgetExpenseClassTotals, budgetExpenseClasses)))
