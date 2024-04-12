@@ -53,11 +53,6 @@
     },
     {
       "run": "after",
-      "snippetPath": "migration/update_processed_order_transaction_summary.sql",
-      "fromModuleVersion": "mod-finance-storage-6.0.0"
-    },
-    {
-      "run": "after",
       "snippetPath": "migration/update_order_encumbrance.sql",
       "fromModuleVersion": "mod-finance-storage-7.0.0"
     },
