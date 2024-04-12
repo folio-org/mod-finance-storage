@@ -273,8 +273,7 @@ public class BatchTransactionChecks {
       .toList();
     for (Transaction tr : newPaymentsAndCredits) {
       if (tr.getAmount() < 0) {
-        List<Parameter> parameters = new ArrayList<>();
-        parameters.add(new Parameter().withKey("id").withValue(tr.getId()));
+        List<Parameter> parameters = singletonList(new Parameter().withKey("id").withValue(tr.getId()));
         Error error = PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT.toError().withParameters(parameters);
         throw new HttpException(422, error);
       }
