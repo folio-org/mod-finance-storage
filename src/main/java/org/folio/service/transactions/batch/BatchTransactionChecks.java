@@ -73,7 +73,7 @@ public class BatchTransactionChecks {
   public static void checkBudgetsAreActive(BatchTransactionHolder holder) {
     holder.getBudgets().forEach(budget -> {
       if (!List.of(ACTIVE, PLANNED).contains(budget.getBudgetStatus())) {
-        throw new HttpException(400, String.format("Cannot process transactions because of an inactive budget for fund %s",
+        throw new HttpException(400, String.format("Cannot process transactions because a budget is not active or planned, fundId=%s",
           holder.getFundCodeForBudget(budget)));
       }
     });
