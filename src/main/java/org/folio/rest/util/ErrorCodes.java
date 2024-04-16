@@ -15,7 +15,8 @@ public enum ErrorCodes {
     "Could not find the budget for the encumbrance. The encumbrance fund id is probably not matching the fund id in the invoice line."),
   BUDGET_IS_INACTIVE("budgetIsInactive", "Cannot create transaction from the not active budget {0}"),
   BUDGET_RESTRICTED_EXPENDITURES_ERROR("budgetRestrictedExpendituresError", "Expenditure restriction does not allow this operation"),
-  BUDGET_RESTRICTED_ENCUMBRANCE_ERROR("budgetRestrictedEncumbranceError", "Encumbrance restriction does not allow this operation");
+  BUDGET_RESTRICTED_ENCUMBRANCE_ERROR("budgetRestrictedEncumbranceError", "Encumbrance restriction does not allow this operation"),
+  PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT("paymentOrCreditHasNegativeAmount", "A payment or credit has a negative amount");
   private final String code;
   private final String description;
 
