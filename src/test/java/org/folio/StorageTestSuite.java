@@ -38,7 +38,10 @@ import org.folio.service.email.EmailServiceTest;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.rollover.RolloverValidationServiceTest;
-import org.folio.service.transactions.BatchTransactionServiceTest;
+import org.folio.service.transactions.AllocationCreditTest;
+import org.folio.service.transactions.EncumbranceTest;
+import org.folio.service.transactions.PaymentCreditTest;
+import org.folio.service.transactions.PendingPaymentTest;
 import org.folio.utils.CalculationUtilsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -203,5 +206,14 @@ public class StorageTestSuite {
   class EmailServiceTestNested extends EmailServiceTest {}
 
   @Nested
-  class BatchTransactionServiceTestNested extends BatchTransactionServiceTest {}
+  class AllocationCreditTestNested extends AllocationCreditTest {}
+
+  @Nested
+  class EncumbranceTestNested extends EncumbranceTest {}
+
+  @Nested
+  class PaymentCreditTestNested extends PaymentCreditTest {}
+
+  @Nested
+  class PendingPaymentTestNested extends PendingPaymentTest {}
 }

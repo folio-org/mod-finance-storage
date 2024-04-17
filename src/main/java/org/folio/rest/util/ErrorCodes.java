@@ -9,7 +9,6 @@ public enum ErrorCodes {
   MISSING_FUND_ID("missingFundId", "One of the fields toFundId or fromFundId must be specified"),
   ALLOCATION_MUST_BE_POSITIVE("allocationMustBePositive", "Allocation amount must be greater than zero"),
   CONFLICT("conflict", "Conflict when updating a record in table {0}: {1}"),
-  BUDGET_NOT_FOUND_FOR_TRANSACTION("budgetNotFoundForTransaction", "Budget not found for pair fiscalYear-fundId"),
   BUDGET_RESTRICTED_EXPENDITURES_ERROR("budgetRestrictedExpendituresError", "Expenditure restriction does not allow this operation"),
   BUDGET_RESTRICTED_ENCUMBRANCE_ERROR("budgetRestrictedEncumbranceError", "Encumbrance restriction does not allow this operation"),
   PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT("paymentOrCreditHasNegativeAmount", "A payment or credit has a negative amount");
