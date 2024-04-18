@@ -1,25 +1,37 @@
 package org.folio.service.transactions;
 
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.sqlclient.Tuple;
+import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Fund;
+import org.folio.rest.jaxrs.model.Ledger;
+import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import static io.vertx.core.Future.succeededFuture;
+import static org.folio.dao.ledger.LedgerPostgresDAO.LEDGER_TABLE;
 import static org.folio.dao.transactions.BatchTransactionDAO.TRANSACTIONS_TABLE;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.impl.FundAPI.FUND_TABLE;
+import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.ACTIVE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.TRANSFER;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -221,5 +233,84 @@ public class AllocationTransferTest extends BatchTransactionServiceTestBase {
         testContext.completeNow();
       });
   }
+
+  @Test
+  void testCreateAllocationWithMissingSourceBudget(VertxTestContext testContext) {
+    String fundId1 = UUID.randomUUID().toString();
+    String fundId2 = UUID.randomUUID().toString();
+    String budgetId2 = UUID.randomUUID().toString();
+    String transactionId = UUID.randomUUID().toString();
+    String fiscalYearId = UUID.randomUUID().toString();
+    String tenantId = "tenantname";
+    String ledgerId = UUID.randomUUID().toString();
+
+    Transaction allocation = new Transaction()
+      .withId(transactionId)
+      .withCurrency("USD")
+      .withFromFundId(fundId1)
+      .withToFundId(fundId2)
+      .withTransactionType(ALLOCATION)
+      .withAmount(5d)
+      .withFiscalYearId(fiscalYearId);
+
+    Ledger ledger = new Ledger()
+      .withId(ledgerId);
+
+    Fund fund1 = new Fund()
+      .withId(fundId1)
+      .withLedgerId(ledgerId);
+
+    Fund fund2 = new Fund()
+      .withId(fundId2)
+      .withLedgerId(ledgerId);
+
+    Budget budget2 = new Budget()
+      .withId(budgetId2)
+      .withFiscalYearId(fiscalYearId)
+      .withFundId(fundId2)
+      .withBudgetStatus(ACTIVE)
+      .withInitialAllocation(10d)
+      .withNetTransfers(0d)
+      .withMetadata(new Metadata());
+
+    doReturn(tenantId)
+      .when(conn).getTenantId();
+
+    Criterion fundCriterion = createCriterionByIds(List.of(fundId1, fundId2));
+    doReturn(succeededFuture(createResults(List.of(fund1, fund2))))
+      .when(conn).get(eq(FUND_TABLE), eq(Fund.class), argThat(
+        crit -> crit.toString().equals(fundCriterion.toString())), eq(false));
+
+    String sql = "SELECT jsonb FROM " + tenantId + "_mod_finance_storage.budget WHERE (fiscalYearId = '" + fiscalYearId + "' AND (fundId = '%s' OR fundId = '%s')) FOR UPDATE";
+    doReturn(succeededFuture(createRowSet(Collections.singletonList(budget2))))
+      .when(conn).execute(argThat(s ->
+          s.equals(String.format(sql, fundId1, fundId2)) || s.equals(String.format(sql, fundId2, fundId1))),
+        any(Tuple.class));
+
+    Criterion ledgerCriterion = createCriterionByIds(List.of(ledgerId));
+    doReturn(succeededFuture(createResults(List.of(ledger))))
+      .when(conn).get(eq(LEDGER_TABLE), eq(Ledger.class), argThat(
+        crit -> crit.toString().equals(ledgerCriterion.toString())), eq(false));
+
+    Batch batch = new Batch();
+    batch.getTransactionsToCreate().add(allocation);
+
+    Criterion transactionCriterion = createCriterionByIds(List.of(transactionId));
+    doReturn(succeededFuture(createResults(new ArrayList<Transaction>())))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(transactionCriterion.toString())));
+
+    testContext.assertFailure(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          assertThat(event.cause(), instanceOf(HttpException.class));
+          HttpException exception = (HttpException)event.cause();
+          assertThat(exception.getCode(), equalTo(500));
+          assertThat(exception.getMessage(), startsWith("Could not find some budgets in the database"));
+        });
+        testContext.completeNow();
+      });
+  }
+
 
 }

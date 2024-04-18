@@ -356,7 +356,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
         HttpException exception = (HttpException)event.cause();
         testContext.verify(() -> {
           assertEquals(exception.getCode(), 500);
-          assertThat(exception.getMessage(), startsWith("Warning: could not find budget for transaction with type Encumbrance"));
+          assertThat(exception.getMessage(), startsWith("Could not find some budgets in the database"));
         });
         testContext.completeNow();
       });

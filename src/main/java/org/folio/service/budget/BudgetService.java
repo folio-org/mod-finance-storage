@@ -119,7 +119,19 @@ public class BudgetService {
     }
     sb.append(" FOR UPDATE");
     String sql = sb.toString();
-    return budgetDAO.getBudgetsBySql(sql, Tuple.tuple(), conn);
+    return budgetDAO.getBudgetsBySql(sql, Tuple.tuple(), conn)
+      .map(budgets -> {
+        int expectedNumberOfBudgets = fiscalYearIdToFundIds.values().stream().map(Set::size).mapToInt(Integer::intValue).sum();
+        if (budgets.size() != expectedNumberOfBudgets) {
+          List<String> idsOfFundsWithNoBudget = fiscalYearIdToFundIds.values().stream()
+            .flatMap(Collection::stream)
+            .distinct()
+            .filter(fundId -> budgets.stream().noneMatch(b -> fundId.equals(b.getFundId())))
+            .toList();
+          throw new HttpException(500, "Could not find some budgets in the database, fund ids=" + idsOfFundsWithNoBudget);
+        }
+        return budgets;
+      });
   }
 
   private Future<Void> deleteAllocationTransactions(Budget budget, DBConn conn) {
