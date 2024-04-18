@@ -2,6 +2,7 @@ package org.folio.service.transactions.batch;
 
 import io.vertx.core.Future;
 import org.folio.dao.transactions.BatchTransactionDAO;
+import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Fund;
@@ -189,6 +190,12 @@ public class BatchTransactionHolder {
       .toList();
     return transactionDAO.getTransactionsByIds(ids, conn)
       .map(transactions -> {
+        if (transactions.size() != ids.size()) {
+          List<String> missingIds = ids.stream()
+            .filter(id -> transactions.stream().noneMatch(tr -> id.equals(tr.getId())))
+            .toList();
+          throw new HttpException(400, "Could not find some linked encumbrances in the database, ids=" + missingIds);
+        }
         linkedEncumbrances = transactions;
         return null;
       });

@@ -105,7 +105,7 @@ public abstract class BatchTransactionServiceTestBase {
     batchTransactionService = new BatchTransactionService(dbClientFactory, transactionDAO, fundService, budgetService,
       ledgerService, batchTransactionStrategies);
     doReturn(dbClient)
-      .when(dbClientFactory).getDbClient(eq(requestContext));
+      .when(dbClientFactory).getDbClient(requestContext);
     doAnswer(invocation -> {
       Function<DBConn, Future<Void>> function = invocation.getArgument(0);
       return function.apply(conn);

@@ -398,4 +398,99 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
       });
   }
 
+  @Test
+  void testCreatePendingPaymentWithAmountGreaterThanAvailableBudget(VertxTestContext testContext) {
+    // Pending payment amount is greater than available budget, and also greater than the encumbrance
+    // Expenditure restrictions are disabled
+    String pendingPaymentId = UUID.randomUUID().toString();
+    String encumbranceId = UUID.randomUUID().toString();
+    String invoiceId = UUID.randomUUID().toString();
+    String fundId = UUID.randomUUID().toString();
+    String fiscalYearId = UUID.randomUUID().toString();
+    String currency = "USD";
+
+    Transaction pendingPayment = new Transaction()
+      .withId(pendingPaymentId)
+      .withTransactionType(PENDING_PAYMENT)
+      .withSourceInvoiceId(invoiceId)
+      .withFromFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(15d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withAwaitingPayment(new AwaitingPayment()
+        .withEncumbranceId(encumbranceId)
+        .withReleaseEncumbrance(true));
+
+    Transaction existingEncumbrance = new Transaction()
+      .withId(encumbranceId)
+      .withTransactionType(ENCUMBRANCE)
+      .withCurrency("USD")
+      .withFromFundId(fundId)
+      .withAmount(5d)
+      .withFiscalYearId(fiscalYearId)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withStatus(UNRELEASED)
+        .withAmountAwaitingPayment(0d)
+        .withInitialAmountEncumbered(5d))
+      .withMetadata(new Metadata());
+
+    Batch batch = new Batch();
+    batch.getTransactionsToCreate().add(pendingPayment);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 5d, 0d, 0d, false, false, false);
+
+    Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId));
+    doReturn(succeededFuture(createResults(List.of())))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(pendingPaymentCriterion.toString())));
+
+    Criterion encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
+    doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(encumbranceCriterion.toString())));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).saveBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
+
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          // Verify pending payment creation
+          ArgumentCaptor<String> saveTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(1)).saveBatch(saveTableNamesCaptor.capture(), saveEntitiesCaptor.capture());
+          List<String> saveTableNames = saveTableNamesCaptor.getAllValues();
+          List<List<Object>> saveEntities = saveEntitiesCaptor.getAllValues();
+
+          assertThat(saveTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedPendingPayment = (Transaction)(saveEntities.get(0).get(0));
+          assertThat(savedPendingPayment.getTransactionType(), equalTo(PENDING_PAYMENT));
+          assertThat(savedPendingPayment.getAmount(), equalTo(15d));
+
+          // Verify encumbrance update
+          ArgumentCaptor<String> updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(2)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
+          List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
+
+          assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedEncumbrance = (Transaction)(updateEntities.get(0).get(0));
+          assertThat(savedEncumbrance.getAmount(), equalTo(0d));
+          assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(RELEASED));
+          assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(15d));
+
+          // Verify budget update
+          assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
+          Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
+          assertThat(savedBudget.getEncumbered(), equalTo(0d));
+          assertThat(savedBudget.getAwaitingPayment(), equalTo(15d));
+        });
+        testContext.completeNow();
+      });
+  }
+
 }

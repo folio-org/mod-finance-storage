@@ -29,7 +29,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class AllocationCreditTest extends BatchTransactionServiceTestBase {
+public class AllocationTransferTest extends BatchTransactionServiceTestBase {
 
   @Test
   void testCreateInitialAllocation(VertxTestContext testContext) {

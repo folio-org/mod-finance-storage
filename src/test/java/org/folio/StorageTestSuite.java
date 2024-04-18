@@ -38,7 +38,7 @@ import org.folio.service.email.EmailServiceTest;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.rollover.RolloverValidationServiceTest;
-import org.folio.service.transactions.AllocationCreditTest;
+import org.folio.service.transactions.AllocationTransferTest;
 import org.folio.service.transactions.EncumbranceTest;
 import org.folio.service.transactions.PaymentCreditTest;
 import org.folio.service.transactions.PendingPaymentTest;
@@ -206,7 +206,7 @@ public class StorageTestSuite {
   class EmailServiceTestNested extends EmailServiceTest {}
 
   @Nested
-  class AllocationCreditTestNested extends AllocationCreditTest {}
+  class AllocationTransferTestNested extends AllocationTransferTest {}
 
   @Nested
   class EncumbranceTestNested extends EncumbranceTest {}

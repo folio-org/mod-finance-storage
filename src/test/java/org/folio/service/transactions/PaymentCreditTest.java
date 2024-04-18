@@ -13,6 +13,7 @@ import org.folio.rest.persist.Criteria.Criterion;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,6 +40,105 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class PaymentCreditTest extends BatchTransactionServiceTestBase {
+
+  @Test
+  void testCreatePaymentWithoutLinkedEncumbrance(VertxTestContext testContext) {
+    String paymentId = UUID.randomUUID().toString();
+    String pendingPaymentId = UUID.randomUUID().toString();
+    String invoiceId = UUID.randomUUID().toString();
+    String fundId = UUID.randomUUID().toString();
+    String fiscalYearId = UUID.randomUUID().toString();
+    String currency = "USD";
+
+    Transaction payment = new Transaction()
+      .withId(paymentId)
+      .withTransactionType(PAYMENT)
+      .withSourceInvoiceId(invoiceId)
+      .withFromFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(5d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false);
+
+    Transaction existingPendingPayment = new Transaction()
+      .withId(pendingPaymentId)
+      .withTransactionType(PENDING_PAYMENT)
+      .withSourceInvoiceId(invoiceId)
+      .withFromFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(5d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withAwaitingPayment(new AwaitingPayment()
+        .withReleaseEncumbrance(true));
+
+    Batch batch = new Batch();
+    batch.getTransactionsToCreate().add(payment);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, false, false, false);
+
+    Criterion paymentCriterion = createCriterionByIds(List.of(paymentId));
+    doReturn(succeededFuture(createResults(List.of())))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(paymentCriterion.toString())));
+
+    String snippet = "WHERE (jsonb->>'transactionType') = 'Pending payment'  AND  (  (jsonb->>'sourceInvoiceId') = '" + invoiceId + "')    ";
+    doReturn(succeededFuture(createResults(List.of(existingPendingPayment))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(snippet)));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).saveBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(List.of(existingPendingPayment))))
+      .when(conn).delete(anyString(), any(Criterion.class));
+
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          // Verify payment creation
+          ArgumentCaptor<String> saveTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(1)).saveBatch(saveTableNamesCaptor.capture(), saveEntitiesCaptor.capture());
+          List<String> saveTableNames = saveTableNamesCaptor.getAllValues();
+          List<List<Object>> saveEntities = saveEntitiesCaptor.getAllValues();
+
+          assertThat(saveTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedPayment = (Transaction)(saveEntities.get(0).get(0));
+          assertThat(savedPayment.getTransactionType(), equalTo(PAYMENT));
+          assertNotNull(savedPayment.getMetadata().getCreatedDate());
+          assertThat(savedPayment.getAmount(), equalTo(5d));
+
+          // Verify budget update
+          ArgumentCaptor<String> updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(1)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
+          List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
+
+          assertThat(updateTableNames.get(0), equalTo(BUDGET_TABLE));
+          Budget savedBudget = (Budget)(updateEntities.get(0).get(0));
+          assertNotNull(savedBudget.getMetadata().getUpdatedDate());
+          assertThat(savedBudget.getEncumbered(), equalTo(0d));
+          assertThat(savedBudget.getAwaitingPayment(), equalTo(0d));
+          assertThat(savedBudget.getExpenditures(), equalTo(5d));
+
+          // Verify pending payment deletion
+          ArgumentCaptor<String> deleteTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          ArgumentCaptor<Criterion> deleteCriterionCaptor = ArgumentCaptor.forClass(Criterion.class);
+          verify(conn, times(1)).delete(deleteTableNamesCaptor.capture(), deleteCriterionCaptor.capture());
+          List<String> deleteTableNames = deleteTableNamesCaptor.getAllValues();
+          List<Criterion> deleteCriterions = deleteCriterionCaptor.getAllValues();
+
+          Criterion pendingPaymentCriterionByIds = createCriterionByIds(List.of(pendingPaymentId));
+          assertThat(deleteTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
+          Criterion deleteCriterion = deleteCriterions.get(0);
+          assertThat(deleteCriterion.toString(), equalTo(pendingPaymentCriterionByIds.toString()));
+        });
+        testContext.completeNow();
+      });
+  }
 
   @Test
   void testCreatePaymentWithLinkedEncumbrance(VertxTestContext testContext) {
@@ -296,6 +396,51 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
         testContext.verify(() -> {
           assertThat(event.cause(), instanceOf(HttpException.class));
           assertThat(((HttpException) event.cause()).getCode(), equalTo(422));
+        });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  void testCreatePaymentWithBadEncumbranceLink(VertxTestContext testContext) {
+    String paymentId = UUID.randomUUID().toString();
+    String encumbranceId = UUID.randomUUID().toString();
+    String invoiceId = UUID.randomUUID().toString();
+    String fundId = UUID.randomUUID().toString();
+    String fiscalYearId = UUID.randomUUID().toString();
+    String currency = "USD";
+
+    Transaction payment = new Transaction()
+      .withId(paymentId)
+      .withTransactionType(PAYMENT)
+      .withSourceInvoiceId(invoiceId)
+      .withFromFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(5d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withPaymentEncumbranceId(encumbranceId);
+
+    Batch batch = new Batch();
+    batch.getTransactionsToCreate().add(payment);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, false, false, false);
+
+    Criterion paymentCriterion = createCriterionByIds(List.of(paymentId));
+    doReturn(succeededFuture(createResults(List.of())))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(paymentCriterion.toString())));
+
+    Criterion encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
+    doReturn(succeededFuture(createResults(Collections.emptyList())))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(encumbranceCriterion.toString())));
+
+    testContext.assertFailure(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          assertThat(event.cause(), instanceOf(HttpException.class));
+          assertThat(((HttpException) event.cause()).getCode(), equalTo(400));
         });
         testContext.completeNow();
       });
