@@ -2,7 +2,7 @@ package org.folio.service.transactions;
 
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.sqlclient.Tuple;
-import org.folio.rest.exception.HttpException;
+import io.vertx.ext.web.handler.HttpException;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Fund;
@@ -305,8 +305,8 @@ public class AllocationTransferTest extends BatchTransactionServiceTestBase {
         testContext.verify(() -> {
           assertThat(event.cause(), instanceOf(HttpException.class));
           HttpException exception = (HttpException)event.cause();
-          assertThat(exception.getCode(), equalTo(500));
-          assertThat(exception.getMessage(), startsWith("Could not find some budgets in the database"));
+          assertThat(exception.getStatusCode(), equalTo(500));
+          assertThat(exception.getPayload(), startsWith("Could not find some budgets in the database"));
         });
         testContext.completeNow();
       });
