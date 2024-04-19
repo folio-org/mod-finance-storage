@@ -53,7 +53,7 @@ public class ResponseUtils {
   public static <T, V> void handleFailure(Promise<T> promise, AsyncResult<V> reply) {
     Throwable cause = reply.cause();
     logger.error(cause.getMessage());
-    if (cause instanceof PgException pgEx && "23F09".equals(pgEx.getSqlState())) {
+    if (cause instanceof PgException pgEx && PgExceptionUtil.isVersionConflict(pgEx)) {
       String message = MessageFormat.format(ErrorCodes.CONFLICT.getDescription(), pgEx.getTable(), pgEx.getErrorMessage());
       promise.fail(new HttpException(Response.Status.CONFLICT.getStatusCode(), message, cause));
       return;

@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 import static io.vertx.core.Future.succeededFuture;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.ACTIVE;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.PLANNED;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
@@ -78,7 +77,7 @@ public class BatchTransactionChecks {
       if (!List.of(ACTIVE, PLANNED).contains(budget.getBudgetStatus())) {
         Error error = BUDGET_IS_NOT_ACTIVE_OR_PLANNED.toError();
         Parameter fundCodeParam = new Parameter().withKey("fundCode").withValue(holder.getFundCodeForBudget(budget));
-        error.setParameters(singletonList(fundCodeParam));
+        error.setParameters(List.of(fundCodeParam));
         throw new HttpException(400, error);
       }
     });
@@ -196,8 +195,7 @@ public class BatchTransactionChecks {
 
   private static void checkAllocation(Transaction allocation) {
     if (allocation.getAmount() <= 0) {
-      List<Parameter> parameters = singletonList(new Parameter().withKey("fieldName")
-        .withValue("amount"));
+      List<Parameter> parameters = List.of(new Parameter().withKey("fieldName").withValue("amount"));
       Error error = ALLOCATION_MUST_BE_POSITIVE.toError().withParameters(parameters);
       throw new HttpException(400, error);
     }
@@ -279,7 +277,7 @@ public class BatchTransactionChecks {
       .toList();
     for (Transaction tr : newPaymentsAndCredits) {
       if (tr.getAmount() < 0) {
-        List<Parameter> parameters = singletonList(new Parameter().withKey("id").withValue(tr.getId()));
+        List<Parameter> parameters = List.of(new Parameter().withKey("id").withValue(tr.getId()));
         Error error = PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT.toError().withParameters(parameters);
         throw new HttpException(422, error);
       }

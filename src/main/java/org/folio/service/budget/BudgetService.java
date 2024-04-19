@@ -1,5 +1,6 @@
 package org.folio.service.budget;
 
+import static org.folio.dao.transactions.BatchTransactionDAO.TRANSACTIONS_TABLE;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
@@ -31,7 +32,6 @@ public class BudgetService {
   private static final Logger logger = LogManager.getLogger(BudgetService.class);
 
   private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
-  private static final String TRANSACTIONS_TABLE = "transaction";
 
   private final BudgetDAO budgetDAO;
 

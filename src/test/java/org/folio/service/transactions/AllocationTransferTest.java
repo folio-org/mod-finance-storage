@@ -16,7 +16,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -291,7 +290,7 @@ public class AllocationTransferTest extends BatchTransactionServiceTestBase {
         crit -> crit.toString().equals(fundCriterion.toString())), eq(false));
 
     String sql = "SELECT jsonb FROM " + tenantId + "_mod_finance_storage.budget WHERE (fiscalYearId = '" + fiscalYearId + "' AND (fundId = '%s' OR fundId = '%s')) FOR UPDATE";
-    doReturn(succeededFuture(createRowSet(Collections.singletonList(budget2))))
+    doReturn(succeededFuture(createRowSet(List.of(budget2))))
       .when(conn).execute(argThat(s ->
           s.equals(String.format(sql, fundId1, fundId2)) || s.equals(String.format(sql, fundId2, fundId1))),
         any(Tuple.class));

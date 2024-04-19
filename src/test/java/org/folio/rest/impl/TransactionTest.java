@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 public class TransactionTest extends TestBase {
@@ -87,7 +87,7 @@ public class TransactionTest extends TestBase {
         .withReEncumber(false));
 
     Batch batch1 = new Batch()
-      .withTransactionsToCreate(Collections.singletonList(encumbrance));
+      .withTransactionsToCreate(List.of(encumbrance));
     postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch1).encodePrettily(), TRANSACTION_TENANT_HEADER)
       .then().statusCode(204);
 
@@ -98,14 +98,14 @@ public class TransactionTest extends TestBase {
       .withAmount(9.0)
       .withVersion(1);
     Batch batch2 = new Batch()
-      .withTransactionsToUpdate(Collections.singletonList(encumbrance2));
+      .withTransactionsToUpdate(List.of(encumbrance2));
     postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch2).encodePrettily(), TRANSACTION_TENANT_HEADER)
       .then().statusCode(204);
 
     Transaction encumbrance3 = JsonObject.mapFrom(createdEncumbrance).mapTo(Transaction.class)
       .withAmount(8.0);
     Batch batch3 = new Batch()
-      .withTransactionsToUpdate(Collections.singletonList(encumbrance3));
+      .withTransactionsToUpdate(List.of(encumbrance3));
     postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch3).encodePrettily(), TRANSACTION_TENANT_HEADER)
       .then().statusCode(409);
   }

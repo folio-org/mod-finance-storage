@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 
 import static io.vertx.core.Future.succeededFuture;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toCollection;
@@ -200,7 +199,7 @@ public class BatchTransactionHolder {
             .toList();
           Error error = LINKED_ENCUMBRANCES_NOT_FOUND.toError();
           Parameter idsParam = new Parameter().withKey("ids").withValue(missingIds.toString());
-          error.setParameters(singletonList(idsParam));
+          error.setParameters(List.of(idsParam));
           throw new HttpException(400, error);
         }
         linkedEncumbrances = transactions;

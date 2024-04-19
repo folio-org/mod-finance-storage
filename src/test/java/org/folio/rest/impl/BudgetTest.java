@@ -1,6 +1,5 @@
 package org.folio.rest.impl;
 
-import static java.util.Collections.singletonList;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.util.ErrorCodes.TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
@@ -18,6 +17,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import java.util.List;
 import java.util.UUID;
 
 import io.vertx.core.json.Json;
@@ -85,7 +85,7 @@ public class BudgetTest extends TestBase {
 
     String allocationSample = getFile(ALLOCATION_SAMPLE_PATH);
     Transaction allocation = Json.decodeValue(allocationSample, Transaction.class);
-    Batch batch = new Batch().withTransactionsToCreate(singletonList(allocation));
+    Batch batch = new Batch().withTransactionsToCreate(List.of(allocation));
     postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch).encodePrettily(), BUDGET_TENANT_HEADER)
       .then()
       .statusCode(204);
@@ -111,7 +111,7 @@ public class BudgetTest extends TestBase {
     Transaction transaction = new JsonObject(getFile(ENCUMBRANCE_SAMPLE_PATH)).mapTo(Transaction.class);
     transaction.getEncumbrance().setSourcePurchaseOrderId(orderId);
 
-    Batch batch = new Batch().withTransactionsToCreate(singletonList(transaction));
+    Batch batch = new Batch().withTransactionsToCreate(List.of(transaction));
 
     postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch).encodePrettily(), BUDGET_TENANT_HEADER)
       .then()
