@@ -126,6 +126,7 @@ public abstract class BatchTransactionServiceTestBase {
 
     Fund fund = new Fund()
       .withId(fundId)
+      .withCode("FUND1")
       .withLedgerId(ledgerId);
 
     Budget budget = new Budget()
@@ -185,7 +186,6 @@ public abstract class BatchTransactionServiceTestBase {
       .withFundId(fundId1)
       .withBudgetStatus(ACTIVE)
       .withInitialAllocation(5d)
-      .withNetTransfers(0d)
       .withMetadata(new Metadata());
 
     Budget budget2 = new Budget()
@@ -194,7 +194,6 @@ public abstract class BatchTransactionServiceTestBase {
       .withFundId(fundId2)
       .withBudgetStatus(ACTIVE)
       .withInitialAllocation(10d)
-      .withNetTransfers(0d)
       .withMetadata(new Metadata());
 
     doReturn(tenantId)
