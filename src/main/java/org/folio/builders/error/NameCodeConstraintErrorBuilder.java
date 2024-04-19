@@ -7,7 +7,7 @@ import java.util.Optional;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import io.vertx.pgclient.PgException;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgExceptionUtil;

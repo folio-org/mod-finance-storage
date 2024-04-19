@@ -10,7 +10,7 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.annotations.Validate;
@@ -61,7 +61,7 @@ public class LedgerRolloverAPI implements FinanceStorageLedgerRollovers {
             t = new HttpException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), t);
           }
           HttpException cause = (HttpException)t;
-          if (Response.Status.CONFLICT.getStatusCode() == cause.getStatusCode()) {
+          if (Response.Status.CONFLICT.getStatusCode() == cause.getCode()) {
             logger.error("Rollover already exists with id {}", entity.getId(), cause);
           } else {
             logger.error("Creating rollover with id {} failed", entity.getId(), cause);

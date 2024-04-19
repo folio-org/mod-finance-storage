@@ -353,10 +353,11 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
 
     testContext.assertFailure(batchTransactionService.processBatch(batch, requestContext))
       .onComplete(event -> {
-        io.vertx.ext.web.handler.HttpException exception = (io.vertx.ext.web.handler.HttpException)event.cause();
+        assertThat(event.cause(), instanceOf(HttpException.class));
+        HttpException exception = (org.folio.rest.exception.HttpException)event.cause();
         testContext.verify(() -> {
-          assertEquals(exception.getStatusCode(), 500);
-          assertThat(exception.getPayload(), startsWith("Could not find some budgets in the database"));
+          assertEquals(exception.getCode(), 500);
+          assertThat(exception.getMessage(), startsWith("Could not find some budgets in the database"));
         });
         testContext.completeNow();
       });

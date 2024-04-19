@@ -1,11 +1,12 @@
 package org.folio.rest.exception;
 
-import java.util.Collections;
-
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.util.ErrorCodes;
+
+import static java.util.Collections.singletonList;
 
 public class HttpException extends RuntimeException {
   private static final long serialVersionUID = 8109197948434861504L;
@@ -17,14 +18,35 @@ public class HttpException extends RuntimeException {
     super(StringUtils.isNotEmpty(message) ? message : ErrorCodes.GENERIC_ERROR_CODE.getDescription());
     this.code = code;
     this.errors = new Errors()
-      .withErrors(Collections.singletonList(new Error().withCode(ErrorCodes.GENERIC_ERROR_CODE.getCode()).withMessage(message)))
+      .withErrors(singletonList(new Error().withCode(ErrorCodes.GENERIC_ERROR_CODE.getCode()).withMessage(message)))
+      .withTotalRecords(1);
+  }
+
+  public HttpException(int code, String message, Throwable cause) {
+    super(message, cause);
+    this.code = code;
+    Parameter causeParam = new Parameter().withKey("cause").withValue(cause.getMessage());
+    Error error = new Error()
+      .withCode(ErrorCodes.GENERIC_ERROR_CODE.getCode())
+      .withMessage(message)
+      .withParameters(singletonList(causeParam));
+    this.errors = new Errors()
+      .withErrors(singletonList(error))
+      .withTotalRecords(1);
+  }
+
+  public HttpException(int code, Throwable cause) {
+    super(cause.getMessage(), cause);
+    this.code = code;
+    this.errors = new Errors()
+      .withErrors(singletonList(new Error().withCode(ErrorCodes.GENERIC_ERROR_CODE.getCode()).withMessage(cause.getMessage())))
       .withTotalRecords(1);
   }
 
   public HttpException(int code, ErrorCodes errCodes) {
     super(errCodes.getDescription());
     this.errors = new Errors()
-      .withErrors(Collections.singletonList(new Error().withCode(errCodes.getCode()).withMessage(errCodes.getDescription())))
+      .withErrors(singletonList(new Error().withCode(errCodes.getCode()).withMessage(errCodes.getDescription())))
       .withTotalRecords(1);
     this.code = code;
   }
@@ -33,7 +55,7 @@ public class HttpException extends RuntimeException {
     super(error.getMessage());
     this.code = code;
     this.errors = new Errors()
-      .withErrors(Collections.singletonList(error))
+      .withErrors(singletonList(error))
       .withTotalRecords(1);
   }
 

@@ -3,6 +3,7 @@ package org.folio.service.budget;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
+import static org.folio.rest.util.ErrorCodes.TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
 import java.util.*;
@@ -22,7 +23,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import io.vertx.sqlclient.Tuple;
 
 public class BudgetService {
@@ -31,7 +32,6 @@ public class BudgetService {
 
   private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
   private static final String TRANSACTIONS_TABLE = "transaction";
-  public static final String TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR = "transactionIsPresentBudgetDeleteError";
 
   private final BudgetDAO budgetDAO;
 
@@ -162,7 +162,7 @@ public class BudgetService {
       .map(rowSet -> {
         if (rowSet.size() > 0) {
           logger.error("checkTransactions:: Transaction is present");
-          throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR);
+          throw new HttpException(Response.Status.BAD_REQUEST.getStatusCode(), TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR.toError());
         }
         return null;
       })

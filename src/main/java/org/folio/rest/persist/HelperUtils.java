@@ -7,14 +7,12 @@ import static org.folio.rest.util.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
 
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
@@ -30,8 +28,7 @@ import org.folio.rest.persist.interfaces.Results;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 
 public final class HelperUtils {
   private HelperUtils() { }
@@ -43,8 +40,8 @@ public final class HelperUtils {
   }
 
   public static void replyWithErrorResponse(Handler<AsyncResult<Response>> asyncResultHandler, HttpException cause) {
-    asyncResultHandler.handle(succeededFuture(Response.status(cause.getStatusCode())
-      .entity(Optional.of(cause).map(HttpException::getPayload).orElse(cause.getMessage()))
+    asyncResultHandler.handle(succeededFuture(Response.status(cause.getCode())
+      .entity(Optional.of(cause).map(HttpException::getMessage).orElse(cause.getMessage()))
       .header(CONTENT_TYPE, MediaType.TEXT_PLAIN)
       .build()));
   }
@@ -130,22 +127,6 @@ public final class HelperUtils {
     error.getParameters().add(new Parameter().withKey(FIELD_NAME).withValue(fieldName));
     error.getParameters().add(new Parameter().withKey(ENTITY_NAME).withValue(entityName));
     return error;
-  }
-
-  public static String getQueryValues(List<JsonObject> entities) {
-    return entities.stream().map(entity -> "('" + entity.getString("id") + "', '" + entity.encode() + "'::json)").collect(Collectors.joining(","));
-  }
-
-  public static List<Error> buildNullValidationError(String value, String key) {
-    if (value == null) {
-      Parameter parameter = new Parameter().withKey(key)
-        .withValue("null");
-      Error error = new Error().withCode("-1")
-        .withMessage("may not be null")
-        .withParameters(Collections.singletonList(parameter));
-      return Collections.singletonList(error);
-    }
-    return Collections.emptyList();
   }
 
   /**

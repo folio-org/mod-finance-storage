@@ -21,7 +21,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 
 public class ResponseUtils {
 
@@ -32,9 +32,8 @@ public class ResponseUtils {
 
   public static Future<Response> handleNoContentResponse(AsyncResult<Void> result, String id, String logMessage) {
     if (result.failed()) {
-      HttpException cause = (HttpException) result.cause();
-      logger.error(logMessage, cause, id, "or associated data failed to be");
-      return buildErrorResponse(cause);
+      logger.error(logMessage, result.cause(), id, "or associated data failed to be");
+      return buildErrorResponse(result.cause());
     } else {
       logger.info(logMessage, id, "and associated data were successfully");
       return buildNoContentResponse();
@@ -54,9 +53,8 @@ public class ResponseUtils {
   public static <T, V> void handleFailure(Promise<T> promise, AsyncResult<V> reply) {
     Throwable cause = reply.cause();
     logger.error(cause.getMessage());
-    if (cause instanceof PgException && "23F09".equals(((PgException)cause).getCode())) {
-      String message = MessageFormat.format(ErrorCodes.CONFLICT.getDescription(), ((PgException)cause).getTable(),
-        ((PgException)cause).getErrorMessage());
+    if (cause instanceof PgException pgEx && "23F09".equals(pgEx.getSqlState())) {
+      String message = MessageFormat.format(ErrorCodes.CONFLICT.getDescription(), pgEx.getTable(), pgEx.getErrorMessage());
       promise.fail(new HttpException(Response.Status.CONFLICT.getStatusCode(), message, cause));
       return;
     }
@@ -76,12 +74,11 @@ public class ResponseUtils {
     final String message;
     final int code;
 
-    if (throwable instanceof HttpException) {
-      code = ((HttpException) throwable).getStatusCode();
-      message = ((HttpException) throwable).getPayload();
-    } else if (throwable instanceof org.folio.rest.exception.HttpException) {
-      org.folio.rest.exception.HttpException exception = (org.folio.rest.exception.HttpException) throwable;
-      return Future.succeededFuture(buildErrorResponse(exception));
+    if (throwable instanceof io.vertx.ext.web.handler.HttpException exception) {
+      code = exception.getStatusCode();
+      message = exception.getPayload();
+    } else if (throwable instanceof org.folio.rest.exception.HttpException exception) {
+      return Future.succeededFuture(buildErrorResponseFromHttpException(exception));
     } else {
       code = INTERNAL_SERVER_ERROR.getStatusCode();
       message = throwable.getMessage();
@@ -97,7 +94,7 @@ public class ResponseUtils {
       .build();
   }
 
-  private static Response buildErrorResponse(org.folio.rest.exception.HttpException exception) {
+  private static Response buildErrorResponseFromHttpException(HttpException exception) {
     return Response.status(exception.getCode())
       .header(CONTENT_TYPE, APPLICATION_JSON)
       .entity(exception.getErrors())

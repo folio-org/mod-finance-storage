@@ -11,7 +11,8 @@ public enum ErrorCodes {
   CONFLICT("conflict", "Conflict when updating a record in table {0}: {1}"),
   BUDGET_RESTRICTED_EXPENDITURES_ERROR("budgetRestrictedExpendituresError", "Expenditure restriction does not allow this operation"),
   BUDGET_RESTRICTED_ENCUMBRANCE_ERROR("budgetRestrictedEncumbranceError", "Encumbrance restriction does not allow this operation"),
-  PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT("paymentOrCreditHasNegativeAmount", "A payment or credit has a negative amount");
+  PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT("paymentOrCreditHasNegativeAmount", "A payment or credit has a negative amount"),
+  TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR("transactionIsPresentBudgetDeleteError", "Budget related transactions found. Deletion of the budget is forbidden.");
   private final String code;
   private final String description;
 

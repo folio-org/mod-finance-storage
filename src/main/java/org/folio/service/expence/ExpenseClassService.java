@@ -21,7 +21,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 
 public class ExpenseClassService {
 
@@ -89,7 +89,7 @@ public class ExpenseClassService {
         promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, ExpenseClass.class));
       }
       else if(reply.result().rowCount() == 0) {
-        promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode()));
+        promise.fail(new HttpException(Response.Status.NOT_FOUND.getStatusCode(), "Expense class not found for update, id=" + id));
       }
       else {
         promise.complete(group);

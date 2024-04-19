@@ -32,7 +32,7 @@ import org.folio.service.fiscalyear.FiscalYearService;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import org.folio.utils.CalculationUtils;
 
 public class LedgerRolloverService {

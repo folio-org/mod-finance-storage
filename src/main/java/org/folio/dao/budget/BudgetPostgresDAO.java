@@ -20,7 +20,7 @@ import org.folio.utils.CalculationUtils;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import io.vertx.sqlclient.Tuple;
 
 public class BudgetPostgresDAO implements BudgetDAO {

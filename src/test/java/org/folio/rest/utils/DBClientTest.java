@@ -7,7 +7,7 @@ import static org.hamcrest.Matchers.instanceOf;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.sqlclient.Tuple;
@@ -71,7 +71,7 @@ public class DBClientTest extends TestBase {
 
   private static void assertHttpException(Throwable e, String expectedSubstring1, String expectedSubstring2) {
     assertThat(e, instanceOf(HttpException.class));
-    assertThat(((HttpException)e).getPayload(), containsString(expectedSubstring1));
-    assertThat(((HttpException)e).getPayload(), containsString(expectedSubstring2));
+    assertThat(e.getMessage(), containsString(expectedSubstring1));
+    assertThat(e.getMessage(), containsString(expectedSubstring2));
   }
 }
