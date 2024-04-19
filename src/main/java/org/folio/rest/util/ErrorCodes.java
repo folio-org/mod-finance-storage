@@ -12,7 +12,10 @@ public enum ErrorCodes {
   BUDGET_RESTRICTED_EXPENDITURES_ERROR("budgetRestrictedExpendituresError", "Expenditure restriction does not allow this operation"),
   BUDGET_RESTRICTED_ENCUMBRANCE_ERROR("budgetRestrictedEncumbranceError", "Encumbrance restriction does not allow this operation"),
   PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT("paymentOrCreditHasNegativeAmount", "A payment or credit has a negative amount"),
-  TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR("transactionIsPresentBudgetDeleteError", "Budget related transactions found. Deletion of the budget is forbidden.");
+  TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR("transactionIsPresentBudgetDeleteError", "Budget related transactions found. Deletion of the budget is forbidden."),
+  BUDGET_IS_NOT_ACTIVE_OR_PLANNED("budgetIsNotActiveOrPlanned", "Cannot process transactions because a budget is not active or planned"),
+  ID_IS_REQUIRED_IN_TRANSACTIONS("idIsRequiredInTransactions", "Id is required in transactions to {0}."),
+  LINKED_ENCUMBRANCES_NOT_FOUND("linkedEncumbrancesNotFound","Could not find some linked encumbrances in the database");
   private final String code;
   private final String description;
 

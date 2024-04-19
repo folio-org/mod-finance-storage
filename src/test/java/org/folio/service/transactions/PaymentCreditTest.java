@@ -28,6 +28,7 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAY
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -395,7 +396,9 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
       .onComplete(event -> {
         testContext.verify(() -> {
           assertThat(event.cause(), instanceOf(HttpException.class));
-          assertThat(((HttpException) event.cause()).getCode(), equalTo(422));
+          HttpException exception = (HttpException)(event.cause());
+          assertEquals(exception.getErrors().getErrors().get(0).getCode(), "paymentOrCreditHasNegativeAmount");
+          assertThat(exception.getCode(), equalTo(422));
         });
         testContext.completeNow();
       });

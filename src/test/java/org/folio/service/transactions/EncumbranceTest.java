@@ -315,7 +315,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
         HttpException exception = (HttpException)event.cause();
         testContext.verify(() -> {
           assertEquals(exception.getCode(), 400);
-          assertThat(exception.getMessage(), startsWith("Cannot process transactions because a budget is not active"));
+          assertEquals(exception.getErrors().getErrors().get(0).getCode(), "budgetIsNotActiveOrPlanned");
         });
         testContext.completeNow();
       });

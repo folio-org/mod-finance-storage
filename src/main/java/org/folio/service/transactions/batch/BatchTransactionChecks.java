@@ -16,6 +16,7 @@ import org.folio.rest.persist.DBConn;
 import org.javamoney.moneta.Money;
 
 import javax.money.MonetaryAmount;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,8 +36,10 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.TRANSFER;
 import static org.folio.rest.util.ErrorCodes.ALLOCATION_MUST_BE_POSITIVE;
+import static org.folio.rest.util.ErrorCodes.BUDGET_IS_NOT_ACTIVE_OR_PLANNED;
 import static org.folio.rest.util.ErrorCodes.BUDGET_RESTRICTED_ENCUMBRANCE_ERROR;
 import static org.folio.rest.util.ErrorCodes.BUDGET_RESTRICTED_EXPENDITURES_ERROR;
+import static org.folio.rest.util.ErrorCodes.ID_IS_REQUIRED_IN_TRANSACTIONS;
 import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
 import static org.folio.rest.util.ErrorCodes.PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT;
 
@@ -73,8 +76,10 @@ public class BatchTransactionChecks {
   public static void checkBudgetsAreActive(BatchTransactionHolder holder) {
     holder.getBudgets().forEach(budget -> {
       if (!List.of(ACTIVE, PLANNED).contains(budget.getBudgetStatus())) {
-        throw new HttpException(400, String.format("Cannot process transactions because a budget is not active or planned, fund code=%s",
-          holder.getFundCodeForBudget(budget)));
+        Error error = BUDGET_IS_NOT_ACTIVE_OR_PLANNED.toError();
+        Parameter fundCodeParam = new Parameter().withKey("fundCode").withValue(holder.getFundCodeForBudget(budget));
+        error.setParameters(singletonList(fundCodeParam));
+        throw new HttpException(400, error);
       }
     });
   }
@@ -156,8 +161,9 @@ public class BatchTransactionChecks {
   private static void checkIdIsPresent(List<Transaction> transactions, String operation) {
     for (Transaction transaction : transactions) {
       if (transaction.getId() == null) {
-        throw new HttpException(400,
-          String.format("Id is required in transactions to %s.", operation));
+        Error error = ID_IS_REQUIRED_IN_TRANSACTIONS.toError();
+        error.setMessage(MessageFormat.format(error.getMessage(), operation));
+        throw new HttpException(400, error);
       }
       if (ENCUMBRANCE == transaction.getTransactionType() && (transaction.getEncumbrance() == null ||
           transaction.getEncumbrance().getSourcePurchaseOrderId() == null)) {
