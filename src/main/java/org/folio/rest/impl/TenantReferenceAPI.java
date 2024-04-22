@@ -39,6 +39,7 @@ public class TenantReferenceAPI extends TenantAPI {
 
   private static final String PARAMETER_LOAD_REFERENCE = "loadReference";
   private static final String PARAMETER_LOAD_SAMPLE = "loadSample";
+  private static final String BATCH_ENDPOINT = "finance-storage/transactions/batch-all-or-nothing";
   public static final String LOAD_SYNC_PARAMETER = "loadSync";
 
   @Override
@@ -91,12 +92,11 @@ public class TenantReferenceAPI extends TenantAPI {
           .add("funds-8.4.0", getUriPath(FinanceStorageFunds.class))
           .add("budgets-8.4.0", getUriPath(FinanceStorageBudgets.class))
           .add("budget-expense-classes-8.4.0", getUriPath(FinanceStorageBudgetExpenseClasses.class))
-          .add("group-fund-fiscal-years-8.4.0", getUriPath(FinanceStorageGroupFundFiscalYears.class));
-          /* TODO: convert to use the batch API for allocations and transfers
-          .add("transactions/allocations-8.4.0", getUriPath(FinanceStorageTransactions.class))
-          .withPostIgnore() // Payments and credits don't support PUT
-          .add("transactions/transfers-8.4.0", getUriPath(FinanceStorageTransactions.class))
-          */
+          .add("group-fund-fiscal-years-8.4.0", getUriPath(FinanceStorageGroupFundFiscalYears.class))
+          .withPostIgnore()
+          .add("transactions/allocations-8.4.0", BATCH_ENDPOINT)
+          .withPostIgnore()
+          .add("transactions/transfers-8.4.0", BATCH_ENDPOINT);
       }
       loadData = true;
     }

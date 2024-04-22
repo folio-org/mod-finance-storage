@@ -1,0 +1,16 @@
+{
+  "transactionsToCreate": [
+    {
+      "id": "e24d0bae-0528-403d-8ce2-0d821a6e57e7",
+      "amount": 2500,
+      "currency": "USD",
+      "description": "PO_Line: History of Incas",
+      "fiscalYearId": "7a4c4d30-3b63-4102-8e2d-3ee5792d7d02",
+      "fromFundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
+      "source": "User",
+      "sourceFiscalYearId": "7a4c4d30-3b63-4102-8e2d-3ee5792d7d02",
+      "toFundId": "69640328-788e-43fc-9c3c-af39e243f3b7",
+      "transactionType": "Transfer"
+    }
+  ]
+}
