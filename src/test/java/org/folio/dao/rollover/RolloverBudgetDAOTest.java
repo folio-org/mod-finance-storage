@@ -62,7 +62,7 @@ public class RolloverBudgetDAOTest {
     LedgerFiscalYearRolloverBudget budget = new LedgerFiscalYearRolloverBudget().withId(id);
 
     Results<LedgerFiscalYearRolloverBudget> results = new Results<>();
-    results.setResults(Collections.singletonList(budget));
+    results.setResults(List.of(budget));
     doReturn(Future.succeededFuture(results)).when(conn)
       .get(eq(ROLLOVER_BUDGET_TABLE), eq(LedgerFiscalYearRolloverBudget.class), eq(criterion), anyBoolean());
 

@@ -14,7 +14,6 @@ import java.util.List;
 
 public class BatchTransactionPostgresDAO implements BatchTransactionDAO {
   private static final Logger logger = LogManager.getLogger();
-  public static final String TRANSACTIONS_TABLE = "transaction";
 
   @Override
   public Future<List<Transaction>> getTransactionsByCriterion(Criterion criterion, DBConn conn) {

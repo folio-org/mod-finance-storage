@@ -18,7 +18,7 @@ import java.util.stream.IntStream;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

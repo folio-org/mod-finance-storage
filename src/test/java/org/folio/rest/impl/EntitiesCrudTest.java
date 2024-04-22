@@ -13,12 +13,8 @@ import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_LOG;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_ERROR;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS;
-import static org.folio.rest.utils.TestEntities.ALLOCATION_TRANSACTION;
-import static org.folio.rest.utils.TestEntities.ENCUMBRANCE_TRANSACTION;
-import static org.folio.rest.utils.TestEntities.ORDER_SUMMARY;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -54,7 +50,7 @@ public class EntitiesCrudTest extends TestBase {
    *
    */
   static Stream<TestEntities> deleteOrder() {
-    return Stream.of(ORDER_SUMMARY, ALLOCATION_TRANSACTION, ENCUMBRANCE_TRANSACTION, GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, LEDGER_FISCAL_YEAR_ROLLOVER_ERROR,
+    return Stream.of(GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, LEDGER_FISCAL_YEAR_ROLLOVER_ERROR,
       LEDGER_FISCAL_YEAR_ROLLOVER, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
   }
 
@@ -81,9 +77,7 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(1)
-  @EnumSource(value = TestEntities.class,
-    names = {"ORDER_SUMMARY"},
-    mode = EnumSource.Mode.EXCLUDE)
+  @EnumSource(value = TestEntities.class)
   void testVerifyCollection(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Verifying database's initial state ... ", testEntity.name()));
     verifyCollectionQuantity(testEntity.getEndpoint(), 0);
@@ -149,19 +143,10 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(4)
-  @EnumSource(value = TestEntities.class,
-    names = {"ORDER_SUMMARY"},
-    mode = EnumSource.Mode.EXCLUDE)
+  @EnumSource(value = TestEntities.class)
   void testVerifyCollectionQuantity(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Verifying only 1 adjustment was created ... ", testEntity.name()));
-    int quantity = 1;
-    if(List.of(ALLOCATION_TRANSACTION, ENCUMBRANCE_TRANSACTION).contains(testEntity)) {
-      // both have the finance-storage/transactions endpoint in TestEntities, so each will return all transactions
-      // we use a preview for the fiscal year rollover, so a new encumbrance is not created
-      quantity = 2;
-    }
-    verifyCollectionQuantity(testEntity.getEndpoint(), quantity);
-
+    verifyCollectionQuantity(testEntity.getEndpoint(), 1);
   }
 
   @ParameterizedTest
@@ -200,7 +185,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(7)
   @EnumSource(value = TestEntities.class,
-    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG", "ORDER_SUMMARY"},
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
     mode = EnumSource.Mode.EXCLUDE)
   void testVerifyPut(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Fetching updated %s with ID %s", testEntity.name(), testEntity.name(), testEntity.getId()));
@@ -289,9 +274,7 @@ public class EntitiesCrudTest extends TestBase {
   }
 
   @ParameterizedTest
-  @EnumSource(value = TestEntities.class,
-    names = {"ORDER_SUMMARY"},
-    mode = EnumSource.Mode.EXCLUDE)
+  @EnumSource(value = TestEntities.class)
   void testGetEntitiesWithInvalidCQLQuery(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Invalid CQL query", testEntity.name()));
     testInvalidCQLQuery(testEntity.getEndpoint() + "?query=invalid-query");

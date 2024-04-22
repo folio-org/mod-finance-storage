@@ -16,6 +16,7 @@ import org.folio.rest.persist.DBConn;
 import org.javamoney.moneta.Money;
 
 import javax.money.MonetaryAmount;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +26,6 @@ import java.util.stream.Collectors;
 
 import static io.vertx.core.Future.succeededFuture;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.ACTIVE;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.PLANNED;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
@@ -35,8 +35,10 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.TRANSFER;
 import static org.folio.rest.util.ErrorCodes.ALLOCATION_MUST_BE_POSITIVE;
+import static org.folio.rest.util.ErrorCodes.BUDGET_IS_NOT_ACTIVE_OR_PLANNED;
 import static org.folio.rest.util.ErrorCodes.BUDGET_RESTRICTED_ENCUMBRANCE_ERROR;
 import static org.folio.rest.util.ErrorCodes.BUDGET_RESTRICTED_EXPENDITURES_ERROR;
+import static org.folio.rest.util.ErrorCodes.ID_IS_REQUIRED_IN_TRANSACTIONS;
 import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
 import static org.folio.rest.util.ErrorCodes.PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT;
 
@@ -73,8 +75,10 @@ public class BatchTransactionChecks {
   public static void checkBudgetsAreActive(BatchTransactionHolder holder) {
     holder.getBudgets().forEach(budget -> {
       if (!List.of(ACTIVE, PLANNED).contains(budget.getBudgetStatus())) {
-        throw new HttpException(400, String.format("Cannot process transactions because a budget is not active or planned, fundId=%s",
-          holder.getFundCodeForBudget(budget)));
+        Error error = BUDGET_IS_NOT_ACTIVE_OR_PLANNED.toError();
+        Parameter fundCodeParam = new Parameter().withKey("fundCode").withValue(holder.getFundCodeForBudget(budget));
+        error.setParameters(List.of(fundCodeParam));
+        throw new HttpException(400, error);
       }
     });
   }
@@ -156,8 +160,9 @@ public class BatchTransactionChecks {
   private static void checkIdIsPresent(List<Transaction> transactions, String operation) {
     for (Transaction transaction : transactions) {
       if (transaction.getId() == null) {
-        throw new HttpException(400,
-          String.format("Id is required in transactions to %s.", operation));
+        Error error = ID_IS_REQUIRED_IN_TRANSACTIONS.toError();
+        error.setMessage(MessageFormat.format(error.getMessage(), operation));
+        throw new HttpException(400, error);
       }
       if (ENCUMBRANCE == transaction.getTransactionType() && (transaction.getEncumbrance() == null ||
           transaction.getEncumbrance().getSourcePurchaseOrderId() == null)) {
@@ -190,8 +195,7 @@ public class BatchTransactionChecks {
 
   private static void checkAllocation(Transaction allocation) {
     if (allocation.getAmount() <= 0) {
-      List<Parameter> parameters = singletonList(new Parameter().withKey("fieldName")
-        .withValue("amount"));
+      List<Parameter> parameters = List.of(new Parameter().withKey("fieldName").withValue("amount"));
       Error error = ALLOCATION_MUST_BE_POSITIVE.toError().withParameters(parameters);
       throw new HttpException(400, error);
     }
@@ -273,7 +277,7 @@ public class BatchTransactionChecks {
       .toList();
     for (Transaction tr : newPaymentsAndCredits) {
       if (tr.getAmount() < 0) {
-        List<Parameter> parameters = singletonList(new Parameter().withKey("id").withValue(tr.getId()));
+        List<Parameter> parameters = List.of(new Parameter().withKey("id").withValue(tr.getId()));
         Error error = PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT.toError().withParameters(parameters);
         throw new HttpException(422, error);
       }

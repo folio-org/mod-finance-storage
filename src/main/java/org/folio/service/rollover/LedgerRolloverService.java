@@ -1,7 +1,7 @@
 package org.folio.service.rollover;
 
 import static org.folio.dao.budget.BudgetExpenseClassDAOImpl.TEMPORARY_BUDGET_EXPENSE_CLASS_TABLE;
-import static org.folio.dao.transactions.TemporaryEncumbranceTransactionDAO.TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE;
+import static org.folio.dao.transactions.TemporaryEncumbrancePostgresDAO.TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.FINANCIAL_ROLLOVER;
 import static org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError.ErrorType.ORDER_ROLLOVER;
 import static org.folio.rest.jaxrs.model.RolloverStatus.ERROR;
@@ -32,7 +32,7 @@ import org.folio.service.fiscalyear.FiscalYearService;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import org.folio.utils.CalculationUtils;
 
 public class LedgerRolloverService {

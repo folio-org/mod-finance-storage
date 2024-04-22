@@ -57,10 +57,8 @@ public class TenantSampleDataTest extends TestBase {
     try {
       tenantJob = postTenant(ANOTHER_TENANT_HEADER, TenantApiTestUtil.prepareTenantBody(true, true));
       for (TestEntities entity : TestEntities.values()) {
-        if (!entity.equals(TestEntities.ORDER_SUMMARY)) {
-          logger.info("Test expected quantity for " + entity.name());
-          verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), ANOTHER_TENANT_HEADER);
-        }
+        logger.info("Test expected quantity for " + entity.name());
+        verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), ANOTHER_TENANT_HEADER);
       }
     } finally {
       purge(ANOTHER_TENANT_HEADER);
@@ -78,7 +76,7 @@ public class TenantSampleDataTest extends TestBase {
 
       for (TestEntities entity : TestEntities.values()) {
         //category is the only reference data, which must be loaded
-        if (!entity.equals(TestEntities.FUND_TYPE) && !entity.equals(TestEntities.EXPENSE_CLASS) && !entity.equals(TestEntities.ORDER_SUMMARY)) {
+        if (!entity.equals(TestEntities.FUND_TYPE) && !entity.equals(TestEntities.EXPENSE_CLASS)) {
           logger.info("Test sample data not loaded for " + entity.name());
           verifyCollectionQuantity(entity.getEndpoint(), 0, ANOTHER_TENANT_HEADER);
         }
@@ -129,10 +127,8 @@ public class TenantSampleDataTest extends TestBase {
 
     TenantJob tenantJob = postTenant(ANOTHER_TENANT_HEADER, TenantApiTestUtil.prepareTenantBody(true, true));
     for (TestEntities entity : TestEntities.values()) {
-      if (!entity.equals(TestEntities.ORDER_SUMMARY)) {
-        logger.info("Test expected quantity for " + entity.name());
-        verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), ANOTHER_TENANT_HEADER);
-      }
+      logger.info("Test expected quantity for " + entity.name());
+      verifyCollectionQuantity(entity.getEndpoint(), entity.getInitialQuantity(), ANOTHER_TENANT_HEADER);
     }
     return tenantJob;
   }

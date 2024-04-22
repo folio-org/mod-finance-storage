@@ -25,7 +25,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.vertx.core.Future;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.pgclient.impl.RowImpl;
@@ -102,8 +102,8 @@ public class RolloverValidationServiceTest {
       .onComplete(event -> {
         HttpException exception = (HttpException) event.cause();
         testContext.verify(() -> {
-          assertEquals(exception.getStatusCode() , 409);
-          assertEquals(exception.getPayload(), "Not unique pair ledgerId and fromFiscalYearId");
+          assertEquals(exception.getCode() , 409);
+          assertEquals(exception.getMessage(), "Not unique pair ledgerId and fromFiscalYearId");
         });
         testContext.completeNow();
       }));

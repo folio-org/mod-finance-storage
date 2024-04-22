@@ -2,10 +2,13 @@ package org.folio.service.transactions.batch;
 
 import io.vertx.core.Future;
 import org.folio.dao.transactions.BatchTransactionDAO;
+import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.Ledger;
+import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionPatch;
 import org.folio.rest.persist.Criteria.Criteria;
@@ -39,6 +42,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
+import static org.folio.rest.util.ErrorCodes.LINKED_ENCUMBRANCES_NOT_FOUND;
 
 public class BatchTransactionHolder {
   private static final String TRANSACTION_TYPE = "transactionType";
@@ -189,6 +193,15 @@ public class BatchTransactionHolder {
       .toList();
     return transactionDAO.getTransactionsByIds(ids, conn)
       .map(transactions -> {
+        if (transactions.size() != ids.size()) {
+          List<String> missingIds = ids.stream()
+            .filter(id -> transactions.stream().noneMatch(tr -> id.equals(tr.getId())))
+            .toList();
+          Error error = LINKED_ENCUMBRANCES_NOT_FOUND.toError();
+          Parameter idsParam = new Parameter().withKey("ids").withValue(missingIds.toString());
+          error.setParameters(List.of(idsParam));
+          throw new HttpException(400, error);
+        }
         linkedEncumbrances = transactions;
         return null;
       });

@@ -7,7 +7,7 @@ import java.util.Optional;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import io.vertx.pgclient.PgException;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgExceptionUtil;
@@ -20,9 +20,8 @@ public class NameCodeConstraintErrorBuilder {
 
   public  <T> HttpException buildException(AsyncResult<T> reply, Class<?> clazz ) {
     Throwable cause = reply.cause();
-    if (cause instanceof PgException && "23F09".equals(((PgException)cause).getCode())) {
-      String message = MessageFormat.format(ErrorCodes.CONFLICT.getDescription(), ((PgException)cause).getTable(),
-        ((PgException)cause).getErrorMessage());
+    if (cause instanceof PgException pgEx && PgExceptionUtil.isVersionConflict(pgEx)) {
+      String message = MessageFormat.format(ErrorCodes.CONFLICT.getDescription(), pgEx.getTable(), pgEx.getErrorMessage());
       return new HttpException(Response.Status.CONFLICT.getStatusCode(), message);
     }
     String error = convertExceptionToStringError(reply, clazz);

@@ -10,11 +10,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -166,13 +164,6 @@ public abstract class TestBase {
       .statusCode(204);
   }
 
-  void deleteDataSuccess(TestEntities testEntity, String id) {
-    logger.info(String.format("--- %s test: Deleting record with ID %s", testEntity.name(), id));
-    deleteData(testEntity.getEndpointWithId(), id)
-      .then().log().ifValidationFails()
-      .statusCode(204);
-  }
-
   Response deleteData(String endpoint, String id) {
     return deleteData(endpoint, id, TENANT_HEADER);
   }
@@ -249,12 +240,4 @@ public abstract class TestBase {
         .statusCode(404);
   }
 
-  protected double subtractValues(double d1, Double ... subtrahends) {
-    BigDecimal subtrahendSum = Stream.of(subtrahends).map(BigDecimal::valueOf).reduce(BigDecimal::add).orElse(BigDecimal.ZERO);
-    return BigDecimal.valueOf(d1).subtract(subtrahendSum).doubleValue();
-  }
-
-  protected double sumValues(Double ... doubles) {
-    return Stream.of(doubles).map(BigDecimal::valueOf).reduce(BigDecimal::add).orElse(BigDecimal.ZERO).doubleValue();
-  }
 }

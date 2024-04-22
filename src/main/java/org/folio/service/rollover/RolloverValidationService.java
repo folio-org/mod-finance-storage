@@ -11,7 +11,7 @@ import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.impl.ArrayTuple;
 import org.folio.rest.persist.DBConn;

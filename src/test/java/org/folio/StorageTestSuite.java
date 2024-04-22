@@ -17,13 +17,10 @@ import org.apache.logging.log4j.Logger;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
 import org.folio.dao.rollover.RolloverErrorDAOTest;
 import org.folio.dao.rollover.RolloverProgressDAOTest;
-import org.folio.dao.transactions.BaseTransactionDAOTest;
-import org.folio.dao.transactions.PendingPaymentDAOTest;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.core.RestClientTest;
 import org.folio.rest.impl.BudgetTest;
-import org.folio.rest.impl.EncumbrancesTest;
 import org.folio.rest.impl.EntitiesCrudTest;
 import org.folio.rest.impl.GroupBudgetTest;
 import org.folio.rest.impl.GroupFundFYTest;
@@ -31,10 +28,8 @@ import org.folio.rest.impl.GroupTest;
 import org.folio.rest.impl.HelperUtilsTest;
 import org.folio.rest.impl.LedgerFundBudgetStatusTest;
 import org.folio.rest.impl.LedgerRolloverBudgetTest;
-import org.folio.rest.impl.PaymentsCreditsTest;
 import org.folio.rest.impl.TenantSampleDataTest;
 import org.folio.rest.impl.TransactionTest;
-import org.folio.rest.impl.TransactionsSummariesTest;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -43,17 +38,10 @@ import org.folio.service.email.EmailServiceTest;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.rollover.RolloverValidationServiceTest;
-import org.folio.service.summary.PendingPaymentTransactionSummaryServiceTest;
-import org.folio.service.transactions.AllocationServiceTest;
-import org.folio.service.transactions.BatchTransactionServiceTest;
-import org.folio.service.transactions.EncumbranceServiceTest;
-import org.folio.service.transactions.PaymentCreditServiceTest;
-import org.folio.service.transactions.PendingPaymentServiceTest;
-import org.folio.service.transactions.cancel.CancelPaymentCreditServiceTest;
-import org.folio.service.transactions.cancel.CancelTransactionServiceTest;
-import org.folio.service.transactions.restriction.EncumbranceRestrictionServiceTest;
-import org.folio.service.transactions.restriction.PaymentCreditRestrictionServiceTest;
-import org.folio.service.transactions.restriction.PendingPaymentRestrictionServiceTest;
+import org.folio.service.transactions.AllocationTransferTest;
+import org.folio.service.transactions.EncumbranceTest;
+import org.folio.service.transactions.PaymentCreditTest;
+import org.folio.service.transactions.PendingPaymentTest;
 import org.folio.utils.CalculationUtilsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -191,44 +179,6 @@ public class StorageTestSuite {
   }
 
   @Nested
-  class TransactionsSummariesTestNested extends TransactionsSummariesTest {
-  }
-
-  @Nested
-  class PaymentsCreditsTestNested extends PaymentsCreditsTest {
-  }
-
-  @Nested
-  class PaymentCreditServiceTestNested extends PaymentCreditServiceTest {
-  }
-
-  @Nested
-  class EncumbrancesTestNested extends EncumbrancesTest {
-  }
-
-  @Nested
-  class PendingPaymentServiceTestNested extends PendingPaymentServiceTest {
-  }
-
-  @Nested
-  class BaseTransactionDAOTestNested extends BaseTransactionDAOTest {}
-
-  @Nested
-  class PendingPaymentDAOTestNested extends PendingPaymentDAOTest {}
-
-  @Nested
-  class PendingPaymentTransactionSummaryServiceTestNested extends PendingPaymentTransactionSummaryServiceTest {}
-
-  @Nested
-  class EncumbranceRestrictionServiceTestNested extends EncumbranceRestrictionServiceTest {}
-
-  @Nested
-  class PaymentCreditRestrictionServiceTestNested extends PaymentCreditRestrictionServiceTest {}
-
-  @Nested
-  class PendingPaymentRestrictionServiceTestNested extends PendingPaymentRestrictionServiceTest {}
-
-  @Nested
   class LedgerRolloverServiceTestNested extends LedgerRolloverServiceTest {}
 
   @Nested
@@ -250,23 +200,20 @@ public class StorageTestSuite {
   class CalculationUtilsTestNested extends CalculationUtilsTest {}
 
   @Nested
-  class AllocationServiceTestNested extends AllocationServiceTest {}
-
-  @Nested
-  class CancelPaymentCreditServiceNested extends CancelPaymentCreditServiceTest {}
-
-  @Nested
-  class CancelTransactionServiceNested extends CancelTransactionServiceTest {}
-
-  @Nested
-  class EncumbranceServiceTestNested extends EncumbranceServiceTest {}
-
-  @Nested
   class RolloverValidationServiceTestNested extends RolloverValidationServiceTest {}
 
   @Nested
   class EmailServiceTestNested extends EmailServiceTest {}
 
   @Nested
-  class BatchTransactionServiceTestNested extends BatchTransactionServiceTest {}
+  class AllocationTransferTestNested extends AllocationTransferTest {}
+
+  @Nested
+  class EncumbranceTestNested extends EncumbranceTest {}
+
+  @Nested
+  class PaymentCreditTestNested extends PaymentCreditTest {}
+
+  @Nested
+  class PendingPaymentTestNested extends PendingPaymentTest {}
 }

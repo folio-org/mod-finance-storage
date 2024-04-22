@@ -8,7 +8,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
@@ -59,7 +59,7 @@ public class RolloverProgressDAOTest {
     LedgerFiscalYearRolloverError error = new LedgerFiscalYearRolloverError().withId(id);
 
     Results<LedgerFiscalYearRolloverError> results = new Results<>();
-    results.setResults(Collections.singletonList(error));
+    results.setResults(List.of(error));
     doReturn(Future.succeededFuture(results)).when(conn)
       .get(eq(LEDGER_FISCAL_YEAR_ROLLOVER_ERRORS_TABLE), eq(LedgerFiscalYearRolloverError.class), eq(criterion), anyBoolean());
 

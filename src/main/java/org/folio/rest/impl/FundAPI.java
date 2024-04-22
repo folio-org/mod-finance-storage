@@ -12,7 +12,7 @@ import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Fund;

@@ -5,7 +5,7 @@ import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import java.util.Collections;
 import java.util.List;
 
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Fund;

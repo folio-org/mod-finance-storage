@@ -13,28 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.lang.String.format;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 
-public class TemporaryEncumbranceTransactionDAO extends BaseTemporaryTransactionsDAO{
+public class TemporaryEncumbrancePostgresDAO implements TemporaryEncumbranceDAO {
 
-  private static final Logger logger = LogManager.getLogger(TemporaryEncumbranceTransactionDAO.class);
+  private static final Logger logger = LogManager.getLogger(TemporaryEncumbrancePostgresDAO.class);
 
   public static final String TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE = "tmp_encumbered_transactions";
   private static final String TEMPORARY_ENCUMBRANCE_TRANSACTIONS_QUERY = "SELECT jsonb FROM tmp_encumbered_transactions WHERE %s ";
-
-  public TemporaryEncumbranceTransactionDAO() {
-    super(TEMPORARY_ENCUMBRANCE_TRANSACTIONS_TABLE);
-  }
-
-  @Override
-  protected String createTempTransactionQuery(String tenantId) {
-    return EMPTY;
-  }
-
-  @Override
-  protected Criterion getSummaryIdCriteria(String summaryId) {
-    return new Criterion();
-  }
 
   @Override
   public Future<List<Transaction>> getTempTransactions(Criterion criterion, DBConn conn) {

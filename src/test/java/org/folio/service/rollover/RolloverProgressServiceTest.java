@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverError;
@@ -60,7 +61,7 @@ public class RolloverProgressServiceTest {
 
     LedgerFiscalYearRolloverError error = new LedgerFiscalYearRolloverError();
     when(rolloverErrorService.getRolloverErrors(any(), any()))
-      .thenReturn(Future.succeededFuture(Collections.singletonList(error)));
+      .thenReturn(Future.succeededFuture(List.of(error)));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, conn))
@@ -103,7 +104,7 @@ public class RolloverProgressServiceTest {
 
     LedgerFiscalYearRolloverError error = new LedgerFiscalYearRolloverError();
     when(rolloverErrorService.getRolloverErrors(any(), any()))
-      .thenReturn(Future.succeededFuture(Collections.singletonList(error)));
+      .thenReturn(Future.succeededFuture(List.of(error)));
     when(rolloverProgressDAO.update(refEq(progress), any())).thenReturn(Future.succeededFuture());
 
     testContext.assertComplete(rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress, conn))

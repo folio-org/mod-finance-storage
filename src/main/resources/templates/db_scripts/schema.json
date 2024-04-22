@@ -53,11 +53,6 @@
     },
     {
       "run": "after",
-      "snippetPath": "migration/update_processed_order_transaction_summary.sql",
-      "fromModuleVersion": "mod-finance-storage-6.0.0"
-    },
-    {
-      "run": "after",
       "snippetPath": "migration/update_order_encumbrance.sql",
       "fromModuleVersion": "mod-finance-storage-7.0.0"
     },
@@ -366,7 +361,7 @@
     {
       "tableName": "fund_distribution",
       "fromModuleVersion": "mod-finance-storage-4.2.1",
-      "mode": "delete",
+      "mode": "DELETE",
       "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     },
     {
@@ -479,7 +474,7 @@
     {
       "tableName": "ledgerFY",
       "fromModuleVersion": "mod-finance-storage-6.0.0",
-      "mode": "delete",
+      "mode": "DELETE",
       "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     },
     {
@@ -542,11 +537,13 @@
     },
     {
       "tableName": "order_transaction_summaries",
-      "fromModuleVersion": "mod-finance-storage-4.0.0"
+      "fromModuleVersion": "mod-finance-storage-4.0.0",
+      "mode": "DELETE"
     },
     {
       "tableName": "temporary_order_transactions",
       "fromModuleVersion": "mod-finance-storage-6.0.0",
+      "mode": "DELETE",
       "foreignKeys": [
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
@@ -577,11 +574,13 @@
     },
     {
       "tableName": "invoice_transaction_summaries",
-      "fromModuleVersion": "mod-finance-storage-4.2.1"
+      "fromModuleVersion": "mod-finance-storage-4.2.1",
+      "mode": "DELETE"
     },
     {
       "tableName": "temporary_invoice_transactions",
       "fromModuleVersion": "mod-finance-storage-6.0.0",
+      "mode": "DELETE",
       "uniqueIndex": [
         {
           "fieldName": "temp_invoice_tx",
@@ -624,7 +623,7 @@
     {
       "tableName": "temporary_invoice_payments",
       "fromModuleVersion": "mod-finance-storage-4.2.1",
-      "mode": "delete",
+      "mode": "DELETE",
       "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
     },
     {

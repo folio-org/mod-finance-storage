@@ -16,19 +16,10 @@ import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.dao.rollover.RolloverBudgetDAO;
 import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
-import org.folio.dao.summary.InvoiceTransactionSummaryDAO;
-import org.folio.dao.summary.OrderTransactionSummaryDAO;
-import org.folio.dao.summary.TransactionSummaryDao;
 import org.folio.dao.transactions.BatchTransactionDAO;
 import org.folio.dao.transactions.BatchTransactionPostgresDAO;
-import org.folio.dao.transactions.DefaultTransactionDAO;
-import org.folio.dao.transactions.EncumbranceDAO;
-import org.folio.dao.transactions.PaymentCreditDAO;
-import org.folio.dao.transactions.PendingPaymentDAO;
-import org.folio.dao.transactions.TemporaryEncumbranceTransactionDAO;
-import org.folio.dao.transactions.TemporaryInvoiceTransactionDAO;
-import org.folio.dao.transactions.TemporaryOrderTransactionDAO;
-import org.folio.dao.transactions.TransactionDAO;
+import org.folio.dao.transactions.TemporaryEncumbranceDAO;
+import org.folio.dao.transactions.TemporaryEncumbrancePostgresDAO;
 import org.springframework.context.annotation.Bean;
 
 public class DAOConfiguration {
@@ -54,48 +45,8 @@ public class DAOConfiguration {
   }
 
   @Bean
-  public TransactionSummaryDao invoiceTransactionSummaryDao() {
-    return new InvoiceTransactionSummaryDAO();
-  }
-
-  @Bean
-  public TransactionSummaryDao orderTransactionSummaryDao() {
-    return new OrderTransactionSummaryDAO();
-  }
-
-  @Bean
-  public TemporaryInvoiceTransactionDAO temporaryInvoiceTransactionDAO() {
-    return new TemporaryInvoiceTransactionDAO();
-  }
-
-  @Bean
-  public TemporaryOrderTransactionDAO temporaryOrderTransactionDAO() {
-    return new TemporaryOrderTransactionDAO();
-  }
-
-  @Bean
-  public TemporaryEncumbranceTransactionDAO temporaryEncumbranceTransactionDAO() {
-    return new TemporaryEncumbranceTransactionDAO();
-  }
-
-  @Bean
-  public TransactionDAO encumbranceDAO() {
-    return new EncumbranceDAO();
-  }
-
-  @Bean
-  public TransactionDAO paymentCreditDAO() {
-    return new PaymentCreditDAO();
-  }
-
-  @Bean
-  public TransactionDAO pendingPaymentDAO() {
-    return new PendingPaymentDAO();
-  }
-
-  @Bean
-  public TransactionDAO defaultTransactionDAO() {
-    return new DefaultTransactionDAO();
+  public TemporaryEncumbranceDAO temporaryEncumbranceDAO() {
+    return new TemporaryEncumbrancePostgresDAO();
   }
 
   @Bean

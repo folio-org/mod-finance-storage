@@ -1,7 +1,7 @@
 package org.folio.service.transactions;
 
 import io.vertx.core.Future;
-import org.folio.dao.transactions.TemporaryTransactionDAO;
+import org.folio.dao.transactions.TemporaryEncumbranceDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.CriterionBuilder;
@@ -9,12 +9,12 @@ import org.folio.rest.persist.DBConn;
 
 import java.util.List;
 
-public class TemporaryTransactionService {
+public class TemporaryEncumbranceService {
 
-  private final TemporaryTransactionDAO temporaryTransactionDAO;
+  private final TemporaryEncumbranceDAO temporaryEncumbranceDAO;
 
-  public TemporaryTransactionService(TemporaryTransactionDAO temporaryTransactionDAO) {
-    this.temporaryTransactionDAO = temporaryTransactionDAO;
+  public TemporaryEncumbranceService(TemporaryEncumbranceDAO temporaryEncumbranceDAO) {
+    this.temporaryEncumbranceDAO = temporaryEncumbranceDAO;
   }
 
   public Future<List<Transaction>> getTransactions(LedgerFiscalYearRolloverBudget budget, DBConn conn) {
@@ -26,7 +26,7 @@ public class TemporaryTransactionService {
       .withOperation("AND")
       .withJson("fromFundId", "=", budget.getFundId());
 
-    return temporaryTransactionDAO.getTempTransactions(criterionBuilder.build(), conn);
+    return temporaryEncumbranceDAO.getTempTransactions(criterionBuilder.build(), conn);
   }
 
 }

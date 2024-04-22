@@ -5,7 +5,7 @@ import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import io.vertx.core.Future;
 import javax.ws.rs.core.Response;
 
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.FiscalYear;

@@ -1,7 +1,7 @@
 package org.folio.service.rollover;
 
 import io.vertx.core.Future;
-import io.vertx.ext.web.handler.HttpException;
+import org.folio.rest.exception.HttpException;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverProgress;
 import org.folio.rest.jaxrs.model.RolloverStatus;
