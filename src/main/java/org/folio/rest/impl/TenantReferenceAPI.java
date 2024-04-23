@@ -23,7 +23,6 @@ import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
 import org.folio.rest.jaxrs.resource.FinanceStorageLedgers;
-import org.folio.rest.jaxrs.resource.FinanceStorageTransactions;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantLoading;
@@ -40,6 +39,7 @@ public class TenantReferenceAPI extends TenantAPI {
 
   private static final String PARAMETER_LOAD_REFERENCE = "loadReference";
   private static final String PARAMETER_LOAD_SAMPLE = "loadSample";
+  private static final String BATCH_ENDPOINT = "finance-storage/transactions/batch-all-or-nothing";
   public static final String LOAD_SYNC_PARAMETER = "loadSync";
 
   @Override
@@ -93,9 +93,10 @@ public class TenantReferenceAPI extends TenantAPI {
           .add("budgets-8.4.0", getUriPath(FinanceStorageBudgets.class))
           .add("budget-expense-classes-8.4.0", getUriPath(FinanceStorageBudgetExpenseClasses.class))
           .add("group-fund-fiscal-years-8.4.0", getUriPath(FinanceStorageGroupFundFiscalYears.class))
-          .add("transactions/allocations-8.4.0", getUriPath(FinanceStorageTransactions.class))
-          .withPostIgnore() // Payments and credits don't support PUT
-          .add("transactions/transfers-8.4.0", getUriPath(FinanceStorageTransactions.class));
+          .withPostIgnore()
+          .add("transactions/allocations-8.4.0", BATCH_ENDPOINT)
+          .withPostIgnore()
+          .add("transactions/transfers-8.4.0", BATCH_ENDPOINT);
       }
       loadData = true;
     }
