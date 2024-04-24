@@ -360,9 +360,7 @@
     },
     {
       "tableName": "fund_distribution",
-      "fromModuleVersion": "mod-finance-storage-4.2.1",
-      "mode": "DELETE",
-      "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
+      "mode": "delete"
     },
     {
       "tableName": "transaction",
@@ -473,9 +471,7 @@
     },
     {
       "tableName": "ledgerFY",
-      "fromModuleVersion": "mod-finance-storage-6.0.0",
-      "mode": "DELETE",
-      "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
+      "mode": "delete"
     },
     {
       "tableName": "group_fund_fiscal_year",
@@ -537,94 +533,23 @@
     },
     {
       "tableName": "order_transaction_summaries",
-      "fromModuleVersion": "mod-finance-storage-4.0.0",
-      "mode": "DELETE"
+      "mode": "delete"
     },
     {
       "tableName": "temporary_order_transactions",
-      "fromModuleVersion": "mod-finance-storage-6.0.0",
-      "mode": "DELETE",
-      "foreignKeys": [
-        {
-          "fieldName": "encumbrance.sourcePurchaseOrderId",
-          "targetTable": "order_transaction_summaries",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fiscalYearId",
-          "targetTable": "fiscal_year",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fromFundId",
-          "targetTable": "fund",
-          "tOps": "ADD"
-        },        {
-          "fieldName": "expenseClassId",
-          "targetTable": "expense_class"
-        }
-      ],
-      "uniqueIndex": [
-        {
-          "fieldName": "temp_order_tx",
-          "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status, expenseClassId",
-          "tOps": "ADD"
-        }
-      ]
+      "mode": "delete"
     },
     {
       "tableName": "invoice_transaction_summaries",
-      "fromModuleVersion": "mod-finance-storage-4.2.1",
-      "mode": "DELETE"
+      "mode": "delete"
     },
     {
       "tableName": "temporary_invoice_transactions",
-      "fromModuleVersion": "mod-finance-storage-6.0.0",
-      "mode": "DELETE",
-      "uniqueIndex": [
-        {
-          "fieldName": "temp_invoice_tx",
-          "sqlExpression": "concat_space_sql(lower(f_unaccent(jsonb->>'amount')) , lower(f_unaccent(jsonb->>'fromFundId')) , lower(f_unaccent(jsonb->>'sourceInvoiceId')) , lower(f_unaccent(jsonb->>'sourceInvoiceLineId')) , lower(f_unaccent(jsonb->>'toFundId')) , lower(f_unaccent(jsonb->>'transactionType')), lower(f_unaccent(jsonb->>'expenseClassId')))",
-          "tOps": "ADD"
-        }
-      ],
-      "foreignKeys": [
-        {
-          "fieldName": "sourceInvoiceId",
-          "targetTable": "invoice_transaction_summaries",
-          "tOps": "ADD"
-        },
-         {
-          "fieldName": "paymentEncumbranceId",
-          "targetTable": "transaction",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fromFundId",
-          "targetTable": "fund",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "toFundId",
-          "targetTable": "fund",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "fiscalYearId",
-          "targetTable": "fiscal_year",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "expenseClassId",
-          "targetTable": "expense_class"
-        }
-       ]
+      "mode": "delete"
     },
     {
       "tableName": "temporary_invoice_payments",
-      "fromModuleVersion": "mod-finance-storage-4.2.1",
-      "mode": "DELETE",
-      "auditingTableName": "NOT_EXISTING_AUDITING_TABLE"
+      "mode": "delete"
     },
     {
       "tableName": "ledger_fiscal_year_rollover",
