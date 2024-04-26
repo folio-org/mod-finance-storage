@@ -362,7 +362,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         (jsonb ->> 'expenseClassId'::text),
                         (jsonb ->> 'fiscalYearId'::text)
                     ]))))
-                WHERE ((jsonb ->> 'transactionType'::text) = 'Encumbrance'::text) DO NOTHING;
+                WHERE (jsonb ->> 'transactionType' = 'Encumbrance') DO NOTHING;
             END IF;
         END IF;
 
@@ -701,7 +701,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.budget_encumbrances_rollo
                     (jsonb ->> 'expenseClassId'::text),
                     (jsonb ->> 'fiscalYearId'::text)
                 ]))))
-            WHERE ((jsonb ->> 'transactionType'::text) = 'Encumbrance'::text) DO NOTHING;
+            WHERE (jsonb ->> 'transactionType' = 'Encumbrance') DO NOTHING;
         END IF;
 
         DROP TABLE IF EXISTS tmp_transaction;

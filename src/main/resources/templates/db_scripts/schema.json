@@ -90,6 +90,11 @@
       "run": "after",
       "snippetPath": "migration/transform_location_ids_array.sql",
       "fromModuleVersion": "mod-finance-storage-8.7.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/simple_transaction_type_index.sql",
+      "fromModuleVersion": "mod-finance-storage-8.7.0"
     }
   ],
   "tables": [
@@ -373,19 +378,19 @@
           "fieldName": "encumbrance",
           "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status, expenseClassId, fiscalYearId",
           "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
+          "whereClause": "WHERE jsonb->>'transactionType' = 'Encumbrance'"
         },
         {
           "fieldName": "payment",
           "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
           "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment' OR (jsonb->>'transactionType')::text = 'Pending payment'"
+          "whereClause": "WHERE jsonb->>'transactionType' = 'Payment' OR jsonb->>'transactionType' = 'Pending payment'"
         },
         {
           "fieldName": "credit",
           "multiFieldNames": "amount, toFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
           "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Credit'"
+          "whereClause": "WHERE jsonb->>'transactionType' = 'Credit'"
         }
       ],
       "foreignKeys": [
@@ -416,6 +421,12 @@
       ],
       "index": [
         {
+          "fieldName": "transactionType",
+          "tOps": "ADD",
+          "removeAccents": false,
+          "caseSensitive": true
+        },
+        {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
           "tOps": "ADD"
         },
@@ -433,9 +444,7 @@
         },
         {
           "fieldName": "transactionType",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
+          "tOps": "DELETE"
         }
       ]
     },

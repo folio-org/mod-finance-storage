@@ -139,7 +139,7 @@ public class BudgetService {
 
     String sql ="DELETE FROM "+ getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
       + " WHERE  (fromFundId = '" + budget.getFundId() + "' OR toFundId = '" + budget.getFundId() + "')"
-      + " AND fiscalYearId = '" + budget.getFiscalYearId() + "' AND lower(f_unaccent(jsonb->>'transactionType'::text)) = 'allocation'";
+      + " AND fiscalYearId = '" + budget.getFiscalYearId() + "' AND jsonb->>'transactionType' = 'Allocation'";
 
     return conn.execute(sql)
       .onSuccess(ecList -> logger.info("deleteAllocationTransactions:: Allocation transaction for budget with id {} successfully deleted",
@@ -155,8 +155,8 @@ public class BudgetService {
     String sql ="SELECT jsonb FROM " + getFullTableName(conn.getTenantId(), TRANSACTIONS_TABLE)
       + " WHERE fiscalYearId = '" + budget.getFiscalYearId() + "'"
       + " AND (fromFundId = '" + budget.getFundId() + "' OR toFundId = '" + budget.getFundId() + "')"
-      + " AND (lower(f_unaccent(jsonb->>'transactionType'::text)) <> 'allocation'"
-      + " OR (lower(f_unaccent(jsonb->>'transactionType'::text)) = 'allocation' AND toFundId IS NOT NULL AND fromFundId IS NOT NULL))";
+      + " AND (jsonb->>'transactionType' <> 'Allocation'"
+      + " OR (jsonb->>'transactionType' = 'Allocation' AND toFundId IS NOT NULL AND fromFundId IS NOT NULL))";
 
     return conn.execute(sql)
       .map(rowSet -> {
