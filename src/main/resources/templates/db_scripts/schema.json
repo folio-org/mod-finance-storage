@@ -93,7 +93,7 @@
     },
     {
       "run": "after",
-      "snippetPath": "migration/simple_transaction_type_index.sql",
+      "snippetPath": "migration/simple_transaction_indices.sql",
       "fromModuleVersion": "mod-finance-storage-8.7.0"
     }
   ],
@@ -428,11 +428,15 @@
         },
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
-          "tOps": "ADD"
+          "tOps": "ADD",
+          "removeAccents": false,
+          "caseSensitive": true
         },
         {
           "fieldName": "encumbrance.sourcePoLineId",
-          "tOps": "ADD"
+          "tOps": "ADD",
+          "removeAccents": false,
+          "caseSensitive": true
         }
       ],
       "ginIndex": [
