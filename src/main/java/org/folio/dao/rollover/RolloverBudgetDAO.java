@@ -43,7 +43,7 @@ public class RolloverBudgetDAO {
 
   public Future<Void> updateRolloverBudget(LedgerFiscalYearRolloverBudget rolloverBudget, DBConn conn) {
     logger.debug("Trying to update rollover budget with id {}", rolloverBudget.getId());
-    return conn.update(ROLLOVER_BUDGET_TABLE, JsonObject.mapFrom(rolloverBudget), rolloverBudget.getId())
+    return conn.update(ROLLOVER_BUDGET_TABLE, rolloverBudget, rolloverBudget.getId())
       .onSuccess(rowSet -> logger.info("Successfully updated a rollover budget with id {}", rolloverBudget.getId()))
       .onFailure(e -> logger.error("Updating rollover budget with id {} failed", rolloverBudget.getId(), e))
       .mapEmpty();

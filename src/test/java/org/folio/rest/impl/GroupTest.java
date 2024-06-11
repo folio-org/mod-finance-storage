@@ -2,6 +2,7 @@ package org.folio.rest.impl;
 
 import io.restassured.http.Header;
 import io.vertx.core.json.JsonObject;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.model.TenantJob;
@@ -45,8 +46,8 @@ public class GroupTest extends TestBase {
 
     group2.setDescription("test");
 
-    putData(GROUP.getEndpointWithId(), GROUP.getId(), JsonObject.mapFrom(group1).encodePrettily(), GROUP_TENANT_HEADER);
-    putData(GROUP.getEndpointWithId(), GROUP.getId(), JsonObject.mapFrom(group2).encodePrettily(), GROUP_TENANT_HEADER)
+    putData(GROUP.getEndpointWithId(), GROUP.getId(), valueAsString(group1), GROUP_TENANT_HEADER);
+    putData(GROUP.getEndpointWithId(), GROUP.getId(), valueAsString(group2), GROUP_TENANT_HEADER)
       .then()
       .statusCode(409);
 
