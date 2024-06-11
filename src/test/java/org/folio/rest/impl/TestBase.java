@@ -3,25 +3,21 @@ package org.folio.rest.impl;
 import static io.restassured.RestAssured.given;
 import static org.folio.StorageTestSuite.storageUrl;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.StorageTestSuite;
-import org.folio.dbschema.ObjectMapperTool;
 import org.folio.rest.utils.TestEntities;
 import org.folio.utils.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;

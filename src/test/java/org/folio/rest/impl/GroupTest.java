@@ -1,8 +1,6 @@
 package org.folio.rest.impl;
 
 import io.restassured.http.Header;
-import io.vertx.core.json.JsonObject;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.model.TenantJob;
