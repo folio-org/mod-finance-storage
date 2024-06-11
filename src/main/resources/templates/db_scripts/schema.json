@@ -90,11 +90,6 @@
       "run": "after",
       "snippetPath": "migration/transform_location_ids_array.sql",
       "fromModuleVersion": "mod-finance-storage-8.7.0"
-    },
-    {
-      "run": "after",
-      "snippetPath": "migration/simple_transaction_indices.sql",
-      "fromModuleVersion": "mod-finance-storage-8.7.0"
     }
   ],
   "tables": [
@@ -424,19 +419,25 @@
           "fieldName": "transactionType",
           "tOps": "ADD",
           "removeAccents": false,
-          "caseSensitive": true
+          "caseSensitive": true,
+          "sqlExpression": "(jsonb->>'transactionType')",
+          "sqlExpressionQuery": "$"
         },
         {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
           "tOps": "ADD",
           "removeAccents": false,
-          "caseSensitive": true
+          "caseSensitive": true,
+          "sqlExpression": "(jsonb->'encumbrance'->>'sourcePurchaseOrderId')",
+          "sqlExpressionQuery": "$"
         },
         {
           "fieldName": "encumbrance.sourcePoLineId",
           "tOps": "ADD",
           "removeAccents": false,
-          "caseSensitive": true
+          "caseSensitive": true,
+          "sqlExpression": "(jsonb->'encumbrance'->>'sourcePoLineId')",
+          "sqlExpressionQuery": "$"
         }
       ],
       "ginIndex": [
