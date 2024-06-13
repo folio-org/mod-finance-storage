@@ -9,9 +9,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -21,8 +19,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.StorageTestSuite;
-import org.folio.dbschema.ObjectMapperTool;
 import org.folio.rest.utils.TestEntities;
+import org.folio.utils.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -192,11 +190,7 @@ public abstract class TestBase {
   }
 
   static String valueAsString(Object o) {
-    try {
-      return ObjectMapperTool.getMapper().writeValueAsString(o);
-    } catch (JsonProcessingException e) {
-      throw new UncheckedIOException(e);
-    }
+    return ObjectMapper.valueAsString(o);
   }
 
   void testAllFieldsExists(JsonObject extracted, JsonObject sampleObject) {
