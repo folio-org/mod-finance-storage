@@ -13,6 +13,7 @@ import javax.money.MonetaryAmount;
 import java.util.List;
 import java.util.Map;
 
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 import static org.folio.utils.MoneyUtils.subtractMoney;
@@ -74,18 +75,22 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     // was released automatically or not (as opposed to a pending payment).
     double expended = encumbrance.getEncumbrance().getAmountExpended();
     double credited = encumbrance.getEncumbrance().getAmountCredited();
-    expended = subtractMoney(expended, credited, currency);
     double amount = encumbrance.getAmount();
     if (transaction.getTransactionType() == PAYMENT) {
       expended = subtractMoney(expended, transaction.getAmount(), currency);
       amount = sumMoney(amount, transaction.getAmount(), currency);
     } else {
-      expended = sumMoney(expended, transaction.getAmount(), currency);
+      if (transaction.getTransactionType() == CREDIT) {
+        credited = sumMoney(credited, transaction.getAmount(), currency);
+      } else {
+        expended = sumMoney(expended, transaction.getAmount(), currency);
+      }
       if (Encumbrance.Status.RELEASED != encumbrance.getEncumbrance().getStatus()) {
         amount = subtractMoney(amount, transaction.getAmount(), currency);
       }
     }
     encumbrance.getEncumbrance().setAmountExpended(expended);
+    encumbrance.getEncumbrance().setAmountCredited(credited);
     encumbrance.setAmount(amount);
   }
 
@@ -95,7 +100,6 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     MonetaryAmount credited = Money.of(encumbrance.getEncumbrance().getAmountCredited(), currency);
     MonetaryAmount awaitingPayment = Money.of(encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
     MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
-    expended = expended.subtract(credited);
     Transaction existingTransaction = existingTransactionMap.get(transaction.getId());
     if (existingTransaction != null) {
       amount = amount.subtract(Money.of(existingTransaction.getAmount(), currency));
@@ -103,12 +107,16 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     if (transaction.getTransactionType() == PAYMENT) {
       expended = expended.add(amount);
       awaitingPayment = awaitingPayment.subtract(amount);
+    } else if (transaction.getTransactionType() == CREDIT) {
+      credited = credited.add(amount);
+      awaitingPayment = awaitingPayment.add(amount);
     } else {
       expended = expended.subtract(amount);
       awaitingPayment = awaitingPayment.add(amount);
     }
     encumbrance.getEncumbrance()
       .withAmountExpended(expended.getNumber().doubleValue())
+      .withAmountCredited(credited.getNumber().doubleValue())
       .withAmountAwaitingPayment(awaitingPayment.getNumber().doubleValue());
   }
 
@@ -150,18 +158,21 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     MonetaryAmount credits = Money.of(budget.getCredits(), currency);
     MonetaryAmount awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
     MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
-    expenditures.subtract(credits);
     if (existingTransaction != null) {
       amount = amount.subtract(Money.of(existingTransaction.getAmount(), currency));
     }
     if (transaction.getTransactionType() == PAYMENT) {
       expenditures = expenditures.add(amount);
       awaitingPayment = awaitingPayment.subtract(amount);
+    } else if (transaction.getTransactionType() == CREDIT) {
+      credits = credits.add(amount);
+      awaitingPayment = awaitingPayment.add(amount);
     } else {
       expenditures = expenditures.subtract(amount);
       awaitingPayment = awaitingPayment.add(amount);
     }
     budget.setExpenditures(expenditures.getNumber().doubleValue());
+    budget.setCredits(credits.getNumber().doubleValue());
     budget.setAwaitingPayment(awaitingPayment.getNumber().doubleValue());
   }
 

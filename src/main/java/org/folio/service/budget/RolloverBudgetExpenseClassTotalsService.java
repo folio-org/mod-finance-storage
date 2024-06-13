@@ -91,8 +91,6 @@ public class RolloverBudgetExpenseClassTotalsService {
       MonetaryAmount tmpCredited = MoneyUtils.calculateTotalAmount(
         transactionGroupedByType.getOrDefault(Transaction.TransactionType.CREDIT, Collections.emptyList()), currency);
 
-      tmpExpended = tmpExpended.subtract(tmpCredited);
-
       expended = tmpExpended.with(Monetary.getDefaultRounding()).getNumber().doubleValue();
       credited = tmpCredited.with(Monetary.getDefaultRounding()).getNumber().doubleValue();
 
