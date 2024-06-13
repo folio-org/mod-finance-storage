@@ -113,7 +113,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(pendingPayment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 5d, 0d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 5d, 0d, 0d, 0d, false, false, false);
 
     Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId));
     doReturn(succeededFuture(createResults(List.of())))
@@ -214,7 +214,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(newPendingPayment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 0d, false, false, false);
 
     Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId));
     doReturn(succeededFuture(createResults(List.of(existingPendingPayment))))
@@ -306,7 +306,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(newPendingPayment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 0d, false, false, false);
 
     Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId));
     doReturn(succeededFuture(createResults(List.of(existingPendingPayment))))
@@ -388,7 +388,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().addAll(List.of(pendingPayment1, pendingPayment2));
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, true, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, 0d, true, false, false);
 
     Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId1, pendingPaymentId2));
     doReturn(succeededFuture(createResults(List.of())))

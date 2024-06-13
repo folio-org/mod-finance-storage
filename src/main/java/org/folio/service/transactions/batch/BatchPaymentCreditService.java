@@ -73,6 +73,8 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     // NOTE: we can't unrelease the encumbrance automatically because the payment/credit does not say if the encumbrance
     // was released automatically or not (as opposed to a pending payment).
     double expended = encumbrance.getEncumbrance().getAmountExpended();
+    double credited = encumbrance.getEncumbrance().getAmountCredited();
+    expended = subtractMoney(expended, credited, currency);
     double amount = encumbrance.getAmount();
     if (transaction.getTransactionType() == PAYMENT) {
       expended = subtractMoney(expended, transaction.getAmount(), currency);
@@ -90,8 +92,10 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
   private void updateEncumbranceToApplyTransaction(Transaction transaction, Transaction encumbrance, CurrencyUnit currency,
       Map<String, Transaction> existingTransactionMap) {
     MonetaryAmount expended = Money.of(encumbrance.getEncumbrance().getAmountExpended(), currency);
+    MonetaryAmount credited = Money.of(encumbrance.getEncumbrance().getAmountCredited(), currency);
     MonetaryAmount awaitingPayment = Money.of(encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
     MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
+    expended = expended.subtract(credited);
     Transaction existingTransaction = existingTransactionMap.get(transaction.getId());
     if (existingTransaction != null) {
       amount = amount.subtract(Money.of(existingTransaction.getAmount(), currency));
@@ -143,8 +147,10 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
   private void applyTransaction(Budget budget, Transaction transaction, Transaction existingTransaction) {
     CurrencyUnit currency = Monetary.getCurrency(transaction.getCurrency());
     MonetaryAmount expenditures = Money.of(budget.getExpenditures(), currency);
+    MonetaryAmount credits = Money.of(budget.getCredits(), currency);
     MonetaryAmount awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
     MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
+    expenditures.subtract(credits);
     if (existingTransaction != null) {
       amount = amount.subtract(Money.of(existingTransaction.getAmount(), currency));
     }

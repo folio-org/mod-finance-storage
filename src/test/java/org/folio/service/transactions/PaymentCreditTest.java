@@ -76,7 +76,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(payment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 0d, false, false, false);
 
     Criterion paymentCriterion = createCriterionByIds(List.of(paymentId));
     doReturn(succeededFuture(createResults(List.of())))
@@ -192,7 +192,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(payment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 0d, false, false, false);
 
     Criterion paymentCriterion = createCriterionByIds(List.of(paymentId));
     doReturn(succeededFuture(createResults(List.of())))
@@ -313,7 +313,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(newPayment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 5d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, 5d, false, false, false);
 
     Criterion paymentCriterion = createCriterionByIds(List.of(paymentId));
     doReturn(succeededFuture(createResults(List.of(existingPayment))))
@@ -427,7 +427,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(payment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 0d, false, false, false);
 
     Criterion paymentCriterion = createCriterionByIds(List.of(paymentId));
     doReturn(succeededFuture(createResults(List.of())))

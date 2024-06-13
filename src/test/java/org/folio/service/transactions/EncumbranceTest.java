@@ -68,7 +68,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(encumbrance);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, 0d, false, false, false);
 
     Criterion transactionCriterion = createCriterionByIds(List.of(transactionId));
     doReturn(succeededFuture(createResults(new ArrayList<Transaction>())))
@@ -135,7 +135,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(newEncumbrance);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 5d, 0d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 5d, 0d, 0d, 0d, false, false, false);
 
     Criterion transactionCriterion = createCriterionByIds(List.of(encumbranceId));
     doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
@@ -261,7 +261,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(encumbrance);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, false, true, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, 0d, false, true, false);
 
     Criterion transactionCriterion = createCriterionByIds(List.of(transactionId));
     doReturn(succeededFuture(createResults(new ArrayList<Transaction>())))
@@ -303,7 +303,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(encumbrance);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, false, false, true);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, 0d, false, false, true);
 
     Criterion transactionCriterion = createCriterionByIds(List.of(transactionId));
     doReturn(succeededFuture(createResults(new ArrayList<Transaction>())))
@@ -392,7 +392,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(newEncumbrance);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 1d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 1d, false, false, false);
 
     Criterion transactionCriterion = createCriterionByIds(List.of(encumbranceId));
     doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))

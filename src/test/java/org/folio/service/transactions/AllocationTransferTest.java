@@ -62,7 +62,7 @@ public class AllocationTransferTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(allocation);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, 0d, false, false, false);
 
     Criterion transactionCriterion = createCriterionByIds(List.of(transactionId));
     doReturn(succeededFuture(createResults(new ArrayList<Transaction>())))
@@ -337,7 +337,7 @@ public class AllocationTransferTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(allocation);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, 0d, false, false, false);
 
     Criterion transactionCriterion = createCriterionByIds(List.of(transactionId));
     doReturn(succeededFuture(createResults(new ArrayList<Transaction>())))

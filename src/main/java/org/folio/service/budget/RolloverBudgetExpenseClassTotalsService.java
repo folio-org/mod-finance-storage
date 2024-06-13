@@ -74,6 +74,8 @@ public class RolloverBudgetExpenseClassTotalsService {
     double awaitingPayment = 0d;
     double expended = 0d;
     Double expendedPercentage = 0d;
+    double credited = 0d;
+    Double creditedPercentage = 0d;
 
     if (!transactions.isEmpty()) {
       CurrencyUnit currency = Monetary.getCurrency(transactions.get(0).getCurrency());
@@ -86,10 +88,13 @@ public class RolloverBudgetExpenseClassTotalsService {
 
       MonetaryAmount tmpExpended = MoneyUtils.calculateTotalAmount(
         transactionGroupedByType.getOrDefault(Transaction.TransactionType.PAYMENT, Collections.emptyList()), currency);
-      tmpExpended = tmpExpended.subtract(MoneyUtils.calculateTotalAmount(
-        transactionGroupedByType.getOrDefault(Transaction.TransactionType.CREDIT, Collections.emptyList()), currency));
+      MonetaryAmount tmpCredited = MoneyUtils.calculateTotalAmount(
+        transactionGroupedByType.getOrDefault(Transaction.TransactionType.CREDIT, Collections.emptyList()), currency);
+
+      tmpExpended = tmpExpended.subtract(tmpCredited);
 
       expended = tmpExpended.with(Monetary.getDefaultRounding()).getNumber().doubleValue();
+      credited = tmpCredited.with(Monetary.getDefaultRounding()).getNumber().doubleValue();
 
       expendedPercentage = totalExpended == 0 ? null : MoneyUtils.calculateExpendedPercentage(tmpExpended, totalExpended);
     }
@@ -101,7 +106,9 @@ public class RolloverBudgetExpenseClassTotalsService {
       .withEncumbered(encumbered)
       .withAwaitingPayment(awaitingPayment)
       .withExpended(expended)
-      .withPercentageExpended(expendedPercentage);
+      .withPercentageExpended(expendedPercentage)
+      .withCredited(credited)
+      .withPercentageCredited(creditedPercentage);
   }
 
   private List<BudgetExpenseClassTotal> updateExpenseClassStatus(List<BudgetExpenseClassTotal> budgetExpenseClassTotals,
