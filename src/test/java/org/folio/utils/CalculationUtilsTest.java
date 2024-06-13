@@ -18,11 +18,12 @@ public class CalculationUtilsTest {
                 .withInitialAllocation(30d)
                 .withAllocationTo(55d)
                 .withNetTransfers(-3d)
+                .withCredits(1d)
                 .withExpenditures(90d);
 
         CalculationUtils.calculateBudgetSummaryFields(budget);
 
-        assertEquals(8d, budget.getOverExpended(), 0d);
+        assertEquals(7d, budget.getOverExpended(), 0d);
     }
 
   @ParameterizedTest
@@ -72,13 +73,14 @@ public class CalculationUtilsTest {
     Budget budget = new Budget()
       .withInitialAllocation(1800d)
       .withNetTransfers(200d)
+      .withCredits(100d)
       .withExpenditures(1500d)
       .withAwaitingPayment(600d)
       .withEncumbered(200d);
 
     CalculationUtils.calculateBudgetSummaryFields(budget);
 
-    assertEquals(200d, budget.getOverEncumbrance(), 0d);
+    assertEquals(300d, budget.getOverEncumbrance(), 0d);
   }
 
   @Test
