@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.StorageTestSuite;
 import org.folio.rest.utils.TestEntities;
+import org.folio.utils.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -177,7 +178,7 @@ public abstract class TestBase {
   }
 
   String createEntity(String endpoint, Object entity) {
-    return postData(endpoint, JsonObject.mapFrom(entity).encode())
+    return postData(endpoint, valueAsString(entity))
       .then().log().all()
       .statusCode(201)
       .extract()
@@ -186,6 +187,10 @@ public abstract class TestBase {
 
   JsonObject convertToMatchingModelJson(String sample, TestEntities testEntity) {
     return JsonObject.mapFrom(new JsonObject(sample).mapTo(testEntity.getClazz()));
+  }
+
+  static String valueAsString(Object o) {
+    return ObjectMapper.valueAsString(o);
   }
 
   void testAllFieldsExists(JsonObject extracted, JsonObject sampleObject) {
