@@ -293,7 +293,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(payment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 5d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 10d, 0d, false, false, false);
 
     Criterion paymentCriterion = createCriterionByIds(List.of(paymentId));
     doReturn(succeededFuture(createResults(List.of())))
@@ -347,7 +347,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
           assertThat(savedEncumbrance.getAmount(), equalTo(0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(5d));
-          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(5d));
+          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(0d));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
@@ -356,6 +356,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
           assertThat(savedBudget.getEncumbered(), equalTo(0d));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(0d));
           assertThat(savedBudget.getExpenditures(), equalTo(5d));
+          assertThat(savedBudget.getCredits(), equalTo(10d));
 
           // Verify pending payment deletion
           ArgumentCaptor<String> deleteTableNamesCaptor = ArgumentCaptor.forClass(String.class);
