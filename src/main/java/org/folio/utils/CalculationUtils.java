@@ -111,7 +111,7 @@ public final class CalculationUtils {
     BigDecimal totalFunding = allocated.add(netTransfers);
     BigDecimal cashBalance = totalFunding.subtract(expended);
     BigDecimal available = totalFunding.subtract(unavailable);
-    BigDecimal overExpended = expended.add(awaitingPayment).subtract(credited)
+    BigDecimal overExpended = expended.subtract(credited).add(awaitingPayment)
       .subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
 
     BigDecimal overEncumbered = calculateOverEncumbered(encumbered, unavailable, totalFunding, overExpended, awaitingPayment, expended);

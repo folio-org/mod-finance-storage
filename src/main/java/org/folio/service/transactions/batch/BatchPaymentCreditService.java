@@ -141,15 +141,19 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
 
   private void cancelTransaction(Budget budget, Transaction transaction) {
     double expenditures = budget.getExpenditures();
+    double credits = budget.getCredits();
     CurrencyUnit currency = Monetary.getCurrency(transaction.getCurrency());
     if (transaction.getTransactionType() == PAYMENT) {
       expenditures = MoneyUtils.subtractMoney(expenditures, transaction.getAmount(), currency);
+    } else if (transaction.getTransactionType() == CREDIT) {
+      credits = MoneyUtils.subtractMoney(credits, transaction.getAmount(), currency);
     } else {
       expenditures = MoneyUtils.sumMoney(expenditures, transaction.getAmount(), currency);
     }
     transaction.setVoidedAmount(transaction.getAmount());
     transaction.setAmount(0d);
     budget.setExpenditures(expenditures);
+    budget.setCredits(credits);
   }
 
   private void applyTransaction(Budget budget, Transaction transaction, Transaction existingTransaction) {
