@@ -45,8 +45,8 @@ public class GroupTest extends TestBase {
 
     group2.setDescription("test");
 
-    putData(GROUP.getEndpointWithId(), GROUP.getId(), JsonObject.mapFrom(group1).encodePrettily(), GROUP_TENANT_HEADER);
-    putData(GROUP.getEndpointWithId(), GROUP.getId(), JsonObject.mapFrom(group2).encodePrettily(), GROUP_TENANT_HEADER)
+    putData(GROUP.getEndpointWithId(), GROUP.getId(), valueAsString(group1), GROUP_TENANT_HEADER);
+    putData(GROUP.getEndpointWithId(), GROUP.getId(), valueAsString(group2), GROUP_TENANT_HEADER)
       .then()
       .statusCode(409);
 

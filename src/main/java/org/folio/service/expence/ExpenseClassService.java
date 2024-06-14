@@ -84,7 +84,7 @@ public class ExpenseClassService {
 
   private Future<ExpenseClass> updateExpenseClass(String id, ExpenseClass group) {
     Promise<ExpenseClass> promise = Promise.promise();
-    pgClient.update(EXPENSE_CLASS_TABLE, JsonObject.mapFrom(group), id, reply -> {
+    pgClient.update(EXPENSE_CLASS_TABLE, group, id, reply -> {
       if (reply.failed()) {
         promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, ExpenseClass.class));
       }
