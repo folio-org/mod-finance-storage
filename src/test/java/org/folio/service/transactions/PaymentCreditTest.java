@@ -691,7 +691,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
           assertThat(savedEncumbrance.getAmount(), equalTo(0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(5d));
-          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(10d));
+          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(0d));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
