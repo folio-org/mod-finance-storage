@@ -4,7 +4,6 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.Transaction.TransactionType;
-import org.folio.utils.MoneyUtils;
 import org.javamoney.moneta.Money;
 
 import javax.money.CurrencyUnit;
@@ -13,7 +12,6 @@ import javax.money.MonetaryAmount;
 import java.util.List;
 import java.util.Map;
 
-import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 import static org.folio.utils.MoneyUtils.subtractMoney;
@@ -80,11 +78,7 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
       expended = subtractMoney(expended, transaction.getAmount(), currency);
       amount = sumMoney(amount, transaction.getAmount(), currency);
     } else {
-      if (transaction.getTransactionType() == CREDIT) {
-        credited = sumMoney(credited, transaction.getAmount(), currency);
-      } else {
-        expended = sumMoney(expended, transaction.getAmount(), currency);
-      }
+      credited = subtractMoney(credited, transaction.getAmount(), currency);
       if (Encumbrance.Status.RELEASED != encumbrance.getEncumbrance().getStatus()) {
         amount = subtractMoney(amount, transaction.getAmount(), currency);
       }
@@ -107,11 +101,8 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     if (transaction.getTransactionType() == PAYMENT) {
       expended = expended.add(amount);
       awaitingPayment = awaitingPayment.subtract(amount);
-    } else if (transaction.getTransactionType() == CREDIT) {
-      credited = credited.add(amount);
-      awaitingPayment = awaitingPayment.add(amount);
     } else {
-      expended = expended.subtract(amount);
+      credited = credited.add(amount);
       awaitingPayment = awaitingPayment.add(amount);
     }
     encumbrance.getEncumbrance()
@@ -144,11 +135,9 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     double credits = budget.getCredits();
     CurrencyUnit currency = Monetary.getCurrency(transaction.getCurrency());
     if (transaction.getTransactionType() == PAYMENT) {
-      expenditures = MoneyUtils.subtractMoney(expenditures, transaction.getAmount(), currency);
-    } else if (transaction.getTransactionType() == CREDIT) {
-      credits = MoneyUtils.subtractMoney(credits, transaction.getAmount(), currency);
+      expenditures = subtractMoney(expenditures, transaction.getAmount(), currency);
     } else {
-      expenditures = MoneyUtils.sumMoney(expenditures, transaction.getAmount(), currency);
+      credits = subtractMoney(credits, transaction.getAmount(), currency);
     }
     transaction.setVoidedAmount(transaction.getAmount());
     transaction.setAmount(0d);
