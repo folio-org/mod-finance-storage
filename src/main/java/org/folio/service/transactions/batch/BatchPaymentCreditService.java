@@ -168,11 +168,8 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     if (transaction.getTransactionType() == PAYMENT) {
       expenditures = expenditures.add(amount);
       awaitingPayment = awaitingPayment.subtract(amount);
-    } else if (transaction.getTransactionType() == CREDIT) {
-      credits = credits.add(amount);
-      awaitingPayment = awaitingPayment.add(amount);
     } else {
-      expenditures = expenditures.subtract(amount);
+      credits = credits.add(amount);
       awaitingPayment = awaitingPayment.add(amount);
     }
     budget.setExpenditures(expenditures.getNumber().doubleValue());

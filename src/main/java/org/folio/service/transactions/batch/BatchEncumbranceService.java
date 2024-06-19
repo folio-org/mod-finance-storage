@@ -71,14 +71,14 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
       double newAmount = subtractMoney(encumbrance.getEncumbrance().getInitialAmountEncumbered(),
         existingEncumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
       newAmount = subtractMoney(newAmount, existingEncumbrance.getEncumbrance().getAmountExpended(), currency);
-      newAmount = subtractMoney(newAmount, existingEncumbrance.getEncumbrance().getAmountCredited(), currency);
+      newAmount = sumMoney(newAmount, encumbrance.getEncumbrance().getAmountCredited(), currency);
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(currency, newEncumbered, newAmount);
     } else if (isTransitionFromReleasedToUnreleased(encumbrance, existingEncumbrance)) {
       double newAmount = subtractMoney(encumbrance.getEncumbrance().getInitialAmountEncumbered(),
         encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
       newAmount = subtractMoney(newAmount, encumbrance.getEncumbrance().getAmountExpended(), currency);
-      newAmount = subtractMoney(newAmount, encumbrance.getEncumbrance().getAmountCredited(), currency);
+      newAmount = sumMoney(newAmount, encumbrance.getEncumbrance().getAmountCredited(), currency);
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(newEncumbered, newAmount, currency);
     } else {
