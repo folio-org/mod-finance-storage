@@ -95,6 +95,8 @@ public class RolloverBudgetExpenseClassTotalsService {
       credited = tmpCredited.with(Monetary.getDefaultRounding()).getNumber().doubleValue();
 
       expendedPercentage = totalExpended == 0 ? null : MoneyUtils.calculateExpendedPercentage(tmpExpended, totalExpended);
+      // TODO Implemented creditedPercentage in scope of MODFIN-372
+      // creditedPercentage = totalExpended == 0 ?
     }
 
     return new BudgetExpenseClassTotal()
