@@ -45,8 +45,8 @@ public class RolloverBudgetExpenseClassTotalsService {
 
   private List<BudgetExpenseClassTotal> buildBudgetExpenseClassesTotals(List<ExpenseClass> expenseClasses, List<Transaction> transactions, LedgerFiscalYearRolloverBudget budget) {
 
-    double totalExpended = getBudgetTotalExpended(budget);
-    double totalCredited = getBudgetTotalCredited(budget);
+    double totalExpended = budget.getExpenditures();
+    double totalCredited = budget.getCredits();
 
     Map<String, List<Transaction>> groupedByExpenseClassId = transactions.stream()
       .filter(transaction -> Objects.nonNull(transaction.getExpenseClassId()))
@@ -56,14 +56,6 @@ public class RolloverBudgetExpenseClassTotalsService {
       .collect(toMap(Function.identity(), expenseClass -> groupedByExpenseClassId.getOrDefault(expenseClass.getId(), Collections.emptyList())));
 
     return buildBudgetExpenseClassesTotals(groupedByExpenseClass, totalExpended, totalCredited);
-  }
-
-  private double getBudgetTotalExpended(LedgerFiscalYearRolloverBudget budget) {
-    return budget.getExpenditures();
-  }
-
-  private double getBudgetTotalCredited(LedgerFiscalYearRolloverBudget budget) {
-    return budget.getCredits();
   }
 
   private List<BudgetExpenseClassTotal> buildBudgetExpenseClassesTotals(Map<ExpenseClass, List<Transaction>> groupedByExpenseClass,
