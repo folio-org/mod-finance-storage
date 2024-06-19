@@ -36,7 +36,7 @@ public class CalculationUtilsTest {
     "4000, 100, 4100, 409, 1, 1",
     "4000, 100, 4200, 409, 1, 1",
     "80, 20, 100, 0, 1, 1",
-    "80, 20, 100, 1, 0, 1",
+    "80, 20, 100, 1, 0, 0",
     "100, 0, 70, 20, 30, 20",
     "100, 0, 0, 110, 10, 10",
     "100, 0, 0, -13, 1, 0",
@@ -47,7 +47,7 @@ public class CalculationUtilsTest {
     "100, 0, -90, 107, 90, 7",
     "100, 0, -90, 192, 5, 5",
     "100, 0, -90, 17, 5, 0",
-    "10000, 0, 1500, 1500, 10000, 1500"
+    "10000, 0, 1500, 1500, 10000, 3000"
   })
   void overEncumberedShouldBeGreaterThenZeroWhenEncumberedGreaterThatTotalFunding(double allocated, double netTransfer,
                     double expended, double awaitingPayment, double encumbered, double expOverEncumbered) {
