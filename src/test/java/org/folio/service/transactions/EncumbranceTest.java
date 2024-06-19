@@ -22,6 +22,7 @@ import java.util.UUID;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.dao.transactions.BatchTransactionDAO.TRANSACTIONS_TABLE;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.jaxrs.model.Encumbrance.Status.PENDING;
 import static org.folio.rest.jaxrs.model.Encumbrance.Status.RELEASED;
 import static org.folio.rest.jaxrs.model.Encumbrance.Status.UNRELEASED;
 import static org.folio.rest.jaxrs.model.Transaction.Source.PO_LINE;
@@ -383,7 +384,8 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
         .withSourcePurchaseOrderId(orderId)
         .withInitialAmountEncumbered(8d)
         .withAmountAwaitingPayment(5d)
-        .withAmountExpended(1d))
+        .withAmountExpended(1d)
+        .withAmountCredited(0d))
       .withMetadata(new Metadata());
 
     Transaction newEncumbrance = JsonObject.mapFrom(existingEncumbrance).mapTo(Transaction.class);
@@ -392,7 +394,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(newEncumbrance);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 1d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 1d, 1d, false, false, false);
 
     Criterion transactionCriterion = createCriterionByIds(List.of(encumbranceId));
     doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
@@ -422,6 +424,73 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           assertThat(savedBudget.getEncumbered(), equalTo(2d));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(5d));
           assertThat(savedBudget.getExpenditures(), equalTo(1d));
+          assertThat(savedBudget.getCredits(), equalTo(1d));
+        });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  void testUnreleasePendingEncumbrance(VertxTestContext testContext) {
+    String encumbranceId = UUID.randomUUID().toString();
+    String fundId = UUID.randomUUID().toString();
+    String fiscalYearId = UUID.randomUUID().toString();
+    String orderId = UUID.randomUUID().toString();
+
+    Transaction existingEncumbrance = new Transaction()
+      .withId(encumbranceId)
+      .withCurrency("USD")
+      .withFromFundId(fundId)
+      .withTransactionType(ENCUMBRANCE)
+      .withAmount(0d)
+      .withFiscalYearId(fiscalYearId)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withStatus(PENDING)
+        .withSourcePurchaseOrderId(orderId)
+        .withInitialAmountEncumbered(8d)
+        .withAmountAwaitingPayment(5d)
+        .withAmountExpended(1d)
+        .withAmountCredited(1d))
+      .withMetadata(new Metadata());
+
+    Transaction newEncumbrance = JsonObject.mapFrom(existingEncumbrance).mapTo(Transaction.class);
+    newEncumbrance.getEncumbrance().setStatus(UNRELEASED);
+
+    Batch batch = new Batch();
+    batch.getTransactionsToUpdate().add(newEncumbrance);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 2d, 2d, false, false, false);
+
+    Criterion transactionCriterion = createCriterionByIds(List.of(encumbranceId));
+    doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(transactionCriterion.toString())));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
+
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          // Verify encumbrance update
+          ArgumentCaptor<String> updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(2)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
+          List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
+
+          assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedTransaction = (Transaction)(updateEntities.get(0).get(0));
+          assertThat(savedTransaction.getAmount(), equalTo(1d));
+
+          // Verify budget update
+          assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
+          Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
+          assertNotNull(savedBudget.getMetadata().getUpdatedDate());
+          assertThat(savedBudget.getEncumbered(), equalTo(1d));
+          assertThat(savedBudget.getAwaitingPayment(), equalTo(5d));
+          assertThat(savedBudget.getExpenditures(), equalTo(2d));
+          assertThat(savedBudget.getCredits(), equalTo(2d));
         });
         testContext.completeNow();
       });
