@@ -48,6 +48,10 @@ public final class MoneyUtils {
     return expended.divide(totalExpended).multiply(100).with(Monetary.getDefaultRounding()).getNumber().doubleValue();
   }
 
+  public static double calculateCreditedPercentage(MonetaryAmount credited, double totalCredited) {
+    return credited.divide(totalCredited).multiply(100).with(Monetary.getDefaultRounding()).getNumber().doubleValue();
+  }
+
   public static MonetaryAmount calculateTotalAmount(List<Transaction> transactions, CurrencyUnit currency) {
     return transactions.stream()
       .map(transaction -> (MonetaryAmount) Money.of(transaction.getAmount(), currency))

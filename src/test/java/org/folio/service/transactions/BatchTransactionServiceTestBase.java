@@ -118,7 +118,7 @@ public abstract class BatchTransactionServiceTestBase {
   }
 
   protected void setupFundBudgetLedger(String fundId, String fiscalYearId, double budgetEncumbered,
-      double budgetAwaitingPayment, double budgetExpenditures, boolean restrictExpenditures,
+      double budgetAwaitingPayment, double budgetCredits, double budgetExpenditures, boolean restrictExpenditures,
       boolean restrictEncumbrance, boolean inactiveBudget) {
     String tenantId = "tenantname";
     String budgetId = UUID.randomUUID().toString();
@@ -137,6 +137,7 @@ public abstract class BatchTransactionServiceTestBase {
       .withInitialAllocation(10d)
       .withEncumbered(budgetEncumbered)
       .withAwaitingPayment(budgetAwaitingPayment)
+      .withCredits(budgetCredits)
       .withExpenditures(budgetExpenditures)
       .withAllowableExpenditure(90d)
       .withAllowableEncumbrance(90d)

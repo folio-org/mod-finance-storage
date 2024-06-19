@@ -4,6 +4,7 @@
   "allowableExpenditure": 100,
   "awaitingPayment": 0.00,
   "budgetStatus": "Active",
+  "credits": 0.00,
   "encumbered": 0.00,
   "expenditures": 0.00,
   "fiscalYearId": "8da275b8-e099-49a1-9a31-b8241ff26ffc",

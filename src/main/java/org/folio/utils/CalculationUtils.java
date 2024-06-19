@@ -53,6 +53,7 @@ public final class CalculationUtils {
       budget.getAllocationFrom(),
       budget.getAllocationTo(),
       budget.getNetTransfers(),
+      budget.getCredits(),
       budget.getExpenditures(),
       budget.getEncumbered(),
       budget.getAwaitingPayment()
@@ -72,6 +73,7 @@ public final class CalculationUtils {
       rolloverBudget.getAllocationFrom(),
       rolloverBudget.getAllocationTo(),
       rolloverBudget.getNetTransfers(),
+      rolloverBudget.getCredits(),
       rolloverBudget.getExpenditures(),
       rolloverBudget.getEncumbered(),
       rolloverBudget.getAwaitingPayment()
@@ -90,6 +92,7 @@ public final class CalculationUtils {
                                             Double dAllocationFrom,
                                             Double dAllocationTo,
                                             Double dNetTransfers,
+                                            Double dCredits,
                                             Double dExpenditures,
                                             Double dEncumbered,
                                             Double dAwaitingPayment) {
@@ -98,6 +101,7 @@ public final class CalculationUtils {
     BigDecimal allocationTo = BigDecimal.valueOf(dAllocationTo);
 
     BigDecimal netTransfers = BigDecimal.valueOf(dNetTransfers);
+    BigDecimal credited = BigDecimal.valueOf(dCredits);
     BigDecimal expended = BigDecimal.valueOf(dExpenditures);
     BigDecimal encumbered = BigDecimal.valueOf(dEncumbered);
     BigDecimal awaitingPayment = BigDecimal.valueOf(dAwaitingPayment);
@@ -107,7 +111,7 @@ public final class CalculationUtils {
     BigDecimal totalFunding = allocated.add(netTransfers);
     BigDecimal cashBalance = totalFunding.subtract(expended);
     BigDecimal available = totalFunding.subtract(unavailable);
-    BigDecimal overExpended = expended.add(awaitingPayment).subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
+    BigDecimal overExpended = expended.subtract(credited).add(awaitingPayment).subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
     BigDecimal overCommitted = unavailable.subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
     BigDecimal overEncumbered = overCommitted.subtract(overExpended);
 
