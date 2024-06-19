@@ -13,7 +13,6 @@ import org.folio.utils.MoneyUtils;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.List;
 import java.util.Objects;
@@ -47,6 +46,7 @@ public class RolloverBudgetExpenseClassTotalsService {
   private List<BudgetExpenseClassTotal> buildBudgetExpenseClassesTotals(List<ExpenseClass> expenseClasses, List<Transaction> transactions, LedgerFiscalYearRolloverBudget budget) {
 
     double totalExpended = getBudgetTotalExpended(budget);
+    double totalCredited = getBudgetTotalCredited(budget);
 
     Map<String, List<Transaction>> groupedByExpenseClassId = transactions.stream()
       .filter(transaction -> Objects.nonNull(transaction.getExpenseClassId()))
@@ -55,21 +55,26 @@ public class RolloverBudgetExpenseClassTotalsService {
     Map<ExpenseClass, List<Transaction>> groupedByExpenseClass = expenseClasses.stream()
       .collect(toMap(Function.identity(), expenseClass -> groupedByExpenseClassId.getOrDefault(expenseClass.getId(), Collections.emptyList())));
 
-    return buildBudgetExpenseClassesTotals(groupedByExpenseClass, totalExpended);
+    return buildBudgetExpenseClassesTotals(groupedByExpenseClass, totalExpended, totalCredited);
   }
 
   private double getBudgetTotalExpended(LedgerFiscalYearRolloverBudget budget) {
-    BigDecimal totalExpended = BigDecimal.valueOf(budget.getExpenditures()).add(BigDecimal.valueOf(budget.getOverExpended()));
-    return totalExpended.doubleValue();
+    return budget.getExpenditures();
   }
 
-  private List<BudgetExpenseClassTotal> buildBudgetExpenseClassesTotals(Map<ExpenseClass, List<Transaction>> groupedByExpenseClass, double totalExpended) {
+  private double getBudgetTotalCredited(LedgerFiscalYearRolloverBudget budget) {
+    return budget.getCredits();
+  }
+
+  private List<BudgetExpenseClassTotal> buildBudgetExpenseClassesTotals(Map<ExpenseClass, List<Transaction>> groupedByExpenseClass,
+                                                                        double totalExpended, double totalCredited) {
     return groupedByExpenseClass.entrySet().stream()
-      .map(entry -> buildBudgetExpenseClassTotals(entry.getKey(), entry.getValue(), totalExpended))
+      .map(entry -> buildBudgetExpenseClassTotals(entry.getKey(), entry.getValue(), totalExpended, totalCredited))
       .collect(Collectors.toList());
   }
 
-  private BudgetExpenseClassTotal buildBudgetExpenseClassTotals(ExpenseClass expenseClass, List<Transaction> transactions, double totalExpended) {
+  private BudgetExpenseClassTotal buildBudgetExpenseClassTotals(ExpenseClass expenseClass, List<Transaction> transactions,
+                                                                double totalExpended, double totalCredited) {
     double encumbered = 0d;
     double awaitingPayment = 0d;
     double expended = 0d;
@@ -95,8 +100,7 @@ public class RolloverBudgetExpenseClassTotalsService {
       credited = tmpCredited.with(Monetary.getDefaultRounding()).getNumber().doubleValue();
 
       expendedPercentage = totalExpended == 0 ? null : MoneyUtils.calculateExpendedPercentage(tmpExpended, totalExpended);
-      // TODO Implemented creditedPercentage in scope of MODFIN-372
-      // creditedPercentage = totalExpended == 0 ?
+      creditedPercentage = totalCredited == 0 ? null : MoneyUtils.calculateCreditedPercentage(tmpCredited, totalCredited);
     }
 
     return new BudgetExpenseClassTotal()
