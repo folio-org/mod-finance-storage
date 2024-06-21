@@ -589,7 +589,8 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
           assertThat(savedEncumbrance.getTransactionType(), equalTo(ENCUMBRANCE));
           assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(RELEASED));
           assertNotNull(savedEncumbrance.getMetadata().getUpdatedDate());
-          assertThat(savedEncumbrance.getAmount(), equalTo(5d));
+          assertThat(savedEncumbrance.getAmount(), equalTo(0d));
+          assertThat(savedEncumbrance.getEncumbrance().getInitialAmountEncumbered(), equalTo(5d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(0d));
 
@@ -689,6 +690,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
           assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(RELEASED));
           assertNotNull(savedEncumbrance.getMetadata().getUpdatedDate());
           assertThat(savedEncumbrance.getAmount(), equalTo(0d));
+          assertThat(savedEncumbrance.getEncumbrance().getInitialAmountEncumbered(), equalTo(5d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(5d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(0d));
