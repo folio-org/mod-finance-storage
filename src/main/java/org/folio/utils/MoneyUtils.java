@@ -73,6 +73,6 @@ public final class MoneyUtils {
   }
 
   public static BigDecimal ensureNonNegative(BigDecimal amount) {
-    return amount.compareTo(BigDecimal.ZERO) > 0 ? amount : BigDecimal.ZERO;
+    return amount.max(BigDecimal.ZERO);
   }
 }

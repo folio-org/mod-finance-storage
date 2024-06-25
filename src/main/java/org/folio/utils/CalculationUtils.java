@@ -112,7 +112,7 @@ public final class CalculationUtils {
     BigDecimal unavailable = ensureNonNegative(encumbered.add(awaitingPayment).add(expended).subtract(credited));
     BigDecimal totalFunding = allocated.add(netTransfers);
     BigDecimal cashBalance = totalFunding.subtract(expended).add(credited);
-    BigDecimal available = totalFunding.subtract(encumbered.subtract(awaitingPayment).add(expended).subtract(credited));
+    BigDecimal available = totalFunding.subtract(encumbered.add(awaitingPayment).add(expended).subtract(credited));
     BigDecimal overExpended = expended.subtract(credited).add(awaitingPayment).subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
     BigDecimal overCommitted = unavailable.subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
     BigDecimal overEncumbered = overCommitted.subtract(overExpended);
