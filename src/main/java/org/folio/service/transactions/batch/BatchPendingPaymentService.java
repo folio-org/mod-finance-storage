@@ -15,6 +15,7 @@ import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.Transaction.TransactionType;
 
@@ -80,7 +81,7 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
   }
 
   private void updateEncumbranceToCancelTransaction(Transaction encumbrance, double amount, CurrencyUnit currency) {
-    if (RELEASED != encumbrance.getEncumbrance().getStatus()) {
+    if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED) {
       encumbrance.setAmount(sumMoney(encumbrance.getAmount(), amount, currency));
     }
     encumbrance.getEncumbrance().setAmountAwaitingPayment(subtractMoney(
