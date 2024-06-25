@@ -2,6 +2,7 @@ package org.folio.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.math.BigDecimal;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
@@ -56,4 +57,38 @@ public class MoneyUtilsTest {
     assertEquals(100.01, totalAmountWithRounding, 0.01);
   }
 
+  @Test
+  public void testEnsureNonNegativeMonetaryAmount() {
+    String currency = "USD";
+    MonetaryAmount positiveAmount = Money.of(50, currency);
+    MonetaryAmount zeroAmount = Money.of(0, currency);
+    MonetaryAmount negativeAmount = Money.of(-50, currency);
+
+    assertEquals(positiveAmount, MoneyUtils.ensureNonNegative(positiveAmount, currency));
+    assertEquals(zeroAmount, MoneyUtils.ensureNonNegative(zeroAmount, currency));
+    assertEquals(zeroAmount, MoneyUtils.ensureNonNegative(negativeAmount, currency));
+  }
+
+  @Test
+  public void testEnsureNonNegativeMoney() {
+    String currency = "USD";
+    Money positiveAmount = Money.of(50, currency);
+    Money zeroAmount = Money.of(0, currency);
+    Money negativeAmount = Money.of(-50, currency);
+
+    assertEquals(positiveAmount, MoneyUtils.ensureNonNegative(positiveAmount, currency));
+    assertEquals(zeroAmount, MoneyUtils.ensureNonNegative(zeroAmount, currency));
+    assertEquals(zeroAmount, MoneyUtils.ensureNonNegative(negativeAmount, currency));
+  }
+
+  @Test
+  public void testEnsureNonNegativeBigDecimal() {
+    BigDecimal positiveAmount = BigDecimal.valueOf(50);
+    BigDecimal zeroAmount = BigDecimal.ZERO;
+    BigDecimal negativeAmount = BigDecimal.valueOf(-50);
+
+    assertEquals(positiveAmount, MoneyUtils.ensureNonNegative(positiveAmount));
+    assertEquals(zeroAmount, MoneyUtils.ensureNonNegative(zeroAmount));
+    assertEquals(zeroAmount, MoneyUtils.ensureNonNegative(negativeAmount));
+  }
 }

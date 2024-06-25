@@ -1,6 +1,8 @@
 package org.folio.utils;
 
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
+
+import static org.folio.utils.MoneyUtils.ensureNonNegative;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
@@ -107,10 +109,10 @@ public final class CalculationUtils {
     BigDecimal awaitingPayment = BigDecimal.valueOf(dAwaitingPayment);
 
     BigDecimal allocated = initialAllocation.add(allocationTo).subtract(allocationFrom);
-    BigDecimal unavailable = encumbered.add(awaitingPayment).add(expended);
+    BigDecimal unavailable = ensureNonNegative(encumbered.add(awaitingPayment).add(expended).subtract(credited));
     BigDecimal totalFunding = allocated.add(netTransfers);
-    BigDecimal cashBalance = totalFunding.subtract(expended);
-    BigDecimal available = totalFunding.subtract(unavailable);
+    BigDecimal cashBalance = totalFunding.subtract(expended).add(credited);
+    BigDecimal available = totalFunding.subtract(encumbered.subtract(awaitingPayment).add(expended).subtract(credited));
     BigDecimal overExpended = expended.subtract(credited).add(awaitingPayment).subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
     BigDecimal overCommitted = unavailable.subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
     BigDecimal overEncumbered = overCommitted.subtract(overExpended);

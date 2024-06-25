@@ -61,4 +61,18 @@ public final class MoneyUtils {
   public static double calculateTotalAmountWithRounding(List<Transaction> transactions, CurrencyUnit currency) {
     return calculateTotalAmount(transactions, currency).with(Monetary.getDefaultRounding()).getNumber().doubleValue();
   }
+
+  public static MonetaryAmount ensureNonNegative(MonetaryAmount amount, String currency) {
+    MonetaryAmount zeroMonetaryAmount = Money.of(0, currency);
+    return amount.isGreaterThan(zeroMonetaryAmount) ? amount : zeroMonetaryAmount;
+  }
+
+  public static Money ensureNonNegative(Money amount, String currency) {
+    Money zeroMonetaryAmount = Money.of(0, currency);
+    return amount.isGreaterThan(zeroMonetaryAmount) ? amount : zeroMonetaryAmount;
+  }
+
+  public static BigDecimal ensureNonNegative(BigDecimal amount) {
+    return amount.compareTo(BigDecimal.ZERO) > 0 ? amount : BigDecimal.ZERO;
+  }
 }
