@@ -11,6 +11,8 @@ import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Collections;
@@ -21,6 +23,7 @@ import static io.vertx.core.Future.succeededFuture;
 import static org.folio.dao.transactions.BatchTransactionDAO.TRANSACTIONS_TABLE;
 import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
 import static org.folio.rest.jaxrs.model.Encumbrance.Status.RELEASED;
+import static org.folio.rest.jaxrs.model.Encumbrance.Status.UNRELEASED;
 import static org.folio.rest.jaxrs.model.Transaction.Source.PO_LINE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
@@ -508,8 +511,9 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
       });
   }
 
-  @Test
-  void testCancelPaymentWithLinkedEncumbrance(VertxTestContext testContext) {
+  @ParameterizedTest
+  @EnumSource(Encumbrance.Status.class)
+  void testCancelPaymentWithLinkedEncumbrance(Encumbrance.Status encumbranceStatus, VertxTestContext testContext) {
     String paymentId = UUID.randomUUID().toString();
     String encumbranceId = UUID.randomUUID().toString();
     String invoiceId = UUID.randomUUID().toString();
@@ -541,7 +545,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
       .withFiscalYearId(fiscalYearId)
       .withSource(PO_LINE)
       .withEncumbrance(new Encumbrance()
-        .withStatus(RELEASED)
+        .withStatus(encumbranceStatus)
         .withAmountAwaitingPayment(0d)
         .withAmountExpended(5d)
         .withInitialAmountEncumbered(5d))
@@ -588,9 +592,10 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
           assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
           Transaction savedEncumbrance = (Transaction)(updateEntities.get(0).get(1));
           assertThat(savedEncumbrance.getTransactionType(), equalTo(ENCUMBRANCE));
-          assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(RELEASED));
+          assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(encumbranceStatus));
           assertNotNull(savedEncumbrance.getMetadata().getUpdatedDate());
-          assertThat(savedEncumbrance.getAmount(), equalTo(5d));
+          assertThat(savedEncumbrance.getAmount(), equalTo(encumbranceStatus == UNRELEASED ? 5d : 0d));
+          assertThat(savedEncumbrance.getEncumbrance().getInitialAmountEncumbered(), equalTo(5d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(0d));
@@ -599,7 +604,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
           Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
-          assertThat(savedBudget.getEncumbered(), equalTo(0d));
+          assertThat(savedBudget.getEncumbered(), equalTo(encumbranceStatus == UNRELEASED ? 5d : 0d));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(0d));
           assertThat(savedBudget.getExpenditures(), equalTo(0d));
           assertThat(savedBudget.getCredits(), equalTo(10d));
@@ -608,8 +613,9 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
       });
   }
 
-  @Test
-  void testCancelCreditWithLinkedEncumbrance(VertxTestContext testContext) {
+  @ParameterizedTest
+  @EnumSource(Encumbrance.Status.class)
+  void testCancelCreditWithLinkedEncumbrance(Encumbrance.Status encumbranceStatus, VertxTestContext testContext) {
     String creditId = UUID.randomUUID().toString();
     String encumbranceId = UUID.randomUUID().toString();
     String invoiceId = UUID.randomUUID().toString();
@@ -637,13 +643,13 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
       .withTransactionType(ENCUMBRANCE)
       .withCurrency("USD")
       .withFromFundId(fundId)
-      .withAmount(0d)
+      .withAmount(encumbranceStatus == UNRELEASED ? 10d : 0d)
       .withFiscalYearId(fiscalYearId)
       .withSource(PO_LINE)
       .withEncumbrance(new Encumbrance()
-        .withStatus(RELEASED)
+        .withStatus(encumbranceStatus)
         .withAmountAwaitingPayment(0d)
-        .withAmountExpended(5d)
+        .withAmountExpended(0d)
         .withAmountCredited(5d)
         .withInitialAmountEncumbered(5d))
       .withMetadata(new Metadata());
@@ -651,7 +657,8 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(newPayment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 5d, 5d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, encumbranceStatus == UNRELEASED ? 10d : 0d, 0d,
+      5d, 0d, false, false, false);
 
     Criterion paymentCriterion = createCriterionByIds(List.of(creditId));
     doReturn(succeededFuture(createResults(List.of(existingCredit))))
@@ -689,20 +696,21 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
           assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
           Transaction savedEncumbrance = (Transaction)(updateEntities.get(0).get(1));
           assertThat(savedEncumbrance.getTransactionType(), equalTo(ENCUMBRANCE));
-          assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(RELEASED));
+          assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(encumbranceStatus));
           assertNotNull(savedEncumbrance.getMetadata().getUpdatedDate());
-          assertThat(savedEncumbrance.getAmount(), equalTo(0d));
+          assertThat(savedEncumbrance.getAmount(), equalTo(encumbranceStatus == UNRELEASED ? 5d : 0d));
+          assertThat(savedEncumbrance.getEncumbrance().getInitialAmountEncumbered(), equalTo(5d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d));
-          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(5d));
+          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(0d));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
           Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
-          assertThat(savedBudget.getEncumbered(), equalTo(0d));
+          assertThat(savedBudget.getEncumbered(), equalTo(encumbranceStatus == UNRELEASED ? 5d : 0d));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(0d));
-          assertThat(savedBudget.getExpenditures(), equalTo(5d));
+          assertThat(savedBudget.getExpenditures(), equalTo(0d));
           assertThat(savedBudget.getCredits(), equalTo(0d));
         });
         testContext.completeNow();
