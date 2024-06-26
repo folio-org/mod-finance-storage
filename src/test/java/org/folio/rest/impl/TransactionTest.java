@@ -88,7 +88,7 @@ public class TransactionTest extends TestBase {
 
     Batch batch1 = new Batch()
       .withTransactionsToCreate(List.of(encumbrance));
-    postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch1).encodePrettily(), TRANSACTION_TENANT_HEADER)
+    postData(BATCH_TRANSACTION_ENDPOINT, valueAsString(batch1), TRANSACTION_TENANT_HEADER)
       .then().statusCode(204);
 
     Transaction createdEncumbrance = getDataById(TRANSACTION_ENDPOINT_BY_ID, encumbranceId, TRANSACTION_TENANT_HEADER)
@@ -99,14 +99,14 @@ public class TransactionTest extends TestBase {
       .withVersion(1);
     Batch batch2 = new Batch()
       .withTransactionsToUpdate(List.of(encumbrance2));
-    postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch2).encodePrettily(), TRANSACTION_TENANT_HEADER)
+    postData(BATCH_TRANSACTION_ENDPOINT, valueAsString(batch2), TRANSACTION_TENANT_HEADER)
       .then().statusCode(204);
 
     Transaction encumbrance3 = JsonObject.mapFrom(createdEncumbrance).mapTo(Transaction.class)
       .withAmount(8.0);
     Batch batch3 = new Batch()
       .withTransactionsToUpdate(List.of(encumbrance3));
-    postData(BATCH_TRANSACTION_ENDPOINT, JsonObject.mapFrom(batch3).encodePrettily(), TRANSACTION_TENANT_HEADER)
+    postData(BATCH_TRANSACTION_ENDPOINT, valueAsString(batch3), TRANSACTION_TENANT_HEADER)
       .then().statusCode(409);
   }
 

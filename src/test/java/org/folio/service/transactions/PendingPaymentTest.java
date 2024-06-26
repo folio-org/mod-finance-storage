@@ -12,6 +12,7 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
@@ -113,7 +114,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(pendingPayment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 5d, 0d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 5d, 0d, 0d, 0d, false, false, false);
 
     Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId));
     doReturn(succeededFuture(createResults(List.of())))
@@ -214,7 +215,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(newPendingPayment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 0d, false, false, false);
 
     Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId));
     doReturn(succeededFuture(createResults(List.of(existingPendingPayment))))
@@ -263,8 +264,9 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
       });
   }
 
-  @Test
-  void testCancelPendingPaymentWithLinkedEncumbrance(VertxTestContext testContext) {
+  @ParameterizedTest
+  @EnumSource(Encumbrance.Status.class)
+  void testCancelPendingPaymentWithLinkedEncumbrance(Encumbrance.Status encumbranceStatus, VertxTestContext testContext) {
     String pendingPaymentId = UUID.randomUUID().toString();
     String encumbranceId = UUID.randomUUID().toString();
     String invoiceId = UUID.randomUUID().toString();
@@ -298,7 +300,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
       .withFiscalYearId(fiscalYearId)
       .withSource(PO_LINE)
       .withEncumbrance(new Encumbrance()
-        .withStatus(RELEASED)
+        .withStatus(encumbranceStatus)
         .withAmountAwaitingPayment(5d)
         .withInitialAmountEncumbered(5d))
       .withMetadata(new Metadata());
@@ -306,7 +308,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToUpdate().add(newPendingPayment);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 0d, false, false, false);
 
     Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId));
     doReturn(succeededFuture(createResults(List.of(existingPendingPayment))))
@@ -340,16 +342,16 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
           // Verify encumbrance update
           Transaction savedEncumbrance = (Transaction)(entities.get(0).get(1));
           assertThat(savedEncumbrance.getTransactionType(), equalTo(ENCUMBRANCE));
-          assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(RELEASED));
+          assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(encumbranceStatus));
           assertNotNull(savedEncumbrance.getMetadata().getUpdatedDate());
-          assertThat(savedEncumbrance.getAmount(), equalTo(0d));
+          assertThat(savedEncumbrance.getAmount(), equalTo(encumbranceStatus == UNRELEASED ? 5d : 0d));
           assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d));
 
           // Verify budget update
           assertThat(tableNames.get(1), equalTo(BUDGET_TABLE));
           Budget savedBudget = (Budget)(entities.get(1).get(0));
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
-          assertThat(savedBudget.getEncumbered(), equalTo(0d));
+          assertThat(savedBudget.getEncumbered(), equalTo(encumbranceStatus == UNRELEASED ? 5d : 0d));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(0d));
         });
         testContext.completeNow();
@@ -388,7 +390,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
     Batch batch = new Batch();
     batch.getTransactionsToCreate().addAll(List.of(pendingPayment1, pendingPayment2));
 
-    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, true, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, 0d, true, false, false);
 
     Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId1, pendingPaymentId2));
     doReturn(succeededFuture(createResults(List.of())))

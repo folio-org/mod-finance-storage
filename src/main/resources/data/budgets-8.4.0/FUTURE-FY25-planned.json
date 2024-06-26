@@ -7,6 +7,7 @@
   "awaitingPayment": 0,
   "budgetStatus": "Planned",
   "cashBalance": 0.00,
+  "credits": 0,
   "encumbered": 0,
   "expenditures": 0,
   "fiscalYearId": "43aba0df-70e4-435e-8463-d8f730d19e0b",

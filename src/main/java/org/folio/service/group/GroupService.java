@@ -84,7 +84,7 @@ public class GroupService {
 
   private Future<Group> updateGroup(Group group, String id) {
     Promise<Group> promise = Promise.promise();
-    pgClient.update(GROUPS_TABLE, JsonObject.mapFrom(group), id, reply -> {
+    pgClient.update(GROUPS_TABLE, group, id, reply -> {
       if (reply.failed()) {
         promise.fail(nameCodeConstraintErrorBuilder.buildException(reply, Group.class));
       }

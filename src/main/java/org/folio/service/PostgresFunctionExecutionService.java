@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.persist.DBConn;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.utils.ObjectMapper;
 
 import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
@@ -19,7 +20,7 @@ public class PostgresFunctionExecutionService {
     logger.debug("runBudgetEncumbrancesRolloverScript:: Trying to run budget encumbrances rollover script");
     String schemaName = PostgresClient.convertToPsqlStandard(conn.getTenantId());
     String sql = String.format("SELECT %s.budget_encumbrances_rollover($1)", schemaName);
-    return conn.execute(sql, Tuple.of(JsonObject.mapFrom(rollover).encode()))
+    return conn.execute(sql, Tuple.of(ObjectMapper.valueAsString(rollover)))
       .onSuccess(rowSet -> logger.info("runBudgetEncumbrancesRolloverScript:: Budget encumbrances rollover script successfully ran"))
       .onFailure(e -> logger.error("runBudgetEncumbrancesRolloverScript:: Running budget encumbrances rollover script failed", e))
       .mapEmpty();

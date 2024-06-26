@@ -373,19 +373,19 @@
           "fieldName": "encumbrance",
           "multiFieldNames": "amount, fromFundId, encumbrance.sourcePurchaseOrderId, encumbrance.sourcePoLineId, encumbrance.initialAmountEncumbered, encumbrance.status, expenseClassId, fiscalYearId",
           "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Encumbrance'"
+          "whereClause": "WHERE jsonb->>'transactionType' = 'Encumbrance'"
         },
         {
           "fieldName": "payment",
           "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
           "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Payment' OR (jsonb->>'transactionType')::text = 'Pending payment'"
+          "whereClause": "WHERE jsonb->>'transactionType' = 'Payment' OR jsonb->>'transactionType' = 'Pending payment'"
         },
         {
           "fieldName": "credit",
           "multiFieldNames": "amount, toFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
           "tOps": "ADD",
-          "whereClause": "WHERE (jsonb->>'transactionType')::text = 'Credit'"
+          "whereClause": "WHERE jsonb->>'transactionType' = 'Credit'"
         }
       ],
       "foreignKeys": [
@@ -416,12 +416,28 @@
       ],
       "index": [
         {
+          "fieldName": "transactionType",
+          "tOps": "ADD",
+          "removeAccents": false,
+          "caseSensitive": true,
+          "sqlExpression": "(jsonb->>'transactionType')",
+          "sqlExpressionQuery": "$"
+        },
+        {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
-          "tOps": "ADD"
+          "tOps": "ADD",
+          "removeAccents": false,
+          "caseSensitive": true,
+          "sqlExpression": "(jsonb->'encumbrance'->>'sourcePurchaseOrderId')",
+          "sqlExpressionQuery": "$"
         },
         {
           "fieldName": "encumbrance.sourcePoLineId",
-          "tOps": "ADD"
+          "tOps": "ADD",
+          "removeAccents": false,
+          "caseSensitive": true,
+          "sqlExpression": "(jsonb->'encumbrance'->>'sourcePoLineId')",
+          "sqlExpressionQuery": "$"
         }
       ],
       "ginIndex": [
@@ -433,9 +449,7 @@
         },
         {
           "fieldName": "transactionType",
-          "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
+          "tOps": "DELETE"
         }
       ]
     },

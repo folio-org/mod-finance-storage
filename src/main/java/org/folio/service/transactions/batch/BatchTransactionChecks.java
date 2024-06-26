@@ -218,12 +218,13 @@ public class BatchTransactionChecks {
     double allowableExpenditure = Money.of(budget.getAllowableExpenditure(), currency).divide(100d)
       .getNumber().doubleValue();
 
+    MonetaryAmount credited = Money.of(budget.getCredits(), currency);
     MonetaryAmount expended = Money.of(budget.getExpenditures(), currency);
     MonetaryAmount awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
     MonetaryAmount netTransfers = Money.of(budget.getNetTransfers(), currency);
 
     MonetaryAmount totalFunding = allocated.add(netTransfers);
-    MonetaryAmount unavailable = awaitingPayment.add(expended);
+    MonetaryAmount unavailable = awaitingPayment.add(expended).subtract(credited);
 
     double remaining = totalFunding.multiply(allowableExpenditure).subtract(unavailable).getNumber().doubleValue();
     if (remaining < 0) {
@@ -235,6 +236,7 @@ public class BatchTransactionChecks {
       parameters.add(new Parameter().withKey("netTransfers").withValue(Double.toString(netTransfers.getNumber().doubleValue())));
       parameters.add(new Parameter().withKey("allowableExpenditure").withValue(Double.toString(allowableExpenditure)));
       parameters.add(new Parameter().withKey("awaitingPayment").withValue(Double.toString(awaitingPayment.getNumber().doubleValue())));
+      parameters.add(new Parameter().withKey("credited").withValue(Double.toString(credited.getNumber().doubleValue())));
       parameters.add(new Parameter().withKey("expended").withValue(Double.toString(expended.getNumber().doubleValue())));
       Error error = BUDGET_RESTRICTED_EXPENDITURES_ERROR.toError().withParameters(parameters);
       throw new HttpException(422, error);
@@ -248,11 +250,12 @@ public class BatchTransactionChecks {
     double allowableEncumbered = Money.of(budget.getAllowableEncumbrance(), currency).divide(100d).getNumber().doubleValue();
     Money encumbered = Money.of(budget.getEncumbered(), currency);
     Money awaitingPayment = Money.of(budget.getAwaitingPayment(), currency);
+    Money credited = Money.of(budget.getCredits(), currency);
     Money expended = Money.of(budget.getExpenditures(), currency);
     Money netTransfers = Money.of(budget.getNetTransfers(), currency);
 
     Money totalFunding = allocated.add(netTransfers);
-    Money unavailable = encumbered.add(awaitingPayment).add(expended);
+    Money unavailable = encumbered.add(awaitingPayment).add(expended).subtract(credited);
 
     double remaining = totalFunding.multiply(allowableEncumbered).subtract(unavailable).getNumber().doubleValue();
     if (remaining < 0) {
@@ -265,6 +268,7 @@ public class BatchTransactionChecks {
       parameters.add(new Parameter().withKey("allowableEncumbered").withValue(Double.toString(allowableEncumbered)));
       parameters.add(new Parameter().withKey("encumbered").withValue(Double.toString(encumbered.getNumber().doubleValue())));
       parameters.add(new Parameter().withKey("awaitingPayment").withValue(Double.toString(awaitingPayment.getNumber().doubleValue())));
+      parameters.add(new Parameter().withKey("credited").withValue(Double.toString(credited.getNumber().doubleValue())));
       parameters.add(new Parameter().withKey("expended").withValue(Double.toString(expended.getNumber().doubleValue())));
       Error error = BUDGET_RESTRICTED_ENCUMBRANCE_ERROR.toError().withParameters(parameters);
       throw new HttpException(422, error);
