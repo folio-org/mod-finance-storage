@@ -1,6 +1,7 @@
 package org.folio.service;
 
 import io.vertx.core.Future;
+import io.vertx.sqlclient.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
@@ -17,10 +18,8 @@ public class PostgresFunctionExecutionService {
   public Future<Void> runBudgetEncumbrancesRolloverScript(LedgerFiscalYearRollover rollover, DBConn conn) {
     logger.debug("runBudgetEncumbrancesRolloverScript:: Trying to run budget encumbrances rollover script");
     String schemaName = PostgresClient.convertToPsqlStandard(conn.getTenantId());
-    String sql = "DO\n" + "$$\n" + "begin\n" + " PERFORM %s.budget_encumbrances_rollover('%s');\n" + "end;\n"
-        + "$$ LANGUAGE plpgsql;";
-
-    return conn.execute(String.format(sql, schemaName, ObjectMapper.valueAsString(rollover)))
+    String sql = String.format("SELECT %s.budget_encumbrances_rollover($1)", schemaName);
+    return conn.execute(sql, Tuple.of(ObjectMapper.valueAsString(rollover)))
       .onSuccess(rowSet -> logger.info("runBudgetEncumbrancesRolloverScript:: Budget encumbrances rollover script successfully ran"))
       .onFailure(e -> logger.error("runBudgetEncumbrancesRolloverScript:: Running budget encumbrances rollover script failed", e))
       .mapEmpty();
