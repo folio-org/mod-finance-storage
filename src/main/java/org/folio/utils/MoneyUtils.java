@@ -63,13 +63,11 @@ public final class MoneyUtils {
   }
 
   public static MonetaryAmount ensureNonNegative(MonetaryAmount amount, String currency) {
-    MonetaryAmount zeroMonetaryAmount = Money.of(0, currency);
-    return amount.isGreaterThan(zeroMonetaryAmount) ? amount : zeroMonetaryAmount;
+    return amount.isNegativeOrZero() ? Money.zero(Monetary.getCurrency(currency)) : amount;
   }
 
   public static Money ensureNonNegative(Money amount, String currency) {
-    Money zeroMonetaryAmount = Money.of(0, currency);
-    return amount.isGreaterThan(zeroMonetaryAmount) ? amount : zeroMonetaryAmount;
+    return amount.isNegativeOrZero() ? Money.zero(Monetary.getCurrency(currency)) : amount;
   }
 
   public static BigDecimal ensureNonNegative(BigDecimal amount) {
