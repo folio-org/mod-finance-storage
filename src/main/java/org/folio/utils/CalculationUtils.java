@@ -109,10 +109,11 @@ public final class CalculationUtils {
     BigDecimal awaitingPayment = BigDecimal.valueOf(dAwaitingPayment);
 
     BigDecimal allocated = initialAllocation.add(allocationTo).subtract(allocationFrom);
-    BigDecimal unavailable = ensureNonNegative(encumbered.add(awaitingPayment).add(expended).subtract(credited));
+    BigDecimal unavailableAmount = encumbered.add(awaitingPayment).add(expended).subtract(credited);
+    BigDecimal unavailable = ensureNonNegative(unavailableAmount);
     BigDecimal totalFunding = allocated.add(netTransfers);
     BigDecimal cashBalance = totalFunding.subtract(expended).add(credited);
-    BigDecimal available = totalFunding.subtract(encumbered.add(awaitingPayment).add(expended).subtract(credited));
+    BigDecimal available = totalFunding.subtract(unavailableAmount);
     BigDecimal overExpended = expended.subtract(credited).add(awaitingPayment).subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
     BigDecimal overCommitted = unavailable.subtract(totalFunding.max(BigDecimal.ZERO)).max(BigDecimal.ZERO);
     BigDecimal overEncumbered = overCommitted.subtract(overExpended);
