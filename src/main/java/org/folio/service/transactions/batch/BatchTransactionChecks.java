@@ -41,6 +41,7 @@ import static org.folio.rest.util.ErrorCodes.BUDGET_RESTRICTED_EXPENDITURES_ERRO
 import static org.folio.rest.util.ErrorCodes.ID_IS_REQUIRED_IN_TRANSACTIONS;
 import static org.folio.rest.util.ErrorCodes.MISSING_FUND_ID;
 import static org.folio.rest.util.ErrorCodes.PAYMENT_OR_CREDIT_HAS_NEGATIVE_AMOUNT;
+import static org.folio.utils.MoneyUtils.ensureNonNegative;
 
 public class BatchTransactionChecks {
   private static final Logger logger = LogManager.getLogger();
@@ -224,7 +225,8 @@ public class BatchTransactionChecks {
     MonetaryAmount netTransfers = Money.of(budget.getNetTransfers(), currency);
 
     MonetaryAmount totalFunding = allocated.add(netTransfers);
-    MonetaryAmount unavailable = awaitingPayment.add(expended).subtract(credited);
+    // unavailable amount shouldn't be negative
+    MonetaryAmount unavailable = ensureNonNegative(awaitingPayment.add(expended).subtract(credited), currency);
 
     double remaining = totalFunding.multiply(allowableExpenditure).subtract(unavailable).getNumber().doubleValue();
     if (remaining < 0) {
@@ -255,7 +257,8 @@ public class BatchTransactionChecks {
     Money netTransfers = Money.of(budget.getNetTransfers(), currency);
 
     Money totalFunding = allocated.add(netTransfers);
-    Money unavailable = encumbered.add(awaitingPayment).add(expended).subtract(credited);
+    // unavailable amount shouldn't be negative
+    Money unavailable = ensureNonNegative(encumbered.add(awaitingPayment).add(expended).subtract(credited), currency);
 
     double remaining = totalFunding.multiply(allowableEncumbered).subtract(unavailable).getNumber().doubleValue();
     if (remaining < 0) {
