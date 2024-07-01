@@ -20,8 +20,8 @@ public class PostgresFunctionExecutionService {
     logger.debug("runBudgetEncumbrancesRolloverScript:: Trying to run budget encumbrances rollover script");
     String schemaName = PostgresClient.convertToPsqlStandard(conn.getTenantId());
     String sql = String.format("SELECT %s.budget_encumbrances_rollover($1);", schemaName);
-    var rolloverScript = new JsonObject(ObjectMapper.valueAsString(rollover));
-    return conn.execute(sql, Tuple.of(rolloverScript))
+    JsonObject rolloverPayload = new JsonObject(ObjectMapper.valueAsString(rollover));
+    return conn.execute(sql, Tuple.of(rolloverPayload))
       .onSuccess(rowSet -> logger.info("runBudgetEncumbrancesRolloverScript:: Budget encumbrances rollover script successfully ran"))
       .onFailure(e -> logger.error("runBudgetEncumbrancesRolloverScript:: Running budget encumbrances rollover script failed", e))
       .mapEmpty();
