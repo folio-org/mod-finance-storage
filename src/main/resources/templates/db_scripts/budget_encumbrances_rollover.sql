@@ -78,7 +78,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
 		IF
 			encumbrance_rollover->>'basedOn'='Expended'
 		THEN
-		    SELECT sum((jsonb->'encumbrance'->>'amountExpended')::decimal) INTO total_amount
+		    SELECT sum((jsonb->'encumbrance'->>'amountExpended')::decimal - (jsonb->'encumbrance'->>'amountCredited')::decimal) INTO total_amount
             	        FROM ${myuniversity}_${mymodule}.transaction
                         WHERE input_fromFiscalYearId=fiscalYearId AND jsonb->'encumbrance'->>'sourcePoLineId'=_transaction->'encumbrance'->>'sourcePoLineId'
                         GROUP BY jsonb->'encumbrance'->>'sourcePoLineId';
@@ -137,6 +137,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         'initialAmountEncumbered', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_amount(tr.jsonb, _rollover_record, true),
                         'amountAwaitingPayment', 0,
                         'amountExpended', 0,
+                        'amountCredited', 0,
                         'status', CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
                                       THEN 'Unreleased'
                                       ELSE 'Released'
@@ -411,6 +412,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
         available                       decimal;
         unavailable                     decimal;
         expended                        decimal;
+        credited                        decimal;
         cashBalance                     decimal;
         allowableEncumbrance            decimal;
         allowableExpenditure            decimal;
@@ -422,11 +424,12 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
                      WHERE br->>'fundTypeId'=_fund->>'fundTypeId' OR (NOT br ? 'fundTypeId' AND NOT _fund ? 'fundTypeId');
 
          expended := (_budget->>'expenditures')::decimal;
+         credited := (_budget->>'credits')::decimal;
          allocated := (_budget->>'initialAllocation')::decimal + (_budget->>'allocationTo')::decimal - (_budget->>'allocationFrom')::decimal;
          totalFunding := allocated + (_budget->>'netTransfers')::decimal;
-         unavailable := (_budget->>'encumbered')::decimal + expended + (_budget->>'awaitingPayment')::decimal;
+         unavailable := (_budget->>'encumbered')::decimal + expended - credited + (_budget->>'awaitingPayment')::decimal;
          available := totalFunding - unavailable;
-         cashBalance := totalFunding - expended;
+         cashBalance := totalFunding - expended + credited;
 
          IF
             (budget_rollover->>'rolloverAllocation')::boolean
@@ -481,7 +484,8 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
                 'netTransfers', newNetTransfers,
                 'awaitingPayment', 0,
                 'encumbered', 0,
-                'expenditures', 0
+                'expenditures', 0,
+                "credits", 0,
             );
 
         IF allowableEncumbrance is not null
