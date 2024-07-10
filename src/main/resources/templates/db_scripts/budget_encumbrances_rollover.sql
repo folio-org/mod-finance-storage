@@ -485,7 +485,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.build_budget(_budget json
                 'awaitingPayment', 0,
                 'encumbered', 0,
                 'expenditures', 0,
-                "credits", 0,
+                "credits", 0
             );
 
         IF allowableEncumbrance is not null
