@@ -1,5 +1,3 @@
-<#if mode.name() == "UPDATE">
-
 -- Extract credits from expenditures in each budget
 -- 1. Calculate all credits values within budget fiscal year
 -- 2. Set to budget credits fields
@@ -59,33 +57,3 @@ SET
     )
 FROM aggregated_amounts
 WHERE encumbrance.id = aggregated_amounts.encumbrance_id;
-</#if>
-
-
-INSERT INTO diku_mod_finance_storage.transaction (id, creation_date, created_by, fiscalyearid, fromfundid, jsonb)
-SELECT
-  gen_random_uuid() AS id,
-  NOW() AS creation_date, -- or use a specific timestamp if needed
-  '07da18fd-2ba0-5025-9c42-8bb124ddea63' AS created_by,
-  '7a4c4d30-3b63-4102-8e2d-3ee5792d7d02' AS fiscalyearid, -- Fixed fiscalYearId
-  '69640328-788e-43fc-9c3c-af39e243f3b7' AS fromfundid, -- Fixed fromFundId
-  jsonb_build_object(
-    'id', gen_random_uuid(), -- This will be overridden by the actual ID of the row
-    'amount', 1, -- or use a specific amount as needed
-    'source', 'Invoice',
-    '_version', 1,
-    'currency', 'USD',
-    'metadata', jsonb_build_object(
-      'createdDate', NOW(),
-      'updatedDate', NOW(),
-      'createdByUserId', '07da18fd-2ba0-5025-9c42-8bb124ddea63',
-      'updatedByUserId', '07da18fd-2ba0-5025-9c42-8bb124ddea63'
-    ),
-    'fromFundId', '69640328-788e-43fc-9c3c-af39e243f3b7',
-    'fiscalYearId', '7a4c4d30-3b63-4102-8e2d-3ee5792d7d02',
-    'sourceInvoiceId', i.id,
-    'transactionType', 'Payment'
-
-  )
-FROM diku_mod_invoice_storage.invoices i
-LIMIT 5;
