@@ -9,8 +9,7 @@ WITH credit_sums AS (
         SUM((trx.jsonb->>'amount')::numeric) AS total_credits
     FROM ${myuniversity}_${mymodule}.budget AS budget
     JOIN ${myuniversity}_${mymodule}.transaction AS trx
-        ON trx.jsonb->>'fiscalYearId' = budget.jsonb->>'fiscalYearId' AND
-		trx.jsonb->>'fromFundId' = budget.jsonb->>'fundId'
+        ON trx.fiscalyearid = budget.fiscalyearid AND trx.tofundid = budget.fundid
     WHERE trx.jsonb->>'transactionType' = 'Credit'
     GROUP BY budget.id
 )
