@@ -90,6 +90,11 @@
       "run": "after",
       "snippetPath": "migration/transform_location_ids_array.sql",
       "fromModuleVersion": "mod-finance-storage-8.7.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/extract_credits_from_expenditures.sql",
+      "fromModuleVersion": "mod-finance-storage-8.7.0"
     }
   ],
   "tables": [
