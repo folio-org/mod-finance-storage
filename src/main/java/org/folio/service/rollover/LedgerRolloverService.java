@@ -150,7 +150,7 @@ public class LedgerRolloverService {
 
   private Future<Void> startOrdersRollover(LedgerFiscalYearRollover rollover, LedgerFiscalYearRolloverProgress progress,
       RequestContext requestContext, DBConn conn) {
-    if (LedgerFiscalYearRollover.RolloverType.PREVIEW.equals(rollover.getRolloverType()) || rollover.getEncumbrancesRollover().isEmpty()) {
+    if (LedgerFiscalYearRollover.RolloverType.PREVIEW.equals(rollover.getRolloverType())) {
       logger.info("startOrdersRollover:: Orders rollover skipped for Ledger {} and rollover type {}", rollover.getLedgerId(), rollover.getRolloverType());
       return rolloverProgressService.calculateAndUpdateOverallProgressStatus(progress.withOrdersRolloverStatus(SUCCESS), conn);
     }

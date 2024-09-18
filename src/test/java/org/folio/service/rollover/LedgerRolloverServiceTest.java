@@ -329,10 +329,11 @@ public class LedgerRolloverServiceTest {
       });
   }
 
+  // Adapted for a PREVIEW type due to the new requirements defined by MODORDERS-1171 and implemented by MODORDERS-1162
   @Test
   void shouldSkipOrderRollover(VertxTestContext testContext) {
     LedgerFiscalYearRollover rollover = new LedgerFiscalYearRollover().withId(UUID.randomUUID()
-      .toString());
+      .toString()).withRolloverType(LedgerFiscalYearRollover.RolloverType.PREVIEW);
     LedgerFiscalYearRolloverProgress initialProgress = getInitialProgress(rollover);
 
     when(rolloverProgressService.updateRolloverProgress(
