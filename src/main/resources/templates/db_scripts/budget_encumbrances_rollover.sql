@@ -122,6 +122,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
         input_toFiscalYearId uuid := (_rollover_record->>'toFiscalYearId')::uuid;
         input_ledgerId uuid := (_rollover_record->>'ledgerId')::uuid;
         input_ledgerRolloverId uuid := (_rollover_record->>'id')::uuid;
+				input_encumbrancesRolloverLen int := jsonb_array_length((_rollover_record->>'encumbrancesRollover')::jsonb);
     BEGIN
 
         -- #9 create encumbrances to temp table
@@ -138,9 +139,10 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         'amountAwaitingPayment', 0,
                         'amountExpended', 0,
                         'amountCredited', 0,
-                        'status', CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean
-                                      THEN 'Unreleased'
-                                      ELSE 'Released'
+                        'status', CASE WHEN input_encumbrancesRolloverLen > 0 THEN
+                                    CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean THEN 'Unreleased' ELSE 'Released' END
+                                  ELSE
+                                    'Released'
                                   END
                     ),
                 'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', to_char(clock_timestamp(),'YYYY-MM-DD"T"HH24:MI:SS.MSTZHTZM'))
