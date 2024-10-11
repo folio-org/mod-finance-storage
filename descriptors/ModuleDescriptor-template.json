@@ -427,7 +427,7 @@
         {
           "methods": ["POST"],
           "pathPattern": "/finance-storage/transactions/batch-all-or-nothing",
-          "permissionsRequired": ["finance-storage.transactions.batch"]
+          "permissionsRequired": ["finance-storage.transactions.batch.execute"]
         }
       ]
     },
@@ -902,9 +902,10 @@
       "description" : "Fetch a transaction"
     },
     {
-      "permissionName" : "finance-storage.transactions.batch",
+      "permissionName" : "finance-storage.transactions.batch.execute",
       "displayName" : "process transactions in batch",
-      "description" : "Process transactions in batch"
+      "description" : "Process transactions in batch",
+      "replaces" : ["finance-storage.transactions.batch"]
     },
     {
       "permissionName" : "finance-storage.transactions.all",
@@ -913,7 +914,7 @@
       "subPermissions" : [
         "finance-storage.transactions.collection.get",
         "finance-storage.transactions.item.get",
-        "finance-storage.transactions.batch"
+        "finance-storage.transactions.batch.execute"
       ]
     },
     {

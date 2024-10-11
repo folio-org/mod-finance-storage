@@ -40,7 +40,7 @@ These can be set with a permission group created with the API.
 - `finance-storage.budgets.collection.get`
 - `finance-storage.fiscal-years.collection.get`
 - `finance-storage.transactions.collection.get`
-- `finance-storage.transactions.batch`
+- `finance-storage.transactions.batch.execute`
 - `finance-storage.budgets.item.put`
 - `orders-storage.purchase-orders.collection.get`
 - `orders-storage.po-lines.collection.get`
