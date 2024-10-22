@@ -22,7 +22,7 @@
 
     <!--Dependency Properties-->
     <vertx.version>4.5.10</vertx.version>
-    <postgres.image>postgres:12-alpine</postgres.image>
+    <postgres.image>postgres:16-alpine</postgres.image>
     <log4j.version>2.24.1</log4j.version>
     <aspectj.version>1.9.22.1</aspectj.version>
     <java.version>17</java.version>
