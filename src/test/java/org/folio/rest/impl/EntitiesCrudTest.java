@@ -1,5 +1,6 @@
 package org.folio.rest.impl;
 
+import static org.awaitility.Awaitility.await;
 import static org.folio.rest.utils.TestEntities.BUDGET;
 import static org.folio.rest.utils.TestEntities.BUDGET_EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
@@ -13,7 +14,6 @@ import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_LOG;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_ERROR;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
