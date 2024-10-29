@@ -1,4 +1,27 @@
-## 8.7.0 - Unreleased
+## 8.8.0 - Unreleased
+
+## 8.7.0 - Released (Ramsons R2 2024)
+The primary focus of this release was to separate Credited from Expended and improve different calculations
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.6.0...v8.7.0)
+
+### Stories
+* [MODFISTO-499](https://folio-org.atlassian.net/browse/MODFISTO-499) Update libraries of dependant acq modules to the latest versions
+* [MODFISTO-489](https://folio-org.atlassian.net/browse/MODFISTO-489) Clean up permissions
+* [MODFISTO-487](https://folio-org.atlassian.net/browse/MODFISTO-487) Prevent sql injection for budget_encumbrance_rollover script
+* [MODFISTO-483](https://folio-org.atlassian.net/browse/MODFISTO-483) Add credited field support to Rollover functionality
+* [MODFISTO-481](https://folio-org.atlassian.net/browse/MODFISTO-481) Separate credits from expenditures in mod-finance-storage
+* [MODFISTO-466](https://folio-org.atlassian.net/browse/MODFISTO-466) New transactionType indices
+* [MODFISTO-460](https://folio-org.atlassian.net/browse/MODFISTO-460) Remove the old transaction API (storage)
+* [MODFISTO-371](https://folio-org.atlassian.net/browse/MODFISTO-371) Improved cashBalance, available and unavailable calculations
+
+### Bug fixes
+* [MODFISTO-488](https://folio-org.atlassian.net/browse/MODFISTO-488) Fixed encumbrance changes after cancelling a payment or credit
+* [MODFISTO-484](https://folio-org.atlassian.net/browse/MODFISTO-484) Fixed overEncumbrance calculation
+* [MODFISTO-480](https://folio-org.atlassian.net/browse/MODFISTO-480) Old tables are not deleted
+
+### Dependencies
+* Bump `raml` from `35.2.0` to `35.3.0`
+* Bump `vertx` from `4.5.4` to `4.5.10`
 
 ## 8.6.0 - Released (Quesnelia R1 2024)
 The primary focus of this release was to introduce Batch Transactions API
