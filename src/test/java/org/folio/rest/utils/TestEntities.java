@@ -10,7 +10,6 @@ public enum TestEntities {
   FISCAL_YEAR(HelperUtils.getEndpoint(FinanceStorageFiscalYears.class), FiscalYear.class, "data/fiscal-years-8.4.0/", "fy24.json", "name", "FY24", 8, true),
   LEDGER(HelperUtils.getEndpoint(FinanceStorageLedgers.class), Ledger.class, "data/ledgers-8.4.0/", "One-time.json", "code", "One-time", 5, true),
   FUND_TYPE(HelperUtils.getEndpoint(FinanceStorageFundTypes.class), FundType.class, "data/fund-types-6.0.0/", "approvals.json", "name", "New type name", 26, true),
-  FUND_UPDATE_LOG(HelperUtils.getEndpoint(FinanceStorageFundUpdateLog.class), FundUpdateLog.class, "data/fund-update-log-8.7.0/", "weekly-update-log.json", "jobName", "Monthly Job", 1, true),
   FUND(HelperUtils.getEndpoint(FinanceStorageFunds.class), Fund.class, "data/funds-8.4.0/", "AFRICAHIST.json", "name", "African History", 23, true),
   BUDGET(HelperUtils.getEndpoint(FinanceStorageBudgets.class), Budget.class, "data/budgets-8.4.0/", "AFRICAHIST-FY24.json", "name", "AFRICAHIST-FY24", 23, true),
   BUDGET_EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageBudgetExpenseClasses.class), BudgetExpenseClass.class, "data/budget-expense-classes-8.4.0/", "AFRICAHIST-FY24-elec.json", "status", "Inactive", 1, true),

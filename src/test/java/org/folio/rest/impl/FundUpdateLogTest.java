@@ -7,7 +7,9 @@ import org.folio.rest.jaxrs.model.FundUpdateLog;
 import org.folio.rest.jaxrs.resource.FinanceStorageFundUpdateLog;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PostgresClient;
-import org.junit.jupiter.api.BeforeAll;
+import org.folio.utils.CopilotGenerated;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -15,17 +17,27 @@ import static org.folio.rest.impl.FundUpdateLogAPI.FUND_UPDATE_LOG_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.UUID;
+
 @ExtendWith(VertxExtension.class)
+@CopilotGenerated(partiallyGenerated = true)
 public class FundUpdateLogTest extends TestBase {
 
-  private static final Integer LOG_ID = 102;
+  private static final String ID = UUID.randomUUID().toString();
   private static final String ENTITY_NAME = "FUND_UPDATE_LOG";
   private static final String FUND_UPDATE_LOG_ENDPOINT = HelperUtils.getEndpoint(FinanceStorageFundUpdateLog.class);
 
-  @BeforeAll
-  static void saveFundUpdateLogData(VertxTestContext context) {
+  @BeforeEach
+  void saveFundUpdateLogData(VertxTestContext context) {
     PostgresClient.getInstance(StorageTestSuite.getVertx(), TENANT_NAME)
-      .saveAndReturnUpdatedEntity(FUND_UPDATE_LOG_TABLE, String.valueOf(LOG_ID), new FundUpdateLog())
+      .saveAndReturnUpdatedEntity(FUND_UPDATE_LOG_TABLE, ID, new FundUpdateLog())
+      .onComplete(context.succeedingThenComplete());
+  }
+
+  @AfterEach
+  void deleteFundUpdateLogData(VertxTestContext context) {
+    PostgresClient.getInstance(StorageTestSuite.getVertx(), TENANT_NAME)
+      .delete(FUND_UPDATE_LOG_TABLE, ID)
       .onComplete(context.succeedingThenComplete());
   }
 
@@ -37,13 +49,17 @@ public class FundUpdateLogTest extends TestBase {
 
   @Test
   void getById() {
-    logger.info(String.format("--- mod-finance-storage %1$s test: Fetching %1$s with ID %2$s", ENTITY_NAME, LOG_ID));
-    testEntitySuccessfullyFetched(FUND_UPDATE_LOG_ENDPOINT + "/{id}", String.valueOf(LOG_ID));
+    logger.info(String.format("--- mod-finance-storage %1$s test: Fetching %1$s with ID %2$s", ENTITY_NAME, ID));
+    testEntitySuccessfullyFetched(FUND_UPDATE_LOG_ENDPOINT + "/{id}", String.valueOf(ID));
   }
 
   @Test
   void createFundUpdateLog(VertxTestContext context) {
-    FundUpdateLog newLog = new FundUpdateLog().withId(1);
+    var jobId = UUID.randomUUID().toString();
+    var jobNumber = 1;
+    var jobName = "Update Fund";
+
+    FundUpdateLog newLog = new FundUpdateLog().withId(jobId).withJobNumber(jobNumber).withJobName(jobName);
     PostgresClient.getInstance(StorageTestSuite.getVertx(), TENANT_NAME)
       .saveAndReturnUpdatedEntity(FUND_UPDATE_LOG_TABLE, String.valueOf(newLog.getId()), newLog)
       .onComplete(context.succeeding(result -> {
@@ -54,9 +70,9 @@ public class FundUpdateLogTest extends TestBase {
 
   @Test
   void updateFundUpdateLog(VertxTestContext context) {
-    FundUpdateLog updatedLog = new FundUpdateLog().withId(LOG_ID).withJobName("Updated JobName");
+    FundUpdateLog updatedLog = new FundUpdateLog().withId(ID).withJobName("Updated JobName");
     PostgresClient.getInstance(StorageTestSuite.getVertx(), TENANT_NAME)
-      .update(FUND_UPDATE_LOG_TABLE, updatedLog, String.valueOf(LOG_ID))
+      .update(FUND_UPDATE_LOG_TABLE, updatedLog, ID)
       .onComplete(context.succeeding(result -> {
         assertEquals(1, result.rowCount());
         context.completeNow();
@@ -66,7 +82,7 @@ public class FundUpdateLogTest extends TestBase {
   @Test
   void deleteFundUpdateLog(VertxTestContext context) {
     PostgresClient.getInstance(StorageTestSuite.getVertx(), TENANT_NAME)
-      .delete(FUND_UPDATE_LOG_TABLE, LOG_ID)
+      .delete(FUND_UPDATE_LOG_TABLE, ID)
       .onComplete(context.succeeding(result -> {
         assertEquals(1, result.rowCount());
         context.completeNow();

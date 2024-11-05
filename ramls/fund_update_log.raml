@@ -42,8 +42,8 @@ resourceTypes:
   /{id}:
     uriParameters:
       id:
-        description: The id of a fund update log
-        type: integer
+        description: The UUID of a fund update log
+        type: UUID
     type:
       collection-item:
         exampleItem: !include acq-models/mod-finance/examples/fund_update_log.sample

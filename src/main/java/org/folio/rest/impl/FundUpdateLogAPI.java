@@ -27,19 +27,19 @@ public class FundUpdateLogAPI implements FinanceStorageFundUpdateLog {
   }
 
   @Override
-  public void getFinanceStorageFundUpdateLogById(int id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getFinanceStorageFundUpdateLogById(String id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.getById(FUND_UPDATE_LOG_TABLE, FundUpdateLog.class, String.valueOf(id), okapiHeaders, vertxContext,
       GetFinanceStorageFundUpdateLogByIdResponse.class, asyncResultHandler);
   }
 
   @Override
-  public void deleteFinanceStorageFundUpdateLogById(int id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void deleteFinanceStorageFundUpdateLogById(String id, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.deleteById(FUND_UPDATE_LOG_TABLE, String.valueOf(id), okapiHeaders, vertxContext, DeleteFinanceStorageFundUpdateLogByIdResponse.class,
       asyncResultHandler);
   }
 
   @Override
-  public void putFinanceStorageFundUpdateLogById(int id, FundUpdateLog entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void putFinanceStorageFundUpdateLogById(String id, FundUpdateLog entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(FUND_UPDATE_LOG_TABLE, entity, String.valueOf(id), okapiHeaders, vertxContext, PutFinanceStorageFundUpdateLogByIdResponse.class, asyncResultHandler);
   }
 }
