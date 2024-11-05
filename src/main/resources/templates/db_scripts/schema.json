@@ -681,7 +681,8 @@
     {
       "tableName": "fund_update_log",
       "fromModuleVersion": "mod-finance-storage-8.7.0",
-      "withMetadata": true
+      "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict"
     }
   ]
 }
