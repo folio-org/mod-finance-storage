@@ -13,7 +13,7 @@ import org.folio.rest.persist.PgUtil;
 
 public class FundUpdateLogAPI implements FinanceStorageFundUpdateLog {
 
-  private static final String FUND_UPDATE_LOG_TABLE = "fund_update_log";
+  public static final String FUND_UPDATE_LOG_TABLE = "fund_update_log";
 
   @Override
   public void getFinanceStorageFundUpdateLog(String query, String totalRecords, int offset, int limit, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
