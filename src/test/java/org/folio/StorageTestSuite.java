@@ -22,6 +22,7 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.core.RestClientTest;
 import org.folio.rest.impl.BudgetTest;
 import org.folio.rest.impl.EntitiesCrudTest;
+import org.folio.rest.impl.FundUpdateLogTest;
 import org.folio.rest.impl.GroupBudgetTest;
 import org.folio.rest.impl.GroupFundFYTest;
 import org.folio.rest.impl.GroupTest;
@@ -30,6 +31,7 @@ import org.folio.rest.impl.LedgerFundBudgetStatusTest;
 import org.folio.rest.impl.LedgerRolloverBudgetTest;
 import org.folio.rest.impl.TenantSampleDataTest;
 import org.folio.rest.impl.TransactionTest;
+import org.folio.rest.jaxrs.model.FundUpdateLog;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -216,4 +218,7 @@ public class StorageTestSuite {
 
   @Nested
   class PendingPaymentTestNested extends PendingPaymentTest {}
+
+  @Nested
+  class FundUpdateLogTestNested extends FundUpdateLogTest {}
 }
