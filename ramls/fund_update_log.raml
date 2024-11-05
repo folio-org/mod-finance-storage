@@ -11,6 +11,8 @@ types:
   errors: !include raml-util/schemas/errors.schema
   fund-update-log: !include acq-models/mod-finance/schemas/fund_update_log.json
   fund-update-log-collection: !include acq-models/mod-finance/schemas/fund_update_log_collection.json
+  example-fund-update-log: !include acq-models/mod-finance/examples/fund_update_log.sample
+  example-fund-update-log-collection: !include acq-models/mod-finance/examples/fund_update_log_collection.sample
   UUID:
     type: string
     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
@@ -25,11 +27,11 @@ resourceTypes:
   collection-item: !include raml-util/rtypes/item-collection.raml
 
 
-/finance-storage/fund-update_log:
+/finance-storage/fund-update-logs:
   type:
     collection:
-      exampleCollection: !include acq-models/mod-finance/examples/fund_update_log_collection.sample
-      exampleItem: !include acq-models/mod-finance/examples/fund_update_log.sample
+      exampleCollection: example-fund-update-log-collection
+      exampleItem: example-fund-update-log
       schemaCollection: fund-update-log-collection
       schemaItem: fund-update-log
   is: [validate]
@@ -46,6 +48,6 @@ resourceTypes:
         type: UUID
     type:
       collection-item:
-        exampleItem: !include acq-models/mod-finance/examples/fund_update_log.sample
+        exampleItem: example-fund-update-log
         schema: fund-update-log
     is: [validate]
