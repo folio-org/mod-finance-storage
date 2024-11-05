@@ -18,8 +18,8 @@ public enum TestEntities {
   LEDGER_FISCAL_YEAR_ROLLOVER(HelperUtils.getEndpoint(FinanceStorageLedgerRollovers.class), LedgerFiscalYearRollover.class, "data/ledger-fiscal-year-rollovers/", "main-library.json", "restrictEncumbrance", "true", 0, true),
   LEDGER_FISCAL_YEAR_ROLLOVER_LOG(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversLogs.class), LedgerFiscalYearRolloverLog.class, null, null, null, null, 0, false),
   LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversProgress.class), LedgerFiscalYearRolloverProgress.class, "data/ledger-fiscal-year-rollovers/", "main-library-progress.json", "financialRolloverStatus", "Success", 0, false),
-  LEDGER_FISCAL_YEAR_ROLLOVER_ERROR(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversErrors.class), LedgerFiscalYearRolloverError.class, "data/ledger-fiscal-year-rollovers/", "main-library-errors.json", "errorType", "Fund", 0, false);
-
+  LEDGER_FISCAL_YEAR_ROLLOVER_ERROR(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversErrors.class), LedgerFiscalYearRolloverError.class, "data/ledger-fiscal-year-rollovers/", "main-library-errors.json", "errorType", "Fund", 0, false),
+  FUND_UPDATE_LOG(HelperUtils.getEndpoint(FinanceStorageFundUpdateLog.class), FundUpdateLog.class, "data/fund-update-log/", "monthly-fund-update.json", "jobName", "Weekly Fund Update", 0, true);
 
   TestEntities(String endpoint, Class<?> clazz, String pathToSamples, String sampleFileName, String updatedFieldName,
       String updatedFieldValue, int initialQuantity, boolean isOptLockingEnabled) {
