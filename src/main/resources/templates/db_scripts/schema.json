@@ -677,6 +677,12 @@
           "tOps": "ADD"
         }
       ]
+    },
+    {
+      "tableName": "fund_update_log",
+      "fromModuleVersion": "mod-finance-storage-8.7.0",
+      "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict"
     }
   ]
 }

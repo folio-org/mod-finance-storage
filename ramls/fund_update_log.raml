@@ -1,0 +1,53 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: mod-finance-storage (Funds)
+    content: <b>CRUD APIs used to manage fund update logs.</b>
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+  fund-update-log: !include acq-models/mod-finance/schemas/fund_update_log.json
+  fund-update-log-collection: !include acq-models/mod-finance/schemas/fund_update_log_collection.json
+  example-fund-update-log: !include acq-models/mod-finance/examples/fund_update_log.sample
+  example-fund-update-log-collection: !include acq-models/mod-finance/examples/fund_update_log_collection.sample
+  UUID:
+    type: string
+    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+
+traits:
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  validate: !include raml-util/traits/validation.raml
+
+resourceTypes:
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
+
+
+/finance-storage/fund-update-logs:
+  type:
+    collection:
+      exampleCollection: example-fund-update-log-collection
+      exampleItem: example-fund-update-log
+      schemaCollection: fund-update-log-collection
+      schemaItem: fund-update-log
+  is: [validate]
+  get:
+    description: Get list of fund update logs
+    is: [
+      searchable: {description: "with valid searchable fields: for example jobName", example: "[\"jobName\", \"fund update\", \"=\"]"},
+      pageable
+    ]
+  /{id}:
+    uriParameters:
+      id:
+        description: The UUID of a fund update log
+        type: UUID
+    type:
+      collection-item:
+        exampleItem: example-fund-update-log
+        schema: fund-update-log
+    is: [validate]

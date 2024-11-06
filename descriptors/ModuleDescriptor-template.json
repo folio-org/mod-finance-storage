@@ -432,6 +432,37 @@
       ]
     },
     {
+      "id": "finance-storage.fund-update-logs",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/fund-update-logs",
+          "permissionsRequired": ["finance-storage.fund-update-logs.collection.get"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/fund-update-logs/{id}",
+          "permissionsRequired": ["finance-storage.fund-update-logs.item.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/fund-update-logs",
+          "permissionsRequired": ["finance-storage.fund-update-logs.item.post"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/fund-update-logs/{id}",
+          "permissionsRequired": ["finance-storage.fund-update-logs.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/fund-update-logs/{id}",
+          "permissionsRequired": ["finance-storage.fund-update-logs.item.delete"]
+        }
+      ]
+    },
+    {
       "id" : "_tenant",
       "version" : "2.0",
       "interfaceType" : "system",
@@ -918,6 +949,43 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.fund-update-logs.collection.get",
+      "displayName" : "fund-update-logs-collection get",
+      "description" : "Get collection of fund update logs"
+    },
+    {
+      "permissionName" : "finance-storage.fund-update-logs.item.get",
+      "displayName" : "fund-update-logs-item get",
+      "description" : "Fetch a fund update log"
+    },
+    {
+      "permissionName" : "finance-storage.fund-update-logs.item.post",
+      "displayName" : "fund-update-logs-item post",
+      "description" : "Create a new fund update log"
+    },
+    {
+      "permissionName" : "finance-storage.fund-update-logs.item.put",
+      "displayName" : "fund-update-logs-item put",
+      "description" : "Update a fund update log"
+    },
+    {
+      "permissionName" : "finance-storage.fund-update-logs.item.delete",
+      "displayName" : "fund-update-logs-item delete",
+      "description" : "Delete a fund update log"
+    },
+    {
+      "permissionName" : "finance-storage.fund-update-logs.all",
+      "displayName" : "All fund-update-logs perms",
+      "description" : "All permissions for the fund update log",
+      "subPermissions" : [
+        "finance-storage.fund-update-logs.collection.get",
+        "finance-storage.fund-update-logs.item.get",
+        "finance-storage.fund-update-logs.item.post",
+        "finance-storage.fund-update-logs.item.put",
+        "finance-storage.fund-update-logs.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance.module.all",
       "displayName" : "All finance-module perms",
       "description" : "All permissions for the finance module",
@@ -930,7 +998,8 @@
         "finance-storage.groups.all",
         "finance-storage.ledgers.all",
         "finance-storage.transactions.all",
-        "finance-storage.fund-types.all"
+        "finance-storage.fund-types.all",
+        "finance-storage.fund-update-logs.all"
       ]
     }
   ],

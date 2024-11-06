@@ -7,6 +7,7 @@ import static org.folio.rest.utils.TestEntities.EXPENSE_CLASS;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.FUND_TYPE;
+import static org.folio.rest.utils.TestEntities.FUND_UPDATE_LOG;
 import static org.folio.rest.utils.TestEntities.GROUP;
 import static org.folio.rest.utils.TestEntities.GROUP_FUND_FY;
 import static org.folio.rest.utils.TestEntities.LEDGER;
@@ -51,7 +52,7 @@ public class EntitiesCrudTest extends TestBase {
    */
   static Stream<TestEntities> deleteOrder() {
     return Stream.of(GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, LEDGER_FISCAL_YEAR_ROLLOVER_ERROR,
-      LEDGER_FISCAL_YEAR_ROLLOVER, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
+      LEDGER_FISCAL_YEAR_ROLLOVER, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS, FUND_UPDATE_LOG);
   }
 
   static Stream<TestEntities> deleteFailOrder() {
