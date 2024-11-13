@@ -444,6 +444,26 @@
       } ]
     }
   ],
+  "requires": [
+    {
+      "id": "configuration",
+      "version": "2.0"
+    },
+    {
+      "id": "users",
+      "version": "16.0"
+    },
+    {
+      "id": "email",
+      "version": "1.0"
+    }
+  ],
+  "optional": [
+    {
+      "id": "orders",
+      "version": "12.0"
+    }
+  ],
   "permissionSets" : [
     {
       "permissionName" : "finance-storage.budgets.collection.get",
