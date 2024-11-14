@@ -1,0 +1,60 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: mod-finance-storage (Funds)
+    content: <b>CRUD APIs used to retrieve finance data for a fiscal year</b>
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+  fy-finance-data-collection: !include acq-models/mod-finance/schemas/fy_finance_data_collection.json
+#  example-fy-finance-data-collection: !include acq-models/mod-finance/examples/fy_finance_data_collection.sample
+  UUID:
+    type: string
+    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+
+traits:
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  validate: !include raml-util/traits/validation.raml
+
+resourceTypes:
+  collection-get: !include raml-util/rtypes/collection-get.raml
+
+/finance-storage/finance-data:
+  type:
+    collection-get:
+      exampleCollection: !include acq-models/mod-finance/examples/fy_finance_data_collection.sample
+      schemaCollection: fy-finance-data-collection
+  get:
+    description: Get finance data for a fiscal year
+    is: [
+      searchable: { description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]" },
+      pageable
+    ]
+
+#  /{fyId}:
+#    uriParameters:
+#      fyId:
+#        description: The UUID of a fiscal year
+#        type: UUID
+#    get:
+#      is: [ validate ]
+#      description: Get finance data for a fiscal year
+#      responses:
+#        200:
+#          body:
+#            application/json:
+#              type: fy-finance-data-collection
+#              example:
+#                value: !include acq-models/mod-finance/examples/fy_finance_data_collection.sample
+#        404:
+#          body:
+#            application/json:
+#              type: errors
+#        500:
+#          body:
+#            application/json:
+#              type: errors

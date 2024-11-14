@@ -23,6 +23,11 @@ The primary focus of this release was to separate Credited from Expended and imp
 * Bump `raml` from `35.2.0` to `35.3.0`
 * Bump `vertx` from `4.5.4` to `4.5.10`
 
+
+
+
+
+
 ## 8.6.0 - Released (Quesnelia R1 2024)
 The primary focus of this release was to introduce Batch Transactions API
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.5.0...v8.6.0)
