@@ -1,0 +1,20 @@
+
+{
+  "fiscalYearId": "123e4567-e89b-12d3-a456-426614174004",
+  "fiscalYearCode": "FY2023",
+  "fundId": "123e4567-e89b-12d3-a456-426614174000",
+  "fundCode": "FND001",
+  "fundName": "General Fund",
+  "fundDescription": "This fund is used for general purposes.",
+  "fundStatus": "Active",
+  "fundTags": {
+    "tagList": ["Education", "Research"]
+  },
+  "budgetId": "123e4567-e89b-12d3-a456-426614174001",
+  "budgetName": "Annual Budget",
+  "budgetStatus": "Active",
+  "budgetInitialAllocation": 1000000,
+  "budgetCurrentAllocation": 950000,
+  "budgetAllowableExpenditure": 80,
+  "budgetAllowableEncumbrance": 90
+}

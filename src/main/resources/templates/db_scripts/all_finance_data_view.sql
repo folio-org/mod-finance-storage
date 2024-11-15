@@ -3,18 +3,21 @@ CREATE OR REPLACE VIEW ${myuniversity}_${mymodule}.finance_data_view AS
 SELECT
   fiscal_year.id as id,
   jsonb_build_object(
-    'fiscalYear', fiscal_year.jsonb ->>'code',
+    'fiscalYearId', fiscal_year.id,
+    'fiscalYearCode', fiscal_year.jsonb ->>'code',
     'fundId', fund.id,
     'fundCode', fund.jsonb ->>'code',
     'fundName', fund.jsonb ->>'name',
+    'fundDescription', fund.jsonb ->>'description',
     'fundStatus', fund.jsonb ->>'fundStatus',
     'fundTags', fund.jsonb ->'tags' -> 'tagList',
     'budgetId', budget.id,
+    'budgetName', budget.jsonb ->>'name',
     'budgetStatus', budget.jsonb ->>'budgetStatus',
     'budgetInitialAllocation', budget.jsonb ->>'initialAllocation',
     'budgetCurrentAllocation', budget.jsonb ->>'allocated',
-    'budgetAllowableEncumbrance', budget.jsonb ->>'allowableEncumbrance',
-    'budgetAllowableExpenditure', budget.jsonb ->>'allowableExpenditure'
+    'budgetAllowableExpenditure', budget.jsonb ->>'allowableExpenditure',
+    'budgetAllowableEncumbrance', budget.jsonb ->>'allowableEncumbrance'
   ) as jsonb
 FROM ${myuniversity}_${mymodule}.fiscal_year
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.ledger

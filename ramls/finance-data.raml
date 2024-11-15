@@ -10,7 +10,6 @@ documentation:
 types:
   errors: !include raml-util/schemas/errors.schema
   fy-finance-data-collection: !include acq-models/mod-finance/schemas/fy_finance_data_collection.json
-#  example-fy-finance-data-collection: !include acq-models/mod-finance/examples/fy_finance_data_collection.sample
   UUID:
     type: string
     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
@@ -31,30 +30,6 @@ resourceTypes:
   get:
     description: Get finance data for a fiscal year
     is: [
-      searchable: { description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]" },
+      searchable: { description: "with valid searchable fields: for example fiscalYearId", example: "[\"fiscalYearId\", \"7a4c4d30-3b63-4102-8e2d-3ee5792d7d02\", \"=\"]" },
       pageable
     ]
-
-#  /{fyId}:
-#    uriParameters:
-#      fyId:
-#        description: The UUID of a fiscal year
-#        type: UUID
-#    get:
-#      is: [ validate ]
-#      description: Get finance data for a fiscal year
-#      responses:
-#        200:
-#          body:
-#            application/json:
-#              type: fy-finance-data-collection
-#              example:
-#                value: !include acq-models/mod-finance/examples/fy_finance_data_collection.sample
-#        404:
-#          body:
-#            application/json:
-#              type: errors
-#        500:
-#          body:
-#            application/json:
-#              type: errors

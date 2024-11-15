@@ -87,7 +87,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(2)
   @EnumSource(value = TestEntities.class,
-    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG", "FINANCE_DATA"},
     mode = EnumSource.Mode.EXCLUDE)
   void testPostData(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Creating %s ... ", testEntity.name(), testEntity.name()));
@@ -152,7 +152,9 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @Order(5)
-  @EnumSource(TestEntities.class)
+  @EnumSource(value = TestEntities.class,
+    names = {"FINANCE_DATA"},
+    mode = EnumSource.Mode.EXCLUDE)
   void testGetById(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Fetching %s with ID %s", testEntity.name(), testEntity.name(),
         testEntity.getId()));
@@ -168,7 +170,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(6)
   @EnumSource(value = TestEntities.class,
-    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG", "FINANCE_DATA"},
     mode = EnumSource.Mode.EXCLUDE)
   void testPutById(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Editing %s with ID %s", testEntity.name(), testEntity.name(),
@@ -186,7 +188,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(7)
   @EnumSource(value = TestEntities.class,
-    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG", "FINANCE_DATA"},
     mode = EnumSource.Mode.EXCLUDE)
   void testVerifyPut(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s test: Fetching updated %s with ID %s", testEntity.name(), testEntity.name(), testEntity.getId()));
@@ -220,7 +222,7 @@ public class EntitiesCrudTest extends TestBase {
   @ParameterizedTest
   @Order(10)
   @EnumSource(value = TestEntities.class,
-    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG", "FINANCE_DATA"},
     mode = EnumSource.Mode.EXCLUDE)
   void testVerifyDelete(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storages %s test: Verify %s is deleted with ID %s", testEntity.name(),
@@ -249,7 +251,7 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @EnumSource(value = TestEntities.class,
-    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG", "FINANCE_DATA"},
     mode = EnumSource.Mode.EXCLUDE)
   void testEditEntityWithNonExistedId(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s put by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),
@@ -263,7 +265,7 @@ public class EntitiesCrudTest extends TestBase {
 
   @ParameterizedTest
   @EnumSource(value = TestEntities.class,
-    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG"},
+    names = {"LEDGER_FISCAL_YEAR_ROLLOVER_LOG", "FINANCE_DATA"},
     mode = EnumSource.Mode.EXCLUDE)
   void testDeleteEntityWithNonExistedId(TestEntities testEntity) {
     logger.info(String.format("--- mod-finance-storage %s delete by id test: Invalid %s: %s", testEntity.name(), testEntity.name(),

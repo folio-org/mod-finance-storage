@@ -468,7 +468,7 @@
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/finance-storage/finance-data/{fiscalYearId}",
+          "pathPattern": "/finance-storage/finance-data",
           "permissionsRequired": ["finance-storage.finance-data.collection.get"]
         }
       ]
@@ -1017,9 +1017,9 @@
       ]
     },
     {
-      "permissionName" : "finance-storage.finance-data.collection.get",
-      "displayName" : "all finance-data for fiscal year",
-      "description" : "Get collection of finance data for particular fiscal year"
+      "permissionName": "finance-storage.finance-data.collection.get",
+      "displayName": "all finance-data for fiscal year",
+      "description": "Get collection of finance data for particular fiscal year"
     },
     {
       "permissionName" : "finance.module.all",
