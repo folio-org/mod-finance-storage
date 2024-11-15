@@ -1,0 +1,35 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: mod-finance-storage (Funds)
+    content: <b>CRUD APIs used to retrieve finance data for a fiscal year</b>
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+  fy-finance-data-collection: !include acq-models/mod-finance/schemas/fy_finance_data_collection.json
+  UUID:
+    type: string
+    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+
+traits:
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  validate: !include raml-util/traits/validation.raml
+
+resourceTypes:
+  collection-get: !include raml-util/rtypes/collection-get.raml
+
+/finance-storage/finance-data:
+  type:
+    collection-get:
+      exampleCollection: !include acq-models/mod-finance/examples/fy_finance_data_collection.sample
+      schemaCollection: fy-finance-data-collection
+  get:
+    description: Get finance data for a fiscal year
+    is: [
+      searchable: { description: "with valid searchable fields: for example fiscalYearId", example: "[\"fiscalYearId\", \"7a4c4d30-3b63-4102-8e2d-3ee5792d7d02\", \"=\"]" },
+      pageable
+    ]

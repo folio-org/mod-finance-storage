@@ -95,6 +95,11 @@
       "run": "after",
       "snippetPath": "migration/extract_credits_from_expenditures.sql",
       "fromModuleVersion": "mod-finance-storage-8.7.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "all_finance_data_view.sql",
+      "fromModuleVersion": "mod-finance-storage-8.8.0"
     }
   ],
   "tables": [
