@@ -19,8 +19,7 @@ public enum TestEntities {
   LEDGER_FISCAL_YEAR_ROLLOVER_LOG(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversLogs.class), LedgerFiscalYearRolloverLog.class, null, null, null, null, 0, false),
   LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversProgress.class), LedgerFiscalYearRolloverProgress.class, "data/ledger-fiscal-year-rollovers/", "main-library-progress.json", "financialRolloverStatus", "Success", 0, false),
   LEDGER_FISCAL_YEAR_ROLLOVER_ERROR(HelperUtils.getEndpoint(FinanceStorageLedgerRolloversErrors.class), LedgerFiscalYearRolloverError.class, "data/ledger-fiscal-year-rollovers/", "main-library-errors.json", "errorType", "Fund", 0, false),
-  FUND_UPDATE_LOG(HelperUtils.getEndpoint(FinanceStorageFundUpdateLogs.class), FundUpdateLog.class, "data/fund-update-log/", "monthly-fund-update.json", "jobName", "Weekly Fund Update", 0, true),
-  FINANCE_DATA(HelperUtils.getEndpoint(FinanceStorageFinanceData.class), FyFinanceData.class, "data/finance-data/", "fy24-finance-data.json", null, null, 0, true);
+  FUND_UPDATE_LOG(HelperUtils.getEndpoint(FinanceStorageFundUpdateLogs.class), FundUpdateLog.class, "data/fund-update-log/", "monthly-fund-update.json", "jobName", "Weekly Fund Update", 0, true);
 
   TestEntities(String endpoint, Class<?> clazz, String pathToSamples, String sampleFileName, String updatedFieldName,
       String updatedFieldValue, int initialQuantity, boolean isOptLockingEnabled) {
