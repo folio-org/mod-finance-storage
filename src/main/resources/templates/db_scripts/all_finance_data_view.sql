@@ -1,4 +1,3 @@
-DROP VIEW IF EXISTS diku_mod_finance_storage.finance_data_view;
 CREATE OR REPLACE VIEW ${myuniversity}_${mymodule}.finance_data_view AS
 SELECT
   fiscal_year.id as id,
