@@ -1,9 +1,11 @@
 package org.folio.rest.utils;
 
+import lombok.Getter;
 import org.folio.rest.jaxrs.model.*;
 import org.folio.rest.jaxrs.resource.*;
 import org.folio.rest.persist.HelperUtils;
 
+@Getter
 public enum TestEntities {
   //The Order is important because of the foreign key relationships
   EXPENSE_CLASS(HelperUtils.getEndpoint(FinanceStorageExpenseClasses.class), ExpenseClass.class, "data/expense-classes-4.0.0/", "elec.json", "name", "Electronic", 2, true),
@@ -33,42 +35,22 @@ public enum TestEntities {
     this.isOptLockingEnabled = isOptLockingEnabled;
   }
 
-  private int initialQuantity;
-  private String endpoint;
-  private String sampleFileName;
+  private final int initialQuantity;
+  private final String endpoint;
+  private final String sampleFileName;
   private String sampleId;
-  private String pathToSamples;
-  private String updatedFieldName;
-  private String updatedFieldValue;
-  private Class<?> clazz;
-  private boolean isOptLockingEnabled;
-
-  public String getEndpoint() {
-    return endpoint;
-  }
+  private final String pathToSamples;
+  private final String updatedFieldName;
+  private final String updatedFieldValue;
+  private final Class<?> clazz;
+  private final boolean isOptLockingEnabled;
 
   public String getEndpointWithId() {
     return endpoint + "/{id}";
   }
 
-  public String getUpdatedFieldName() {
-    return updatedFieldName;
-  }
-
-  public String getUpdatedFieldValue() {
-    return updatedFieldValue;
-  }
-
-  public int getInitialQuantity() {
-    return initialQuantity;
-  }
-
   public String getSampleFileName() {
     return pathToSamples + sampleFileName;
-  }
-
-  public Class<?> getClazz() {
-    return clazz;
   }
 
   public String getPathToSampleFile() {
