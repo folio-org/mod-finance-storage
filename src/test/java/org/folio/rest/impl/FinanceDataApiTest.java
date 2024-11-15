@@ -19,7 +19,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 
-class FinanceDataApiTest extends TestBase {
+public class FinanceDataApiTest extends TestBase {
   private static final String TENANT_NAME = "fyfinancedata";
   private static final Header TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TENANT_NAME);
   private static final Logger logger = LogManager.getLogger();
