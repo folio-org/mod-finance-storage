@@ -6,23 +6,18 @@
 WITH credit_sums AS (
     SELECT
         budget.id AS budget_id,
-        SUM((trx.jsonb->>'amount')::numeric) AS total_credits
+        COALESCE(SUM((trx.jsonb->>'amount')::numeric), 0) AS total_credits
     FROM ${myuniversity}_${mymodule}.budget AS budget
-    JOIN ${myuniversity}_${mymodule}.transaction AS trx
+    LEFT JOIN ${myuniversity}_${mymodule}.transaction AS trx
         ON trx.fiscalyearid = budget.fiscalyearid AND trx.tofundid = budget.fundid
-    WHERE trx.jsonb->>'transactionType' = 'Credit'
+        AND trx.jsonb->>'transactionType' = 'Credit'
     GROUP BY budget.id
 )
 UPDATE ${myuniversity}_${mymodule}.budget AS budget
 SET
-    jsonb = jsonb_set(
-        jsonb_set(
-            budget.jsonb,
-            '{credits}',
-            to_jsonb((budget.jsonb->>'credits')::numeric + credit_sums.total_credits)
-        ),
-        '{expenditures}',
-        to_jsonb((budget.jsonb->>'expenditures')::numeric - credit_sums.total_credits)
+    jsonb = jsonb || jsonb_build_object(
+        'credits', to_jsonb(COALESCE((budget.jsonb->>'credits')::numeric, 0) + credit_sums.total_credits),
+        'expenditures', to_jsonb(COALESCE((budget.jsonb->>'expenditures')::numeric, 0) - credit_sums.total_credits)
     )
 FROM credit_sums
 WHERE budget.id = credit_sums.budget_id;
@@ -45,14 +40,11 @@ WITH aggregated_amounts AS (
 )
 UPDATE ${myuniversity}_${mymodule}.transaction AS encumbrance
 SET
-    jsonb = jsonb_set(
-        jsonb_set(
-            encumbrance.jsonb,
-            '{encumbrance,amountExpended}',
-            to_jsonb(aggregated_amounts.total_expended)
-        ),
-        '{encumbrance,amountCredited}',
-        to_jsonb(aggregated_amounts.total_credited)
+    jsonb = jsonb || jsonb_build_object(
+        'encumbrance', jsonb_build_object(
+            'amountExpended', to_jsonb(aggregated_amounts.total_expended),
+            'amountCredited', to_jsonb(aggregated_amounts.total_credited)
+        )
     )
 FROM aggregated_amounts
 WHERE encumbrance.id = aggregated_amounts.encumbrance_id;
