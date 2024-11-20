@@ -89,9 +89,11 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
   }
 
   private void updateEncumbranceToApplyTransaction(Transaction encumbrance, double amount, CurrencyUnit currency) {
+    if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED) {
+      encumbrance.setAmount(subtractMoney(encumbrance.getAmount(), amount, currency));
+    }
     encumbrance.getEncumbrance().setAmountAwaitingPayment(sumMoney(
       encumbrance.getEncumbrance().getAmountAwaitingPayment(), amount, currency));
-    encumbrance.setAmount(subtractMoney(encumbrance.getAmount(), amount, currency));
   }
 
   private void applyPendingPayments(List<Transaction> pendingPayments, BatchTransactionHolder holder) {
