@@ -177,6 +177,14 @@ public abstract class TestBase {
       .delete(storageUrl(endpoint));
   }
 
+  String createEntity(String endpoint, Object entity, Header tenantHeader) {
+    return postData(endpoint, valueAsString(entity), tenantHeader)
+      .then().log().all()
+      .statusCode(201)
+      .extract()
+      .path("id");
+  }
+
   String createEntity(String endpoint, Object entity) {
     return postData(endpoint, valueAsString(entity))
       .then().log().all()
