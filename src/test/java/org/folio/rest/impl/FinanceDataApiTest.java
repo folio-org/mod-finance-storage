@@ -4,13 +4,25 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
+import static org.folio.rest.utils.TestEntities.BUDGET;
+import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
+import static org.folio.rest.utils.TestEntities.FUND;
+import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.List;
+import java.util.UUID;
+
 import io.restassured.http.Header;
+import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.FiscalYear;
+import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FyFinanceDataCollection;
+import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.resource.FinanceStorageFinanceData;
 import org.folio.rest.persist.HelperUtils;
@@ -43,26 +55,65 @@ public class FinanceDataApiTest extends TestBase {
   public void positive_testGetQuery() {
     verifyCollectionQuantity(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==7a4c4d30-3b63-4102-8e2d-3ee5792d7d02)", 21, TENANT_HEADER);
     verifyCollectionQuantity(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==9b1d00d1-1f3d-4f1c-8e4b-0f1e3b7b1b1b)", 0, TENANT_HEADER);
+
+    var response = getData(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==7a4c4d30-3b63-4102-8e2d-3ee5792d7d02)", TENANT_HEADER);
+    var body = response.getBody().as(FyFinanceDataCollection.class);
+    var actualFyFinanceData = body.getFyFinanceData().get(0);
+
+    assertEquals("7a4c4d30-3b63-4102-8e2d-3ee5792d7d02", actualFyFinanceData.getFiscalYearId());
+    assertNotNull(actualFyFinanceData.getFundId());
+    assertNotNull(actualFyFinanceData.getFundCode());
+    assertNotNull(actualFyFinanceData.getFundName());
+    assertNotNull(actualFyFinanceData.getFundDescription());
+    assertNotNull(actualFyFinanceData.getFundStatus());
+    assertNotNull(actualFyFinanceData.getFundAcqUnitIds());
+    assertNotNull(actualFyFinanceData.getBudgetId());
+    assertNotNull(actualFyFinanceData.getBudgetName());
+    assertNotNull(actualFyFinanceData.getBudgetStatus());
+    assertNotNull(actualFyFinanceData.getBudgetInitialAllocation());
+    assertNotNull(actualFyFinanceData.getBudgetAllowableExpenditure());
+    assertNotNull(actualFyFinanceData.getBudgetAllowableEncumbrance());
+    assertNotNull(actualFyFinanceData.getBudgetAcqUnitIds());
   }
 
   @Test
-  public void positive_testResponseOfGet() {
-    var response = getData(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==7a4c4d30-3b63-4102-8e2d-3ee5792d7d02)", TENANT_HEADER);
-    var body = response.getBody().as(FyFinanceDataCollection.class);
+  public void positive_testResponseOfGetWithParamsFiscalYearAndAcqUnitIds() {
+    var fiscalYearId = UUID.randomUUID().toString();
+    var acqUnitId = UUID.randomUUID().toString();
+    var fiscalYearAcqUnitEndpoint = String.format("%s?query=(fiscalYearId==%s and fundAcqUnitIds=%s and budgetAcqUnitIds=%s)",
+      FINANCE_DATA_ENDPOINT, fiscalYearId, acqUnitId, acqUnitId);
+    createMockData(fiscalYearId, acqUnitId);
 
-    var fyFinanceDataExample = body.getFyFinanceData().get(0);
-    assertEquals("7a4c4d30-3b63-4102-8e2d-3ee5792d7d02", fyFinanceDataExample.getFiscalYearId());
-    assertNotNull(fyFinanceDataExample.getFundId());
-    assertNotNull(fyFinanceDataExample.getFundCode());
-    assertNotNull(fyFinanceDataExample.getFundName());
-    assertNotNull(fyFinanceDataExample.getFundDescription());
-    assertNotNull(fyFinanceDataExample.getFundStatus());
-    assertNotNull(fyFinanceDataExample.getBudgetId());
-    assertNotNull(fyFinanceDataExample.getBudgetName());
-    assertNotNull(fyFinanceDataExample.getBudgetStatus());
-    assertNotNull(fyFinanceDataExample.getBudgetInitialAllocation());
-    assertNotNull(fyFinanceDataExample.getBudgetCurrentAllocation());
-    assertNotNull(fyFinanceDataExample.getBudgetAllowableExpenditure());
-    assertNotNull(fyFinanceDataExample.getBudgetAllowableEncumbrance());
+    var response = getData(fiscalYearAcqUnitEndpoint, TENANT_HEADER);
+    var body = response.getBody().as(FyFinanceDataCollection.class);
+    var actualFyFinanceData = body.getFyFinanceData().get(0);
+
+    assertEquals(fiscalYearId, actualFyFinanceData.getFiscalYearId());
+    assertEquals(acqUnitId, actualFyFinanceData.getFundAcqUnitIds().get(0));
+    assertEquals(acqUnitId, actualFyFinanceData.getBudgetAcqUnitIds().get(0));
+  }
+
+  private void createMockData(String fiscalYearId, String acqUnitId) {
+    var fundId = UUID.randomUUID().toString();
+    var ledgerId = UUID.randomUUID().toString();
+    var budgetId = UUID.randomUUID().toString();
+
+    var fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class)
+      .withId(fiscalYearId).withCode("FY2042");
+    createEntity(FISCAL_YEAR.getEndpoint(), fiscalYear, TENANT_HEADER);
+
+    var ledger = new JsonObject(getFile(LEDGER.getPathToSampleFile())).mapTo(Ledger.class).withId(ledgerId)
+      .withCode("first").withName("First Ledger").withFiscalYearOneId(fiscalYearId);
+    createEntity(LEDGER.getEndpoint(), ledger, TENANT_HEADER);
+
+    var fund = new JsonObject(getFile(FUND.getPathToSampleFile())).mapTo(Fund.class)
+      .withId(fundId).withCode("first").withName("first").withLedgerId(ledgerId)
+      .withFundTypeId(null).withAcqUnitIds(List.of(acqUnitId));
+    createEntity(FUND.getEndpoint(), fund, TENANT_HEADER);
+
+    var budget = new JsonObject(getFile(BUDGET.getPathToSampleFile())).mapTo(Budget.class)
+      .withId(budgetId).withName("first").withFiscalYearId(fiscalYearId).withFundId(fundId)
+      .withAcqUnitIds(List.of(acqUnitId));
+    createEntity(BUDGET.getEndpoint(), budget, TENANT_HEADER);
   }
 }

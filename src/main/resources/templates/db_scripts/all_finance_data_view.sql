@@ -10,13 +10,15 @@ SELECT
     'fundDescription', fund.jsonb ->>'description',
     'fundStatus', fund.jsonb ->>'fundStatus',
     'fundTags', fund.jsonb ->'tags' -> 'tagList',
+    'fundAcqUnitIds', fund.jsonb ->'acqUnitIds',
     'budgetId', budget.id,
     'budgetName', budget.jsonb ->>'name',
     'budgetStatus', budget.jsonb ->>'budgetStatus',
     'budgetInitialAllocation', budget.jsonb ->>'initialAllocation',
     'budgetCurrentAllocation', budget.jsonb ->>'allocated',
     'budgetAllowableExpenditure', budget.jsonb ->>'allowableExpenditure',
-    'budgetAllowableEncumbrance', budget.jsonb ->>'allowableEncumbrance'
+    'budgetAllowableEncumbrance', budget.jsonb ->>'allowableEncumbrance',
+    'budgetAcqUnitIds', budget.jsonb ->'acqUnitIds'
   ) as jsonb
 FROM ${myuniversity}_${mymodule}.fiscal_year
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.ledger
