@@ -40,14 +40,11 @@ WITH aggregated_amounts AS (
 )
 UPDATE ${myuniversity}_${mymodule}.transaction AS encumbrance
 SET
-    jsonb = jsonb_set(
-        jsonb_set(
-            encumbrance.jsonb,
-            '{encumbrance,amountExpended}',
-            to_jsonb(aggregated_amounts.total_expended)
-        ),
-        '{encumbrance,amountCredited}',
-        to_jsonb(aggregated_amounts.total_credited)
+    jsonb = jsonb || jsonb_build_object(
+        'encumbrance', jsonb_build_object(
+            'amountExpended', to_jsonb(aggregated_amounts.total_expended),
+            'amountCredited', to_jsonb(aggregated_amounts.total_credited)
+        )
     )
 FROM aggregated_amounts
 WHERE encumbrance.id = aggregated_amounts.encumbrance_id;
