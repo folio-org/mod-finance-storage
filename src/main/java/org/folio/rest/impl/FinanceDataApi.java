@@ -13,6 +13,7 @@ import org.folio.rest.jaxrs.resource.FinanceStorageFinanceData;
 import org.folio.rest.persist.PgUtil;
 
 public class FinanceDataApi  implements FinanceStorageFinanceData {
+
   private static final String FINANCE_DATA_VIEW = "finance_data_view";
 
   @Override
