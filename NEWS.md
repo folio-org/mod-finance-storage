@@ -6,6 +6,8 @@ The primary focus of this release was to add support of optimistic locking in mi
 
 ### Stories
 * [MODFISTO-511](https://folio-org.atlassian.net/browse/MODFISTO-511) - Add support of optimistic locking in credits migration script
+
+### Bug Fixes
 * [MODINVOICE-563](https://folio-org.atlassian.net/browse/MODINVOICE-563) - Encumbrance value incorrect after paying credit invoicet
 
 
