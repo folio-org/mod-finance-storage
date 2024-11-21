@@ -1,5 +1,13 @@
 ## 8.8.0 - Unreleased
 
+## 8.7.2 - Released (Ramsons R2 2024 Bug Fix)
+The primary focus of this release was to add support of optimistic locking in migration script
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.1...v8.7.2)
+
+### Stories
+* [MODFISTO-511](https://folio-org.atlassian.net/browse/MODFISTO-511) - Add support of optimistic locking in credits migration script
+
+
 ## 8.7.1 - Released (Ramsons R2 2024 Bug Fix)
 The primary focus of this release was to fix missing interface dependencies
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.0...v8.7.1)
