@@ -2,7 +2,7 @@
 
 ## 8.7.3 - Released (Ramsons R2 2024 Bug Fix)
 The primary focus of this release was to fix migration script to avoid duplication issue
-[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.1...v8.7.2)
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.2...v8.7.3)
 
 ### Stories
 * [MODFISTO-511](https://folio-org.atlassian.net/browse/MODFISTO-511) - Add support of optimistic locking in credits migration script
