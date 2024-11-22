@@ -11,7 +11,7 @@ WITH credit_sums AS (
    FROM ${myuniversity}_${mymodule}.budget AS budget
    LEFT JOIN ${myuniversity}_${mymodule}.transaction AS trx
       ON trx.fiscalyearid = budget.fiscalyearid AND trx.tofundid = budget.fundid
-   GROUP BY budget.id;
+   GROUP BY budget.id
 )
 UPDATE ${myuniversity}_${mymodule}.budget AS budget
 SET
