@@ -4,20 +4,20 @@
 -- 3. Subtract from expenditures amount
 
 WITH credit_sums AS (
-   SELECT
-      budget.id AS budget_id,
-      SUM(CASE WHEN trx.jsonb->>'transactionType' = 'Credit' THEN (trx.jsonb->>'amount')::numeric ELSE 0 END) AS total_credits,
-      SUM(CASE WHEN trx.jsonb->>'transactionType' = 'Payment' THEN (trx.jsonb->>'amount')::numeric ELSE 0 END) AS total_expenditures
-   FROM ${myuniversity}_${mymodule}.budget AS budget
-   LEFT JOIN ${myuniversity}_${mymodule}.transaction AS trx
-      ON trx.fiscalyearid = budget.fiscalyearid AND trx.tofundid = budget.fundid
-   GROUP BY budget.id
+    SELECT
+        budget.id AS budget_id,
+        COALESCE(SUM((trx.jsonb->>'amount')::numeric), 0) AS total_credits
+    FROM ${myuniversity}_${mymodule}.budget AS budget
+    LEFT JOIN ${myuniversity}_${mymodule}.transaction AS trx
+        ON trx.fiscalyearid = budget.fiscalyearid AND trx.tofundid = budget.fundid
+        AND trx.jsonb->>'transactionType' = 'Credit'
+    GROUP BY budget.id
 )
 UPDATE ${myuniversity}_${mymodule}.budget AS budget
 SET
     jsonb = jsonb || jsonb_build_object(
-        'credits', to_jsonb(credit_sums.total_credits),
-        'expenditures', to_jsonb(credit_sums.total_expenditures)
+        'credits', to_jsonb(COALESCE((budget.jsonb->>'credits')::numeric, 0) + credit_sums.total_credits),
+        'expenditures', to_jsonb(COALESCE((budget.jsonb->>'expenditures')::numeric, 0) - credit_sums.total_credits)
     )
 FROM credit_sums
 WHERE budget.id = credit_sums.budget_id;
