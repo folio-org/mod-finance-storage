@@ -470,6 +470,11 @@
           "methods": ["GET"],
           "pathPattern": "/finance-storage/finance-data",
           "permissionsRequired": ["finance-storage.finance-data.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/finance-data",
+          "permissionsRequired": ["finance-storage.finance-data.item.post"]
         }
       ]
     },
@@ -1022,6 +1027,20 @@
       "description": "Get collection of finance data for particular fiscal year"
     },
     {
+      "permissionName": "finance-storage.finance-data.item.post",
+      "displayName": "create finance-data for fiscal year",
+      "description": "Create finance data for particular fiscal year"
+    },
+    {
+      "permissionName": "finance-storage.finance-data.all",
+      "displayName": "All finance-data perms",
+      "description": "All permissions for the finance data",
+      "subPermissions": [
+        "finance-storage.finance-data.collection.get",
+        "finance-storage.finance-data.item.post"
+      ]
+    },
+    {
       "permissionName" : "finance.module.all",
       "displayName" : "All finance-module perms",
       "description" : "All permissions for the finance module",
@@ -1036,7 +1055,7 @@
         "finance-storage.transactions.all",
         "finance-storage.fund-types.all",
         "finance-storage.fund-update-logs.all",
-        "finance-storage.finance-data.collection.get"
+        "finance-storage.finance-data.all"
       ]
     }
   ],

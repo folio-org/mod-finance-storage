@@ -24,4 +24,9 @@ public class StorageFundService implements FundService {
   public Future<List<Fund>> getFundsByIds(List<String> ids, DBConn conn) {
     return fundDAO.getFundsByIds(ids, conn);
   }
+
+  @Override
+  public Future<Void> updateFundById(String fundId, Fund fund, DBConn conn) {
+    return fundDAO.updateFundById(fundId, fund, conn);
+  }
 }
