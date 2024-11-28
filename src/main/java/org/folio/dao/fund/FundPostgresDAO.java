@@ -79,7 +79,7 @@ public class FundPostgresDAO implements FundDAO {
   public Future<Void> updateFund(Fund fund, DBConn conn) {
     logger.debug("Trying to update finance storage fund by id {}", fund.getId());
     return conn.update(FUND_TABLE, fund, fund.getId())
-      .onSuccess(x -> logger.info("Fund record {} was successfully updated", fund))
+      .onSuccess(x -> logger.info("Fund record '{}' was successfully updated", fund.getId()))
       .mapEmpty();
   }
 
