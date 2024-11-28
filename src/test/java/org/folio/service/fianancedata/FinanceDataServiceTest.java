@@ -1,6 +1,7 @@
 package org.folio.service.fianancedata;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -19,6 +20,7 @@ import io.vertx.junit5.VertxTestContext;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Fund;
+import org.folio.rest.jaxrs.model.FundTags;
 import org.folio.rest.jaxrs.model.FyFinanceData;
 import org.folio.rest.jaxrs.model.FyFinanceDataCollection;
 import org.folio.rest.persist.DBClient;
@@ -68,58 +70,20 @@ public class FinanceDataServiceTest {
   @Test
   void shouldSuccessfullyUpdateFinanceData(VertxTestContext testContext) {
     FinanceDataService financeDataService = Mockito.spy(financeDataService2);
-    // given
-    FyFinanceDataCollection collection = createTestFinanceDataCollection();
-    Fund fund = new Fund()
-      .withId(collection.getFyFinanceData().get(0).getFundId())
-      .withCode("OLD-CODE")
-      .withName("Old Name");
-    Budget budget = new Budget()
-      .withId(collection.getFyFinanceData().get(0).getBudgetId())
-      .withName("Old Budget Name");
+    var collection = createTestFinanceDataCollection();
+    var oldFund = new Fund().withId(collection.getFyFinanceData().get(0).getFundId())
+      .withName("NAME").withCode("CODE").withFundStatus(Fund.FundStatus.ACTIVE)
+      .withDescription("Old des");
+    var oldBudget = new Budget().withId(collection.getFyFinanceData().get(0).getBudgetId())
+      .withName("NAME")
+      .withBudgetStatus(Budget.BudgetStatus.ACTIVE);
+    setupMocks(oldFund, oldBudget);
 
-    when(requestContext.toDBClient()).thenReturn(dbClient);
-    doAnswer(invocation -> {
-      Function<DBConn, Future<Void>> function = invocation.getArgument(0);
-      return function.apply(dbConn);
-    }).when(dbClient).withTrans(any());
-
-    when(fundService.getFundsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(fund)));
-    when(fundService.updateFund(any(), any())).thenReturn(Future.succeededFuture());
-    when(budgetService.getBudgetsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(budget)));
-    when(budgetService.updateBatchBudgets(any(), any())).thenReturn(Future.succeededFuture());
-
-    // when & then
     testContext.assertComplete(financeDataService.update(collection, requestContext)
       .onComplete(testContext.succeeding(result -> {
         testContext.verify(() -> {
-          // Verify transaction handling
-          verify(dbClient).withTrans(any());
-
-          // Verify fund updates
-          ArgumentCaptor<List<String>> fundIdsCaptor = ArgumentCaptor.forClass(List.class);
-          verify(fundService).getFundsByIds(fundIdsCaptor.capture(), eq(dbConn));
-          assertEquals(collection.getFyFinanceData().get(0).getFundId(), fundIdsCaptor.getValue().get(0));
-
-          ArgumentCaptor<Fund> fundCaptor = ArgumentCaptor.forClass(Fund.class);
-          verify(fundService).updateFund(fundCaptor.capture(), eq(dbConn));
-          Fund updatedFund = fundCaptor.getValue();
-          assertEquals("NEW-CODE", updatedFund.getCode());
-          assertEquals("New Fund Name", updatedFund.getName());
-          assertEquals(Fund.FundStatus.ACTIVE, updatedFund.getFundStatus());
-
-          // Verify budget updates
-          ArgumentCaptor<List<String>> budgetIdsCaptor = ArgumentCaptor.forClass(List.class);
-          verify(budgetService).getBudgetsByIds(budgetIdsCaptor.capture(), eq(dbConn));
-          assertEquals(collection.getFyFinanceData().get(0).getBudgetId(), budgetIdsCaptor.getValue().get(0));
-
-          ArgumentCaptor<List<Budget>> budgetCaptor = ArgumentCaptor.forClass(List.class);
-          verify(budgetService).updateBatchBudgets(budgetCaptor.capture(), eq(dbConn));
-          Budget updatedBudget = budgetCaptor.getValue().get(0);
-          assertEquals("New Budget Name", updatedBudget.getName());
-          assertEquals(1000.0, updatedBudget.getInitialAllocation());
-          assertEquals(900.0, updatedBudget.getAllocated());
-          assertEquals(Budget.BudgetStatus.ACTIVE, updatedBudget.getBudgetStatus());
+          verifyFundUpdates(collection);
+          verifyBudgetUpdates(collection);
         });
         testContext.completeNow();
       })));
@@ -127,10 +91,36 @@ public class FinanceDataServiceTest {
 
   @Test
   void shouldFailUpdateWhenFundServiceFails(VertxTestContext testContext) {
-    // given
-    FyFinanceDataCollection collection = createTestFinanceDataCollection();
-    RuntimeException expectedError = new RuntimeException("Fund service error");
+    var collection = createTestFinanceDataCollection();
+    var expectedError = new RuntimeException("Fund service error");
 
+    setupMocksForFailure(expectedError);
+
+    financeDataService2.update(collection, requestContext)
+      .onComplete(testContext.failing(error -> {
+        testContext.verify(() -> {
+          assertEquals("Fund service error", error.getMessage());
+          verify(budgetService, never()).updateBatchBudgets(any(), any());
+          verify(fundService, never()).updateFundsWithMinChange(any(), any());
+        });
+        testContext.completeNow();
+      }));
+  }
+
+  private void setupMocks(Fund oldFund, Budget oldBudget) {
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+    doAnswer(invocation -> {
+      Function<DBConn, Future<Void>> function = invocation.getArgument(0);
+      return function.apply(dbConn);
+    }).when(dbClient).withTrans(any());
+
+    when(fundService.getFundsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldFund)));
+    when(fundService.updateFundsWithMinChange(any(), any())).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgetsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldBudget)));
+    when(budgetService.updateBatchBudgets(any(), any())).thenReturn(Future.succeededFuture());
+  }
+
+  private void setupMocksForFailure(RuntimeException expectedError) {
     when(requestContext.toDBClient()).thenReturn(dbClient);
     doAnswer(invocation -> {
       Function<DBConn, Future<Void>> function = invocation.getArgument(0);
@@ -138,18 +128,41 @@ public class FinanceDataServiceTest {
     }).when(dbClient).withTrans(any());
 
     when(fundService.getFundsByIds(any(), any())).thenReturn(Future.failedFuture(expectedError));
-
-    // when & then
-    financeDataService2.update(collection, requestContext)
-      .onComplete(testContext.failing(error -> {
-        testContext.verify(() -> {
-          assertEquals("Fund service error", error.getMessage());
-          verify(budgetService, never()).getBudgetsByIds(any(), any());
-          verify(budgetService, never()).updateBatchBudgets(any(), any());
-        });
-        testContext.completeNow();
-      }));
+    when(budgetService.getBudgetsByIds(any(), any())).thenReturn(Future.succeededFuture());
   }
+
+  private void verifyFundUpdates(FyFinanceDataCollection collection) {
+    ArgumentCaptor<List<String>> fundIdsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(fundService).getFundsByIds(fundIdsCaptor.capture(), eq(dbConn));
+    assertEquals(collection.getFyFinanceData().get(0).getFundId(), fundIdsCaptor.getValue().get(0));
+
+    ArgumentCaptor<List<Fund>> fundCaptor = ArgumentCaptor.forClass(List.class);
+    verify(fundService).updateFundsWithMinChange(fundCaptor.capture(), eq(dbConn));
+    Fund updatedFund = fundCaptor.getValue().get(0);
+
+    assertNotEquals("CODE CHANGED", updatedFund.getCode());
+    assertNotEquals("NAME CHANGED", updatedFund.getName());
+
+    assertEquals(Fund.FundStatus.ACTIVE, updatedFund.getFundStatus());
+    assertEquals("New Description", updatedFund.getDescription());
+  }
+
+  private void verifyBudgetUpdates(FyFinanceDataCollection collection) {
+    ArgumentCaptor<List<String>> budgetIdsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(budgetService).getBudgetsByIds(budgetIdsCaptor.capture(), eq(dbConn));
+    assertEquals(collection.getFyFinanceData().get(0).getBudgetId(), budgetIdsCaptor.getValue().get(0));
+
+    ArgumentCaptor<List<Budget>> budgetCaptor = ArgumentCaptor.forClass(List.class);
+    verify(budgetService).updateBatchBudgets(budgetCaptor.capture(), eq(dbConn));
+    Budget updatedBudget = budgetCaptor.getValue().get(0);
+
+    assertNotEquals("NAME CHANGED", updatedBudget.getName());
+
+    assertEquals(FyFinanceData.BudgetStatus.INACTIVE.value(), updatedBudget.getBudgetStatus().value());
+    assertEquals(1000.0, updatedBudget.getInitialAllocation());
+    assertEquals(900.0, updatedBudget.getAllocated());
+  }
+
 
   private FyFinanceDataCollection createTestFinanceDataCollection() {
     String fundId = UUID.randomUUID().toString();
@@ -158,13 +171,14 @@ public class FinanceDataServiceTest {
     FyFinanceData financeData = new FyFinanceData()
       .withFundId(fundId)
       .withBudgetId(budgetId)
-      .withFundCode("NEW-CODE")
-      .withFundName("New Fund Name")
-      .withFundStatus(FyFinanceData.FundStatus.ACTIVE)
+      .withFundCode("CODE CHANGED")
+      .withFundName("NAME CHANGED")
+      .withFundStatus(FyFinanceData.FundStatus.INACTIVE)
       .withFundDescription("New Description")
       .withFundAcqUnitIds(List.of("unit1"))
-      .withBudgetName("New Budget Name")
-      .withBudgetStatus(FyFinanceData.BudgetStatus.ACTIVE)
+      .withFundTags(new FundTags().withTagList(List.of("Education")))
+      .withBudgetName("NAME CHANGED")
+      .withBudgetStatus(FyFinanceData.BudgetStatus.INACTIVE)
       .withBudgetInitialAllocation(1000.0)
       .withBudgetCurrentAllocation(900.0)
       .withBudgetAllowableExpenditure(800.0)

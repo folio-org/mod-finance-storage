@@ -1,6 +1,7 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
+import static org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears.PutFinanceStorageGroupFundFiscalYearsByIdResponse.respond204;
 
 import javax.ws.rs.core.Response;
 import java.util.Map;
@@ -8,17 +9,19 @@ import java.util.Map;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.annotations.Validate;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
-import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.service.fund.FundService;
+import org.folio.spring.SpringContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class FundAPI implements FinanceStorageFunds {
@@ -29,6 +32,10 @@ public class FundAPI implements FinanceStorageFunds {
 
   @Autowired
   private FundService fundService;
+
+  public FundAPI() {
+    SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
+  }
 
   @Override
   @Validate
@@ -60,18 +67,15 @@ public class FundAPI implements FinanceStorageFunds {
   public void putFinanceStorageFundsById(String id, Fund fund, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     logger.debug("Trying to update finance storage fund by id {}", id);
     fund.setId(id);
-    var dbClient = new DBClient(vertxContext, okapiHeaders);
-    dbClient.withTrans(conn -> fundService.updateFund(fund, conn)
+    fundService.updateFund(fund, new RequestContext(vertxContext, okapiHeaders))
       .onComplete(result -> {
         if (result.failed()) {
           HttpException cause = (HttpException) result.cause();
           logger.error("Failed to update the finance storage fund with Id {}", fund.getId(), cause);
           HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
         } else {
-          asyncResultHandler.handle(succeededFuture(
-            FinanceStorageFunds.PutFinanceStorageFundsByIdResponse.respond204()));
+          asyncResultHandler.handle(succeededFuture(respond204()));
         }
-      })
-    );
+      });
   }
 }

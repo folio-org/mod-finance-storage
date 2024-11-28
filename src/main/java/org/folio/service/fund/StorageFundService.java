@@ -4,6 +4,7 @@ import io.vertx.core.Future;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.fund.FundDAO;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.persist.DBConn;
 
@@ -29,15 +30,18 @@ public class StorageFundService implements FundService {
   }
 
   @Override
-  public Future<Void> updateFund(Fund fund, DBConn conn) {
-    return fundDAO.isFundStatusChanged(fund, conn)
-      .compose(statusChanged -> {
-        if (Boolean.TRUE.equals(statusChanged)) {
-          return fundDAO.updateRelatedCurrentFYBudgets(fund, conn)
-            .compose(v -> fundDAO.updateFund(fund, conn));
-        }
-        return fundDAO.updateFund(fund, conn);
-      });
+  public Future<Void> updateFund(Fund fund, RequestContext requestContext) {
+    var dbClient = requestContext.toDBClient();
+    return dbClient.withTrans(conn ->
+      fundDAO.isFundStatusChanged(fund, conn)
+        .compose(statusChanged -> {
+          if (Boolean.TRUE.equals(statusChanged)) {
+            return fundDAO.updateRelatedCurrentFYBudgets(fund, conn)
+              .compose(v -> fundDAO.updateFund(fund, conn));
+          }
+          return fundDAO.updateFund(fund, conn);
+        })
+    );
   }
 
   @Override
