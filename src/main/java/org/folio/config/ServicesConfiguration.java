@@ -21,6 +21,7 @@ import org.folio.service.budget.BudgetExpenseClassService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.budget.RolloverBudgetExpenseClassTotalsService;
 import org.folio.service.email.EmailService;
+import org.folio.service.financedata.FinanceDataService;
 import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
@@ -163,5 +164,10 @@ public class ServicesConfiguration {
   RolloverBudgetExpenseClassTotalsService rolloverBudgetExpenseClassTotalsService(BudgetExpenseClassService budgetExpenseClassService,
       TemporaryEncumbranceService temporaryEncumbranceService) {
     return new RolloverBudgetExpenseClassTotalsService(budgetExpenseClassService, temporaryEncumbranceService);
+  }
+
+  @Bean
+  public FinanceDataService financeDataService(FundService fundService, BudgetService budgetService) {
+    return new FinanceDataService(fundService, budgetService);
   }
 }

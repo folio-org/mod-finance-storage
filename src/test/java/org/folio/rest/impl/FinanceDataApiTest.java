@@ -10,6 +10,7 @@ import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,9 +27,13 @@ import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.resource.FinanceStorageFinanceData;
 import org.folio.rest.persist.HelperUtils;
+import org.folio.service.budget.BudgetService;
+import org.folio.service.financedata.FinanceDataService;
+import org.folio.service.fund.FundService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Bean;
 
 
 public class FinanceDataApiTest extends TestBase {
@@ -37,6 +42,7 @@ public class FinanceDataApiTest extends TestBase {
   private static final Logger logger = LogManager.getLogger();
   private static final String FINANCE_DATA_ENDPOINT = HelperUtils.getEndpoint(FinanceStorageFinanceData.class);
   private static TenantJob tenantJob;
+
 
   @BeforeAll
   public static void before() {
@@ -93,6 +99,32 @@ public class FinanceDataApiTest extends TestBase {
     assertEquals(acqUnitId, actualFyFinanceData.getBudgetAcqUnitIds().get(0));
   }
 
+  @Test
+  public void positive_testUpdateFinanceData() {
+    var fiscalYearId = UUID.randomUUID().toString();
+    var acqUnitId = UUID.randomUUID().toString();
+    createMockData(fiscalYearId, acqUnitId);
+
+    var response = getData(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==" + fiscalYearId + ")", TENANT_HEADER);
+    var body = response.getBody().as(FyFinanceDataCollection.class);
+    var fyFinanceData = body.getFyFinanceData().get(0);
+
+    fyFinanceData.setFundName("Updated Fund Name");
+    fyFinanceData.setBudgetName("Updated Budget Name");
+
+    var updatedCollection = new FyFinanceDataCollection().withFyFinanceData(List.of(fyFinanceData)).withTotalRecords(1);
+
+    var updateResponse = putData(FINANCE_DATA_ENDPOINT, JsonObject.mapFrom(updatedCollection).encodePrettily(), TENANT_HEADER);
+    assertEquals(204, updateResponse.getStatusCode());
+
+    var updatedResponse = getData(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==" + fiscalYearId + ")", TENANT_HEADER);
+    var updatedBody = updatedResponse.getBody().as(FyFinanceDataCollection.class);
+    var updatedFyFinanceData = updatedBody.getFyFinanceData().get(0);
+
+    assertEquals("Updated Fund Name", updatedFyFinanceData.getFundName());
+    assertEquals("Updated Budget Name", updatedFyFinanceData.getBudgetName());
+  }
+
   private void createMockData(String fiscalYearId, String acqUnitId) {
     var fundId = UUID.randomUUID().toString();
     var ledgerId = UUID.randomUUID().toString();
@@ -115,5 +147,23 @@ public class FinanceDataApiTest extends TestBase {
       .withId(budgetId).withName("first").withFiscalYearId(fiscalYearId).withFundId(fundId)
       .withAcqUnitIds(List.of(acqUnitId));
     createEntity(BUDGET.getEndpoint(), budget, TENANT_HEADER);
+  }
+
+  static class ContextConfiguration {
+
+    @Bean
+    public FinanceDataService financeDataService(FundService fundService, BudgetService budgetService) {
+      return mock(FinanceDataService.class);
+    }
+
+    @Bean
+    FundService fundService() {
+      return mock(FundService.class);
+    }
+
+    @Bean
+    BudgetService budgetService() {
+      return mock(BudgetService.class);
+    }
   }
 }

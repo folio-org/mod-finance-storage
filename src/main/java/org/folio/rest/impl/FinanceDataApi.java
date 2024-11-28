@@ -1,16 +1,21 @@
 package org.folio.rest.impl;
 
 
+import static io.vertx.core.Future.succeededFuture;
+import static org.folio.rest.jaxrs.resource.FinanceStorageFinanceData.PutFinanceStorageFinanceDataResponse.respond204;
+
 import javax.ws.rs.core.Response;
 import java.util.Map;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.FyFinanceData;
 import org.folio.rest.jaxrs.model.FyFinanceDataCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageFinanceData;
 import org.folio.rest.persist.PgUtil;
+import org.folio.rest.util.ResponseUtils;
 import org.folio.service.financedata.FinanceDataService;
 
 public class FinanceDataApi  implements FinanceStorageFinanceData {
@@ -29,17 +34,8 @@ public class FinanceDataApi  implements FinanceStorageFinanceData {
   @Override
   public void putFinanceStorageFinanceData(FyFinanceDataCollection entity, Map<String, String> okapiHeaders,
                                            Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-      financeDataService.update(entity, vertxContext, okapiHeaders)
-        .onComplete(result -> {
-          if (result.failed()) {
-            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-              PutFinanceStorageFinanceDataResponse.respond500WithTextPlain(result.cause().getMessage())));
-            return;
-          }
-          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-            PutFinanceStorageFinanceDataResponse.respond200WithApplicationJson(result.result())));
-        });
+      financeDataService.update(entity, new RequestContext(vertxContext, okapiHeaders))
+        .onSuccess(v -> asyncResultHandler.handle(succeededFuture(respond204())))
+        .onFailure(ResponseUtils::handleFailure);
   }
-
-
 }

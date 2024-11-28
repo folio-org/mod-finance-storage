@@ -17,7 +17,7 @@ public interface BudgetDAO {
 
   Future<List<Budget>> getBudgetsBySql(String sql, Tuple params, DBConn conn);
 
-  Future<List<Budget>> getBudgets(Criterion criterion, DBConn conn);
+  Future<List<Budget>> getBudgetsByCriterion(Criterion criterion, DBConn conn);
 
   Future<Budget> getBudgetById(String id, DBConn conn);
 
