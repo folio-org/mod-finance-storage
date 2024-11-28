@@ -5,6 +5,7 @@ import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import java.util.List;
 
 import io.vertx.core.Future;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.okapi.common.GenericCompositeFuture;
@@ -30,6 +31,9 @@ public class FinanceDataService {
   }
 
   public Future<Void> update(FyFinanceDataCollection entity, RequestContext requestContext) {
+    if (CollectionUtils.isEmpty(entity.getFyFinanceData())) {
+      return Future.succeededFuture();
+    }
     var dbClient = requestContext.toDBClient();
     return dbClient
       .withTrans(conn -> {

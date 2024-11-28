@@ -31,11 +31,13 @@ public class StorageFundService implements FundService {
 
   @Override
   public Future<Void> updateFund(Fund fund, RequestContext requestContext) {
+    logger.debug("Trying to update fund '{}'", fund.getId());
     var dbClient = requestContext.toDBClient();
     return dbClient.withTrans(conn ->
       fundDAO.isFundStatusChanged(fund, conn)
         .compose(statusChanged -> {
           if (Boolean.TRUE.equals(statusChanged)) {
+            logger.info("updateFund:: Fund '{}' status has been changed to '{}'", fund.getId(), fund.getFundStatus());
             return fundDAO.updateRelatedCurrentFYBudgets(fund, conn)
               .compose(v -> fundDAO.updateFund(fund, conn));
           }
@@ -46,6 +48,7 @@ public class StorageFundService implements FundService {
 
   @Override
   public Future<Void> updateFundsWithMinChange(List<Fund> funds, DBConn conn) {
+    logger.debug("updateFundsWithMinChange:: Trying to update '{}' fund(s) with minimal changes", funds.size());
     return fundDAO.updateFunds(funds, conn);
   }
 }

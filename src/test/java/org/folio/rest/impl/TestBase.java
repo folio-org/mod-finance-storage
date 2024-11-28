@@ -241,7 +241,7 @@ public abstract class TestBase {
       .path(subObject.getUpdatedFieldName());
 
     // Get string value of updated field and compare
-    assertThat(String.valueOf(prop), equalTo(subObject.getUpdatedFieldValue()));
+    assertEquals(String.valueOf(prop), subObject.getUpdatedFieldValue());
   }
 
   Response testEntitySuccessfullyFetched(String endpoint, String id) {
