@@ -160,7 +160,8 @@ public class FinanceDataServiceTest {
 
     assertEquals(FyFinanceData.BudgetStatus.INACTIVE.value(), updatedBudget.getBudgetStatus().value());
     assertEquals(1000.0, updatedBudget.getInitialAllocation());
-    assertEquals(900.0, updatedBudget.getAllocated());
+    assertEquals(800.0, updatedBudget.getAllowableExpenditure());
+    assertEquals(700.0, updatedBudget.getAllowableEncumbrance());
   }
 
 
