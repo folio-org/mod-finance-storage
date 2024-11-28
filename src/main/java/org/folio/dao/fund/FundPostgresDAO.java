@@ -55,10 +55,20 @@ public class FundPostgresDAO implements FundDAO {
   }
 
   @Override
-  public Future<Void> updateFundById(String fundId, Fund fund, DBConn conn) {
-    logger.debug("Trying to update finance storage fund by id {}", fundId);
-    fund.setId(fundId);
-    return updateFund(fund, conn);
+  public Future<Void> updateFund(Fund fund, DBConn conn) {
+    logger.debug("Trying to update finance storage fund by id {}", fund.getId());
+    return conn.update(FUND_TABLE, fund, fund.getId())
+      .onSuccess(x -> logger.info("Fund record {} was successfully updated", fund))
+      .mapEmpty();
+  }
+
+  @Override
+  public Future<Void> updateFunds(List<Fund> funds, DBConn conn) {
+    List<String> fundIds = funds.stream().map(Fund::getId).toList();
+    logger.debug("Trying to update finance storage funds: '{}'", fundIds);
+    return conn.updateBatch(FUND_TABLE, funds)
+      .onSuccess(x -> logger.info("Funds '{}' was successfully updated", fundIds))
+      .mapEmpty();
   }
 
   @Override
@@ -79,12 +89,6 @@ public class FundPostgresDAO implements FundDAO {
       "AND (jsonb->>'periodEnd')::timestamp)));";
 
     return conn.execute(sql, Tuple.of(fund.getFundStatus().value(), UUID.fromString(fund.getId())))
-      .mapEmpty();
-  }
-
-  private Future<Void> updateFund(Fund fund, DBConn conn) {
-    return conn.update(FUND_TABLE, fund, fund.getId())
-      .onSuccess(x -> logger.info("Fund record {} was successfully updated", fund))
       .mapEmpty();
   }
 

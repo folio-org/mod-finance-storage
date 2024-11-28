@@ -9,7 +9,7 @@ SELECT
     'fundName', fund.jsonb ->>'name',
     'fundDescription', fund.jsonb ->>'description',
     'fundStatus', fund.jsonb ->>'fundStatus',
-    'fundTags', fund.jsonb ->'tags' -> 'tagList',
+    'fundTags', jsonb_build_object('tagList', fund.jsonb -> 'tags' -> 'tagList'),
     'fundAcqUnitIds', fund.jsonb ->'acqUnitIds',
     'budgetId', budget.id,
     'budgetName', budget.jsonb ->>'name',

@@ -34,14 +34,14 @@ public class StorageFundService implements FundService {
       .compose(statusChanged -> {
         if (Boolean.TRUE.equals(statusChanged)) {
           return fundDAO.updateRelatedCurrentFYBudgets(fund, conn)
-            .compose(v -> fundDAO.updateFundById(fund.getId(), fund, conn));
+            .compose(v -> fundDAO.updateFund(fund, conn));
         }
-        return updateFundWithMinChange(fund, conn);
+        return fundDAO.updateFund(fund, conn);
       });
   }
 
   @Override
-  public Future<Void> updateFundWithMinChange(Fund fund, DBConn conn) {
-    return fundDAO.updateFundById(fund.getId(), fund, conn);
+  public Future<Void> updateFundsWithMinChange(List<Fund> funds, DBConn conn) {
+    return fundDAO.updateFunds(funds, conn);
   }
 }

@@ -47,13 +47,8 @@ public class FinanceDataService {
       .map(FyFinanceData::getFundId)
       .toList();
     return fundService.getFundsByIds(fundIds, conn)
-      .compose(funds -> {
-        var futures = funds.stream()
-          .map(fund -> setNewValues(fund, entity))
-          .map(fund -> fundService.updateFundWithMinChange(fund, conn))
-          .toList();
-        return GenericCompositeFuture.all(futures).mapEmpty();
-      });
+      .map(funds -> setNewValuesForFunds(funds, entity))
+      .compose(funds -> fundService.updateFundsWithMinChange(funds, conn));
   }
 
   private Future<Void> processBudgetUpdate(FyFinanceDataCollection entity, DBConn conn) {
@@ -61,8 +56,14 @@ public class FinanceDataService {
       .map(FyFinanceData::getBudgetId)
       .toList();
     return budgetService.getBudgetsByIds(budgetIds, conn)
-      .map(budgets -> setNewValues(budgets, entity))
+      .map(budgets -> setNewValuesForBudgets(budgets, entity))
       .compose(budgets -> budgetService.updateBatchBudgets(budgets, conn));
+  }
+
+  private List<Fund> setNewValuesForFunds(List<Fund> funds, FyFinanceDataCollection entity) {
+    return funds.stream()
+      .map(fund -> setNewValues(fund, entity))
+      .toList();
   }
 
   private Fund setNewValues(Fund fund, FyFinanceDataCollection entity) {
@@ -78,7 +79,7 @@ public class FinanceDataService {
     return fund;
   }
 
-  private List<Budget> setNewValues(List<Budget> budgets, FyFinanceDataCollection entity) {
+  private List<Budget> setNewValuesForBudgets(List<Budget> budgets, FyFinanceDataCollection entity) {
     return budgets.stream()
       .map(budget -> setNewValues(budget, entity))
       .toList();
@@ -86,16 +87,14 @@ public class FinanceDataService {
 
   private Budget setNewValues(Budget budget, FyFinanceDataCollection entity) {
     var budgetFinanceData = entity.getFyFinanceData().stream()
-      .filter(data -> data.getFundId().equals(budget.getId()))
+      .filter(data -> data.getBudgetId().equals(budget.getId()))
       .findFirst()
       .orElseThrow();
 
-    return budget.withName(budgetFinanceData.getBudgetName())
-      .withBudgetStatus(Budget.BudgetStatus.fromValue(budgetFinanceData.getBudgetStatus().value()))
+    return budget.withBudgetStatus(Budget.BudgetStatus.fromValue(budgetFinanceData.getBudgetStatus().value()))
       .withInitialAllocation(budgetFinanceData.getBudgetInitialAllocation())
       .withAllocated(budgetFinanceData.getBudgetCurrentAllocation())
-      .withAllowableEncumbrance(budgetFinanceData.getBudgetAllowableExpenditure())
-      .withAllowableEncumbrance(budgetFinanceData.getBudgetAllowableEncumbrance())
-      .withAcqUnitIds(budgetFinanceData.getBudgetAcqUnitIds());
+      .withAllowableExpenditure(budgetFinanceData.getBudgetAllowableExpenditure())
+      .withAllowableEncumbrance(budgetFinanceData.getBudgetAllowableEncumbrance());
   }
 }
