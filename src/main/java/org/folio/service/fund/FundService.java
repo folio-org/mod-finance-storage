@@ -11,5 +11,5 @@ public interface FundService {
   Future<Fund> getFundById(String fundId, DBConn conn);
   Future<List<Fund>> getFundsByIds(List<String> ids, DBConn conn);
   Future<Void> updateFund(Fund fund, RequestContext requestContext);
-  Future<Void> updateFundsWithMinChange(List<Fund> fund, DBConn conn);
+  Future<Void> updateFunds(List<Fund> fund, DBConn conn);
 }

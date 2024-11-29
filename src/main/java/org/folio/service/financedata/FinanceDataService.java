@@ -52,7 +52,7 @@ public class FinanceDataService {
       .toList();
     return fundService.getFundsByIds(fundIds, conn)
       .map(funds -> setNewValuesForFunds(funds, entity))
-      .compose(funds -> fundService.updateFundsWithMinChange(funds, conn));
+      .compose(funds -> fundService.updateFunds(funds, conn));
   }
 
   private Future<Void> processBudgetUpdate(FyFinanceDataCollection entity, DBConn conn) {

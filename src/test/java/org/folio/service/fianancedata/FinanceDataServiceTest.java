@@ -58,7 +58,7 @@ public class FinanceDataServiceTest {
   private AutoCloseable mockitoMocks;
 
   @BeforeEach
-  void setUp(Vertx vertx) {
+  void setUp() {
     mockitoMocks = MockitoAnnotations.openMocks(this);
   }
 
@@ -101,7 +101,7 @@ public class FinanceDataServiceTest {
         testContext.verify(() -> {
           assertEquals("Fund service error", error.getMessage());
           verify(budgetService, never()).updateBatchBudgets(any(), any());
-          verify(fundService, never()).updateFundsWithMinChange(any(), any());
+          verify(fundService, never()).updateFunds(any(), any());
         });
         testContext.completeNow();
       }));
@@ -115,7 +115,7 @@ public class FinanceDataServiceTest {
     }).when(dbClient).withTrans(any());
 
     when(fundService.getFundsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldFund)));
-    when(fundService.updateFundsWithMinChange(any(), any())).thenReturn(Future.succeededFuture());
+    when(fundService.updateFunds(any(), any())).thenReturn(Future.succeededFuture());
     when(budgetService.getBudgetsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldBudget)));
     when(budgetService.updateBatchBudgets(any(), any())).thenReturn(Future.succeededFuture());
   }
@@ -137,7 +137,7 @@ public class FinanceDataServiceTest {
     assertEquals(collection.getFyFinanceData().get(0).getFundId(), fundIdsCaptor.getValue().get(0));
 
     ArgumentCaptor<List<Fund>> fundCaptor = ArgumentCaptor.forClass(List.class);
-    verify(fundService).updateFundsWithMinChange(fundCaptor.capture(), eq(dbConn));
+    verify(fundService).updateFunds(fundCaptor.capture(), eq(dbConn));
     Fund updatedFund = fundCaptor.getValue().get(0);
 
     assertNotEquals("CODE CHANGED", updatedFund.getCode());

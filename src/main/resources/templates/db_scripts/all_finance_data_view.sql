@@ -32,6 +32,6 @@ LEFT OUTER JOIN ${myuniversity}_${mymodule}.fund
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.budget
     ON fund.id = budget.fundid
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year
-    ON fund.id = (group_fund_fiscal_year.jsonb ->> 'fundId')::uuid
+    ON fund.id = group_fund_fiscal_year.fundid
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.groups
-    ON (group_fund_fiscal_year.jsonb ->> 'groupId')::uuid = groups.id;
+    ON group_fund_fiscal_year.groupid = groups.id;
