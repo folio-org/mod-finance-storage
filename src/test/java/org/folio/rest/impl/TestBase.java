@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 import java.io.InputStream;
 import java.util.Set;
@@ -146,6 +145,14 @@ public abstract class TestBase {
       .get(storageUrl(endpoint));
   }
 
+  Response putData(String endpoint, String input, Header tenant) {
+    return given()
+      .header(tenant)
+      .contentType(ContentType.JSON)
+      .body(input)
+      .put(storageUrl(endpoint));
+  }
+
   Response putData(String endpoint, String id, String input, Header tenant) {
     return given()
       .pathParam("id", id)
@@ -233,7 +240,7 @@ public abstract class TestBase {
       .path(subObject.getUpdatedFieldName());
 
     // Get string value of updated field and compare
-    assertThat(String.valueOf(prop), equalTo(subObject.getUpdatedFieldValue()));
+    assertEquals(String.valueOf(prop), subObject.getUpdatedFieldValue());
   }
 
   Response testEntitySuccessfullyFetched(String endpoint, String id) {

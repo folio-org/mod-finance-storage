@@ -1,10 +1,15 @@
 package org.folio.dao.fund;
 
+import static org.folio.rest.impl.BudgetAPI.BUDGET_TABLE;
+import static org.folio.rest.impl.FiscalYearAPI.FISCAL_YEAR_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
+import static org.folio.rest.persist.HelperUtils.getFullTableName;
 
+import io.vertx.sqlclient.Tuple;
 import java.util.Collections;
 import java.util.List;
 
+import java.util.UUID;
 import org.folio.rest.exception.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,6 +26,12 @@ import javax.ws.rs.core.Response;
 public class FundPostgresDAO implements FundDAO {
   private static final Logger logger = LogManager.getLogger();
   private static final String FUND_NOT_FOUND = "Fund not found, id=%s";
+  private static final String QUERY_UPDATE_CURRENT_FY_BUDGET =
+    "UPDATE %s SET jsonb = jsonb_set(jsonb,'{budgetStatus}', $1) " +
+    "WHERE((fundId=$2) " +
+    "AND (budget.fiscalYearId IN " +
+    "(SELECT id FROM %s WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
+    "AND (jsonb->>'periodEnd')::timestamp)));";
 
   @Override
   public Future<Fund> getFundById(String id, DBConn conn) {
@@ -47,6 +58,39 @@ public class FundPostgresDAO implements FundDAO {
     CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
     ids.forEach(id -> criterionBuilder.with("id", id));
     return getFundsByCriterion(criterionBuilder.build(), conn);
+  }
+
+  @Override
+  public Future<Boolean> isFundStatusChanged(Fund fund, DBConn conn) {
+    return getFundById(fund.getId(), conn)
+      .map(existingFund -> existingFund.getFundStatus() != fund.getFundStatus());
+  }
+
+  @Override
+  public Future<Void> updateRelatedCurrentFYBudgets(Fund fund, DBConn conn) {
+    String fullBudgetTableName = getFullTableName(conn.getTenantId(), BUDGET_TABLE);
+    String fullFYTableName = getFullTableName(conn.getTenantId(), FISCAL_YEAR_TABLE);
+    String updateQuery = String.format(QUERY_UPDATE_CURRENT_FY_BUDGET, fullBudgetTableName, fullFYTableName);
+
+    return conn.execute(updateQuery, Tuple.of(fund.getFundStatus().value(), UUID.fromString(fund.getId())))
+      .mapEmpty();
+  }
+
+  @Override
+  public Future<Void> updateFund(Fund fund, DBConn conn) {
+    logger.debug("Trying to update finance storage fund by id {}", fund.getId());
+    return conn.update(FUND_TABLE, fund, fund.getId())
+      .onSuccess(x -> logger.info("Fund record '{}' was successfully updated", fund.getId()))
+      .mapEmpty();
+  }
+
+  @Override
+  public Future<Void> updateFunds(List<Fund> funds, DBConn conn) {
+    List<String> fundIds = funds.stream().map(Fund::getId).toList();
+    logger.debug("Trying to update finance storage funds: '{}'", fundIds);
+    return conn.updateBatch(FUND_TABLE, funds)
+      .onSuccess(x -> logger.info("Funds '{}' was successfully updated", fundIds))
+      .mapEmpty();
   }
 
   private Future<List<Fund>> getFundsByCriterion(Criterion criterion, DBConn conn) {

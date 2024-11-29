@@ -9,8 +9,10 @@ SELECT
     'fundName', fund.jsonb ->>'name',
     'fundDescription', fund.jsonb ->>'description',
     'fundStatus', fund.jsonb ->>'fundStatus',
-    'fundTags', fund.jsonb ->'tags' -> 'tagList',
+    'fundTags', jsonb_build_object('tagList', fund.jsonb -> 'tags' -> 'tagList'),
     'fundAcqUnitIds', fund.jsonb ->'acqUnitIds',
+    'ledgerId', ledger.id,
+    'ledgerCode', ledger.jsonb ->> 'code',
     'budgetId', budget.id,
     'budgetName', budget.jsonb ->>'name',
     'budgetStatus', budget.jsonb ->>'budgetStatus',
@@ -18,12 +20,18 @@ SELECT
     'budgetCurrentAllocation', budget.jsonb ->>'allocated',
     'budgetAllowableExpenditure', budget.jsonb ->>'allowableExpenditure',
     'budgetAllowableEncumbrance', budget.jsonb ->>'allowableEncumbrance',
-    'budgetAcqUnitIds', budget.jsonb ->'acqUnitIds'
+    'budgetAcqUnitIds', budget.jsonb ->'acqUnitIds',
+    'groupId', groups.id,
+    'groupCode', groups.jsonb ->> 'code'
   ) as jsonb
 FROM ${myuniversity}_${mymodule}.fiscal_year
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.ledger
-  ON ledger.fiscalyearoneid = fiscal_year.id
+    ON ledger.fiscalyearoneid = fiscal_year.id
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.fund
-  ON fund.ledgerid = ledger.id
+    ON fund.ledgerid = ledger.id
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.budget
-  ON fund.id = budget.fundid;
+    ON fund.id = budget.fundid
+LEFT OUTER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year
+    ON fund.id = group_fund_fiscal_year.fundid
+LEFT OUTER JOIN ${myuniversity}_${mymodule}.groups
+    ON group_fund_fiscal_year.groupid = groups.id;

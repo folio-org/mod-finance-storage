@@ -470,6 +470,11 @@
           "methods": ["GET"],
           "pathPattern": "/finance-storage/finance-data",
           "permissionsRequired": ["finance-storage.finance-data.collection.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/finance-data",
+          "permissionsRequired": ["finance-storage.finance-data.collection.put"]
         }
       ]
     },
@@ -1018,8 +1023,22 @@
     },
     {
       "permissionName": "finance-storage.finance-data.collection.get",
-      "displayName": "all finance-data for fiscal year",
-      "description": "Get collection of finance data for particular fiscal year"
+      "displayName": "all finance-data",
+      "description": "Get collection of finance data"
+    },
+    {
+      "permissionName": "finance-storage.finance-data.collection.put",
+      "displayName": "Update finance-data as a bulk",
+      "description": "Update collection of finance data"
+    },
+    {
+      "permissionName": "finance-storage.finance-data.all",
+      "displayName": "All finance-data perms",
+      "description": "All permissions for the finance data",
+      "subPermissions": [
+        "finance-storage.finance-data.collection.get",
+        "finance-storage.finance-data.collection.put"
+      ]
     },
     {
       "permissionName" : "finance.module.all",
@@ -1036,7 +1055,7 @@
         "finance-storage.transactions.all",
         "finance-storage.fund-types.all",
         "finance-storage.fund-update-logs.all",
-        "finance-storage.finance-data.collection.get"
+        "finance-storage.finance-data.all"
       ]
     }
   ],

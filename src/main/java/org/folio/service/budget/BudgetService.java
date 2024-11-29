@@ -16,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBConn;
 import org.folio.utils.CalculationUtils;
@@ -62,6 +63,12 @@ public class BudgetService {
 
   public Future<List<Budget>> getBudgets(String sql, Tuple params, DBConn conn) {
     return budgetDAO.getBudgetsBySql(sql, params, conn);
+  }
+
+  public Future<List<Budget>> getBudgetsByIds(List<String> ids, DBConn conn) {
+    CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
+    ids.forEach(id -> criterionBuilder.with("id", id));
+    return budgetDAO.getBudgetsByCriterion(criterionBuilder.build(), conn);
   }
 
   public void clearReadOnlyFields(Budget budgetFromNew) {

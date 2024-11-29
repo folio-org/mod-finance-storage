@@ -32,7 +32,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
     List<String> ids = budgets.stream().map(Budget::getId).toList();
     logger.debug("Trying update batch budgets, ids={}", ids);
     return conn.updateBatch(BUDGET_TABLE, budgets)
-      .onSuccess(rowSet -> logger.info("Updated {} batch budgets", budgets.size()))
+      .onSuccess(rowSet -> logger.info("updateBatchBudgets:: Updated {} batch budgets", budgets.size()))
       .onFailure(e -> logger.error("Update batch budgets by failed, ids={}", ids, e))
       .mapEmpty();
   }
@@ -42,7 +42,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
     logger.debug("Trying update batch budgets by query: {}", sql);
     return conn.execute(sql)
       .map(SqlResult::rowCount)
-      .onSuccess(rowCount -> logger.info("Updated {} batch budgets", rowCount))
+      .onSuccess(rowCount -> logger.info("updateBatchBudgetsBySql:: Updated {} batch budgets", rowCount))
       .onFailure(e -> logger.error("Update batch budgets by query: {} failed", sql, e));
   }
 
@@ -67,7 +67,7 @@ public class BudgetPostgresDAO implements BudgetDAO {
    * @param conn : db connection
    */
   @Override
-  public Future<List<Budget>> getBudgets(Criterion criterion, DBConn conn) {
+  public Future<List<Budget>> getBudgetsByCriterion(Criterion criterion, DBConn conn) {
     logger.debug("Trying to get budgets by query: {}", criterion);
     return conn.get(BUDGET_TABLE, Budget.class, criterion, false)
       .map(results -> {
