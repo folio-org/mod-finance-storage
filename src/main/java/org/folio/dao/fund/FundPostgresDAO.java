@@ -26,6 +26,12 @@ import javax.ws.rs.core.Response;
 public class FundPostgresDAO implements FundDAO {
   private static final Logger logger = LogManager.getLogger();
   private static final String FUND_NOT_FOUND = "Fund not found, id=%s";
+  private static final String QUERY_UPDATE_CURRENT_FY_BUDGET =
+    "UPDATE %s SET jsonb = jsonb_set(jsonb,'{budgetStatus}', $1) " +
+    "WHERE((fundId=$2) " +
+    "AND (budget.fiscalYearId IN " +
+    "(SELECT id FROM %s WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
+    "AND (jsonb->>'periodEnd')::timestamp)));";
 
   @Override
   public Future<Fund> getFundById(String id, DBConn conn) {
@@ -64,14 +70,9 @@ public class FundPostgresDAO implements FundDAO {
   public Future<Void> updateRelatedCurrentFYBudgets(Fund fund, DBConn conn) {
     String fullBudgetTableName = getFullTableName(conn.getTenantId(), BUDGET_TABLE);
     String fullFYTableName = getFullTableName(conn.getTenantId(), FISCAL_YEAR_TABLE);
+    String updateQuery = String.format(QUERY_UPDATE_CURRENT_FY_BUDGET, fullBudgetTableName, fullFYTableName);
 
-    String sql = "UPDATE " + fullBudgetTableName + " SET jsonb = jsonb_set(jsonb,'{budgetStatus}', $1) " +
-      "WHERE((fundId=$2) " +
-      "AND (budget.fiscalYearId IN " +
-      "(SELECT id FROM " + fullFYTableName + " WHERE  current_date between (jsonb->>'periodStart')::timestamp " +
-      "AND (jsonb->>'periodEnd')::timestamp)));";
-
-    return conn.execute(sql, Tuple.of(fund.getFundStatus().value(), UUID.fromString(fund.getId())))
+    return conn.execute(updateQuery, Tuple.of(fund.getFundStatus().value(), UUID.fromString(fund.getId())))
       .mapEmpty();
   }
 

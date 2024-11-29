@@ -96,7 +96,6 @@ public class FinanceDataService {
       .orElseThrow();
 
     return budget.withBudgetStatus(Budget.BudgetStatus.fromValue(budgetFinanceData.getBudgetStatus().value()))
-      .withInitialAllocation(budgetFinanceData.getBudgetInitialAllocation())
       .withAllowableExpenditure(budgetFinanceData.getBudgetAllowableExpenditure())
       .withAllowableEncumbrance(budgetFinanceData.getBudgetAllowableEncumbrance());
   }

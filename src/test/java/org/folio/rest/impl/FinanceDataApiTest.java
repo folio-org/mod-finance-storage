@@ -113,7 +113,6 @@ public class FinanceDataApiTest extends TestBase {
     fyFinanceData.setFundDescription(expectedDescription);
     fyFinanceData.setFundTags(new FundTags().withTagList(expectedTags));
     fyFinanceData.setBudgetStatus(expectedBudgetStatus);
-    fyFinanceData.setBudgetInitialAllocation(expectedNumber);
     fyFinanceData.setBudgetAllowableExpenditure(expectedNumber);
     fyFinanceData.setBudgetAllowableEncumbrance(expectedNumber);
 
@@ -130,7 +129,6 @@ public class FinanceDataApiTest extends TestBase {
 
     assertEquals(expectedDescription, updatedFyFinanceData.getFundDescription());
     assertEquals(expectedTags, updatedFyFinanceData.getFundTags().getTagList());
-    assertEquals(expectedNumber, updatedFyFinanceData.getBudgetInitialAllocation());
     assertEquals(expectedNumber, updatedFyFinanceData.getBudgetAllowableEncumbrance());
     assertEquals(expectedNumber, updatedFyFinanceData.getBudgetAllowableExpenditure());
   }

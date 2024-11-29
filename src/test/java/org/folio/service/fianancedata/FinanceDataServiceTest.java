@@ -157,9 +157,9 @@ public class FinanceDataServiceTest {
     Budget updatedBudget = budgetCaptor.getValue().get(0);
 
     assertNotEquals("NAME CHANGED", updatedBudget.getName());
+    assertNotEquals(1000.0, updatedBudget.getInitialAllocation());
 
     assertEquals(FyFinanceData.BudgetStatus.INACTIVE.value(), updatedBudget.getBudgetStatus().value());
-    assertEquals(1000.0, updatedBudget.getInitialAllocation());
     assertEquals(800.0, updatedBudget.getAllowableExpenditure());
     assertEquals(700.0, updatedBudget.getAllowableEncumbrance());
   }
