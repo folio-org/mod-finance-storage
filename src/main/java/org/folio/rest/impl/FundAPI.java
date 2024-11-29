@@ -14,11 +14,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageFunds;
+import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.util.ResponseUtils;
 import org.folio.service.fund.FundService;
 import org.folio.spring.SpringContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,8 +67,14 @@ public class FundAPI implements FinanceStorageFunds {
   public void putFinanceStorageFundsById(String id, Fund fund, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     logger.debug("Trying to update finance storage fund by id {}", id);
     fund.setId(id);
-    fundService.updateFund(fund, new RequestContext(vertxContext, okapiHeaders))
+    vertxContext.runOnContext(event ->
+      fundService.updateFund(fund, new RequestContext(vertxContext, okapiHeaders))
       .onSuccess(result -> asyncResultHandler.handle(succeededFuture(respond204())))
-      .onFailure(ResponseUtils::handleFailure);
+      .onFailure(throwable -> {
+        HttpException cause = (HttpException) throwable;
+        logger.error("Failed to update the finance storage fund with Id {}", fund.getId(), cause);
+        HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
+      })
+    );
   }
 }
