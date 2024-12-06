@@ -17,7 +17,6 @@ SELECT
     'budgetName', budget.jsonb ->>'name',
     'budgetStatus', budget.jsonb ->>'budgetStatus',
     'budgetInitialAllocation', budget.jsonb ->>'initialAllocation',
-    'budgetCurrentAllocation', budget.jsonb ->>'allocated',
     'budgetAllowableExpenditure', budget.jsonb ->>'allowableExpenditure',
     'budgetAllowableEncumbrance', budget.jsonb ->>'allowableEncumbrance',
     'budgetAcqUnitIds', budget.jsonb ->'acqUnitIds',

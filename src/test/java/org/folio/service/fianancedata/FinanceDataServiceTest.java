@@ -181,7 +181,6 @@ public class FinanceDataServiceTest {
       .withBudgetName("NAME CHANGED")
       .withBudgetStatus(FyFinanceData.BudgetStatus.INACTIVE)
       .withBudgetInitialAllocation(1000.0)
-      .withBudgetCurrentAllocation(900.0)
       .withBudgetAllowableExpenditure(800.0)
       .withBudgetAllowableEncumbrance(700.0)
       .withBudgetAcqUnitIds(List.of("unit1"));
