@@ -61,7 +61,7 @@ public class FinanceDataService {
       .toList();
     return budgetService.getBudgetsByIds(budgetIds, conn)
       .map(budgets -> setNewValuesForBudgets(budgets, entity))
-      .compose(budgets -> budgetService.updateBatchBudgets(budgets, conn));
+      .compose(budgets -> budgetService.updateBatchBudgets(budgets, conn, false));
   }
 
   private List<Fund> setNewValuesForFunds(List<Fund> funds, FyFinanceDataCollection entity) {

@@ -25,7 +25,7 @@ resourceTypes:
 /finance-storage/finance-data:
   type:
     collection-get:
-      exampleCollection: !include acq-models/mod-finance/examples/fy_finance_data_collection.sample
+      exampleCollection: !include acq-models/mod-finance/examples/fy_finance_data_collection_get.sample
       schemaCollection: fy-finance-data-collection
   get:
     description: Get finance data for a fiscal year
@@ -39,7 +39,7 @@ resourceTypes:
     body:
       application/json:
         type: fy-finance-data-collection
-        example: !include acq-models/mod-finance/examples/fy_finance_data_collection.sample
+        example: !include acq-models/mod-finance/examples/fy_finance_data_collection_put.sample
     responses:
       204:
         description: "Items successfully updated"
