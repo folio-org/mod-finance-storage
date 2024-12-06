@@ -3,6 +3,7 @@ package org.folio.service.fianancedata;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
@@ -14,7 +15,6 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.folio.rest.core.model.RequestContext;
@@ -35,7 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 @ExtendWith(VertxExtension.class)
@@ -53,7 +52,7 @@ public class FinanceDataServiceTest {
   private DBConn dbConn;
 
   @InjectMocks
-  private FinanceDataService financeDataService2;
+  private FinanceDataService financeDataService;
 
   private AutoCloseable mockitoMocks;
 
@@ -69,7 +68,6 @@ public class FinanceDataServiceTest {
 
   @Test
   void shouldSuccessfullyUpdateFinanceData(VertxTestContext testContext) {
-    FinanceDataService financeDataService = Mockito.spy(financeDataService2);
     var collection = createTestFinanceDataCollection();
     var oldFund = new Fund().withId(collection.getFyFinanceData().get(0).getFundId())
       .withName("NAME").withCode("CODE").withFundStatus(Fund.FundStatus.ACTIVE)
@@ -96,11 +94,11 @@ public class FinanceDataServiceTest {
 
     setupMocksForFailure(expectedError);
 
-    financeDataService2.update(collection, requestContext)
+    financeDataService.update(collection, requestContext)
       .onComplete(testContext.failing(error -> {
         testContext.verify(() -> {
           assertEquals("Fund service error", error.getMessage());
-          verify(budgetService, never()).updateBatchBudgets(any(), any(), any());
+          verify(budgetService, never()).updateBatchBudgets(any(), any(), anyBoolean());
           verify(fundService, never()).updateFunds(any(), any());
         });
         testContext.completeNow();
@@ -117,7 +115,7 @@ public class FinanceDataServiceTest {
     when(fundService.getFundsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldFund)));
     when(fundService.updateFunds(any(), any())).thenReturn(Future.succeededFuture());
     when(budgetService.getBudgetsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldBudget)));
-    when(budgetService.updateBatchBudgets(any(), any(), any())).thenReturn(Future.succeededFuture());
+    when(budgetService.updateBatchBudgets(any(), any(), anyBoolean())).thenReturn(Future.succeededFuture());
   }
 
   private void setupMocksForFailure(RuntimeException expectedError) {
@@ -153,7 +151,7 @@ public class FinanceDataServiceTest {
     assertEquals(collection.getFyFinanceData().get(0).getBudgetId(), budgetIdsCaptor.getValue().get(0));
 
     ArgumentCaptor<List<Budget>> budgetCaptor = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetCaptor.capture(), eq(dbConn), any());
+    verify(budgetService).updateBatchBudgets(budgetCaptor.capture(), eq(dbConn), anyBoolean());
     Budget updatedBudget = budgetCaptor.getValue().get(0);
 
     assertNotEquals("NAME CHANGED", updatedBudget.getName());
