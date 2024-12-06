@@ -100,7 +100,7 @@ public class FinanceDataServiceTest {
       .onComplete(testContext.failing(error -> {
         testContext.verify(() -> {
           assertEquals("Fund service error", error.getMessage());
-          verify(budgetService, never()).updateBatchBudgets(any(), any());
+          verify(budgetService, never()).updateBatchBudgets(any(), any(), any());
           verify(fundService, never()).updateFunds(any(), any());
         });
         testContext.completeNow();
@@ -117,7 +117,7 @@ public class FinanceDataServiceTest {
     when(fundService.getFundsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldFund)));
     when(fundService.updateFunds(any(), any())).thenReturn(Future.succeededFuture());
     when(budgetService.getBudgetsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldBudget)));
-    when(budgetService.updateBatchBudgets(any(), any())).thenReturn(Future.succeededFuture());
+    when(budgetService.updateBatchBudgets(any(), any(), any())).thenReturn(Future.succeededFuture());
   }
 
   private void setupMocksForFailure(RuntimeException expectedError) {
@@ -153,7 +153,7 @@ public class FinanceDataServiceTest {
     assertEquals(collection.getFyFinanceData().get(0).getBudgetId(), budgetIdsCaptor.getValue().get(0));
 
     ArgumentCaptor<List<Budget>> budgetCaptor = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).updateBatchBudgets(budgetCaptor.capture(), eq(dbConn));
+    verify(budgetService).updateBatchBudgets(budgetCaptor.capture(), eq(dbConn), any());
     Budget updatedBudget = budgetCaptor.getValue().get(0);
 
     assertNotEquals("NAME CHANGED", updatedBudget.getName());
