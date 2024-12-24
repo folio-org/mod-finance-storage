@@ -182,7 +182,7 @@ public class BatchTransactionService {
     if (budgets.isEmpty()) {
       return succeededFuture();
     }
-    return budgetService.updateBatchBudgets(budgets, conn)
+    return budgetService.updateBatchBudgets(budgets, conn, true)
       .onSuccess(v -> logger.info("Batch transactions: successfully updated {} budgets", budgets.size()))
       .onFailure(t -> logger.error("Batch transactions: failed to update budgets, budgets = {}",
         Json.encode(budgets), t))
