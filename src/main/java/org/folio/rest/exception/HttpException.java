@@ -30,9 +30,10 @@ public class HttpException extends RuntimeException {
   public HttpException(int code, String message, Throwable cause) {
     super(message, cause);
     this.code = code;
+    var ec = code == 409 ? CONFLICT : GENERIC_ERROR_CODE;
     Parameter causeParam = new Parameter().withKey("cause").withValue(cause.getMessage());
     Error error = new Error()
-      .withCode(ErrorCodes.GENERIC_ERROR_CODE.getCode())
+      .withCode(ec.getCode())
       .withMessage(message)
       .withParameters(List.of(causeParam));
     this.errors = new Errors()
@@ -43,17 +44,10 @@ public class HttpException extends RuntimeException {
   public HttpException(int code, Throwable cause) {
     super(cause.getMessage(), cause);
     this.code = code;
+    var ec = code == 409 ? CONFLICT : GENERIC_ERROR_CODE;
     this.errors = new Errors()
-      .withErrors(List.of(new Error().withCode(ErrorCodes.GENERIC_ERROR_CODE.getCode()).withMessage(cause.getMessage())))
+      .withErrors(List.of(new Error().withCode(ec.getCode()).withMessage(cause.getMessage())))
       .withTotalRecords(1);
-  }
-
-  public HttpException(int code, ErrorCodes errCodes) {
-    super(errCodes.getDescription());
-    this.errors = new Errors()
-      .withErrors(List.of(new Error().withCode(errCodes.getCode()).withMessage(errCodes.getDescription())))
-      .withTotalRecords(1);
-    this.code = code;
   }
 
   public HttpException(int code, Error error) {
