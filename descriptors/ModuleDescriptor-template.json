@@ -432,6 +432,17 @@
       ]
     },
     {
+      "id": "finance-storage.transaction-totals",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/transaction-totals",
+          "permissionsRequired": ["finance-storage.transaction-totals.collection.get"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.fund-update-logs",
       "version": "1.0",
       "handlers": [
@@ -985,6 +996,19 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.transaction-totals.collection.get",
+      "displayName" : "finance-storage.transaction-totals.collection get",
+      "description" : "Get collection of transaction totals"
+    },
+    {
+      "permissionName" : "finance-storage.transaction-totals.all",
+      "displayName" : "All transaction totals perms",
+      "description" : "All permissions for the transaction total",
+      "subPermissions" : [
+        "finance-storage.transaction-totals.collection.get"
+      ]
+    },
+    {
       "permissionName" : "finance-storage.fund-update-logs.collection.get",
       "displayName" : "fund-update-logs-collection get",
       "description" : "Get collection of fund update logs"
@@ -1053,6 +1077,7 @@
         "finance-storage.groups.all",
         "finance-storage.ledgers.all",
         "finance-storage.transactions.all",
+        "finance-storage.transaction-totals.all",
         "finance-storage.fund-types.all",
         "finance-storage.fund-update-logs.all",
         "finance-storage.finance-data.all"
