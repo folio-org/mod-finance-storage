@@ -31,6 +31,7 @@ import org.folio.rest.impl.LedgerFundBudgetStatusTest;
 import org.folio.rest.impl.LedgerRolloverBudgetTest;
 import org.folio.rest.impl.TenantSampleDataTest;
 import org.folio.rest.impl.TransactionTest;
+import org.folio.rest.impl.TransactionTotalApiTest;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -224,4 +225,7 @@ public class StorageTestSuite {
 
   @Nested
   class FinanceDataServiceTestNested extends FinanceDataServiceTest {}
+
+  @Nested
+  class TransactionTotalApiTestNested extends TransactionTotalApiTest {}
 }
