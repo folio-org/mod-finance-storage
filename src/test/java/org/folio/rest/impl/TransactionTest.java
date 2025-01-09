@@ -31,7 +31,7 @@ public class TransactionTest extends TestBase {
   protected static final Header TRANSACTION_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, TRANSACTION_TEST_TENANT);
 
   private static final String BATCH_TRANSACTION_SAMPLE = "data/transactions/batch/batch_with_patch.json";
-  private static final String BATCH_TRANSACTION_ENDPOINT = "/finance-storage/transactions/batch-all-or-nothing";
+  protected static final String BATCH_TRANSACTION_ENDPOINT = "/finance-storage/transactions/batch-all-or-nothing";
   private static final String TRANSACTION_ENDPOINT_BY_ID = "/finance-storage/transactions/{id}";
   private static TenantJob tenantJob;
 

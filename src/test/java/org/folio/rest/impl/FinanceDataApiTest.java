@@ -116,7 +116,7 @@ public class FinanceDataApiTest extends TestBase {
     fyFinanceData.setBudgetAllowableExpenditure(expectedNumber);
     fyFinanceData.setBudgetAllowableEncumbrance(expectedNumber);
 
-    var updatedCollection = new FyFinanceDataCollection().withFyFinanceData(List.of(fyFinanceData)).withTotalRecords(1);
+    var updatedCollection = new FyFinanceDataCollection().withFyFinanceData(List.of(fyFinanceData)).withUpdateType(FyFinanceDataCollection.UpdateType.COMMIT).withTotalRecords(1);
 
     // Update finance data as a bulk
     var updateResponse = putData(FINANCE_DATA_ENDPOINT, JsonObject.mapFrom(updatedCollection).encodePrettily(), TENANT_HEADER);
