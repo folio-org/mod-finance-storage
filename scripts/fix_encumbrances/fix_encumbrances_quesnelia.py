@@ -6,6 +6,7 @@ import sys
 import time
 from datetime import datetime
 from decimal import Decimal
+from itertools import islice, chain
 from http import HTTPStatus
 
 import httpx
@@ -13,6 +14,7 @@ import requests
 
 ITEM_MAX = 2147483647
 MAX_BY_CHUNK = 1000
+IDS_CHUNK = 15
 
 okapi_url = ''
 headers = {}
@@ -63,20 +65,27 @@ async def get_request_without_query(url: str) -> dict:
         raise SystemExit(1)
 
 
-async def get_request(url: str, query: str) -> dict:
-    params = {'query': query, 'offset': '0', 'limit': ITEM_MAX}
-
+async def get_request_with_params(url: str, query: str, params: dict, key: str) -> list:
     try:
         resp = await client.get(url, headers=headers, params=params, timeout=ASYNC_CLIENT_TIMEOUT)
 
         if resp.status_code == HTTPStatus.OK:
-            return resp.json()
+            collection = resp.json()
+            if key not in collection.keys():
+                raise Exception(f'Could not find key in result of get request; url={url}, key={key}')
+            return collection[key]
         else:
             print(f'Error getting records by {url} ?query= "{query}": \n{resp.text} ')
             raise SystemExit(1)
     except Exception as err:
         print(f'Error getting records by {url}?query={query}: {err=}')
         raise SystemExit(1)
+
+
+async def get_request(url: str, query: str, key: str) -> list:
+    params = {'query': query, 'offset': '0', 'limit': ITEM_MAX}
+    records = await get_request_with_params(url, query, params, key)
+    return records
 
 
 async def post_request(url: str, data):
@@ -121,7 +130,7 @@ def get_fiscal_years_by_query(query) -> dict:
         raise SystemExit(1)
 
 
-def get_by_chunks(url, query, key) -> list:
+async def get_by_chunks(url, query, key) -> list:
     # See https://github.com/folio-org/raml-module-builder#implement-chunked-bulk-download
     records = []
     last_id = None
@@ -131,13 +140,7 @@ def get_by_chunks(url, query, key) -> list:
         else:
             modified_query = query + f' AND id > {last_id} sortBy id'
         params = {'query': modified_query, 'offset': 0, 'limit': MAX_BY_CHUNK}
-        r = requests.get(url, headers=headers, params=params)
-        if r.status_code != 200:
-            raise_exception_for_reply(r)
-        j = r.json()
-        if key not in j.keys():
-            raise Exception(f'Could not find key when retrieving by chunks; url={url}, key={key}')
-        records_in_chunk = j[key]
+        records_in_chunk = await get_request_with_params(url, query, params, key)
         if len(records_in_chunk) == 0:
             break
         records.extend(records_in_chunk)
@@ -145,9 +148,9 @@ def get_by_chunks(url, query, key) -> list:
     return records
 
 
-def get_order_ids_by_query(query) -> list:
+async def get_order_ids_by_query(query) -> list:
     try:
-        orders = get_by_chunks(okapi_url + 'orders-storage/purchase-orders', query, 'purchaseOrders')
+        orders = await get_by_chunks(okapi_url + 'orders-storage/purchase-orders', query, 'purchaseOrders')
         ids = []
         for order in orders:
             ids.append(order['id'])
@@ -157,22 +160,25 @@ def get_order_ids_by_query(query) -> list:
     return ids
 
 
-async def get_encumbrances_by_query(query) -> list:
+async def get_transactions_by_query(query) -> list:
     url = okapi_url + 'finance-storage/transactions'
-    response = await get_request(url, query)
-    return response['transactions']
+    transactions = await get_request(url, query, 'transactions')
+    return transactions
 
 
-async def get_encumbrance_by_ids(encumbrance_ids) -> list:
-    query = ''
-    for idx, enc_id in enumerate(encumbrance_ids):
-        if len(encumbrance_ids) != idx + 1:
-            query = query + f"id=={enc_id} OR "
-        else:
-            query = query + f"id=={enc_id}"
-    resp = await get_request(okapi_url + 'finance-storage/transactions', query)
+async def get_transactions_by_ids(transaction_ids) -> list:
+    query = f'id==({' OR '.join(transaction_ids)})'
+    transactions = await get_transactions_by_query(query)
+    return transactions
 
-    return resp['transactions']
+
+async def get_polines_by_ids(poline_ids) -> list:
+    polines = []
+    for poline_ids_chunk in chunks(poline_ids, IDS_CHUNK):
+        query = f'id==({' OR '.join(poline_ids_chunk)})'
+        polines_chunk = await get_request(okapi_url + 'orders-storage/po-lines', query, 'poLines')
+        polines.extend(polines_chunk)
+    return polines
 
 
 def get_fiscal_year(fiscal_year_code) -> dict:
@@ -191,20 +197,12 @@ def test_fiscal_year_current(fiscal_year) -> bool:
     return start < now < end
 
 
-def get_closed_orders_ids() -> list:
-    print('Retrieving closed order ids...')
-    query = 'workflowStatus=="Closed"'
-    closed_orders_ids = get_order_ids_by_query(query)
-    print('  Closed orders:', len(closed_orders_ids))
-    return closed_orders_ids
-
-
-def get_open_orders_ids() -> list:
-    print('Retrieving open order ids...')
-    query = 'workflowStatus=="Open"'
-    open_orders_ids = get_order_ids_by_query(query)
-    print('  Open orders:', len(open_orders_ids))
-    return open_orders_ids
+async def get_ids_of_orders_with_status(status: str) -> list:
+    print(f'Retrieving order ids for orders with status {status}...')
+    query = f'workflowStatus=="{status}"'
+    orders_ids = await get_order_ids_by_query(query)
+    print(f'  {status} orders:', len(orders_ids))
+    return orders_ids
 
 
 async def batch_update(transactions: list):
@@ -220,8 +218,8 @@ async def batch_delete(transaction_ids: list):
 
 
 async def get_budgets_by_query(query) -> list:
-    budget_collection = await get_request(okapi_url + 'finance-storage/budgets', query)
-    return budget_collection['budgets']
+    budgets = await get_request(okapi_url + 'finance-storage/budgets', query, 'budgets')
+    return budgets
 
 
 async def get_budget_by_fund_id(fund_id, fiscal_year_id) -> dict:
@@ -241,10 +239,12 @@ async def get_budgets_by_fiscal_year(fiscal_year_id) -> list:
 async def get_order_encumbrances(order_id, fiscal_year_id, sem=None) -> list:
     url = okapi_url + 'finance-storage/transactions'
     query = f'encumbrance.sourcePurchaseOrderId=={order_id} AND fiscalYearId=={fiscal_year_id}'
-    response = await get_request(url, query)
-    if sem is not None:
-        sem.release()
-    return response['transactions']
+    try:
+        transactions = await get_request(url, query, 'transactions')
+    finally:
+        if sem is not None:
+            sem.release()
+    return transactions
 
 
 def progress(index, total_elements, label=''):
@@ -261,6 +261,25 @@ def progress(index, total_elements, label=''):
 
     if index == total_elements:
         print()
+
+
+async def update_poline(poline):
+    url = f"{okapi_url}orders-storage/po-lines/{poline['id']}"
+    await put_request(url, poline)
+
+
+def chunks(iterable, n) -> list:
+    # could be replaced by itertools.batched with python 3.12
+    if n < 1:
+        raise ValueError('n must be at least one')
+    it = iter(iterable)
+    while True:
+        chunk_it = islice(it, n)
+        try:
+            first_el = next(chunk_it)
+        except StopIteration:
+            return
+        yield list(chain((first_el,), chunk_it))
 
 
 # ---------------------------------------------------
@@ -353,8 +372,7 @@ async def remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_
 
 async def get_polines_by_order_id(order_id) -> list:
     query = f'purchaseOrderId=={order_id}'
-    resp = await get_request(okapi_url + 'orders-storage/po-lines', query)
-    po_lines = resp['poLines']
+    po_lines = await get_request(okapi_url + 'orders-storage/po-lines', query, 'poLines')
     return po_lines
 
 
@@ -445,8 +463,7 @@ async def fix_poline_encumbrance_link(poline, order_encumbrances):
 
     # update poline if one or more fund distributions modified
     if poline_needs_updates:
-        url = f"{okapi_url}orders-storage/po-lines/{poline['id']}"
-        await put_request(url, poline)
+        await update_poline(poline)
 
 
 async def process_poline_encumbrances_relations(poline, order_encumbrances):
@@ -494,12 +511,11 @@ async def fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, fy_
 # ---------------------------------------------------
 # Fix encumbrance orderStatus for closed orders
 
-async def get_order_encumbrances_to_fix(order_id, fiscal_year_id) -> dict:
+async def get_order_encumbrances_to_fix(order_id, fiscal_year_id) -> list:
     query = f'encumbrance.orderStatus<>"Closed" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
             f'fiscalYearId=={fiscal_year_id}'
     url = okapi_url + 'finance-storage/transactions'
-
-    return await get_request(url, query)
+    return await get_request(url, query, 'transactions')
 
 
 async def unrelease_order_encumbrances(encumbrances) -> list:
@@ -516,7 +532,7 @@ async def unrelease_order_encumbrances(encumbrances) -> list:
     # - retrieving all at once will generate too long query and fail the request due to RMB restrictions
     enc_ids = build_ids_2d_array(encumbrances)
     for enc_ids_row in enc_ids:
-        modified_encumbrance_futures.append(get_encumbrance_by_ids(enc_ids_row))
+        modified_encumbrance_futures.append(get_transactions_by_ids(enc_ids_row))
     modified_encumbrances = await asyncio.gather(*modified_encumbrance_futures)
 
     flatten_list_of_modified_encumbrances = sum(modified_encumbrances, [])
@@ -572,10 +588,10 @@ async def fix_order_encumbrances_order_status(order_id, encumbrances):
 
 async def fix_encumbrance_order_status_for_closed_order(order_id, fiscal_year_id, sem) -> int:
     encumbrances = await get_order_encumbrances_to_fix(order_id, fiscal_year_id)
-    if len(encumbrances['transactions']) != 0:
-        await fix_order_encumbrances_order_status(order_id, encumbrances['transactions'])
+    if len(encumbrances) != 0:
+        await fix_order_encumbrances_order_status(order_id, encumbrances)
     sem.release()
-    return len(encumbrances['transactions'])
+    return len(encumbrances)
 
 
 async def fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id):
@@ -599,6 +615,78 @@ async def fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fisc
 
 
 # ---------------------------------------------------
+# Remove pending order links to encumbrances in previous fiscal years
+
+async def get_orders_encumbrances_with_different_fy(order_ids, fiscal_year_id) -> list:
+    url = okapi_url + 'finance-storage/transactions'
+    ids = f'({' OR '.join(order_ids)})'
+    query = f'encumbrance.sourcePurchaseOrderId=={ids} AND fiscalYearId<>{fiscal_year_id}'
+    transactions = await get_by_chunks(url, query, 'transactions')
+    return transactions
+
+
+async def get_active_budgets_by_fund_ids(fund_ids) -> list:
+    budgets = []
+    for fund_ids_chunk in chunks(fund_ids, IDS_CHUNK):
+        query = f'budgetStatus==Active AND fundId==({' OR '.join(fund_ids_chunk)})'
+        budgets_chunk = await get_budgets_by_query(query)
+        budgets.extend(budgets_chunk)
+    return budgets
+
+
+async def select_encumbrances_without_active_budgets(encumbrances) -> list:
+    if len(encumbrances) == 0:
+        return []
+    fund_ids = set(map(lambda enc: enc['fromFundId'], encumbrances))
+    budgets = await get_active_budgets_by_fund_ids(fund_ids)
+    ids_of_funds_with_active_budgets = set(map(lambda budget: budget['fundId'], budgets))
+    return list(filter(lambda enc: enc['fromFundId'] not in ids_of_funds_with_active_budgets, encumbrances))
+
+
+async def remove_links_to_encumbrances(encumbrances) -> int:
+    poline_ids = list(set(map(lambda enc: enc['encumbrance']['sourcePoLineId'], encumbrances)))
+    encumbrance_ids = list(map(lambda enc: enc['id'], encumbrances))
+    polines = await get_polines_by_ids(poline_ids)
+    nb_removed = 0
+    for poline in polines:
+        for fd in poline['fundDistribution']:
+            if 'encumbrance' in fd and fd['encumbrance'] in encumbrance_ids:
+                del fd['encumbrance']
+                nb_removed = nb_removed + 1
+        await update_poline(poline)
+    return nb_removed
+
+
+async def remove_pending_order_links(order_ids, fiscal_year_id, sem) -> int:
+    encumbrances = await get_orders_encumbrances_with_different_fy(order_ids, fiscal_year_id)
+    filtered_encumbrances = await select_encumbrances_without_active_budgets(encumbrances)
+    nb_removed = 0
+    if len(filtered_encumbrances) != 0:
+        nb_removed = nb_removed + await remove_links_to_encumbrances(filtered_encumbrances)
+    sem.release()
+    return nb_removed
+
+
+async def remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_ids, fiscal_year_id):
+    print('Remove pending order links to encumbrances in previous fiscal years...')
+    if len(pending_orders_ids) == 0:
+        print('  Found no pending orders.')
+        return
+    fix_encumbrance_futures = []
+    max_active_order_threads = 5
+    sem = asyncio.Semaphore(max_active_order_threads)
+    for idx, order_ids in enumerate(chunks(pending_orders_ids, IDS_CHUNK)):
+        await sem.acquire()
+        progress(idx, len(pending_orders_ids))
+        fixed_encumbrance_future = asyncio.ensure_future(remove_pending_order_links(order_ids, fiscal_year_id, sem))
+        fix_encumbrance_futures.append(fixed_encumbrance_future)
+    nb_fixed_encumbrances = await asyncio.gather(*fix_encumbrance_futures)
+    progress(len(pending_orders_ids), len(pending_orders_ids))
+
+    print(f'  Removed pending order links to {sum(nb_fixed_encumbrances)} encumbrance(s).')
+
+
+# ---------------------------------------------------
 # Unrelease open orders encumbrances with non-zero amounts
 
 async def unrelease_encumbrances(order_id, encumbrances):
@@ -612,9 +700,8 @@ async def unrelease_encumbrances(order_id, encumbrances):
 async def unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id, sem) -> int:
     query = f'amount<>0.0 AND encumbrance.status=="Released" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
             f'fiscalYearId=={fiscal_year_id}'
-    transactions_response = await get_request(okapi_url + 'finance-storage/transactions', query)
+    order_encumbrances = await get_request(okapi_url + 'finance-storage/transactions', query, 'transactions')
 
-    order_encumbrances = transactions_response['transactions']
     # unrelease encumbrances by order id
     if len(order_encumbrances) != 0:
         await unrelease_encumbrances(order_id, order_encumbrances)
@@ -656,9 +743,8 @@ async def release_encumbrances_with_negative_amounts(order_id, fiscal_year_id, s
     query = 'amount </number 0 AND encumbrance.status=="Unreleased" AND ' \
             f'(encumbrance.amountAwaitingPayment >/number 0 OR encumbrance.amountExpended >/number 0) AND ' \
             f'encumbrance.sourcePurchaseOrderId=={order_id} AND fiscalYearId=={fiscal_year_id}'
-    transactions_response = await get_request(okapi_url + 'finance-storage/transactions', query)
+    order_encumbrances = await get_request(okapi_url + 'finance-storage/transactions', query, 'transactions')
 
-    order_encumbrances = transactions_response['transactions']
     # release encumbrances by order id
     if len(order_encumbrances) != 0:
         await release_encumbrances(order_id, order_encumbrances)
@@ -797,7 +883,7 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
 async def get_order_encumbrances_to_release(order_id, fiscal_year_id) -> list:
     query = f'encumbrance.status=="Unreleased" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
             f'fiscalYearId=={fiscal_year_id}'
-    return await get_encumbrances_by_query(query)
+    return await get_transactions_by_query(query)
 
 
 async def release_order_encumbrances(order_id, fiscal_year_id, sem) -> int:
@@ -830,11 +916,13 @@ async def release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, f
 # ---------------------------------------------------
 # All operations
 
-async def all_operations(closed_orders_ids, open_orders_ids, open_and_closed_orders_ids, fiscal_year_id, fy_is_current):
+async def all_operations(closed_orders_ids, open_orders_ids, pending_orders_ids, open_and_closed_orders_ids,
+        fiscal_year_id, fy_is_current):
     await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id)
     await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, fy_is_current)
     if fy_is_current:
         await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
+        await remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_ids, fiscal_year_id)
     await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
     await release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids)
     await release_cancelled_order_line_encumbrances(fiscal_year_id, open_orders_ids)
@@ -879,41 +967,48 @@ async def run_operation(choice, fiscal_year_code, tenant, username, password):
     fiscal_year_id = fiscal_year['id']
 
     if choice == 1:
-        closed_orders_ids = get_closed_orders_ids()
-        open_orders_ids = get_open_orders_ids()
+        closed_orders_ids = await get_ids_of_orders_with_status('Closed')
+        open_orders_ids = await get_ids_of_orders_with_status('Open')
+        pending_orders_ids = await get_ids_of_orders_with_status('Pending')
         open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
-        await all_operations(closed_orders_ids, open_orders_ids, open_and_closed_orders_ids, fiscal_year_id,
-                             fy_is_current)
+        await all_operations(closed_orders_ids, open_orders_ids, pending_orders_ids, open_and_closed_orders_ids,
+         fiscal_year_id, fy_is_current)
     elif choice == 2:
-        closed_orders_ids = get_closed_orders_ids()
-        open_orders_ids = get_open_orders_ids()
+        closed_orders_ids = await get_ids_of_orders_with_status('Closed')
+        open_orders_ids = await get_ids_of_orders_with_status('Open')
         open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
         await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id)
     elif choice == 3:
-        open_orders_ids = get_open_orders_ids()
+        open_orders_ids = await get_ids_of_orders_with_status('Open')
         await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id, fy_is_current)
     elif choice == 4:
         if not fy_is_current:
             print('Fiscal year is not current - fixing encumbrance order status is not needed.')
         else:
-            closed_orders_ids = get_closed_orders_ids()
+            closed_orders_ids = await get_ids_of_orders_with_status('Closed')
             await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
     elif choice == 5:
-        open_orders_ids = get_open_orders_ids()
-        await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
+        if not fy_is_current:
+            print('Fiscal year is not current - removing pending orders encumbrance links is not needed.')
+        else:
+            pending_orders_ids = await get_ids_of_orders_with_status('Pending')
+            await remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_ids, fiscal_year_id)
     elif choice == 6:
-        open_orders_ids = get_open_orders_ids()
-        await release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids)
+        open_orders_ids = await get_ids_of_orders_with_status('Open')
+        await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
     elif choice == 7:
-        open_orders_ids = get_open_orders_ids()
-        await release_cancelled_order_line_encumbrances(fiscal_year_id, open_orders_ids)
+        open_orders_ids = await get_ids_of_orders_with_status('Open')
+        await release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids)
     elif choice == 8:
-        closed_orders_ids = get_closed_orders_ids()
-        open_orders_ids = get_open_orders_ids()
+        open_orders_ids = await get_ids_of_orders_with_status('Open')
+        await release_cancelled_order_line_encumbrances(fiscal_year_id, open_orders_ids)
+    elif choice == 9:
+        closed_orders_ids = await get_ids_of_orders_with_status('Closed')
+        open_orders_ids = await get_ids_of_orders_with_status('Open')
         open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
         await recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_id)
-    elif choice == 9:
-        closed_orders_ids = get_closed_orders_ids()
+    elif choice == 10:
+        closed_orders_ids = await get_ids_of_orders_with_status('Closed')
         await release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, fiscal_year_id)
     delta = round(time.time() - initial_time)
     hours, remainder = divmod(delta, 3600)
@@ -926,22 +1021,23 @@ def menu(fiscal_year_code, tenant, username):
     print('2) Remove duplicate encumbrances')
     print('3) Fix order line - encumbrance relations')
     print('4) Fix encumbrance order status for closed orders (current fiscal year only)')
-    print('5) Unrelease open order encumbrances with nonzero amounts')
-    print('6) Release open order encumbrances with negative amounts')
-    print('7) Release cancelled order line encumbrances')
-    print('8) Recalculate all budget encumbered amounts (avoid any transaction while this is running!)')
-    print('9) Release unreleased encumbrances for closed orders')
-    print('10) Quit')
+    print('5) Remove pending order links to encumbrances in previous fiscal years (current fiscal year only)')
+    print('6) Unrelease open order encumbrances with nonzero amounts')
+    print('7) Release open order encumbrances with negative amounts')
+    print('8) Release cancelled order line encumbrances')
+    print('9) Recalculate all budget encumbered amounts (avoid any transaction while this is running!)')
+    print('10) Release unreleased encumbrances for closed orders')
+    print('11) Quit')
     choice_s = input('Choose an option: ')
     try:
         choice_i = int(choice_s)
     except ValueError:
         print('Invalid option.')
         return
-    if choice_i < 1 or choice_i > 10:
+    if choice_i < 1 or choice_i > 11:
         print('Invalid option.')
         return
-    if choice_i == 10:
+    if choice_i == 11:
         return
     if choice_i == 1 and dryrun:
         print("Note that, because dry-run mode is enabled, some operations will behave differently because they "
