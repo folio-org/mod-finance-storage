@@ -16,7 +16,7 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 ### Version to use :
 Because of a change in the transaction API, there is a new version for Quesnelia.
 - Use `fix_encumbrances_quesnelia.py` in Quesnelia and later versions of FOLIO
-- Use `fix_encumbrances.py` for any previous version
+- Use `old_fix_encumbrances.py` for any previous version
 
 ### Script arguments :
 
@@ -27,10 +27,10 @@ Because of a change in the transaction API, there is a new version for Quesnelia
 - User password is required as a command-line input.
 
 ### Execution example :
-`python3 ./fix_encumbrances.py 'FY2024' 'http://localhost:9130/' 'diku' 'diku_admin'`
+`python3 ./fix_encumbrances_quesnelia.py 'FY2025' 'http://localhost:9130/' 'diku' 'diku_admin'`
 
 To save output in a file, use `tee` on Linux:\
-`python3 ./fix_encumbrances.py 'FY2024' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
+`python3 ./fix_encumbrances_quesnelia.py 'FY2025' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
 
 ### Required permissions for the user
 These can be set with a permission group created with the API.
@@ -66,15 +66,16 @@ After the script is launched, it is possible to select a dry-run mode. This will
 
 After the mode selection, it is possible to select the operation(s) to execute:
 
-1. Run all fixes (can be long).
-2. Remove duplicate encumbrances (one released, one unreleased for the same thing).
-3. Fix order line - encumbrance relations: fix `encumbrance` links in PO lines in case the poline fund distribution refers to the encumbrance from the previous fiscal year; also fix the fund id in encumbrances if they don't match their po line distribution fund id. This whole step is disabled for past fiscal years.
-4. Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterward because it is not possible to change this property for released encumbrances.
-5. Change the encumbrance status to `Unreleased` for all open orders' encumbrances with non-zero amounts.
-6. Release open order unreleased encumbrances with negative amounts when they have `amountAwaitingPayment` or `amountExpended` > 0.
-7. Release cancelled order line encumbrances: releases encumbrances when their order line has a `paymentStatus` of `Cancelled`.
-8. Recalculate the encumbered property for all the budgets related to these encumbrances by summing the related unreleased encumbrances.
-9. Release all unreleased encumbrances for closed orders.
+- Run all fixes (can be long).
+- Remove duplicate encumbrances (one released, one unreleased for the same thing).
+- Fix order line - encumbrance relations: fix `encumbrance` links in PO lines in case the poline fund distribution refers to the encumbrance from the previous fiscal year; also fix the fund id in encumbrances if they don't match their po line distribution fund id. This whole step is disabled for past fiscal years.
+- Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterward because it is not possible to change this property for released encumbrances.
+- Remove pending order links to encumbrances in previous fiscal years (Quesnelia+ version only; current fiscal year only) - this resolves an issue when opening a pending order after FYRO. It only removes encumbrance links if they use a fund without an active budget.
+- Change the encumbrance status to `Unreleased` for all open orders' encumbrances with non-zero amounts.
+- Release open order unreleased encumbrances with negative amounts when they have `amountAwaitingPayment` or `amountExpended` > 0.
+- Release cancelled order line encumbrances: releases encumbrances when their order line has a `paymentStatus` of `Cancelled`.
+- Recalculate the encumbered property for all the budgets related to these encumbrances by summing the related unreleased encumbrances.
+- Release all unreleased encumbrances for closed orders.
 
 ## JIRA tickets
 - [MODFISTO-326](https://folio-org.atlassian.net/browse/MODFISTO-326) - Create a script to fix Lotus encumbrance issues
@@ -90,3 +91,4 @@ After the mode selection, it is possible to select the operation(s) to execute:
 - [MODFISTO-383](https://folio-org.atlassian.net/browse/MODFISTO-383) - Encumbrance script: release encumbrances for cancelled POLs
 - [MODFISTO-425](https://folio-org.atlassian.net/browse/MODFISTO-425) - Disable fixing encumbrance fund id for past fiscal years
 - [MODFISTO-462](https://folio-org.atlassian.net/browse/MODFISTO-462) - Update the encumbrance script to use the new transaction API
+- [MODFISTO-514](https://folio-org.atlassian.net/browse/MODFISTO-514) - Remove links to encumbrances for pending orders in an old FY
