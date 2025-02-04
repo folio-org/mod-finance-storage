@@ -9,3 +9,4 @@
 /.checkstyle
 /.classpath
 /.project
+.env
