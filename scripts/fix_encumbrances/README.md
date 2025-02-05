@@ -43,6 +43,7 @@ These can be set with a permission group created with the API.
 - `finance-storage.transactions.batch.execute`
 - `finance-storage.budgets.item.put`
 - `orders-storage.purchase-orders.collection.get`
+- `orders-storage.purchase-orders.item.get`
 - `orders-storage.po-lines.collection.get`
 - `orders-storage.po-lines.item.get`
 - `orders-storage.po-lines.item.put`
@@ -67,9 +68,10 @@ After the script is launched, it is possible to select a dry-run mode. This will
 After the mode selection, it is possible to select the operation(s) to execute:
 
 - Run all fixes (can be long).
-- Remove duplicate encumbrances (one released, one unreleased for the same thing).
+- Remove duplicate encumbrances (remove one when 2 encumbrances have the same `orderId`/`sourcePoLineId`/`fromFundId`/`expenseClassId`/`fiscalYearId`).
 - Fix order line - encumbrance relations: fix `encumbrance` links in PO lines in case the poline fund distribution refers to the encumbrance from the previous fiscal year; also fix the fund id in encumbrances if they don't match their po line distribution fund id. This whole step is disabled for past fiscal years.
-- Fix the `orderStatus` property of encumbrances for closed orders. In order to do this, the encumbrances have to be unreleased first and released afterward because it is not possible to change this property for released encumbrances.
+- Fix the `orderStatus` property of encumbrances for closed orders.
+- Fix the `orderStatus`, `orderType` and `reEncumber` properties of encumbrances for open and pending orders.
 - Remove pending order links to encumbrances in previous fiscal years (Quesnelia+ version only; current fiscal year only) - this resolves an issue when opening a pending order after FYRO. It only removes encumbrance links if they use a fund without an active budget.
 - Change the encumbrance status to `Unreleased` for all open orders' encumbrances with non-zero amounts.
 - Release open order unreleased encumbrances with negative amounts when they have `amountAwaitingPayment` or `amountExpended` > 0.
@@ -92,3 +94,5 @@ After the mode selection, it is possible to select the operation(s) to execute:
 - [MODFISTO-425](https://folio-org.atlassian.net/browse/MODFISTO-425) - Disable fixing encumbrance fund id for past fiscal years
 - [MODFISTO-462](https://folio-org.atlassian.net/browse/MODFISTO-462) - Update the encumbrance script to use the new transaction API
 - [MODFISTO-514](https://folio-org.atlassian.net/browse/MODFISTO-514) - Remove links to encumbrances for pending orders in an old FY
+- [MODFISTO-417](https://folio-org.atlassian.net/browse/MODFISTO-417) - Fix encumbrances with a bad orderType
+- [MODFISTO-491](https://folio-org.atlassian.net/browse/MODFISTO-491) - Fix inconsistent reEncumber values
