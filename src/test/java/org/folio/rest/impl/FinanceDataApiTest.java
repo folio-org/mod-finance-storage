@@ -56,7 +56,7 @@ public class FinanceDataApiTest extends TestBase {
 
   @Test
   public void positive_testGetQuery() {
-    verifyCollectionQuantity(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==7a4c4d30-3b63-4102-8e2d-3ee5792d7d02)", 21, TENANT_HEADER);
+    verifyCollectionQuantity(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==7a4c4d30-3b63-4102-8e2d-3ee5792d7d02)", 24, TENANT_HEADER);
     verifyCollectionQuantity(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==9b1d00d1-1f3d-4f1c-8e4b-0f1e3b7b1b1b)", 0, TENANT_HEADER);
 
     var response = getData(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==7a4c4d30-3b63-4102-8e2d-3ee5792d7d02)", TENANT_HEADER);
@@ -74,6 +74,7 @@ public class FinanceDataApiTest extends TestBase {
     assertNotNull(actualFyFinanceData.getBudgetName());
     assertNotNull(actualFyFinanceData.getBudgetStatus());
     assertNotNull(actualFyFinanceData.getBudgetInitialAllocation());
+    assertNotNull(actualFyFinanceData.getBudgetCurrentAllocation());
     assertNotNull(actualFyFinanceData.getBudgetAllowableExpenditure());
     assertNotNull(actualFyFinanceData.getBudgetAllowableEncumbrance());
     assertNotNull(actualFyFinanceData.getBudgetAcqUnitIds());

@@ -141,7 +141,7 @@ public class FinanceDataServiceTest {
     assertNotEquals("CODE CHANGED", updatedFund.getCode());
     assertNotEquals("NAME CHANGED", updatedFund.getName());
 
-    assertEquals(Fund.FundStatus.ACTIVE, updatedFund.getFundStatus());
+    assertEquals(Fund.FundStatus.INACTIVE, updatedFund.getFundStatus());
     assertEquals("New Description", updatedFund.getDescription());
   }
 
@@ -179,6 +179,7 @@ public class FinanceDataServiceTest {
       .withBudgetName("NAME CHANGED")
       .withBudgetStatus(FyFinanceData.BudgetStatus.INACTIVE)
       .withBudgetInitialAllocation(1000.0)
+      .withBudgetCurrentAllocation(5000.0)
       .withBudgetAllowableExpenditure(800.0)
       .withBudgetAllowableEncumbrance(700.0)
       .withBudgetAcqUnitIds(List.of("unit1"));
