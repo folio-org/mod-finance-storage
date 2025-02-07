@@ -17,6 +17,7 @@ SELECT
     'budgetName', budget.jsonb ->>'name',
     'budgetStatus', budget.jsonb ->>'budgetStatus',
     'budgetInitialAllocation', budget.jsonb ->>'initialAllocation',
+    'budgetCurrentAllocation', (budget.jsonb->'initialAllocation')::decimal + (budget.jsonb->'allocationTo')::decimal - (budget.jsonb->'allocationFrom')::decimal,
     'budgetAllowableExpenditure', budget.jsonb ->>'allowableExpenditure',
     'budgetAllowableEncumbrance', budget.jsonb ->>'allowableEncumbrance',
     'budgetAcqUnitIds', budget.jsonb ->'acqUnitIds',
@@ -24,13 +25,15 @@ SELECT
     'groupCode', groups.jsonb ->> 'code'
   ) as jsonb
 FROM ${myuniversity}_${mymodule}.fiscal_year
-LEFT OUTER JOIN ${myuniversity}_${mymodule}.ledger
-    ON ledger.fiscalyearoneid = fiscal_year.id
-LEFT OUTER JOIN ${myuniversity}_${mymodule}.fund
+INNER JOIN ${myuniversity}_${mymodule}.fiscal_year fy_one
+    ON fy_one.jsonb->>'series' = fiscal_year.jsonb->>'series'
+INNER JOIN ${myuniversity}_${mymodule}.ledger
+    ON ledger.fiscalyearoneid = fy_one.id
+INNER JOIN ${myuniversity}_${mymodule}.fund
     ON fund.ledgerid = ledger.id
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.budget
-    ON fund.id = budget.fundid
+    ON budget.fundid = fund.id AND budget.fiscalYearId = fiscal_year.id
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year
-    ON fund.id = group_fund_fiscal_year.fundid
+    ON group_fund_fiscal_year.fundid = fund.id
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.groups
-    ON group_fund_fiscal_year.groupid = groups.id;
+    ON groups.id = group_fund_fiscal_year.groupid;

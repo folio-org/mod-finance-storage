@@ -77,6 +77,7 @@ public class FinanceDataService {
       .orElseThrow();
 
     fund.setDescription(fundFinanceData.getFundDescription());
+    fund.setFundStatus(Fund.FundStatus.fromValue(fundFinanceData.getFundStatus().value()));
     if (fundFinanceData.getFundTags() != null && isNotEmpty(fundFinanceData.getFundTags().getTagList())) {
       fund.setTags(new Tags().withTagList(fundFinanceData.getFundTags().getTagList()));
     }
