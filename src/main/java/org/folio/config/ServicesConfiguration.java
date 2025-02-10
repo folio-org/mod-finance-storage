@@ -167,7 +167,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public FinanceDataService financeDataService(FundService fundService, BudgetService budgetService) {
-    return new FinanceDataService(fundService, budgetService);
+  public FinanceDataService financeDataService(FundService fundService, BudgetService budgetService, FiscalYearService fiscalYearService,
+      BatchTransactionService batchTransactionService) {
+    return new FinanceDataService(fundService, budgetService, fiscalYearService, batchTransactionService);
   }
 }

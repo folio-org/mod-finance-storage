@@ -389,7 +389,7 @@ public class AllocationTransferTest extends BatchTransactionServiceTestBase {
           assertThat(event.cause(), instanceOf(HttpException.class));
           HttpException exception = (HttpException)event.cause();
           assertThat(exception.getCode(), equalTo(400));
-          assertEquals(exception.getErrors().getErrors().get(0).getCode(), "missingFundId");
+          assertEquals("missingFundId", exception.getErrors().getErrors().get(0).getCode());
         });
         testContext.completeNow();
       });
@@ -416,7 +416,7 @@ public class AllocationTransferTest extends BatchTransactionServiceTestBase {
           assertThat(event.cause(), instanceOf(HttpException.class));
           HttpException exception = (HttpException)event.cause();
           assertThat(exception.getCode(), equalTo(400));
-          assertEquals(exception.getErrors().getErrors().get(0).getCode(), "allocationMustBePositive");
+          assertEquals("allocationMustBePositive", exception.getErrors().getErrors().get(0).getCode());
         });
         testContext.completeNow();
       });

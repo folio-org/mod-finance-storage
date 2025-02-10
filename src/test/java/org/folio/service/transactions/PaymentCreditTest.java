@@ -746,7 +746,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
         testContext.verify(() -> {
           assertThat(event.cause(), instanceOf(HttpException.class));
           HttpException exception = (HttpException)(event.cause());
-          assertEquals(exception.getErrors().getErrors().get(0).getCode(), "paymentOrCreditHasNegativeAmount");
+          assertEquals("paymentOrCreditHasNegativeAmount", exception.getErrors().getErrors().get(0).getCode());
           assertThat(exception.getCode(), equalTo(422));
         });
         testContext.completeNow();

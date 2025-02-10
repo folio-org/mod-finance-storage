@@ -15,7 +15,10 @@ public enum ErrorCodes {
   TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR("transactionIsPresentBudgetDeleteError", "Budget related transactions found. Deletion of the budget is forbidden."),
   BUDGET_IS_NOT_ACTIVE_OR_PLANNED("budgetIsNotActiveOrPlanned", "Cannot process transactions because a budget is not active or planned"),
   ID_IS_REQUIRED_IN_TRANSACTIONS("idIsRequiredInTransactions", "Id is required in transactions to {0}."),
-  LINKED_ENCUMBRANCES_NOT_FOUND("linkedEncumbrancesNotFound","Could not find some linked encumbrances in the database");
+  LINKED_ENCUMBRANCES_NOT_FOUND("linkedEncumbrancesNotFound","Could not find some linked encumbrances in the database"),
+  FAILED_TO_UPDATE_FUNDS("failedToUpdateFunds", "Failed to update funds"),
+  FAILED_TO_UPDATE_BUDGETS("failedToUpdateBudgets", "Failed to update budgets"),
+  FAILED_TO_CREATE_ALLOCATIONS("failedToCreateAllocations", "Failed to create allocations");
   private final String code;
   private final String description;
 
