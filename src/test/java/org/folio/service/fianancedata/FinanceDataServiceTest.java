@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
@@ -18,16 +20,21 @@ import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundTags;
 import org.folio.rest.jaxrs.model.FyFinanceData;
 import org.folio.rest.jaxrs.model.FyFinanceDataCollection;
+import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.financedata.FinanceDataService;
+import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
+import org.folio.service.transactions.batch.BatchTransactionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +53,10 @@ public class FinanceDataServiceTest {
   private BudgetService budgetService;
   @Mock
   private RequestContext requestContext;
+  @Mock
+  private FiscalYearService fiscalYearService;
+  @Mock
+  private BatchTransactionService batchTransactionService;
   @Mock
   private DBClient dbClient;
   @Mock
@@ -75,13 +86,16 @@ public class FinanceDataServiceTest {
     var oldBudget = new Budget().withId(collection.getFyFinanceData().get(0).getBudgetId())
       .withName("NAME")
       .withBudgetStatus(Budget.BudgetStatus.ACTIVE);
-    setupMocks(oldFund, oldBudget);
+    var fiscalYear = new FiscalYear()
+      .withCurrency("USD");
+    setupMocks(oldFund, oldBudget, fiscalYear);
 
     testContext.assertComplete(financeDataService.update(collection, requestContext)
       .onComplete(testContext.succeeding(result -> {
         testContext.verify(() -> {
           verifyFundUpdates(collection);
           verifyBudgetUpdates(collection);
+          verifyAllocationCreation(collection);
         });
         testContext.completeNow();
       })));
@@ -97,7 +111,7 @@ public class FinanceDataServiceTest {
     financeDataService.update(collection, requestContext)
       .onComplete(testContext.failing(error -> {
         testContext.verify(() -> {
-          assertEquals("Fund service error", error.getMessage());
+          assertEquals("Failed to update funds", error.getMessage());
           verify(budgetService, never()).updateBatchBudgets(any(), any(), anyBoolean());
           verify(fundService, never()).updateFunds(any(), any());
         });
@@ -105,17 +119,39 @@ public class FinanceDataServiceTest {
       }));
   }
 
-  private void setupMocks(Fund oldFund, Budget oldBudget) {
+  @Test
+  void negative_testCreateAllocationTransactionUsingReflection() throws Exception {
+    var data = new FyFinanceData()
+      .withFundId(UUID.randomUUID().toString())
+      .withBudgetId(UUID.randomUUID().toString())
+      .withBudgetAllocationChange(50.0)
+      .withFiscalYearId(UUID.randomUUID().toString());
+    var fiscalYear = new FiscalYear().withCurrency("USD");
+
+    // Use reflection to access the private method
+    var method = FinanceDataService.class.getDeclaredMethod("createAllocationTransaction", FyFinanceData.class, String.class);
+    method.setAccessible(true);
+
+    Transaction transaction = (Transaction) method.invoke(financeDataService, data, fiscalYear.getCurrency());
+    assertEquals(Transaction.TransactionType.ALLOCATION, transaction.getTransactionType());
+    assertEquals(data.getFundId(), transaction.getToFundId());
+    assertEquals(fiscalYear.getCurrency(), transaction.getCurrency());
+    assertEquals(50.0, transaction.getAmount());
+  }
+
+  private void setupMocks(Fund oldFund, Budget oldBudget, FiscalYear fiscalYear) {
     when(requestContext.toDBClient()).thenReturn(dbClient);
     doAnswer(invocation -> {
       Function<DBConn, Future<Void>> function = invocation.getArgument(0);
       return function.apply(dbConn);
     }).when(dbClient).withTrans(any());
 
-    when(fundService.getFundsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldFund)));
-    when(fundService.updateFunds(any(), any())).thenReturn(Future.succeededFuture());
-    when(budgetService.getBudgetsByIds(any(), any())).thenReturn(Future.succeededFuture(List.of(oldBudget)));
-    when(budgetService.updateBatchBudgets(any(), any(), anyBoolean())).thenReturn(Future.succeededFuture());
+    when(fundService.getFundsByIds(any(), any(DBConn.class))).thenReturn(Future.succeededFuture(List.of(oldFund)));
+    when(fundService.updateFunds(any(), any(DBConn.class))).thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgetsByIds(any(), any(DBConn.class))).thenReturn(Future.succeededFuture(List.of(oldBudget)));
+    when(budgetService.updateBatchBudgets(any(), any(DBConn.class), anyBoolean())).thenReturn(Future.succeededFuture());
+    when(batchTransactionService.processBatch(any(Batch.class), any(DBConn.class), anyMap())).thenReturn(Future.succeededFuture());
+    when(fiscalYearService.getFiscalYearById(anyString(), any(DBConn.class))).thenReturn(Future.succeededFuture(fiscalYear));
   }
 
   private void setupMocksForFailure(RuntimeException expectedError) {
@@ -162,12 +198,25 @@ public class FinanceDataServiceTest {
     assertEquals(700.0, updatedBudget.getAllowableEncumbrance());
   }
 
+  private void verifyAllocationCreation(FyFinanceDataCollection collection) {
+    ArgumentCaptor<Batch> batchCaptor = ArgumentCaptor.forClass(Batch.class);
+    verify(batchTransactionService).processBatch(batchCaptor.capture(), eq(dbConn), anyMap());
+    Batch batch = batchCaptor.getValue();
+
+    assertEquals(1, batch.getTransactionsToCreate().size());
+    Transaction tr = batch.getTransactionsToCreate().get(0);
+    assertEquals(Transaction.TransactionType.ALLOCATION, tr.getTransactionType());
+    assertEquals(tr.getAmount(), collection.getFyFinanceData().get(0).getBudgetAllocationChange());
+  }
+
 
   private FyFinanceDataCollection createTestFinanceDataCollection() {
+    String fiscalYearId = UUID.randomUUID().toString();
     String fundId = UUID.randomUUID().toString();
     String budgetId = UUID.randomUUID().toString();
 
     FyFinanceData financeData = new FyFinanceData()
+      .withFiscalYearId(fiscalYearId)
       .withFundId(fundId)
       .withBudgetId(budgetId)
       .withFundCode("CODE CHANGED")
@@ -180,6 +229,7 @@ public class FinanceDataServiceTest {
       .withBudgetStatus(FyFinanceData.BudgetStatus.INACTIVE)
       .withBudgetInitialAllocation(1000.0)
       .withBudgetCurrentAllocation(5000.0)
+      .withBudgetAllocationChange(1.0)
       .withBudgetAllowableExpenditure(800.0)
       .withBudgetAllowableEncumbrance(700.0)
       .withBudgetAcqUnitIds(List.of("unit1"));
@@ -187,4 +237,5 @@ public class FinanceDataServiceTest {
     return new FyFinanceDataCollection()
       .withFyFinanceData(List.of(financeData));
   }
+
 }

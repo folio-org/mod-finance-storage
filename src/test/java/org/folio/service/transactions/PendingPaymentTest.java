@@ -65,7 +65,7 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
           assertThat(thrown, instanceOf(HttpException.class));
           HttpException exception = (HttpException)thrown;
           assertThat(exception.getCode(), equalTo(400));
-          assertEquals(exception.getErrors().getErrors().get(0).getCode(), "idIsRequiredInTransactions");
+          assertEquals("idIsRequiredInTransactions", exception.getErrors().getErrors().get(0).getCode());
           assertThat(exception.getMessage(), equalTo("Id is required in transactions to create."));
         });
         testContext.completeNow();

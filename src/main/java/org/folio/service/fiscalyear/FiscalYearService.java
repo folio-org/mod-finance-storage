@@ -19,6 +19,10 @@ public class FiscalYearService {
     this.fyDAO = fyDAO;
   }
 
+  public Future<FiscalYear> getFiscalYearById(String id, DBConn conn) {
+    return fyDAO.getFiscalYearById(id, conn);
+  }
+
   private Future<Integer> getCurrencyFactorNumber(String fiscalYearId, DBConn conn) {
     return fyDAO.getFiscalYearById(fiscalYearId, conn)
       .map(this::getFiscalYearCurrencyFactor);

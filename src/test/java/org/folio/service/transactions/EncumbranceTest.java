@@ -315,8 +315,8 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
       .onComplete(event -> {
         HttpException exception = (HttpException)event.cause();
         testContext.verify(() -> {
-          assertEquals(exception.getCode(), 400);
-          assertEquals(exception.getErrors().getErrors().get(0).getCode(), "budgetIsNotActiveOrPlanned");
+          assertEquals(400, exception.getCode());
+          assertEquals("budgetIsNotActiveOrPlanned", exception.getErrors().getErrors().get(0).getCode());
         });
         testContext.completeNow();
       });
@@ -357,7 +357,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
         assertThat(event.cause(), instanceOf(HttpException.class));
         HttpException exception = (org.folio.rest.exception.HttpException)event.cause();
         testContext.verify(() -> {
-          assertEquals(exception.getCode(), 500);
+          assertEquals(500, exception.getCode());
           assertThat(exception.getMessage(), startsWith("Could not find some budgets in the database"));
         });
         testContext.completeNow();

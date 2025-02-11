@@ -61,16 +61,20 @@ public class BatchTransactionService {
   }
 
   public Future<Void> processBatch(Batch batch, RequestContext requestContext) {
+    DBClient client = dbClientFactory.getDbClient(requestContext);
+    return client.withTrans(conn -> processBatch(batch, conn, requestContext.getHeaders()));
+  }
+
+  public Future<Void> processBatch(Batch batch, DBConn conn, Map<String, String> okapiHeaders) {
+    populateMetadata(batch, okapiHeaders);
     try {
       BatchTransactionChecks.sanityChecks(batch);
     } catch (Exception ex) {
       logger.error("Sanity checks before processing batch transactions failed, batch={}", Json.encode(batch), ex);
       return Future.failedFuture(ex);
     }
-    populateMetadata(batch, requestContext.getHeaders());
-    DBClient client = dbClientFactory.getDbClient(requestContext);
     BatchTransactionHolder holder = new BatchTransactionHolder(transactionDAO, fundService, budgetService, ledgerService);
-    return client.withTrans(conn -> holder.setup(batch, conn)
+    return holder.setup(batch, conn)
       .map(v -> {
         BatchTransactionChecks.checkBudgetsAreActive(holder);
         prepareCreatingTransactions(holder);
@@ -80,9 +84,37 @@ public class BatchTransactionService {
         return null;
       })
       .compose(v -> applyChanges(holder, conn))
-    ).onSuccess(v -> logger.info("All batch transaction operations were successful."))
+      .onSuccess(v -> logger.info("All batch transaction operations were successful."))
       .onFailure(t -> logger.error("Error when batch processing transactions, batch={}",
         Json.encode(batch), t));
+  }
+
+  private void populateMetadata(Batch batch, Map<String, String> okapiHeaders) {
+    // NOTE: Okapi usually populates metadata when a POST method is used with an entity with metadata.
+    // But in the case of the batch API there is no top-level metadata, so it is not populated automatically.
+    String userId = okapiHeaders.get(XOkapiHeaders.USER_ID);
+    if (userId == null) {
+      try {
+        userId = (new OkapiToken(okapiHeaders.get(XOkapiHeaders.TOKEN))).getUserIdWithoutValidation();
+      } catch (Exception ignored) {
+        // could not find user id - ignoring
+      }
+    }
+    for (Transaction tr : batch.getTransactionsToCreate()) {
+      if (tr.getMetadata() == null) {
+        Metadata md = new Metadata();
+        md.setUpdatedDate(new Date());
+        md.setCreatedDate(md.getUpdatedDate());
+        md.setCreatedByUserId(userId);
+        md.setUpdatedByUserId(userId);
+        tr.setMetadata(md);
+      }
+    }
+    for (Transaction tr : batch.getTransactionsToUpdate()) {
+      Metadata md = tr.getMetadata();
+      md.setUpdatedDate(new Date());
+      md.setUpdatedByUserId(userId);
+    }
   }
 
   private void prepareCreatingTransactions(BatchTransactionHolder holder) {
@@ -187,34 +219,6 @@ public class BatchTransactionService {
       .onFailure(t -> logger.error("Batch transactions: failed to update budgets, budgets = {}",
         Json.encode(budgets), t))
       .mapEmpty();
-  }
-
-  private void populateMetadata(Batch batch, Map<String, String> okapiHeaders) {
-    // NOTE: Okapi usually populates metadata when a POST method is used with an entity with metadata.
-    // But in the case of the batch API there is no top-level metadata, so it is not populated automatically.
-    String userId = okapiHeaders.get(XOkapiHeaders.USER_ID);
-    if (userId == null) {
-      try {
-        userId = (new OkapiToken(okapiHeaders.get(XOkapiHeaders.TOKEN))).getUserIdWithoutValidation();
-      } catch (Exception ignored) {
-        // could not find user id - ignoring
-      }
-    }
-    for (Transaction tr : batch.getTransactionsToCreate()) {
-      if (tr.getMetadata() == null) {
-        Metadata md = new Metadata();
-        md.setUpdatedDate(new Date());
-        md.setCreatedDate(md.getUpdatedDate());
-        md.setCreatedByUserId(userId);
-        md.setUpdatedByUserId(userId);
-        tr.setMetadata(md);
-      }
-    }
-    for (Transaction tr : batch.getTransactionsToUpdate()) {
-      Metadata md = tr.getMetadata();
-      md.setUpdatedDate(new Date());
-      md.setUpdatedByUserId(userId);
-    }
   }
 
   private List<Transaction> getByType(TransactionType trType, List<Transaction> transactions) {
