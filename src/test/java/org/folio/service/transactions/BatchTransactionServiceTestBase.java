@@ -1,13 +1,8 @@
 package org.folio.service.transactions;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
-import io.vertx.pgclient.impl.RowImpl;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
-import io.vertx.sqlclient.impl.RowDesc;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.budget.BudgetPostgresDAO;
 import org.folio.dao.fund.FundDAO;
@@ -26,8 +21,6 @@ import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.DBConn;
-import org.folio.rest.persist.helpers.LocalRowDesc;
-import org.folio.rest.persist.helpers.LocalRowSet;
 import org.folio.rest.persist.interfaces.Results;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fund.FundService;
@@ -61,6 +54,7 @@ import static org.folio.dao.ledger.LedgerPostgresDAO.LEDGER_TABLE;
 import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.ACTIVE;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.INACTIVE;
+import static org.folio.service.ServiceTestUtils.createRowSet;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -258,17 +252,6 @@ public abstract class BatchTransactionServiceTestBase {
     Results<T> results = new Results<>();
     results.setResults(list);
     return results;
-  }
-
-  protected <T> RowSet<Row> createRowSet(List<T> list) {
-    RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
-    List<Row> rows = list.stream().map(item -> {
-      Row row = new RowImpl(rowDesc);
-      row.addJsonObject(JsonObject.mapFrom(item));
-      return row;
-    }).toList();
-    return new LocalRowSet(list.size())
-      .withRows(rows);
   }
 
 }
