@@ -28,12 +28,22 @@ public class BudgetPostgresDAO implements BudgetDAO {
   private static final Logger logger = LogManager.getLogger();
 
   @Override
+  public Future<Void> createBatchBudgets(List<Budget> budgets, DBConn conn) {
+    List<String> ids = budgets.stream().map(Budget::getId).toList();
+    logger.debug("Trying create batch budgets, ids={}", ids);
+    return conn.saveBatch(BUDGET_TABLE, budgets)
+      .onSuccess(rowSet -> logger.info("createBatchBudgets:: Created {} batch budgets", budgets.size()))
+      .onFailure(e -> logger.error("Create batch budgets failed, ids={}", ids, e))
+      .mapEmpty();
+  }
+
+  @Override
   public Future<Void> updateBatchBudgets(List<Budget> budgets, DBConn conn) {
     List<String> ids = budgets.stream().map(Budget::getId).toList();
     logger.debug("Trying update batch budgets, ids={}", ids);
     return conn.updateBatch(BUDGET_TABLE, budgets)
       .onSuccess(rowSet -> logger.info("updateBatchBudgets:: Updated {} batch budgets", budgets.size()))
-      .onFailure(e -> logger.error("Update batch budgets by failed, ids={}", ids, e))
+      .onFailure(e -> logger.error("Update batch budgets failed, ids={}", ids, e))
       .mapEmpty();
   }
 

@@ -1,17 +1,23 @@
 package org.folio.service.fianancedata;
 
+import static io.vertx.core.json.JsonObject.mapFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -87,6 +93,8 @@ public class FinanceDataServiceTest {
       .withName("NAME")
       .withBudgetStatus(Budget.BudgetStatus.ACTIVE);
     var fiscalYear = new FiscalYear()
+      .withPeriodStart(Date.from(Instant.now().minus(100, ChronoUnit.DAYS)))
+      .withPeriodEnd(Date.from(Instant.now().plus(100, ChronoUnit.DAYS)))
       .withCurrency("USD");
     setupMocks(oldFund, oldBudget, fiscalYear);
 
@@ -105,8 +113,12 @@ public class FinanceDataServiceTest {
   void shouldFailUpdateWhenFundServiceFails(VertxTestContext testContext) {
     var collection = createTestFinanceDataCollection();
     var expectedError = new RuntimeException("Fund service error");
+    var fiscalYear = new FiscalYear()
+      .withPeriodStart(Date.from(Instant.now().minus(100, ChronoUnit.DAYS)))
+      .withPeriodEnd(Date.from(Instant.now().plus(100, ChronoUnit.DAYS)))
+      .withCurrency("USD");
 
-    setupMocksForFailure(expectedError);
+    setupMocksForFailure(expectedError, fiscalYear);
 
     financeDataService.update(collection, requestContext)
       .onComplete(testContext.failing(error -> {
@@ -139,30 +151,97 @@ public class FinanceDataServiceTest {
     assertEquals(50.0, transaction.getAmount());
   }
 
-  private void setupMocks(Fund oldFund, Budget oldBudget, FiscalYear fiscalYear) {
-    when(requestContext.toDBClient()).thenReturn(dbClient);
-    doAnswer(invocation -> {
-      Function<DBConn, Future<Void>> function = invocation.getArgument(0);
-      return function.apply(dbConn);
-    }).when(dbClient).withTrans(any());
+  @Test
+  void shouldCreateANewBudgetAndAllocation(VertxTestContext testContext) {
+    String fiscalYearId = UUID.randomUUID().toString();
+    String fundId = UUID.randomUUID().toString();
+    FyFinanceData financeData = new FyFinanceData()
+      .withFiscalYearId(fiscalYearId)
+      .withFundId(fundId)
+      .withFundCode("CODE CHANGED")
+      .withFundName("NAME")
+      .withFundStatus(FyFinanceData.FundStatus.INACTIVE)
+      .withFundDescription("New Description")
+      .withFundAcqUnitIds(List.of("unit1"))
+      .withBudgetName("NAME")
+      .withBudgetStatus(FyFinanceData.BudgetStatus.INACTIVE)
+      .withBudgetAllocationChange(1.0)
+      .withBudgetAllowableExpenditure(800.0)
+      .withBudgetAllowableEncumbrance(700.0)
+      .withBudgetAcqUnitIds(List.of("unit1"));
+    var collection =  new FyFinanceDataCollection()
+      .withFyFinanceData(List.of(financeData));
+    var oldFund = new Fund().withId(collection.getFyFinanceData().get(0).getFundId())
+      .withName("NAME").withCode("CODE").withFundStatus(Fund.FundStatus.ACTIVE)
+      .withDescription("Old des");
+    var newBudget = new Budget().withId(UUID.randomUUID().toString())
+      .withName("NAME")
+      .withBudgetStatus(Budget.BudgetStatus.ACTIVE);
+    var fiscalYear = new FiscalYear()
+      .withPeriodStart(Date.from(Instant.now().minus(100, ChronoUnit.DAYS)))
+      .withPeriodEnd(Date.from(Instant.now().plus(100, ChronoUnit.DAYS)))
+      .withCurrency("USD");
+    setupMocks(oldFund, newBudget, fiscalYear);
 
-    when(fundService.getFundsByIds(any(), any(DBConn.class))).thenReturn(Future.succeededFuture(List.of(oldFund)));
-    when(fundService.updateFunds(any(), any(DBConn.class))).thenReturn(Future.succeededFuture());
-    when(budgetService.getBudgetsByIds(any(), any(DBConn.class))).thenReturn(Future.succeededFuture(List.of(oldBudget)));
-    when(budgetService.updateBatchBudgets(any(), any(DBConn.class), anyBoolean())).thenReturn(Future.succeededFuture());
-    when(batchTransactionService.processBatch(any(Batch.class), any(DBConn.class), anyMap())).thenReturn(Future.succeededFuture());
-    when(fiscalYearService.getFiscalYearById(anyString(), any(DBConn.class))).thenReturn(Future.succeededFuture(fiscalYear));
+    testContext.assertComplete(financeDataService.update(collection, requestContext)
+      .onComplete(testContext.succeeding(result -> {
+        testContext.verify(() -> {
+          verifyFundUpdates(collection);
+          verifyBudgetCreation();
+          verifyBudgetUpdates(collection);
+          verifyAllocationCreation(collection);
+        });
+        testContext.completeNow();
+      })));
   }
 
-  private void setupMocksForFailure(RuntimeException expectedError) {
+  private void setupMocks(Fund oldFund, Budget oldBudget, FiscalYear fiscalYear) {
+    List<Budget> createdBudgets = new ArrayList<>();
     when(requestContext.toDBClient()).thenReturn(dbClient);
-    doAnswer(invocation -> {
-      Function<DBConn, Future<Void>> function = invocation.getArgument(0);
-      return function.apply(dbConn);
-    }).when(dbClient).withTrans(any());
+    when(dbClient.withTrans(any()))
+      .thenAnswer(invocation -> {
+        Function<DBConn, Future<Void>> function = invocation.getArgument(0);
+        return function.apply(dbConn);
+      });
+    when(fundService.getFundsByIds(any(), any(DBConn.class)))
+      .thenReturn(Future.succeededFuture(List.of(oldFund)));
+    when(fundService.updateFunds(any(), any(DBConn.class)))
+      .thenReturn(Future.succeededFuture());
+    when(budgetService.getBudgetsByIds(any(), any(DBConn.class)))
+      .thenAnswer(invocation -> {
+        if (createdBudgets.isEmpty()) {
+          return Future.succeededFuture(List.of(oldBudget));
+        } else {
+          return Future.succeededFuture(createdBudgets);
+        }
+      });
+    when(budgetService.updateBatchBudgets(any(), any(DBConn.class), anyBoolean()))
+      .thenReturn(Future.succeededFuture());
+    when(budgetService.createBatchBudgets(any(), any(DBConn.class)))
+      .thenReturn(Future.succeededFuture());
+    when(budgetService.createBatchBudgets(anyList(), any(DBConn.class)))
+      .thenAnswer(invocation -> {
+        List<Budget> budgets = invocation.getArgument(0);
+        createdBudgets.addAll(budgets.stream().map(b -> mapFrom(b).mapTo(Budget.class)).toList());
+        return Future.succeededFuture();
+      });
+    when(batchTransactionService.processBatch(any(Batch.class), any(DBConn.class), anyMap()))
+      .thenReturn(Future.succeededFuture());
+    when(fiscalYearService.getFiscalYearById(anyString(), any(DBConn.class)))
+      .thenReturn(Future.succeededFuture(fiscalYear));
+  }
+
+  private void setupMocksForFailure(RuntimeException expectedError, FiscalYear fiscalYear) {
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+    when(dbClient.withTrans(any()))
+      .thenAnswer(invocation -> {
+        Function<DBConn, Future<Void>> function = invocation.getArgument(0);
+        return function.apply(dbConn);
+      });
 
     when(fundService.getFundsByIds(any(), any())).thenReturn(Future.failedFuture(expectedError));
     when(budgetService.getBudgetsByIds(any(), any())).thenReturn(Future.succeededFuture());
+    when(fiscalYearService.getFiscalYearById(anyString(), any(DBConn.class))).thenReturn(Future.succeededFuture(fiscalYear));
   }
 
   private void verifyFundUpdates(FyFinanceDataCollection collection) {
@@ -179,6 +258,17 @@ public class FinanceDataServiceTest {
 
     assertEquals(Fund.FundStatus.INACTIVE, updatedFund.getFundStatus());
     assertEquals("New Description", updatedFund.getDescription());
+  }
+
+  private void verifyBudgetCreation() {
+    ArgumentCaptor<List<Budget>> budgetCaptor = ArgumentCaptor.forClass(List.class);
+    verify(budgetService).createBatchBudgets(budgetCaptor.capture(), eq(dbConn));
+    Budget createdBudget = budgetCaptor.getValue().get(0);
+
+    assertEquals(FyFinanceData.BudgetStatus.ACTIVE.value(), createdBudget.getBudgetStatus().value());
+    assertEquals(0.0, createdBudget.getAllocated());
+    assertNull(createdBudget.getAllowableExpenditure());
+    assertNull(createdBudget.getAllowableEncumbrance());
   }
 
   private void verifyBudgetUpdates(FyFinanceDataCollection collection) {
@@ -208,7 +298,6 @@ public class FinanceDataServiceTest {
     assertEquals(Transaction.TransactionType.ALLOCATION, tr.getTransactionType());
     assertEquals(tr.getAmount(), collection.getFyFinanceData().get(0).getBudgetAllocationChange());
   }
-
 
   private FyFinanceDataCollection createTestFinanceDataCollection() {
     String fiscalYearId = UUID.randomUUID().toString();

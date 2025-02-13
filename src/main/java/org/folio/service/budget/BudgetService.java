@@ -56,6 +56,10 @@ public class BudgetService {
     });
   }
 
+  public Future<Void> createBatchBudgets(List<Budget> budgets, DBConn conn) {
+    return budgetDAO.createBatchBudgets(budgets, conn);
+  }
+
   public Future<Void> updateBatchBudgets(List<Budget> budgets, DBConn conn, boolean clearReadOnlyFields) {
     if (Boolean.TRUE.equals(clearReadOnlyFields)) {
       budgets.forEach(this::clearReadOnlyFields);
