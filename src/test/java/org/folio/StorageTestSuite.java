@@ -36,8 +36,9 @@ import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.utils.DBClientTest;
+import org.folio.service.budget.BudgetServiceTest;
 import org.folio.service.email.EmailServiceTest;
-import org.folio.service.fianancedata.FinanceDataServiceTest;
+import org.folio.service.financedata.FinanceDataServiceTest;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
 import org.folio.service.rollover.RolloverProgressServiceTest;
 import org.folio.service.rollover.RolloverValidationServiceTest;
@@ -155,6 +156,10 @@ public class StorageTestSuite {
 
   @Nested
   class GroupTestNested extends GroupTest {
+  }
+
+  @Nested
+  class BudgetServiceTestNested extends BudgetServiceTest {
   }
 
   @Nested

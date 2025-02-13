@@ -1,4 +1,4 @@
-package org.folio.service.fianancedata;
+package org.folio.service.financedata;
 
 import static io.vertx.core.json.JsonObject.mapFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +37,6 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBConn;
 import org.folio.service.budget.BudgetService;
-import org.folio.service.financedata.FinanceDataService;
 import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
 import org.folio.service.transactions.batch.BatchTransactionService;
