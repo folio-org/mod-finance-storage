@@ -195,16 +195,10 @@ async def get_transactions_by_query(query) -> list:
     return transactions
 
 
-async def get_transactions_by_ids(transaction_ids) -> list:
-    query = f'id==({' OR '.join(transaction_ids)})'
-    transactions = await get_transactions_by_query(query)
-    return transactions
-
-
 async def get_polines_by_ids(poline_ids) -> list:
     polines = []
     for poline_ids_chunk in chunks(poline_ids, IDS_CHUNK):
-        query = f'id==({' OR '.join(poline_ids_chunk)})'
+        query = f"id==({' OR '.join(poline_ids_chunk)})"
         polines_chunk = await get_request(okapi_url + 'orders-storage/po-lines', query, 'poLines')
         polines.extend(polines_chunk)
     return polines
@@ -645,7 +639,7 @@ async def get_encumbrances_to_fix_properties(order, fiscal_year_id) -> list:
 
 async def fix_encumbrances_properties(order, encumbrances):
     try:
-        print(f'\n  Fixing the following encumbrance(s) for order {order['id']} :')
+        print(f"\n  Fixing the following encumbrance(s) for order {order['id']} :")
         for encumbrance in encumbrances:
             print(f"    {encumbrance['id']}")
             encumbrance['encumbrance']['orderStatus'] = order['workflowStatus']
@@ -653,7 +647,7 @@ async def fix_encumbrances_properties(order, encumbrances):
             encumbrance['encumbrance']['reEncumber'] = order['reEncumber']
         await batch_update(encumbrances)
     except Exception as err:
-        print(f'Error when fixing encumbrance properties for order {order['id']}:', err)
+        print(f"Error when fixing encumbrance properties for order {order['id']}:", err)
         raise SystemExit(1)
 
 
@@ -693,7 +687,7 @@ async def fix_encumbrance_properties_for_open_and_pending_orders(fiscal_year_id)
 
 async def get_orders_encumbrances_with_different_fy(order_ids, fiscal_year_id) -> list:
     url = okapi_url + 'finance-storage/transactions'
-    ids = f'({' OR '.join(order_ids)})'
+    ids = f"({' OR '.join(order_ids)})"
     query = f'encumbrance.sourcePurchaseOrderId=={ids} AND fiscalYearId<>{fiscal_year_id}'
     transactions = await get_by_chunks(url, query, 'transactions')
     return transactions
@@ -702,7 +696,7 @@ async def get_orders_encumbrances_with_different_fy(order_ids, fiscal_year_id) -
 async def get_active_budgets_by_fund_ids(fund_ids) -> list:
     budgets = []
     for fund_ids_chunk in chunks(fund_ids, IDS_CHUNK):
-        query = f'budgetStatus==Active AND fundId==({' OR '.join(fund_ids_chunk)})'
+        query = f"budgetStatus==Active AND fundId==({' OR '.join(fund_ids_chunk)})"
         budgets_chunk = await get_budgets_by_query(query)
         budgets.extend(budgets_chunk)
     return budgets
