@@ -28,6 +28,7 @@ import static org.folio.rest.jaxrs.model.Transaction.Source.PO_LINE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.util.ErrorCodes.BUDGET_RESTRICTED_EXPENDITURES_ERROR;
+import static org.folio.service.ServiceTestUtils.createRowSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
