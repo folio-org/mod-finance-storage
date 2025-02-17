@@ -28,6 +28,7 @@ import static org.folio.rest.jaxrs.model.Encumbrance.Status.UNRELEASED;
 import static org.folio.rest.jaxrs.model.Transaction.Source.PO_LINE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
 import static org.folio.rest.util.ErrorCodes.BUDGET_RESTRICTED_ENCUMBRANCE_ERROR;
+import static org.folio.service.ServiceTestUtils.createResults;
 import static org.folio.service.ServiceTestUtils.createRowSet;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;

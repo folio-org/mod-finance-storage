@@ -7,6 +7,7 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.impl.RowDesc;
 import org.folio.rest.persist.helpers.LocalRowDesc;
 import org.folio.rest.persist.helpers.LocalRowSet;
+import org.folio.rest.persist.interfaces.Results;
 
 import java.util.List;
 
@@ -21,6 +22,12 @@ public class ServiceTestUtils {
     }).toList();
     return new LocalRowSet(list.size())
       .withRows(rows);
+  }
+
+  public static <T> Results<T> createResults(List<T> list) {
+    Results<T> results = new Results<>();
+    results.setResults(list);
+    return results;
   }
 
 }

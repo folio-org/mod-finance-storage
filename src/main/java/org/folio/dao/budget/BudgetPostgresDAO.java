@@ -6,6 +6,7 @@ import static org.folio.rest.util.ErrorCodes.BUDGET_EXPENSE_CLASS_REFERENCE_ERRO
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
@@ -26,6 +27,18 @@ import io.vertx.sqlclient.Tuple;
 public class BudgetPostgresDAO implements BudgetDAO {
 
   private static final Logger logger = LogManager.getLogger();
+
+  @Override
+  public Future<Budget> createBudget(Budget budget, DBConn conn) {
+    if (budget.getId() == null) {
+      budget.setId(UUID.randomUUID().toString());
+    }
+    String id = budget.getId();
+    logger.debug("Trying to create budget with id {}", id);
+    return conn.saveAndReturnUpdatedEntity(BUDGET_TABLE, budget.getId(), budget)
+      .onSuccess(fund -> logger.info("Successfully created a budget with id {}", id))
+      .onFailure(e -> logger.error("Creating a budget with id {} failed", id, e));
+  }
 
   @Override
   public Future<Void> createBatchBudgets(List<Budget> budgets, DBConn conn) {

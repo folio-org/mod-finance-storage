@@ -10,6 +10,8 @@ import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.dao.fiscalyear.FiscalYearPostgresDAO;
 import org.folio.dao.fund.FundDAO;
 import org.folio.dao.fund.FundPostgresDAO;
+import org.folio.dao.group.GroupDAO;
+import org.folio.dao.group.GroupPostgresDAO;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.dao.ledger.LedgerPostgresDAO;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
@@ -37,6 +39,11 @@ public class DAOConfiguration {
   @Bean
   public FundDAO fundDAO() {
     return new FundPostgresDAO();
+  }
+
+  @Bean
+  public GroupDAO groupDAO() {
+    return new GroupPostgresDAO();
   }
 
   @Bean

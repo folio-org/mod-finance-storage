@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
 import org.folio.rest.annotations.Validate;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
@@ -15,6 +16,11 @@ import org.folio.rest.persist.PgUtil;
 import org.folio.service.budget.BudgetService;
 import org.folio.spring.SpringContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import static io.vertx.core.Future.succeededFuture;
+import static org.folio.rest.RestConstants.OKAPI_URL;
+import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
+import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
 
 public class BudgetAPI implements FinanceStorageBudgets {
   public static final String BUDGET_TABLE = "budget";
@@ -42,7 +48,11 @@ public class BudgetAPI implements FinanceStorageBudgets {
   @Override
   @Validate
   public void postFinanceStorageBudgets(Budget entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.post(BUDGET_TABLE, entity, okapiHeaders, vertxContext, PostFinanceStorageBudgetsResponse.class, asyncResultHandler);
+    RequestContext requestContext = new RequestContext(vertxContext, okapiHeaders);
+    budgetService.createBudget(entity, requestContext)
+      .onSuccess(createdBudget -> asyncResultHandler.handle(succeededFuture(
+        buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/budgets", createdBudget))))
+      .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
   }
 
   @Override

@@ -59,16 +59,16 @@ public class FinanceDataService {
     Map<String, String> okapiHeaders = requestContext.getHeaders();
     return dbClient
       .withTrans(conn -> fiscalYearService.getFiscalYearById(getFiscalYearId(entity), conn)
-        .compose(fiscalYear -> createBudgets(entity, fiscalYear, conn, okapiHeaders)
+        .compose(fiscalYear -> createBudgetsIfNeeded(entity, fiscalYear, conn, okapiHeaders)
           .compose(v -> updateFundAndBudget(entity, conn))
           .compose(v -> processAllocationTransaction(entity, fiscalYear, conn, okapiHeaders))))
       .onSuccess(v -> logger.info("Successfully updated finance data"))
       .onFailure(e -> logger.error("Failed to update finance data", e));
   }
 
-  private Future<Void> createBudgets(FyFinanceDataCollection entity, FiscalYear fiscalYear, DBConn conn,
+  private Future<Void> createBudgetsIfNeeded(FyFinanceDataCollection entity, FiscalYear fiscalYear, DBConn conn,
       Map<String, String> okapiHeaders) {
-    if (fiscalYearIsPast(fiscalYear)) {
+    if (isFiscalYearPast(fiscalYear)) {
       return succeededFuture();
     }
     List<FyFinanceData> dataList = entity.getFyFinanceData().stream()
@@ -97,13 +97,10 @@ public class FinanceDataService {
         return budget;
       })
       .toList();
-    if (budgets.isEmpty()) {
-      return succeededFuture();
-    }
     return budgetService.createBatchBudgets(budgets, conn);
   }
 
-  private boolean fiscalYearIsPast(FiscalYear fiscalYear) {
+  private boolean isFiscalYearPast(FiscalYear fiscalYear) {
     Date now = new Date();
     return fiscalYear.getPeriodEnd().before(now);
   }

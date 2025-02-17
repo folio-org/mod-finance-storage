@@ -7,18 +7,27 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import static org.folio.rest.util.ErrorCodes.TRANSACTION_IS_PRESENT_BUDGET_DELETE_ERROR;
 import static org.folio.rest.util.ResponseUtils.handleNoContentResponse;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.budget.BudgetDAO;
+import org.folio.okapi.common.GenericCompositeFuture;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
+import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.DBConn;
+import org.folio.service.group.GroupService;
 import org.folio.utils.CalculationUtils;
 
 import io.vertx.core.AsyncResult;
@@ -34,10 +43,22 @@ public class BudgetService {
 
   private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
 
+  private final DBClientFactory dbClientFactory;
+  private final GroupService groupService;
   private final BudgetDAO budgetDAO;
 
-  public BudgetService(BudgetDAO budgetDAO) {
+  public BudgetService(DBClientFactory dbClientFactory, BudgetDAO budgetDAO, GroupService groupService) {
+    this.dbClientFactory = dbClientFactory;
     this.budgetDAO = budgetDAO;
+    this.groupService = groupService;
+  }
+
+  public Future<Budget> createBudget(Budget entity, RequestContext requestContext) {
+    DBClient client = dbClientFactory.getDbClient(requestContext);
+    return client.withTrans(conn -> budgetDAO.createBudget(entity, conn)
+      .compose(budget -> groupService.updateBudgetIdForGroupFundFiscalYears(budget, conn)
+        .map(v -> budget))
+    );
   }
 
   public void deleteById(String id, Context vertxContext, Map<String, String> headers,
@@ -57,7 +78,14 @@ public class BudgetService {
   }
 
   public Future<Void> createBatchBudgets(List<Budget> budgets, DBConn conn) {
-    return budgetDAO.createBatchBudgets(budgets, conn);
+    return budgetDAO.createBatchBudgets(budgets, conn)
+      .compose(v -> {
+        var futures = budgets.stream()
+          .map(budget -> groupService.updateBudgetIdForGroupFundFiscalYears(budget, conn))
+          .toList();
+        return GenericCompositeFuture.join(futures)
+          .mapEmpty();
+      });
   }
 
   public Future<Void> updateBatchBudgets(List<Budget> budgets, DBConn conn, boolean clearReadOnlyFields) {
