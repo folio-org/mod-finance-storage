@@ -630,7 +630,7 @@ async def get_encumbrances_to_fix_properties(order, fiscal_year_id) -> list:
     workflow_status = order['workflowStatus']
     order_type = order['orderType']
     reencumber = str(order['reEncumber']).lower()
-    query = f'encumbrance.sourcePurchaseOrderId=={order['id']} AND fiscalYearId=={fiscal_year_id} AND ' \
+    query = f'encumbrance.sourcePurchaseOrderId=={order["id"]} AND fiscalYearId=={fiscal_year_id} AND ' \
             f'(encumbrance.orderStatus<>"{workflow_status}" OR ' \
             f'encumbrance.orderType<>"{order_type}" OR encumbrance.reEncumber<>{reencumber})'
     url = okapi_url + 'finance-storage/transactions'
