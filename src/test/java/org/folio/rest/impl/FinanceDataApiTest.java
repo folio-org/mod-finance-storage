@@ -22,7 +22,6 @@ import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundTags;
-import org.folio.rest.jaxrs.model.FyFinanceData;
 import org.folio.rest.jaxrs.model.FyFinanceDataCollection;
 import org.folio.rest.jaxrs.model.Ledger;
 import org.folio.rest.jaxrs.model.TenantJob;
@@ -102,7 +101,7 @@ public class FinanceDataApiTest extends TestBase {
     var acqUnitId = UUID.randomUUID().toString();
     var expectedDescription = "UPDATED Description";
     var expectedTags = List.of("New tag");
-    var expectedBudgetStatus = FyFinanceData.BudgetStatus.INACTIVE;
+    var expectedBudgetStatus = "Inactive";
     var expectedNumber = 200.0;
     createMockData(fiscalYearId, acqUnitId, "FY2099", "second");
 

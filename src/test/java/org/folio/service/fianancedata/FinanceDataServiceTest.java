@@ -193,7 +193,7 @@ public class FinanceDataServiceTest {
     assertNotEquals("NAME CHANGED", updatedBudget.getName());
     assertNotEquals(1000.0, updatedBudget.getInitialAllocation());
 
-    assertEquals(FyFinanceData.BudgetStatus.INACTIVE.value(), updatedBudget.getBudgetStatus().value());
+    assertEquals("Inactive", updatedBudget.getBudgetStatus().value());
     assertEquals(800.0, updatedBudget.getAllowableExpenditure());
     assertEquals(700.0, updatedBudget.getAllowableEncumbrance());
   }
@@ -226,7 +226,7 @@ public class FinanceDataServiceTest {
       .withFundAcqUnitIds(List.of("unit1"))
       .withFundTags(new FundTags().withTagList(List.of("Education")))
       .withBudgetName("NAME CHANGED")
-      .withBudgetStatus(FyFinanceData.BudgetStatus.INACTIVE)
+      .withBudgetStatus("Inactive")
       .withBudgetInitialAllocation(1000.0)
       .withBudgetCurrentAllocation(5000.0)
       .withBudgetAllocationChange(1.0)
