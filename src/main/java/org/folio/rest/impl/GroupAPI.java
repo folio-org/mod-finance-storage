@@ -52,8 +52,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   @Validate
   public void postFinanceStorageGroups(Group entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    RequestContext requestContext = new RequestContext(vertxContext, okapiHeaders);
-    groupService.createGroup(entity, requestContext)
+    groupService.createGroup(entity, new RequestContext(vertxContext, okapiHeaders))
       .onSuccess(createdBudget -> asyncResultHandler.handle(succeededFuture(
         buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/groups", createdBudget))))
       .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
@@ -79,8 +78,7 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   @Validate
   public void putFinanceStorageGroupsById(String id, Group entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    RequestContext requestContext = new RequestContext(vertxContext, okapiHeaders);
-    groupService.updateGroup( entity, id, requestContext)
+    groupService.updateGroup( entity, id, new RequestContext(vertxContext, okapiHeaders))
       .onSuccess(group -> asyncResultHandler.handle(succeededFuture(respond204())))
       .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
   }

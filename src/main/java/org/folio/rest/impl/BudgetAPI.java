@@ -48,8 +48,7 @@ public class BudgetAPI implements FinanceStorageBudgets {
   @Override
   @Validate
   public void postFinanceStorageBudgets(Budget entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    RequestContext requestContext = new RequestContext(vertxContext, okapiHeaders);
-    budgetService.createBudget(entity, requestContext)
+    budgetService.createBudget(entity, new RequestContext(vertxContext, okapiHeaders))
       .onSuccess(createdBudget -> asyncResultHandler.handle(succeededFuture(
         buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/budgets", createdBudget))))
       .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
