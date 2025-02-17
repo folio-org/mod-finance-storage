@@ -122,7 +122,7 @@ public class FinanceDataService {
       .findFirst()
       .orElseThrow();
 
-    return budget.withBudgetStatus(Budget.BudgetStatus.fromValue(budgetFinanceData.getBudgetStatus().value()))
+    return budget.withBudgetStatus(Budget.BudgetStatus.fromValue(budgetFinanceData.getBudgetStatus()))
       .withAllowableExpenditure(budgetFinanceData.getBudgetAllowableExpenditure())
       .withAllowableEncumbrance(budgetFinanceData.getBudgetAllowableEncumbrance());
   }
