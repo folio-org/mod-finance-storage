@@ -163,7 +163,7 @@ public class FinanceDataServiceTest {
       .withFundDescription("New Description")
       .withFundAcqUnitIds(List.of("unit1"))
       .withBudgetName("NAME")
-      .withBudgetStatus(FyFinanceData.BudgetStatus.INACTIVE)
+      .withBudgetStatus("Inactive")
       .withBudgetAllocationChange(1.0)
       .withBudgetAllowableExpenditure(800.0)
       .withBudgetAllowableEncumbrance(700.0)
@@ -264,7 +264,7 @@ public class FinanceDataServiceTest {
     verify(budgetService).createBatchBudgets(budgetCaptor.capture(), eq(dbConn));
     Budget createdBudget = budgetCaptor.getValue().get(0);
 
-    assertEquals(FyFinanceData.BudgetStatus.ACTIVE.value(), createdBudget.getBudgetStatus().value());
+    assertEquals("Active", createdBudget.getBudgetStatus().value());
     assertEquals(0.0, createdBudget.getAllocated());
     assertNull(createdBudget.getAllowableExpenditure());
     assertNull(createdBudget.getAllowableEncumbrance());

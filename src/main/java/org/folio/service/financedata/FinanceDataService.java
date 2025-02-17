@@ -85,7 +85,7 @@ public class FinanceDataService {
         Budget.BudgetStatus budgetStatus = newBudgetStatus(fiscalYear);
         data.setBudgetId(budgetId);
         if (data.getBudgetStatus() == null) {
-          data.setBudgetStatus(FyFinanceData.BudgetStatus.fromValue(budgetStatus.value()));
+          data.setBudgetStatus(budgetStatus.value());
         }
         Budget budget = new Budget()
           .withId(budgetId)
