@@ -7,6 +7,7 @@ import org.folio.dao.budget.BudgetExpenseClassDAO;
 import org.folio.dao.expense.ExpenseClassDAO;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.dao.fund.FundDAO;
+import org.folio.dao.group.GroupDAO;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.dao.rollover.RolloverBudgetDAO;
@@ -25,6 +26,7 @@ import org.folio.service.financedata.FinanceDataService;
 import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
+import org.folio.service.group.GroupService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledger.StorageLedgerService;
 import org.folio.service.rollover.LedgerRolloverService;
@@ -46,8 +48,8 @@ import org.springframework.context.annotation.Bean;
 public class ServicesConfiguration {
 
   @Bean
-  public BudgetService budgetService(BudgetDAO budgetDAO) {
-    return new BudgetService(budgetDAO);
+  public BudgetService budgetService(DBClientFactory dbClientFactory, BudgetDAO budgetDAO, GroupService groupService) {
+    return new BudgetService(dbClientFactory, budgetDAO, groupService);
   }
 
   @Bean
@@ -58,6 +60,11 @@ public class ServicesConfiguration {
   @Bean
   public FundService fundService(FundDAO fundDAO) {
     return new StorageFundService(fundDAO);
+  }
+
+  @Bean
+  public GroupService groupService(DBClientFactory dbClientFactory, GroupDAO groupDAO) {
+    return new GroupService(dbClientFactory, groupDAO);
   }
 
   @Bean

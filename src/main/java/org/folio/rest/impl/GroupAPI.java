@@ -5,6 +5,7 @@ import java.util.Map;
 import javax.ws.rs.core.Response;
 
 import org.folio.rest.annotations.Validate;
+import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.model.GroupCollection;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
@@ -18,16 +19,25 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import org.folio.spring.SpringContextUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import static io.vertx.core.Future.succeededFuture;
+import static org.folio.rest.RestConstants.OKAPI_URL;
+import static org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears.PutFinanceStorageGroupFundFiscalYearsByIdResponse.respond204;
+import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
+import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
 
 public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFiscalYears {
 
-  private static final String GROUPS_TABLE = "groups";
-  private static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
+  public static final String GROUPS_TABLE = "groups";
+  public static final String GROUP_FUND_FY_TABLE = "group_fund_fiscal_year";
 
+  @Autowired
   private GroupService groupService;
 
-  public GroupAPI(Vertx vertx, String tenantId) {
-    groupService = new GroupService(vertx, tenantId);
+  public GroupAPI() {
+    SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
   }
 
   @Override
@@ -42,7 +52,10 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   @Validate
   public void postFinanceStorageGroups(Group entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    groupService.createGroup( entity, vertxContext, asyncResultHandler);
+    groupService.createGroup(entity, new RequestContext(vertxContext, okapiHeaders))
+      .onSuccess(createdBudget -> asyncResultHandler.handle(succeededFuture(
+        buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/groups", createdBudget))))
+      .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
   }
 
   @Override
@@ -65,7 +78,9 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
   @Validate
   public void putFinanceStorageGroupsById(String id, Group entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    groupService.updateGroup( entity, id, vertxContext, asyncResultHandler);
+    groupService.updateGroup( entity, id, new RequestContext(vertxContext, okapiHeaders))
+      .onSuccess(group -> asyncResultHandler.handle(succeededFuture(respond204())))
+      .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
   }
 
   @Override

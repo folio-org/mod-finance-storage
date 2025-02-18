@@ -6,6 +6,7 @@ import static org.folio.rest.util.ErrorCodes.BUDGET_EXPENSE_CLASS_REFERENCE_ERRO
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.ws.rs.core.Response;
 
@@ -28,12 +29,34 @@ public class BudgetPostgresDAO implements BudgetDAO {
   private static final Logger logger = LogManager.getLogger();
 
   @Override
+  public Future<Budget> createBudget(Budget budget, DBConn conn) {
+    if (budget.getId() == null) {
+      budget.setId(UUID.randomUUID().toString());
+    }
+    String id = budget.getId();
+    logger.debug("Trying to create budget with id {}", id);
+    return conn.saveAndReturnUpdatedEntity(BUDGET_TABLE, budget.getId(), budget)
+      .onSuccess(fund -> logger.info("Successfully created a budget with id {}", id))
+      .onFailure(e -> logger.error("Creating a budget with id {} failed", id, e));
+  }
+
+  @Override
+  public Future<Void> createBatchBudgets(List<Budget> budgets, DBConn conn) {
+    List<String> ids = budgets.stream().map(Budget::getId).toList();
+    logger.debug("Trying create batch budgets, ids={}", ids);
+    return conn.saveBatch(BUDGET_TABLE, budgets)
+      .onSuccess(rowSet -> logger.info("createBatchBudgets:: Created {} batch budgets", budgets.size()))
+      .onFailure(e -> logger.error("Create batch budgets failed, ids={}", ids, e))
+      .mapEmpty();
+  }
+
+  @Override
   public Future<Void> updateBatchBudgets(List<Budget> budgets, DBConn conn) {
     List<String> ids = budgets.stream().map(Budget::getId).toList();
     logger.debug("Trying update batch budgets, ids={}", ids);
     return conn.updateBatch(BUDGET_TABLE, budgets)
       .onSuccess(rowSet -> logger.info("updateBatchBudgets:: Updated {} batch budgets", budgets.size()))
-      .onFailure(e -> logger.error("Update batch budgets by failed, ids={}", ids, e))
+      .onFailure(e -> logger.error("Update batch budgets failed, ids={}", ids, e))
       .mapEmpty();
   }
 

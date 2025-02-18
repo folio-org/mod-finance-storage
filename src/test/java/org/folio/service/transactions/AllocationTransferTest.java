@@ -27,6 +27,8 @@ import static org.folio.rest.impl.FundAPI.FUND_TABLE;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.ACTIVE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.TRANSFER;
+import static org.folio.service.ServiceTestUtils.createResults;
+import static org.folio.service.ServiceTestUtils.createRowSet;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
