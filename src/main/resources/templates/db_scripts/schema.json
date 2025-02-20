@@ -692,7 +692,16 @@
       "tableName": "fund_update_log",
       "fromModuleVersion": "mod-finance-storage-8.8.0",
       "withMetadata": true,
-      "withOptimisticLocking": "failOnConflict"
+      "withOptimisticLocking": "failOnConflict",
+      "fullTextIndex": [
+        {
+          "fieldName": "jobDetails.fyFinanceData",
+          "caseSensitive": false,
+          "removeAccents": false,
+          "arraySubfield": "finance",
+          "arrayModifiers": ["fiscalYearId", "ledgerId","groupId"]
+        }
+      ]
     }
   ]
 }
