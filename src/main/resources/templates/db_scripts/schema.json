@@ -699,7 +699,7 @@
           "caseSensitive": false,
           "removeAccents": false,
           "arraySubfield": "finance",
-          "arrayModifiers": ["fiscalYearId", "ledgerId","groupId"]
+          "arrayModifiers": ["fiscalYearId", "ledgerId", "groupId"]
         }
       ]
     }
