@@ -34,6 +34,6 @@ INNER JOIN ${myuniversity}_${mymodule}.fund
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.budget
     ON budget.fundid = fund.id AND budget.fiscalYearId = fiscal_year.id
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year
-    ON group_fund_fiscal_year.fundid = fund.id AND group_fund_fiscal_year.fiscalYearId = fiscal_year.id
+    ON group_fund_fiscal_year.fundid = fund.id AND group_fund_fiscal_year.fiscalYearId = fiscal_year.id AND group_fund_fiscal_year.budgetId = budget.id
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.groups
     ON groups.id = group_fund_fiscal_year.groupid;
