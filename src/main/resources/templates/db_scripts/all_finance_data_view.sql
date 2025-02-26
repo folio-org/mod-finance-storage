@@ -1,5 +1,6 @@
 CREATE OR REPLACE VIEW ${myuniversity}_${mymodule}.finance_data_view AS
 SELECT
+  DISTINCT ON (fiscal_year.id, fund.id, budget.id)
   fiscal_year.id as id,
   jsonb_build_object(
     'fiscalYearId', fiscal_year.id,
@@ -36,4 +37,5 @@ LEFT OUTER JOIN ${myuniversity}_${mymodule}.budget
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year
     ON group_fund_fiscal_year.fundid = fund.id AND group_fund_fiscal_year.fiscalYearId = fiscal_year.id AND group_fund_fiscal_year.budgetId = budget.id
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.groups
-    ON groups.id = group_fund_fiscal_year.groupid;
+    ON groups.id = group_fund_fiscal_year.groupid
+ORDER BY fiscal_year.id, fund.id, budget.id;
