@@ -474,6 +474,17 @@
       ]
     },
     {
+      "id": "finance-storage.job-number",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/job-number",
+          "permissionsRequired": ["finance-storage.job-number.get"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.finance-data",
       "version": "1.0",
       "handlers": [
@@ -1034,6 +1045,11 @@
       "description" : "Delete a fund update log"
     },
     {
+      "permissionName" : "finance-storage.job-number.get",
+      "displayName" : "job-number get",
+      "description" : "Get job number for fund update logs"
+    },
+    {
       "permissionName" : "finance-storage.fund-update-logs.all",
       "displayName" : "All fund-update-logs perms",
       "description" : "All permissions for the fund update log",
@@ -1042,7 +1058,8 @@
         "finance-storage.fund-update-logs.item.get",
         "finance-storage.fund-update-logs.item.post",
         "finance-storage.fund-update-logs.item.put",
-        "finance-storage.fund-update-logs.item.delete"
+        "finance-storage.fund-update-logs.item.delete",
+        "finance-storage.job-number.get"
       ]
     },
     {

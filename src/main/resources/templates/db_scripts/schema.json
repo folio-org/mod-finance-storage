@@ -105,6 +105,11 @@
       "run": "after",
       "snippetPath": "transaction_totals_view.sql",
       "fromModuleVersion": "mod-finance-storage-8.8.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "job_number_sequence.sql",
+      "fromModuleVersion": "mod-finance-storage-8.8.0"
     }
   ],
   "tables": [

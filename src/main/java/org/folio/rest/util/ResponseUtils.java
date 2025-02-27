@@ -30,6 +30,10 @@ public class ResponseUtils {
   private ResponseUtils() {
   }
 
+  public static Future<Response> buildOkResponse(Object body) {
+    return Future.succeededFuture(Response.ok(body, APPLICATION_JSON).build());
+  }
+
   public static Future<Response> handleNoContentResponse(AsyncResult<Void> result, String id, String logMessage) {
     if (result.failed()) {
       logger.error(logMessage, result.cause(), id, "or associated data failed to be");

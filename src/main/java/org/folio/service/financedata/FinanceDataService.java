@@ -247,7 +247,12 @@ public class FinanceDataService {
       .withAmount(Math.abs(allocationChange))
       .withFiscalYearId(financeData.getFiscalYearId())
       .withSource(Transaction.Source.USER)
-      .withCurrency(currency);
+      .withCurrency(currency)
+      .withDescription(financeData.getTransactionDescription());
+
+    if (financeData.getTransactionTag() != null && isNotEmpty(financeData.getTransactionTag().getTagList())) {
+      transaction.setTags(new Tags().withTagList(financeData.getTransactionTag().getTagList()));
+    }
 
     // For negative allocation (decrease), use fromFundId
     // For positive allocation (increase), use toFundId

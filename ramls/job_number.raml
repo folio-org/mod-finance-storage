@@ -1,0 +1,30 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: mod-finance-storage (Funds)
+    content: <b>CRUD APIs used to manage job number.</b>
+
+types:
+  sequenceNumber: !include acq-models/common/schemas/sequence_number.json
+
+/finance-storage/job-number:
+  get:
+    description: Get job number
+    responses:
+      200:
+        body:
+          application/json:
+            type: sequenceNumber
+      400:
+        description: "Bad request, e.g. malformed request body or query parameter"
+        body:
+          text/plain:
+            example: "Unable to generate job line number"
+      500:
+        description: "Internal server error, e.g. due to misconfiguration"
+        body:
+          text/plain:
+            example: "Internal server error, contact Administrator"
