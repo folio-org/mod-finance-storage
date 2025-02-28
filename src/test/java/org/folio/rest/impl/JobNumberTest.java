@@ -32,7 +32,7 @@ public class JobNumberTest extends TestBase {
 
   @BeforeAll
   public static void setUp() {
-    jobNumberList  = new ArrayList<>();
+    jobNumberList = new ArrayList<>();
   }
 
   @RepeatedTest(3)
@@ -44,7 +44,7 @@ public class JobNumberTest extends TestBase {
   public static void tearDown() throws Exception {
 
     // Positive scenario - testing of number increase
-    for(int i = 0; i < jobNumberList.size(); i++) {
+    for (int i = 0; i < jobNumberList.size(); i++) {
       assertThat(jobNumberList.get(i) - jobNumberList.get(0), equalTo((long) i));
     }
 
@@ -65,7 +65,7 @@ public class JobNumberTest extends TestBase {
   private static void dropTableInDb() throws Exception {
     CompletableFuture<RowSet<Row>> future = new CompletableFuture<>();
     PostgresClient.getInstance(Vertx.vertx()).execute(DROP_TABLE_QUERY, result -> {
-      if(result.failed()) {
+      if (result.failed()) {
         future.completeExceptionally(result.cause());
       } else {
         future.complete(result.result());
