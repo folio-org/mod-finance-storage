@@ -63,7 +63,7 @@ public class FinanceDataService {
         .compose(fiscalYear -> createBudgetsIfNeeded(entity, fiscalYear, conn, okapiHeaders)
           .compose(v -> updateFundAndBudget(entity, conn))
           .compose(v -> processAllocationTransaction(entity, fiscalYear, conn, okapiHeaders))))
-      .onSuccess(v -> logger.info("Successfully updated finance data"))
+      .onSuccess(v -> logger.info("update:: Successfully updated finance data"))
       .onFailure(e -> logger.error("Failed to update finance data", e));
   }
 
