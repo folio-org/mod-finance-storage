@@ -108,7 +108,7 @@
     },
     {
       "run": "after",
-      "snippetPath": "job_number_sequence.sql",
+      "snippetPath": "create_job_number_table.sql",
       "fromModuleVersion": "mod-finance-storage-8.8.0"
     }
   ],

@@ -13,6 +13,11 @@ types:
 /finance-storage/job-number:
   get:
     description: Get job number
+    queryParameters:
+      type:
+        description: The type of job number
+        required: true
+        type: string
     responses:
       200:
         body:
