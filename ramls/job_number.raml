@@ -8,7 +8,7 @@ documentation:
     content: <b>CRUD APIs used to manage job number.</b>
 
 types:
-  sequenceNumber: !include acq-models/common/schemas/sequence_number.json
+  jobNumber: !include acq-models/mod-finance/schemas/job_number.json
 
 /finance-storage/job-number:
   get:
@@ -22,7 +22,7 @@ types:
       200:
         body:
           application/json:
-            type: sequenceNumber
+            type: jobNumber
       400:
         description: "Bad request, e.g. malformed request body or query parameter"
         body:

@@ -6,7 +6,7 @@ import io.vertx.sqlclient.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.exception.HttpException;
-import org.folio.rest.jaxrs.model.SequenceNumber;
+import org.folio.rest.jaxrs.model.JobNumber;
 import org.folio.rest.persist.DBConn;
 
 public class JobNumberPostgresDAO implements JobNumberDAO {
@@ -17,7 +17,7 @@ public class JobNumberPostgresDAO implements JobNumberDAO {
     " SET last_number = last_number + 1 WHERE type = $1 RETURNING last_number";
 
   @Override
-  public Future<SequenceNumber> getNextJobNumber(String type, DBConn conn) {
+  public Future<JobNumber> getNextJobNumber(String type, DBConn conn) {
     return conn.execute(UPDATE_JOB_NUMBER_QUERY, Tuple.of(type))
       .map(rowSet -> {
         if (rowSet.rowCount() == 0) {
@@ -25,7 +25,9 @@ public class JobNumberPostgresDAO implements JobNumberDAO {
           throw new HttpException(500, "Could not get a new job number (rowCount is 0)");
         }
         Row row = rowSet.iterator().next();
-        return new SequenceNumber().withSequenceNumber(row.getLong(0).toString());
+        return new JobNumber()
+          .withSequenceNumber(row.getLong(0).toString())
+          .withType(JobNumber.Type.fromValue(type));
       });
   }
 }
