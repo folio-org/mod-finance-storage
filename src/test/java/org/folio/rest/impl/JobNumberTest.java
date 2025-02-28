@@ -27,7 +27,7 @@ public class JobNumberTest extends TestBase {
   private static List<Long> jobNumberList;
 
   private static final String SEQUENCE_NUMBER = "sequenceNumber";
-  private static final String JOB_NUMBER_ENDPOINT = "/finance-storage/job-number?type=Logs";
+  private static final String JOB_NUMBER_ENDPOINT = "/finance-storage/job-number?type=FundUpdateLogs";
   private static final String DROP_TABLE_QUERY = "DROP TABLE IF EXISTS diku_mod_finance_storage.job_number";
 
   @BeforeAll
