@@ -1,7 +1,7 @@
 package org.folio.rest.impl;
 
 import static io.restassured.RestAssured.given;
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.folio.StorageTestSuite.storageUrl;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -27,8 +27,8 @@ public class JobNumberTest extends TestBase {
   private static List<Long> jobNumberList;
 
   private static final String SEQUENCE_NUMBER = "sequenceNumber";
-  private static final String JOB_NUMBER_ENDPOINT = "/finance-storage/job-number";
-  private static final String DROP_SEQUENCE_QUERY = "DROP SEQUENCE diku_mod_finance_storage.job_number";
+  private static final String JOB_NUMBER_ENDPOINT = "/finance-storage/job-number?type=Logs";
+  private static final String DROP_TABLE_QUERY = "DROP TABLE IF EXISTS diku_mod_finance_storage.job_number";
 
   @BeforeAll
   public static void setUp() {
@@ -48,8 +48,8 @@ public class JobNumberTest extends TestBase {
       assertThat(jobNumberList.get(i) - jobNumberList.get(0), equalTo((long) i));
     }
 
-    // Negative scenario - retrieving number from non-existed sequence
-    dropSequenceInDb();
+    // Negative scenario - retrieving number from non-existed table
+    dropTableInDb();
     testProcessingErrorReply();
   }
 
@@ -62,9 +62,9 @@ public class JobNumberTest extends TestBase {
       .path(SEQUENCE_NUMBER));
   }
 
-  private static void dropSequenceInDb() throws Exception {
+  private static void dropTableInDb() throws Exception {
     CompletableFuture<RowSet<Row>> future = new CompletableFuture<>();
-    PostgresClient.getInstance(Vertx.vertx()).execute(DROP_SEQUENCE_QUERY, result -> {
+    PostgresClient.getInstance(Vertx.vertx()).execute(DROP_TABLE_QUERY, result -> {
       if(result.failed()) {
         future.completeExceptionally(result.cause());
       } else {
@@ -81,7 +81,7 @@ public class JobNumberTest extends TestBase {
       .get(storageUrl(JOB_NUMBER_ENDPOINT))
       .then()
       .statusCode(HttpStatus.HTTP_INTERNAL_SERVER_ERROR.toInt())
-      .contentType(TEXT_PLAIN)
+      .contentType(APPLICATION_JSON)
       .extract()
       .response();
   }
