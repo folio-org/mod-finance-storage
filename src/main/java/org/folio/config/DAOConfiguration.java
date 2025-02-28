@@ -12,6 +12,8 @@ import org.folio.dao.fund.FundDAO;
 import org.folio.dao.fund.FundPostgresDAO;
 import org.folio.dao.group.GroupDAO;
 import org.folio.dao.group.GroupPostgresDAO;
+import org.folio.dao.jobnumber.JobNumberDAO;
+import org.folio.dao.jobnumber.JobNumberPostgresDAO;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.dao.ledger.LedgerPostgresDAO;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
@@ -89,5 +91,10 @@ public class DAOConfiguration {
   @Bean
   public BudgetExpenseClassDAO budgetExpenseClassDAO() {
     return new BudgetExpenseClassDAOImpl();
+  }
+
+  @Bean
+  public JobNumberDAO jobNumberDAO() {
+    return new JobNumberPostgresDAO();
   }
 }

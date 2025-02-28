@@ -8,6 +8,7 @@ import org.folio.dao.expense.ExpenseClassDAO;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.dao.fund.FundDAO;
 import org.folio.dao.group.GroupDAO;
+import org.folio.dao.jobnumber.JobNumberDAO;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAO;
 import org.folio.dao.rollover.RolloverBudgetDAO;
@@ -27,6 +28,7 @@ import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
 import org.folio.service.group.GroupService;
+import org.folio.service.jobnumber.JobNumberService;
 import org.folio.service.ledger.LedgerService;
 import org.folio.service.ledger.StorageLedgerService;
 import org.folio.service.rollover.LedgerRolloverService;
@@ -177,5 +179,10 @@ public class ServicesConfiguration {
   public FinanceDataService financeDataService(FundService fundService, BudgetService budgetService, FiscalYearService fiscalYearService,
       BatchTransactionService batchTransactionService) {
     return new FinanceDataService(fundService, budgetService, fiscalYearService, batchTransactionService);
+  }
+
+  @Bean
+  public JobNumberService jobNumberService(JobNumberDAO jobNumberDAO) {
+    return new JobNumberService(jobNumberDAO);
   }
 }
