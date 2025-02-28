@@ -178,7 +178,7 @@ public class FinanceDataService {
       .orElseThrow();
 
     var oldStatus = fund.getFundStatus();
-    var newStatus = Fund.FundStatus.fromValue(fundFinanceData.getFundStatus().value());
+    var newStatus = Fund.FundStatus.fromValue(fundFinanceData.getFundStatus());
     if (oldStatus.equals(newStatus)) {
       boolean positiveAllocation = fundFinanceData.getBudgetAllocationChange() != null &&
         fundFinanceData.getBudgetAllocationChange() > 0;
