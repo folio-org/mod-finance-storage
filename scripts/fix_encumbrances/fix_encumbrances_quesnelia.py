@@ -707,8 +707,11 @@ async def select_encumbrances_without_active_budgets(encumbrances) -> list:
         return []
     fund_ids = set(map(lambda enc: enc['fromFundId'], encumbrances))
     budgets = await get_active_budgets_by_fund_ids(fund_ids)
-    ids_of_funds_with_active_budgets = set(map(lambda budget: budget['fundId'], budgets))
-    return list(filter(lambda enc: enc['fromFundId'] not in ids_of_funds_with_active_budgets, encumbrances))
+    return [enc for enc in encumbrances
+        if not any(
+            budget['fundId'] == enc['fromFundId'] and budget['fiscalYearId'] == enc['fiscalYearId']
+            for budget in budgets
+        )]
 
 
 async def remove_links_to_encumbrances(encumbrances) -> int:
