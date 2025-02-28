@@ -18,7 +18,7 @@ public class JobNumberService {
     return validateType(type)
       .compose(v -> {
         var dbClient = new DBClient(requestContext);
-        return dbClient.withConn(conn -> jobNumberDAO.getNextJobNumber(type, conn));
+        return dbClient.withTrans(conn -> jobNumberDAO.getNextJobNumber(type, conn));
       });
   }
 
