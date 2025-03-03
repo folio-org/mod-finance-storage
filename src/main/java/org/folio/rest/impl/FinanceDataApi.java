@@ -41,13 +41,13 @@ public class FinanceDataApi  implements FinanceStorageFinanceData {
   @Override
   public void putFinanceStorageFinanceData(FyFinanceDataCollection entity, Map<String, String> okapiHeaders,
                                            Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-      financeDataService.update(entity, new RequestContext(vertxContext, okapiHeaders))
-        .onComplete(event -> {
-          if (event.succeeded()) {
-            asyncResultHandler.handle(buildNoContentResponse());
-          } else {
-            asyncResultHandler.handle(buildErrorResponse(event.cause()));
-          }
-        });
+    financeDataService.update(entity, new RequestContext(vertxContext, okapiHeaders))
+      .onComplete(event -> {
+        if (event.succeeded()) {
+          asyncResultHandler.handle(buildNoContentResponse());
+        } else {
+          asyncResultHandler.handle(buildErrorResponse(event.cause()));
+        }
+      });
   }
 }

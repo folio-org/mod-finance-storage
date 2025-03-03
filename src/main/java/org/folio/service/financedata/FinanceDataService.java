@@ -63,7 +63,7 @@ public class FinanceDataService {
         .compose(fiscalYear -> createBudgetsIfNeeded(entity, fiscalYear, conn, okapiHeaders)
           .compose(v -> updateFundAndBudget(entity, conn))
           .compose(v -> processAllocationTransaction(entity, fiscalYear, conn, okapiHeaders))))
-      .onSuccess(v -> logger.info("Successfully updated finance data"))
+      .onSuccess(v -> logger.info("update:: Successfully updated finance data"))
       .onFailure(e -> logger.error("Failed to update finance data", e));
   }
 
@@ -178,7 +178,7 @@ public class FinanceDataService {
       .orElseThrow();
 
     var oldStatus = fund.getFundStatus();
-    var newStatus = Fund.FundStatus.fromValue(fundFinanceData.getFundStatus().value());
+    var newStatus = Fund.FundStatus.fromValue(fundFinanceData.getFundStatus());
     if (oldStatus.equals(newStatus)) {
       boolean positiveAllocation = fundFinanceData.getBudgetAllocationChange() != null &&
         fundFinanceData.getBudgetAllocationChange() > 0;
@@ -247,7 +247,12 @@ public class FinanceDataService {
       .withAmount(Math.abs(allocationChange))
       .withFiscalYearId(financeData.getFiscalYearId())
       .withSource(Transaction.Source.USER)
-      .withCurrency(currency);
+      .withCurrency(currency)
+      .withDescription(financeData.getTransactionDescription());
+
+    if (financeData.getTransactionTag() != null && isNotEmpty(financeData.getTransactionTag().getTagList())) {
+      transaction.setTags(new Tags().withTagList(financeData.getTransactionTag().getTagList()));
+    }
 
     // For negative allocation (decrease), use fromFundId
     // For positive allocation (increase), use toFundId
