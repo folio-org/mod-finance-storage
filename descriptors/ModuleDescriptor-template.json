@@ -474,6 +474,17 @@
       ]
     },
     {
+      "id": "finance-storage.job-number",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/job-number",
+          "permissionsRequired": ["finance-storage.job-number.get"]
+        }
+      ]
+    },
+    {
       "id": "finance-storage.finance-data",
       "version": "1.0",
       "handlers": [
@@ -1065,6 +1076,11 @@
       ]
     },
     {
+      "permissionName" : "finance-storage.job-number.get",
+      "displayName" : "job-number get",
+      "description" : "Get job number"
+    },
+    {
       "permissionName" : "finance.module.all",
       "displayName" : "All finance-module perms",
       "description" : "All permissions for the finance module",
@@ -1080,7 +1096,8 @@
         "finance-storage.transaction-totals.all",
         "finance-storage.fund-types.all",
         "finance-storage.fund-update-logs.all",
-        "finance-storage.finance-data.all"
+        "finance-storage.finance-data.all",
+        "finance-storage.job-number.get"
       ]
     }
   ],
