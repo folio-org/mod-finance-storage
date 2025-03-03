@@ -13,40 +13,45 @@
   </licenses>
 
   <properties>
+    <java.version>21</java.version>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+
     <module_name>mod-finance-storage</module_name>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
     <ramlfiles_acq_models_path>${ramlfiles_path}/acq-models</ramlfiles_acq_models_path>
-    <raml-module-builder.version>35.3.0</raml-module-builder.version>
+    <raml-module-builder.version>35.4.0</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!--Dependency Properties-->
-    <vertx.version>4.5.10</vertx.version>
-    <log4j.version>2.24.1</log4j.version>
+    <vertx.version>4.5.13</vertx.version>
+    <log4j.version>2.24.3</log4j.version>
     <aspectj.version>1.9.22.1</aspectj.version>
-    <java.version>17</java.version>
-    <jackson-bom.version>2.18.0</jackson-bom.version>
+    <jackson-bom.version>2.18.2</jackson-bom.version>
 
     <!--Folio dependencies properties-->
     <folio-module-descriptor-validator.version>1.0.0</folio-module-descriptor-validator.version>
-    <folio-di-support.version>2.1.0</folio-di-support.version>
+    <folio-di-support.version>3.0.0</folio-di-support.version>
 
     <!--Maven plugin properties-->
     <aspectj-maven-plugin.version>1.14</aspectj-maven-plugin.version>
-    <exec-maven-plugin.version>3.4.1</exec-maven-plugin.version>
+    <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
     <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+    <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
     <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
     <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
     <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
-    <maven-surefire-plugin.version>3.5.1</maven-surefire-plugin.version>
+    <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
     <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
     <copy-rename-maven-plugin.version>1.0.1</copy-rename-maven-plugin.version>
 
     <!--Test Scope dependencies-->
     <jmockit.version>1.49</jmockit.version>
-    <junit.jupiter.version>5.11.2</junit.jupiter.version>
-    <rest-assured.version>5.5.0</rest-assured.version>
+    <junit-bom.version>5.12.0</junit-bom.version>
+    <rest-assured.version>5.5.1</rest-assured.version>
+    <awaitility.version>4.3.0</awaitility.version>
+    <mockito.version>5.15.2</mockito.version>
 
     <!--Sonar properties-->
     <sonar.test.exclusions>**/*Test.java</sonar.test.exclusions>
@@ -81,7 +86,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>${junit.jupiter.version}</version>
+        <version>${junit-bom.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -134,7 +139,7 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.2.2</version>
+      <version>${awaitility.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -145,7 +150,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.14.2</version>
+      <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
