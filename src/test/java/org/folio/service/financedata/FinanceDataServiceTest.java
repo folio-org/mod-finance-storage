@@ -100,7 +100,7 @@ public class FinanceDataServiceTest {
     testContext.assertComplete(financeDataService.update(collection, requestContext)
       .onComplete(testContext.succeeding(result -> {
         testContext.verify(() -> {
-          verifyFundUpdates(collection);
+          verifyFundUpdates(Fund.FundStatus.INACTIVE, collection);
           verifyBudgetUpdates("Inactive", collection);
           verifyAllocationCreation(collection);
         });
@@ -151,7 +151,7 @@ public class FinanceDataServiceTest {
   }
 
   @Test
-  void shouldCreateANewBudgetAndAllocation(VertxTestContext testContext) {
+  void shouldCreateNewBudgetAndAllocation(VertxTestContext testContext) {
     String fiscalYearId = UUID.randomUUID().toString();
     String fundId = UUID.randomUUID().toString();
     FyFinanceData financeData = new FyFinanceData()
@@ -185,7 +185,7 @@ public class FinanceDataServiceTest {
     testContext.assertComplete(financeDataService.update(collection, requestContext)
       .onComplete(testContext.succeeding(result -> {
         testContext.verify(() -> {
-          verifyFundUpdates(collection);
+          verifyFundUpdates(Fund.FundStatus.ACTIVE, collection);
           verifyBudgetCreation();
           verifyBudgetUpdates("Active", collection);
           verifyAllocationCreation(collection);
@@ -243,7 +243,7 @@ public class FinanceDataServiceTest {
     when(fiscalYearService.getFiscalYearById(anyString(), any(DBConn.class))).thenReturn(Future.succeededFuture(fiscalYear));
   }
 
-  private void verifyFundUpdates(FyFinanceDataCollection collection) {
+  private void verifyFundUpdates(Fund.FundStatus expectedFundStatus, FyFinanceDataCollection collection) {
     ArgumentCaptor<List<String>> fundIdsCaptor = ArgumentCaptor.forClass(List.class);
     verify(fundService).getFundsByIds(fundIdsCaptor.capture(), eq(dbConn));
     assertEquals(collection.getFyFinanceData().getFirst().getFundId(), fundIdsCaptor.getValue().getFirst());
@@ -255,7 +255,7 @@ public class FinanceDataServiceTest {
     assertNotEquals("CODE CHANGED", updatedFund.getCode());
     assertNotEquals("NAME CHANGED", updatedFund.getName());
 
-    assertEquals(Fund.FundStatus.INACTIVE, updatedFund.getFundStatus());
+    assertEquals(expectedFundStatus, updatedFund.getFundStatus());
     assertEquals("New Description", updatedFund.getDescription());
   }
 
