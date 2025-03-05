@@ -100,8 +100,8 @@ public class FinanceDataServiceTest {
     testContext.assertComplete(financeDataService.update(collection, requestContext)
       .onComplete(testContext.succeeding(result -> {
         testContext.verify(() -> {
-          verifyFundUpdates(Fund.FundStatus.INACTIVE, collection);
-          verifyBudgetUpdates("Inactive", collection);
+          verifyFundUpdates(collection);
+          verifyBudgetUpdates(collection);
           verifyAllocationCreation(collection);
         });
         testContext.completeNow();
@@ -168,7 +168,7 @@ public class FinanceDataServiceTest {
       .withBudgetAllowableExpenditure(800.0)
       .withBudgetAllowableEncumbrance(700.0)
       .withBudgetAcqUnitIds(List.of("unit1"));
-    var collection =  new FyFinanceDataCollection()
+    var collection = new FyFinanceDataCollection()
       .withFyFinanceData(List.of(financeData));
     var oldFund = new Fund().withId(collection.getFyFinanceData().getFirst().getFundId())
       .withName("NAME").withCode("CODE").withFundStatus(Fund.FundStatus.ACTIVE)
@@ -185,9 +185,9 @@ public class FinanceDataServiceTest {
     testContext.assertComplete(financeDataService.update(collection, requestContext)
       .onComplete(testContext.succeeding(result -> {
         testContext.verify(() -> {
-          verifyFundUpdates(Fund.FundStatus.ACTIVE, collection);
+          verifyFundUpdates(collection);
           verifyBudgetCreation();
-          verifyBudgetUpdates("Active", collection);
+          verifyBudgetUpdates(collection);
           verifyAllocationCreation(collection);
         });
         testContext.completeNow();
@@ -243,7 +243,7 @@ public class FinanceDataServiceTest {
     when(fiscalYearService.getFiscalYearById(anyString(), any(DBConn.class))).thenReturn(Future.succeededFuture(fiscalYear));
   }
 
-  private void verifyFundUpdates(Fund.FundStatus expectedFundStatus, FyFinanceDataCollection collection) {
+  private void verifyFundUpdates(FyFinanceDataCollection collection) {
     ArgumentCaptor<List<String>> fundIdsCaptor = ArgumentCaptor.forClass(List.class);
     verify(fundService).getFundsByIds(fundIdsCaptor.capture(), eq(dbConn));
     assertEquals(collection.getFyFinanceData().getFirst().getFundId(), fundIdsCaptor.getValue().getFirst());
@@ -255,7 +255,7 @@ public class FinanceDataServiceTest {
     assertNotEquals("CODE CHANGED", updatedFund.getCode());
     assertNotEquals("NAME CHANGED", updatedFund.getName());
 
-    assertEquals(expectedFundStatus, updatedFund.getFundStatus());
+    assertEquals(Fund.FundStatus.INACTIVE, updatedFund.getFundStatus());
     assertEquals("New Description", updatedFund.getDescription());
   }
 
@@ -270,7 +270,7 @@ public class FinanceDataServiceTest {
     assertNull(createdBudget.getAllowableEncumbrance());
   }
 
-  private void verifyBudgetUpdates(String status, FyFinanceDataCollection collection) {
+  private void verifyBudgetUpdates(FyFinanceDataCollection collection) {
     ArgumentCaptor<List<String>> budgetIdsCaptor = ArgumentCaptor.forClass(List.class);
     verify(budgetService).getBudgetsByIds(budgetIdsCaptor.capture(), eq(dbConn));
     assertEquals(collection.getFyFinanceData().getFirst().getBudgetId(), budgetIdsCaptor.getValue().getFirst());
@@ -282,7 +282,7 @@ public class FinanceDataServiceTest {
     assertNotEquals("NAME CHANGED", updatedBudget.getName());
     assertNotEquals(1000.0, updatedBudget.getInitialAllocation());
 
-    assertEquals(status, updatedBudget.getBudgetStatus().value());
+    assertEquals("Inactive", updatedBudget.getBudgetStatus().value());
     assertEquals(800.0, updatedBudget.getAllowableExpenditure());
     assertEquals(700.0, updatedBudget.getAllowableEncumbrance());
   }
