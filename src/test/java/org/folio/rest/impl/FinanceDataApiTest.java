@@ -93,11 +93,11 @@ public class FinanceDataApiTest extends TestBase {
 
     var response = getData(financeDataEndpoint, TENANT_HEADER);
     var body = response.getBody().as(FyFinanceDataCollection.class);
-    var actualFyFinanceData = body.getFyFinanceData().get(0);
+    var actualFyFinanceData = body.getFyFinanceData().getFirst();
 
     assertEquals(fiscalYearId, actualFyFinanceData.getFiscalYearId());
-    assertEquals(acqUnitId, actualFyFinanceData.getFundAcqUnitIds().get(0));
-    assertEquals(acqUnitId, actualFyFinanceData.getBudgetAcqUnitIds().get(0));
+    assertEquals(acqUnitId, actualFyFinanceData.getFundAcqUnitIds().getFirst());
+    assertEquals(acqUnitId, actualFyFinanceData.getBudgetAcqUnitIds().getFirst());
   }
 
   @Test
@@ -114,7 +114,7 @@ public class FinanceDataApiTest extends TestBase {
 
     var response = getData(financeDataEndpoint, TENANT_HEADER);
     var body = response.getBody().as(FyFinanceDataCollection.class);
-    var fyFinanceData = body.getFyFinanceData().get(0);
+    var fyFinanceData = body.getFyFinanceData().getFirst();
 
     // Set required fields difference values than before
     fyFinanceData.setFundDescription(expectedDescription);
@@ -129,12 +129,12 @@ public class FinanceDataApiTest extends TestBase {
 
     // Update finance data as a bulk
     var updateResponse = putData(FINANCE_DATA_ENDPOINT, JsonObject.mapFrom(updatedCollection).encodePrettily(), TENANT_HEADER);
-    assertEquals(204, updateResponse.getStatusCode());
+    assertEquals(200, updateResponse.getStatusCode());
 
     // Get updated result
     var updatedResponse = getData(financeDataEndpoint, TENANT_HEADER);
     var updatedBody = updatedResponse.getBody().as(FyFinanceDataCollection.class);
-    var updatedFyFinanceData = updatedBody.getFyFinanceData().get(0);
+    var updatedFyFinanceData = updatedBody.getFyFinanceData().getFirst();
 
     assertEquals(expectedDescription, updatedFyFinanceData.getFundDescription());
     assertEquals(expectedTags, updatedFyFinanceData.getFundTags().getTagList());

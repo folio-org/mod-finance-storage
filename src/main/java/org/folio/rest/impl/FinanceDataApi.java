@@ -2,7 +2,6 @@ package org.folio.rest.impl;
 
 
 import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
-import static org.folio.rest.util.ResponseUtils.buildNoContentResponse;
 
 import javax.ws.rs.core.Response;
 import java.util.Map;
@@ -16,6 +15,7 @@ import org.folio.rest.jaxrs.model.FyFinanceData;
 import org.folio.rest.jaxrs.model.FyFinanceDataCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageFinanceData;
 import org.folio.rest.persist.PgUtil;
+import static org.folio.rest.util.ResponseUtils.buildOkResponse;
 import org.folio.service.financedata.FinanceDataService;
 import org.folio.spring.SpringContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,7 @@ public class FinanceDataApi  implements FinanceStorageFinanceData {
     financeDataService.update(entity, new RequestContext(vertxContext, okapiHeaders))
       .onComplete(event -> {
         if (event.succeeded()) {
-          asyncResultHandler.handle(buildNoContentResponse());
+          asyncResultHandler.handle(buildOkResponse(event.result()));
         } else {
           asyncResultHandler.handle(buildErrorResponse(event.cause()));
         }

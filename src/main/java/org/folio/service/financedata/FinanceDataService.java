@@ -45,14 +45,14 @@ public class FinanceDataService {
   private final BatchTransactionService batchTransactionService;
 
   public FinanceDataService(FundService fundService, BudgetService budgetService, FiscalYearService fiscalYearService,
-      BatchTransactionService batchTransactionService) {
+                            BatchTransactionService batchTransactionService) {
     this.fundService = fundService;
     this.budgetService = budgetService;
     this.fiscalYearService = fiscalYearService;
     this.batchTransactionService = batchTransactionService;
   }
 
-  public Future<Void> update(FyFinanceDataCollection entity, RequestContext requestContext) {
+  public Future<FyFinanceDataCollection> update(FyFinanceDataCollection entity, RequestContext requestContext) {
     if (CollectionUtils.isEmpty(entity.getFyFinanceData())) {
       return succeededFuture();
     }
@@ -64,46 +64,62 @@ public class FinanceDataService {
           .compose(v -> updateFundAndBudget(entity, conn))
           .compose(v -> processAllocationTransaction(entity, fiscalYear, conn, okapiHeaders))))
       .onSuccess(v -> logger.info("update:: Successfully updated finance data"))
-      .onFailure(e -> logger.error("Failed to update finance data", e));
+      .onFailure(e -> logger.error("Failed to update finance data", e))
+      .map(v -> entity);
   }
 
-  private Future<Void> createBudgetsIfNeeded(FyFinanceDataCollection entity, FiscalYear fiscalYear, DBConn conn,
-      Map<String, String> okapiHeaders) {
+  private Future<Void> createBudgetsIfNeeded(FyFinanceDataCollection financeDataCollection, FiscalYear fiscalYear, DBConn conn,
+                                             Map<String, String> okapiHeaders) {
+    // Skip creating budgets for past fiscal years
     if (isFiscalYearPast(fiscalYear)) {
       return succeededFuture();
     }
-    List<FyFinanceData> dataList = entity.getFyFinanceData().stream()
-      .filter(data -> data.getBudgetId() == null && (data.getBudgetStatus() != null ||
-        requireNonNullElse(data.getBudgetAllocationChange(), 0.0) > 0))
+
+    var newBudgets = financeDataCollection.getFyFinanceData().stream()
+      .filter(this::needsBudgetCreation)
+      .map(financeData -> createAndLinkBudget(financeData, fiscalYear, okapiHeaders))
       .toList();
-    if (dataList.isEmpty()) {
+
+    if (newBudgets.isEmpty()) {
+      logger.info("createBudgetsIfNeeded:: No need to create budgets for fiscalYear: {}", fiscalYear.getId());
       return succeededFuture();
     }
-    List<Budget> budgets = dataList.stream()
-      .map(data -> {
-        String budgetId = UUID.randomUUID().toString();
-        Budget.BudgetStatus budgetStatus = newBudgetStatus(fiscalYear);
-        data.setBudgetId(budgetId);
-        if (data.getBudgetStatus() == null) {
-          data.setBudgetStatus(budgetStatus.value());
-        }
-        Budget budget = new Budget()
-          .withId(budgetId)
-          .withName(requireNonNullElse(data.getBudgetName(), data.getFundCode() + '-' + data.getFiscalYearCode()))
-          .withBudgetStatus(budgetStatus)
-          .withAllocated(0.)
-          .withFundId(data.getFundId())
-          .withFiscalYearId(data.getFiscalYearId());
-        populateBudgetMetadata(budget, okapiHeaders);
-        return budget;
-      })
-      .toList();
-    return budgetService.createBatchBudgets(budgets, conn);
+
+    logger.info("createBudgetsIfNeeded:: Creating {} budget(s) for fiscalYear: {}", newBudgets.size(), fiscalYear.getId());
+    return budgetService.createBatchBudgets(newBudgets, conn);
   }
 
   private boolean isFiscalYearPast(FiscalYear fiscalYear) {
     Date now = new Date();
     return fiscalYear.getPeriodEnd().before(now);
+  }
+
+  private boolean needsBudgetCreation(FyFinanceData financeData) {
+    return financeData.getBudgetId() == null
+      && (financeData.getBudgetStatus() != null || requireNonNullElse(financeData.getBudgetAllocationChange(), 0.0) > 0);
+  }
+
+  private Budget createAndLinkBudget(FyFinanceData financeData, FiscalYear fiscalYear, Map<String, String> okapiHeaders) {
+    var budgetId = UUID.randomUUID().toString();
+    var budgetStatus = newBudgetStatus(fiscalYear);
+
+    var newBudget = new Budget()
+      .withId(budgetId)
+      .withName(requireNonNullElse(financeData.getBudgetName(), financeData.getFundCode() + '-' + financeData.getFiscalYearCode()))
+      .withBudgetStatus(budgetStatus)
+      .withAllocated(0.0)
+      .withFundId(financeData.getFundId())
+      .withFiscalYearId(financeData.getFiscalYearId());
+
+    populateBudgetMetadata(newBudget, okapiHeaders);
+
+    financeData.setBudgetName(newBudget.getName());
+    financeData.setBudgetId(budgetId);
+    // avoid overriding existing budget status, existing status will be used in updating budget process
+    if (financeData.getBudgetStatus() == null) {
+      financeData.setBudgetStatus(budgetStatus.value());
+    }
+    return newBudget;
   }
 
   private Budget.BudgetStatus newBudgetStatus(FiscalYear fiscalYear) {
@@ -188,6 +204,7 @@ public class FinanceDataService {
       }
     }
     fund.setFundStatus(newStatus);
+    fundFinanceData.setFundStatus(newStatus.value());
     if (StringUtils.isNotEmpty(fundFinanceData.getFundDescription())) {
       fund.setDescription(fundFinanceData.getFundDescription());
     }
@@ -215,9 +232,9 @@ public class FinanceDataService {
   }
 
   private Future<Void> processAllocationTransaction(FyFinanceDataCollection fyFinanceDataCollection, FiscalYear fiscalYear,
-      DBConn conn, Map<String, String> okapiHeaders) {
+                                                    DBConn conn, Map<String, String> okapiHeaders) {
     if (fyFinanceDataCollection.getFyFinanceData().stream()
-        .noneMatch(data -> data.getBudgetAllocationChange() != null && data.getBudgetAllocationChange() != 0.)) {
+      .noneMatch(data -> data.getBudgetAllocationChange() != null && data.getBudgetAllocationChange() != 0.)) {
       return succeededFuture();
     }
     List<Transaction> transactions = createAllocationTransactions(fyFinanceDataCollection, fiscalYear.getCurrency());
@@ -226,7 +243,7 @@ public class FinanceDataService {
   }
 
   private String getFiscalYearId(FyFinanceDataCollection fyFinanceDataCollection) {
-    return fyFinanceDataCollection.getFyFinanceData().get(0).getFiscalYearId();
+    return fyFinanceDataCollection.getFyFinanceData().getFirst().getFiscalYearId();
   }
 
   private List<Transaction> createAllocationTransactions(FyFinanceDataCollection financeDataCollection, String currency) {
