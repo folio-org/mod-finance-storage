@@ -7,6 +7,8 @@
     "startTime": "2023-10-01T00:00:00Z",
     "endTime": "2023-10-01T01:00:00Z"
   },
+  "ledgerId": "f4c51b26-d47b-4f63-af09-ef1e06bc3740",
+  "acqUnitIds": [],
   "status": "COMPLETED",
   "recordsCount": 100
 }
