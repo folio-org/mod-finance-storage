@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import io.vertx.core.Future;
 import org.apache.commons.collections4.CollectionUtils;
@@ -79,7 +78,7 @@ public class FinanceDataService {
     var newBudgets = financeDataCollection.getFyFinanceData().stream()
       .filter(this::needsBudgetCreation)
       .map(financeData -> createAndLinkBudget(financeData, fiscalYear, okapiHeaders))
-      .collect(Collectors.toList());
+      .toList();
 
     if (newBudgets.isEmpty()) {
       logger.info("createBudgetsIfNeeded:: No need to create budgets for fiscalYear: {}", fiscalYear.getId());

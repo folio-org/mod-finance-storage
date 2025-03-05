@@ -63,7 +63,7 @@ public class FinanceDataApiTest extends TestBase {
 
     var response = getData(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==7a4c4d30-3b63-4102-8e2d-3ee5792d7d02)", TENANT_HEADER);
     var body = response.getBody().as(FyFinanceDataCollection.class);
-    var actualFyFinanceData = body.getFyFinanceData().getFirst();
+    var actualFyFinanceData = body.getFyFinanceData().get(0);
 
     assertTrue(body.getFyFinanceData().size() > 1);
     assertEquals("7a4c4d30-3b63-4102-8e2d-3ee5792d7d02", actualFyFinanceData.getFiscalYearId());
