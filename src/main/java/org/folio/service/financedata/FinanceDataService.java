@@ -107,7 +107,7 @@ public class FinanceDataService {
       .withId(budgetId)
       .withName(requireNonNullElse(financeData.getBudgetName(), financeData.getFundCode() + '-' + financeData.getFiscalYearCode()))
       .withBudgetStatus(budgetStatus)
-      .withAllocated(0.)
+      .withAllocated(0.0)
       .withFundId(financeData.getFundId())
       .withFiscalYearId(financeData.getFiscalYearId());
 
