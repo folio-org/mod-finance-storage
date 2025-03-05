@@ -113,11 +113,12 @@ public class FinanceDataService {
 
     populateBudgetMetadata(newBudget, okapiHeaders);
 
-    // Update finance data to sent response back
-    financeData.setBudgetId(budgetId);
-    financeData.setBudgetStatus(budgetStatus.value());
-    financeData.setFundStatus("Active");
     financeData.setBudgetName(newBudget.getName());
+    financeData.setBudgetId(budgetId);
+    // avoid overriding existing budget status, existing status will be used in updating budget process
+    if (financeData.getBudgetStatus() == null) {
+      financeData.setBudgetStatus(budgetStatus.value());
+    }
     return newBudget;
   }
 
@@ -203,6 +204,7 @@ public class FinanceDataService {
       }
     }
     fund.setFundStatus(newStatus);
+    fundFinanceData.setFundStatus(newStatus.value());
     if (StringUtils.isNotEmpty(fundFinanceData.getFundDescription())) {
       fund.setDescription(fundFinanceData.getFundDescription());
     }
