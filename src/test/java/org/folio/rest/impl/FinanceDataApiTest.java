@@ -9,6 +9,7 @@ import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
@@ -61,26 +62,32 @@ public class FinanceDataApiTest extends TestBase {
 
     assertTrue(emptyBody.getFyFinanceData().isEmpty());
 
-    var response = getData(FINANCE_DATA_ENDPOINT + "?query=(fiscalYearId==7a4c4d30-3b63-4102-8e2d-3ee5792d7d02)", TENANT_HEADER);
-    var body = response.getBody().as(FyFinanceDataCollection.class);
-    var actualFyFinanceData = body.getFyFinanceData().get(0);
+    var fiscalYearId = UUID.randomUUID().toString();
+    var acqUnitId = UUID.randomUUID().toString();
+    var financeDataEndpoint = String.format(FINANCE_DATA_ACQ_ENDPOINT_FORMAT, FINANCE_DATA_ENDPOINT, fiscalYearId, acqUnitId, acqUnitId);
 
-    assertTrue(body.getFyFinanceData().size() > 1);
-    assertEquals("7a4c4d30-3b63-4102-8e2d-3ee5792d7d02", actualFyFinanceData.getFiscalYearId());
-    assertNotNull(actualFyFinanceData.getFundId());
-    assertNotNull(actualFyFinanceData.getFundCode());
-    assertNotNull(actualFyFinanceData.getFundName());
-    assertNotNull(actualFyFinanceData.getFundDescription());
-    assertNotNull(actualFyFinanceData.getFundStatus());
-    assertNotNull(actualFyFinanceData.getFundAcqUnitIds());
-    assertNotNull(actualFyFinanceData.getBudgetId());
-    assertNotNull(actualFyFinanceData.getBudgetName());
-    assertNotNull(actualFyFinanceData.getBudgetStatus());
-    assertNotNull(actualFyFinanceData.getBudgetInitialAllocation());
-    assertNotNull(actualFyFinanceData.getBudgetCurrentAllocation());
-    assertNotNull(actualFyFinanceData.getBudgetAllowableExpenditure());
-    assertNotNull(actualFyFinanceData.getBudgetAllowableEncumbrance());
-    assertNotNull(actualFyFinanceData.getBudgetAcqUnitIds());
+    createMockData(fiscalYearId, acqUnitId, "FY2077", "random");
+
+    var response = getData(financeDataEndpoint, TENANT_HEADER);
+    var body = response.getBody().as(FyFinanceDataCollection.class);
+    var fyFinanceData = body.getFyFinanceData().getFirst();
+
+    assertFalse(body.getFyFinanceData().isEmpty());
+    assertEquals(fiscalYearId, fyFinanceData.getFiscalYearId());
+    assertNotNull(fyFinanceData.getFundId());
+    assertNotNull(fyFinanceData.getFundCode());
+    assertNotNull(fyFinanceData.getFundName());
+    assertNotNull(fyFinanceData.getFundDescription());
+    assertNotNull(fyFinanceData.getFundStatus());
+    assertNotNull(fyFinanceData.getFundAcqUnitIds());
+    assertNotNull(fyFinanceData.getBudgetId());
+    assertNotNull(fyFinanceData.getBudgetName());
+    assertNotNull(fyFinanceData.getBudgetStatus());
+    assertNotNull(fyFinanceData.getBudgetInitialAllocation());
+    assertNotNull(fyFinanceData.getBudgetCurrentAllocation());
+    assertNotNull(fyFinanceData.getBudgetAllowableExpenditure());
+    assertNotNull(fyFinanceData.getBudgetAllowableEncumbrance());
+    assertNotNull(fyFinanceData.getBudgetAcqUnitIds());
   }
 
   @Test
@@ -159,7 +166,7 @@ public class FinanceDataApiTest extends TestBase {
     createEntity(LEDGER.getEndpoint(), ledger, TENANT_HEADER);
 
     var fund = new Fund()
-      .withId(fundId).withCode(code).withName(name)
+      .withId(fundId).withCode(code).withName(name).withDescription("Description")
       .withLedgerId(ledgerId)
       .withFundStatus(Fund.FundStatus.ACTIVE)
       .withFundTypeId(null).withAcqUnitIds(List.of(acqUnitId));
