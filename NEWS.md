@@ -5,6 +5,7 @@ The primary focus of this release was to separate Credited from Expended and imp
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.0...v8.8.0)
 
 ### Stories
+* [MODFIN-391](https://folio-org.atlassian.net/browse/MODFIN-391) Minimize amount of requests to retrieve transactions for ledger
 * [MODFISTO-497](https://folio-org.atlassian.net/browse/MODFISTO-497) Implement endpoint to return all finance data for FY
 * [MODFISTO-500](https://folio-org.atlassian.net/browse/MODFISTO-500) Clean up permissions
 * [MODFISTO-501](https://folio-org.atlassian.net/browse/MODFISTO-501) Implement endpoint to save FY finance data in bulk
