@@ -1,4 +1,23 @@
-## 8.8.0 - Unreleased
+## 8.9.0 - Unreleased
+
+## 8.8.0 - Released (Sunflower R1 2025)
+The primary focus of this release was to separate Credited from Expended and improve different calculations
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.0...v8.8.0)
+
+### Stories
+* [MODFISTO-497](https://folio-org.atlassian.net/browse/MODFISTO-497) Implement endpoint to return all finance data for FY
+* [MODFISTO-500](https://folio-org.atlassian.net/browse/MODFISTO-500) Clean up permissions
+* [MODFISTO-501](https://folio-org.atlassian.net/browse/MODFISTO-501) Implement endpoint to save FY finance data in bulk
+* [MODFISTO-517](https://folio-org.atlassian.net/browse/MODFISTO-517) Create budget when adding batch allocation to fund without budget
+* [MODFISTO-519](https://folio-org.atlassian.net/browse/MODFISTO-519) Only one row for unique budget should be displayed in batch allocation form if fund is included in different groups
+
+### Bug fixes
+* [MODFISTO-513](https://folio-org.atlassian.net/browse/MODFISTO-513) Optimistic locking error displays in error message instead of banner when editing the same Group in “Finance” app
+
+### Dependencies
+* Bump `raml` from `35.3.0` to `35.4.0`
+* Bump `java` from `17` to `21`
+
 
 ## 8.7.0 - Released (Ramsons R2 2024)
 The primary focus of this release was to separate Credited from Expended and improve different calculations
