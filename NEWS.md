@@ -23,8 +23,8 @@ The primary focus of this release was to separate Credited from Expended and imp
 * [MODFISTO-513](https://folio-org.atlassian.net/browse/MODFISTO-513) Optimistic locking error displays in error message instead of banner when editing the same Group in “Finance” app
 
 ### Dependencies
-* Bump `raml` from `35.3.0` to `35.4.0`
 * Bump `java` from `17` to `21`
+* Bump `raml` from `35.3.0` to `35.4.0`
 
 
 ## 8.7.0 - Released (Ramsons R2 2024)
