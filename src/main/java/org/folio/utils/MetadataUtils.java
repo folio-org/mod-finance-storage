@@ -9,6 +9,10 @@ import java.util.Map;
 
 public class MetadataUtils {
 
+  private MetadataUtils() {
+    throw new IllegalStateException("Utility class");
+  }
+
   public static Metadata generateMetadata(Map<String, String> okapiHeaders) {
     Date now = new Date();
     String userId = getUserId(okapiHeaders);
