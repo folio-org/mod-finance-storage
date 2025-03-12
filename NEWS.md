@@ -1,4 +1,31 @@
-## 8.8.0 - Unreleased
+## 8.9.0 - Unreleased
+
+## 8.8.0 - Released (Sunflower R1 2025)
+The primary focus of this release was to separate Credited from Expended and improve different calculations
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.0...v8.8.0)
+
+### Stories
+* [MODFISTO-497](https://folio-org.atlassian.net/browse/MODFISTO-497) Implement endpoint to return all finance data for FY
+* [MODFISTO-500](https://folio-org.atlassian.net/browse/MODFISTO-500) Clean up permissions
+* [MODFISTO-501](https://folio-org.atlassian.net/browse/MODFISTO-501) Implement endpoint to save FY finance data in bulk
+* [MODFISTO-517](https://folio-org.atlassian.net/browse/MODFISTO-517) Create budget when adding batch allocation to fund without budget
+* [MODFISTO-519](https://folio-org.atlassian.net/browse/MODFISTO-519) Only one row for unique budget should be displayed in batch allocation form if fund is included in different groups
+* [MODFIN-391](https://folio-org.atlassian.net/browse/MODFIN-391) Minimize amount of requests to retrieve transactions for ledger
+* [MODFIN-402](https://folio-org.atlassian.net/browse/MODFIN-402) Update current budget value and display budget records in appropriate fiscal year in downloaded .csv allocations
+* [MODFIN-403](https://folio-org.atlassian.net/browse/MODFIN-403) Improve Bulk Fund Updates validation
+* [MODFIN-407](https://folio-org.atlassian.net/browse/MODFIN-407) Make fund active with allocation, all-or-nothing finance data
+* [MODFIN-415](https://folio-org.atlassian.net/browse/MODFIN-415) Add job number API and sequence management for fund up date logs
+* [MODFIN-416](https://folio-org.atlassian.net/browse/MODFIN-416) Batch allocation logs - restrict by acq units
+* [MODFIN-418](https://folio-org.atlassian.net/browse/MODFIN-418) Only one row for unique budget should be displayed in batch allocation form if fund is included in different groups
+* [MODFIN-419](https://folio-org.atlassian.net/browse/MODFIN-419) Display updated values on job details log screen
+
+### Bug fixes
+* [MODFISTO-513](https://folio-org.atlassian.net/browse/MODFISTO-513) Optimistic locking error displays in error message instead of banner when editing the same Group in “Finance” app
+
+### Dependencies
+* Bump `java` from `17` to `21`
+* Bump `raml` from `35.3.0` to `35.4.0`
+
 
 ## 8.7.0 - Released (Ramsons R2 2024)
 The primary focus of this release was to separate Credited from Expended and improve different calculations
