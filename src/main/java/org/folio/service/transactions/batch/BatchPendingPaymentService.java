@@ -28,44 +28,49 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
 
   @Override
   public void prepareCreatingTransactions(List<Transaction> transactionsToCreate, BatchTransactionHolder holder) {
-    processPendingPayments(transactionsToCreate, holder);
+    processPendingPayments(transactionsToCreate, holder, false);
   }
 
   @Override
   public void prepareUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder) {
-    processPendingPayments(transactionsToUpdate, holder);
+    processPendingPayments(transactionsToUpdate, holder, false);
   }
 
-  private void processPendingPayments(List<Transaction> pendingPayments, BatchTransactionHolder holder) {
+  @Override
+  public void prepareDeletingTransactions(List<Transaction> transactionsToDelete, BatchTransactionHolder holder) {
+    processPendingPayments(transactionsToDelete, holder, true);
+  }
+
+  private void processPendingPayments(List<Transaction> pendingPayments, BatchTransactionHolder holder, boolean delete) {
     Map<String, Transaction> existingTransactionMap = holder.getExistingTransactionMap();
     List<Transaction> encumbrances = prepareEncumbrancesToProcess(pendingPayments, holder,
       tr -> tr.getAwaitingPayment() != null ? tr.getAwaitingPayment().getEncumbranceId() : null);
     if (!encumbrances.isEmpty()) {
-      updateEncumbrances(encumbrances, existingTransactionMap, pendingPayments);
+      updateEncumbrances(encumbrances, existingTransactionMap, pendingPayments, delete);
     }
-    applyPendingPayments(pendingPayments, holder);
+    applyPendingPayments(pendingPayments, holder, delete);
   }
 
   private void updateEncumbrances(List<Transaction> encumbrances,
-      Map<String, Transaction> existingTransactionMap, List<Transaction> pendingPayments) {
+      Map<String, Transaction> existingTransactionMap, List<Transaction> pendingPayments, boolean delete) {
     Map<String, List<Transaction>> pendingPaymentsByEncumbranceId = pendingPayments.stream()
       .filter(tr -> tr.getAwaitingPayment() != null && tr.getAwaitingPayment().getEncumbranceId() != null)
       .collect(groupingBy(tr -> tr.getAwaitingPayment().getEncumbranceId()));
     encumbrances.forEach(encumbrance -> updateEncumbrance(encumbrance,
-      pendingPaymentsByEncumbranceId.get(encumbrance.getId()), existingTransactionMap));
+      pendingPaymentsByEncumbranceId.get(encumbrance.getId()), existingTransactionMap, delete));
     encumbrances.stream()
       .filter(encumbrance -> encumbrance.getAmount() < 0)
       .forEach(encumbrance -> encumbrance.setAmount(0d));
   }
 
   private void updateEncumbrance(Transaction encumbrance, List<Transaction> pendingPayments,
-      Map<String, Transaction> existingTransactionMap) {
+      Map<String, Transaction> existingTransactionMap, boolean delete) {
     boolean releaseEncumbrance = false;
     for (Transaction pendingPayment : pendingPayments) {
       CurrencyUnit currency = Monetary.getCurrency(pendingPayment.getCurrency());
       Transaction existingTransaction = existingTransactionMap.get(pendingPayment.getId());
       double existingAmount = existingTransaction == null ? 0d : existingTransaction.getAmount();
-      if (cancelledTransaction(pendingPayment, existingTransactionMap)) {
+      if (delete || cancelledTransaction(pendingPayment, existingTransactionMap)) {
         updateEncumbranceToCancelTransaction(encumbrance, existingAmount, currency);
       } else {
         double amount = subtractMoney(pendingPayment.getAmount(), existingAmount, currency);
@@ -96,7 +101,7 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
       encumbrance.getEncumbrance().getAmountAwaitingPayment(), amount, currency));
   }
 
-  private void applyPendingPayments(List<Transaction> pendingPayments, BatchTransactionHolder holder) {
+  private void applyPendingPayments(List<Transaction> pendingPayments, BatchTransactionHolder holder, boolean delete) {
     Map<String, Transaction> existingTransactionMap = holder.getExistingTransactionMap();
     Map<Budget, List<Transaction>> budgetToTransactions = createBudgetMapForTransactions(pendingPayments, holder.getBudgets());
     if (budgetToTransactions.isEmpty()) {
@@ -105,7 +110,7 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
     budgetToTransactions.forEach((budget, budgetPendingPayments) -> {
       for (Transaction pendingPayment : budgetPendingPayments) {
         CurrencyUnit currency = Monetary.getCurrency(pendingPayment.getCurrency());
-        if (cancelledTransaction(pendingPayment, existingTransactionMap)) {
+        if (delete || cancelledTransaction(pendingPayment, existingTransactionMap)) {
           cancelPendingPayment(budget, pendingPayment, currency);
         } else {
           applyPendingPayment(budget, pendingPayment, existingTransactionMap.get(pendingPayment.getId()), currency);

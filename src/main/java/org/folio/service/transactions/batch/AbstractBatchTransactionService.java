@@ -5,8 +5,10 @@ import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Transaction;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -19,6 +21,10 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
 
 public abstract class AbstractBatchTransactionService implements BatchTransactionServiceInterface {
+
+  @Override
+  public void prepareDeletingTransactions(List<Transaction> transactionsToDelete, BatchTransactionHolder holder) {
+  }
 
   Map<Budget, List<Transaction>> createBudgetMapForTransactions(List<Transaction> transactions, List<Budget> budgets) {
     return transactions.stream()
@@ -69,8 +75,8 @@ public abstract class AbstractBatchTransactionService implements BatchTransactio
       Function<Transaction, String> transactionToEncumbranceId) {
     Map<String, Transaction> linkedEncumbranceMap = holder.getLinkedEncumbranceMap();
     List<Transaction> encumbrances = transactions.stream()
-      .filter(tr -> transactionToEncumbranceId.apply(tr) != null)
       .map(transactionToEncumbranceId)
+      .filter(Objects::nonNull)
       .distinct()
       .map(linkedEncumbranceMap::get)
       .toList();

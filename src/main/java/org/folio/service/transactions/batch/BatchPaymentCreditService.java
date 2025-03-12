@@ -170,7 +170,7 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
 
   private void markPendingPaymentsForDeletion(BatchTransactionHolder holder) {
     List<Transaction> linkedPendingPayments = holder.getLinkedPendingPayments();
-    linkedPendingPayments.forEach(tr -> holder.addTransactionToDelete(tr.getId()));
+    linkedPendingPayments.forEach(holder::addTransactionToDeleteWithoutProcessing);
   }
 
 }
