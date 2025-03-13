@@ -14,23 +14,23 @@ In particular, after a fiscal year rollover in Lotus, there can be a mismatch be
 - The script should not be used before a rollover in Lotus (because if it was, encumbrances would not be created for closed orders, and they could not be reopened - see [MODORDERS-706](https://folio-org.atlassian.net/browse/MODORDERS-706)).
 
 ### Version to use :
-Because of a change in the transaction API, there is a new version for Quesnelia.
-- Use `fix_encumbrances_quesnelia.py` in Quesnelia and later versions of FOLIO
+Because of a change in the transaction API, there is a new version for Quesnelia and later. This new version also has more features.
+- Use `fix_encumbrances.py` in Quesnelia and later versions of FOLIO
 - Use `old_fix_encumbrances.py` for any previous version
 
 ### Script arguments :
 
 - Fiscal year code (use the current fiscal year when fixing issues with the fiscal year rollover)
-- Okapi URL
+- Okapi URL - use port `9130` for Okapi, `8000` for Eureka
 - Tenant
 - Username
 - User password is required as a command-line input.
 
 ### Execution example :
-`python3 ./fix_encumbrances_quesnelia.py 'FY2025' 'http://localhost:9130/' 'diku' 'diku_admin'`
+`python3 ./fix_encumbrances.py 'FY2025' 'http://localhost:9130/' 'diku' 'diku_admin'`
 
 To save output in a file, use `tee` on Linux:\
-`python3 ./fix_encumbrances_quesnelia.py 'FY2025' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
+`python3 ./fix_encumbrances.py 'FY2025' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
 
 ### Required permissions for the user
 These can be set with a permission group created with the API.
