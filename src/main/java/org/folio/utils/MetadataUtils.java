@@ -1,5 +1,6 @@
 package org.folio.utils;
 
+import lombok.experimental.UtilityClass;
 import org.folio.okapi.common.OkapiToken;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.jaxrs.model.Metadata;
@@ -7,11 +8,8 @@ import org.folio.rest.jaxrs.model.Metadata;
 import java.util.Date;
 import java.util.Map;
 
+@UtilityClass
 public class MetadataUtils {
-
-  private MetadataUtils() {
-    throw new IllegalStateException("Utility class");
-  }
 
   public static Metadata generateMetadata(Map<String, String> okapiHeaders) {
     Date now = new Date();

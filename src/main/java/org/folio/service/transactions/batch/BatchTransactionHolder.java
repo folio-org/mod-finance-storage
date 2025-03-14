@@ -199,7 +199,8 @@ public class BatchTransactionHolder {
         // avoid duplicates in existingTransactions in case a transaction was sent for both update and delete
         existingTransactionMap = existingTransactions.stream().collect(Collectors.toMap(Transaction::getId, Function.identity()));
         existingTransactions.addAll(transactionsToCancelAndDelete.stream()
-          .filter(tr -> existingTransactionMap.get(tr.getId()) == null).toList());
+          .filter(tr -> !existingTransactionMap.containsKey(tr.getId()))
+          .toList());
         existingTransactionMap = existingTransactions.stream().collect(Collectors.toMap(Transaction::getId, Function.identity()));
         BatchTransactionChecks.checkExistingTransactionsConsistency(allTransactionsToCreate, allTransactionsToUpdate, existingTransactionMap);
         return null;
@@ -234,7 +235,7 @@ public class BatchTransactionHolder {
       .map(transactions -> {
         linkedPendingPayments = transactions;
         transactions.forEach(tr -> {
-          if (existingTransactionMap.get(tr.getId()) == null) {
+          if (!existingTransactionMap.containsKey(tr.getId())) {
             existingTransactions.add(tr);
             existingTransactionMap.put(tr.getId(), tr);
           }
@@ -272,7 +273,7 @@ public class BatchTransactionHolder {
         }
         linkedEncumbrances = transactions;
         transactions.forEach(tr -> {
-          if (existingTransactionMap.get(tr.getId()) == null) {
+          if (!existingTransactionMap.containsKey(tr.getId())) {
             existingTransactions.add(tr);
             existingTransactionMap.put(tr.getId(), tr);
           }
