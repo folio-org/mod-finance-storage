@@ -171,9 +171,9 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
       .withId(pendingPaymentId)
       .withTransactionType(PENDING_PAYMENT)
       .withSourceInvoiceId(invoiceId)
-      .withToFundId(fundId)
+      .withFromFundId(fundId)
       .withFiscalYearId(fiscalYearId)
-      .withAmount(5d)
+      .withAmount(-5d)
       .withCurrency(currency)
       .withInvoiceCancelled(false)
       .withAwaitingPayment(new AwaitingPayment()
@@ -405,9 +405,9 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
       .withId(pendingPaymentId)
       .withTransactionType(PENDING_PAYMENT)
       .withSourceInvoiceId(invoiceId)
-      .withToFundId(fundId)
+      .withFromFundId(fundId)
       .withFiscalYearId(fiscalYearId)
-      .withAmount(5d)
+      .withAmount(-5d)
       .withCurrency(currency)
       .withInvoiceCancelled(false)
       .withAwaitingPayment(new AwaitingPayment()
@@ -758,6 +758,7 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
   @Test
   void testCreatePaymentWithBadEncumbranceLink(VertxTestContext testContext) {
     String paymentId = UUID.randomUUID().toString();
+    String pendingPaymentId = UUID.randomUUID().toString();
     String encumbranceId = UUID.randomUUID().toString();
     String invoiceId = UUID.randomUUID().toString();
     String fundId = UUID.randomUUID().toString();
@@ -775,6 +776,18 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
       .withInvoiceCancelled(false)
       .withPaymentEncumbranceId(encumbranceId);
 
+    Transaction existingPendingPayment = new Transaction()
+      .withId(pendingPaymentId)
+      .withTransactionType(PENDING_PAYMENT)
+      .withSourceInvoiceId(invoiceId)
+      .withFromFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(5d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withAwaitingPayment(new AwaitingPayment()
+        .withReleaseEncumbrance(true));
+
     Batch batch = new Batch();
     batch.getTransactionsToCreate().add(payment);
 
@@ -784,6 +797,11 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
     doReturn(succeededFuture(createResults(List.of())))
       .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
         crit -> crit.toString().equals(paymentCriterion.toString())));
+
+    String snippet = "WHERE (jsonb->>'transactionType') = 'Pending payment'  AND  (  (jsonb->>'sourceInvoiceId') = '" + invoiceId + "')    ";
+    doReturn(succeededFuture(createResults(List.of(existingPendingPayment))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(snippet)));
 
     Criterion encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
     doReturn(succeededFuture(createResults(Collections.emptyList())))

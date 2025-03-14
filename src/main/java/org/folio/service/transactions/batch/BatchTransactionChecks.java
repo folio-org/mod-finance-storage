@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.vertx.core.Future.succeededFuture;
-import static java.util.Collections.emptyList;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.ACTIVE;
 import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.PLANNED;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ALLOCATION;
@@ -84,42 +83,35 @@ public class BatchTransactionChecks {
     });
   }
 
-  public static Future<Void> checkTransactionsToDelete(Set<String> idsOfTransactionsToDelete,
+  public static Future<Void> checkTransactionsToDelete(List<Transaction> transactionsToDelete,
       BatchTransactionDAO transactionDAO, DBConn conn) {
-    // There is currently no budget update when a transaction is deleted.
-    // Batch delete should only be used to delete released encumbrances.
-    if (idsOfTransactionsToDelete.isEmpty()) {
+    // There a budget update when a pending payment is deleted. Otherwise, there is no budget update.
+    // Batch delete should only be used to delete released encumbrances or pending payments.
+    if (transactionsToDelete.isEmpty()) {
       return succeededFuture();
     }
-    return transactionDAO.getTransactionsByIds(idsOfTransactionsToDelete.stream().toList(), conn)
-      .map(transactionsToDelete -> {
-        if (transactionsToDelete.size() != idsOfTransactionsToDelete.size()) {
-          throw new HttpException(400, "One or more transaction to delete was not found");
-        }
-        // NOTE: for the following checks we can't throw an exception because it would prevent the encumbrance script
-        // from working, so instead we just log a warning.
-        // Also in the future we could support auto-releasing encumbrances to delete, but this would not work well
-        // when there are duplicate encumbrances (released/unreleased), so we don't do it yet.
-        // Also note that the check for connected invoices is also done in mod-finance, and it throws an exception there
-        // (the encumbrance script is using mod-finance-storage directly).
-        transactionsToDelete.forEach(tr -> {
-          if (tr.getTransactionType() != ENCUMBRANCE || tr.getEncumbrance().getStatus() != Encumbrance.Status.RELEASED) {
-            logger.warn("A transaction to delete is not a released encumbrance, id={}", tr.getId());
-          }
-        });
-        return transactionsToDelete.stream()
-          .filter(tr -> tr.getTransactionType() == ENCUMBRANCE)
-          .map(Transaction::getId)
-          .toList();
-      })
-      .compose(idsOfEncumbrancesToDelete -> {
-        if (idsOfEncumbrancesToDelete.isEmpty()) {
-          return succeededFuture(emptyList());
-        }
-        CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
-        idsOfEncumbrancesToDelete.forEach(id -> criterionBuilder.withJson("awaitingPayment.encumbranceId", "=", id));
-        return transactionDAO.getTransactionsByCriterion(criterionBuilder.build(), conn);
-      })
+    // NOTE: for the following checks we can't throw an exception because it would prevent the encumbrance script
+    // from working, so instead we just log a warning.
+    // Also in the future we could support auto-releasing encumbrances to delete, but this would not work well
+    // when there are duplicate encumbrances (released/unreleased), so we don't do it yet.
+    // Also note that the check for connected invoices is also done in mod-finance, and it throws an exception there
+    // (the encumbrance script is using mod-finance-storage directly).
+    transactionsToDelete.forEach(tr -> {
+      if (!((tr.getTransactionType() == ENCUMBRANCE && tr.getEncumbrance().getStatus() == Encumbrance.Status.RELEASED) ||
+          tr.getTransactionType() == PENDING_PAYMENT)) {
+        logger.warn("A transaction to delete is not a released encumbrance or a pending payment, id={}", tr.getId());
+      }
+    });
+    List<String> idsOfEncumbrancesToDelete = transactionsToDelete.stream()
+      .filter(tr -> tr.getTransactionType() == ENCUMBRANCE)
+      .map(Transaction::getId)
+      .toList();
+    if (idsOfEncumbrancesToDelete.isEmpty()) {
+      return succeededFuture(null);
+    }
+    CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
+    idsOfEncumbrancesToDelete.forEach(id -> criterionBuilder.withJson("awaitingPayment.encumbranceId", "=", id));
+    return transactionDAO.getTransactionsByCriterion(criterionBuilder.build(), conn)
       .map(pendingPayments -> {
         if (!pendingPayments.isEmpty()) {
           logger.warn("An invoice is connected to an encumbrance to delete, id={}", pendingPayments.get(0).getId());

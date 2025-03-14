@@ -57,6 +57,7 @@ public class BatchTransactionHolder {
   private List<Transaction> allTransactionsToUpdate;
   private List<TransactionPatch> allTransactionPatches;
   private Set<String> idsOfTransactionsToDelete;
+  private List<Transaction> transactionsToCancelAndDelete;
   private List<Transaction> allTransactionsToCreateOrUpdate;
   private List<Transaction> existingTransactions;
   private List<Transaction> linkedEncumbrances;
@@ -85,10 +86,12 @@ public class BatchTransactionHolder {
     allTransactionsToCreateOrUpdate = Stream.concat(allTransactionsToCreate.stream(), allTransactionsToUpdate.stream())
       .collect(toCollection(ArrayList::new));
 
-    return BatchTransactionChecks.checkTransactionsToDelete(idsOfTransactionsToDelete, transactionDAO, conn)
+    return loadTransactionsToDelete(conn)
+      .compose(transactionsToDelete -> BatchTransactionChecks.checkTransactionsToDelete(
+        transactionsToDelete, transactionDAO, conn))
       .compose(v -> loadExistingTransactions(conn))
-      .compose(v -> loadLinkedEncumbrances(conn))
       .compose(v -> loadLinkedPendingPayments(conn))
+      .compose(v -> loadLinkedEncumbrances(conn))
       .map(v -> {
         setAllTransactions();
         return null;
@@ -116,6 +119,10 @@ public class BatchTransactionHolder {
 
   public List<String> getIdsOfTransactionsToDelete() {
     return idsOfTransactionsToDelete.stream().toList();
+  }
+
+  public List<Transaction> getTransactionsToCancelAndDelete() {
+    return transactionsToCancelAndDelete;
   }
 
   public Map<String, Transaction> getExistingTransactionMap() {
@@ -150,8 +157,8 @@ public class BatchTransactionHolder {
     existingTransactionMap.put(existingTransaction.getId(), existingTransaction);
   }
 
-  public void addTransactionToDelete(String id) {
-    idsOfTransactionsToDelete.add(id);
+  public void addTransactionToDeleteWithoutProcessing(Transaction tr) {
+    idsOfTransactionsToDelete.add(tr.getId());
   }
 
   public String getFundCodeForBudget(Budget budget) {
@@ -168,19 +175,81 @@ public class BatchTransactionHolder {
     return allTransactions.get(0).getCurrency();
   }
 
+  private Future<List<Transaction>> loadTransactionsToDelete(DBConn conn) {
+    if (idsOfTransactionsToDelete.isEmpty()) {
+      transactionsToCancelAndDelete = new ArrayList<>();
+      return succeededFuture(transactionsToCancelAndDelete);
+    }
+    return transactionDAO.getTransactionsByIds(new ArrayList<>(idsOfTransactionsToDelete), conn)
+      .map(transactions -> {
+        if (transactions.size() != idsOfTransactionsToDelete.size()) {
+          throw new HttpException(400, "One or more transaction to delete was not found");
+        }
+        transactionsToCancelAndDelete = transactions;
+        return transactionsToCancelAndDelete;
+      });
+  }
+
   private Future<Void> loadExistingTransactions(DBConn conn) {
     List<String> ids = allTransactionsToCreateOrUpdate.stream().map(Transaction::getId).toList();
     return transactionDAO.getTransactionsByIds(ids, conn)
       .map(transactions -> {
-        existingTransactions = new ArrayList<>(transactions);
+        existingTransactions = new ArrayList<>();
+        existingTransactions.addAll(transactions);
+        // avoid duplicates in existingTransactions in case a transaction was sent for both update and delete
+        existingTransactionMap = existingTransactions.stream().collect(Collectors.toMap(Transaction::getId, Function.identity()));
+        existingTransactions.addAll(transactionsToCancelAndDelete.stream()
+          .filter(tr -> !existingTransactionMap.containsKey(tr.getId()))
+          .toList());
         existingTransactionMap = existingTransactions.stream().collect(Collectors.toMap(Transaction::getId, Function.identity()));
         BatchTransactionChecks.checkExistingTransactionsConsistency(allTransactionsToCreate, allTransactionsToUpdate, existingTransactionMap);
         return null;
       });
   }
 
+  private Future<Void> loadLinkedPendingPayments(DBConn conn) {
+    List<String> invoiceIds = allTransactionsToCreate.stream()
+      .filter(tr -> List.of(PAYMENT, CREDIT).contains(tr.getTransactionType()))
+      .map(Transaction::getSourceInvoiceId)
+      .distinct()
+      .toList();
+    if (invoiceIds.isEmpty()) {
+      linkedPendingPayments = new ArrayList<>();
+      return succeededFuture();
+    }
+    Criteria trTypeCrit = new Criteria()
+      .addField("'" + TRANSACTION_TYPE + "'")
+      .setOperation("=")
+      .setVal(PENDING_PAYMENT.value());
+    GroupedCriterias invoiceIdGroup = new GroupedCriterias();
+    invoiceIds.forEach(id -> invoiceIdGroup.addCriteria(
+      new Criteria()
+        .addField("'" + SOURCE_INVOICE_ID + "'")
+        .setOperation("=")
+        .setVal(id),
+      "OR"));
+    Criterion criterion = new Criterion();
+    criterion.addCriterion(trTypeCrit);
+    criterion.addGroupOfCriterias(invoiceIdGroup);
+    return transactionDAO.getTransactionsByCriterion(criterion, conn)
+      .map(transactions -> {
+        linkedPendingPayments = transactions;
+        transactions.forEach(tr -> {
+          if (!existingTransactionMap.containsKey(tr.getId())) {
+            existingTransactions.add(tr);
+            existingTransactionMap.put(tr.getId(), tr);
+          }
+        });
+        return null;
+      });
+  }
+
   private Future<Void> loadLinkedEncumbrances(DBConn conn) {
-    List<String> ids = allTransactionsToCreateOrUpdate.stream().map(tr -> {
+    List<Transaction> transactionsToCreateUpdateOrDelete = Stream.of(allTransactionsToCreateOrUpdate.stream(),
+        transactionsToCancelAndDelete.stream(), linkedPendingPayments.stream())
+      .flatMap(Function.identity())
+      .toList();
+    List<String> ids = transactionsToCreateUpdateOrDelete.stream().map(tr -> {
       if (List.of(PAYMENT, CREDIT).contains(tr.getTransactionType())) {
         return tr.getPaymentEncumbranceId();
       } else if (tr.getTransactionType() == PENDING_PAYMENT && tr.getAwaitingPayment() != null) {
@@ -203,43 +272,18 @@ public class BatchTransactionHolder {
           throw new HttpException(400, error);
         }
         linkedEncumbrances = transactions;
-        return null;
-      });
-  }
-
-  private Future<Void> loadLinkedPendingPayments(DBConn conn) {
-    List<String> invoiceIds = allTransactionsToCreate.stream()
-      .filter(tr -> List.of(PAYMENT, CREDIT).contains(tr.getTransactionType()))
-      .map(Transaction::getSourceInvoiceId)
-      .distinct()
-      .toList();
-    if (invoiceIds.isEmpty()) {
-      return succeededFuture();
-    }
-    Criteria trTypeCrit = new Criteria()
-      .addField("'" + TRANSACTION_TYPE + "'")
-      .setOperation("=")
-      .setVal(PENDING_PAYMENT.value());
-    GroupedCriterias invoiceIdGroup = new GroupedCriterias();
-    invoiceIds.forEach(id -> invoiceIdGroup.addCriteria(
-      new Criteria()
-        .addField("'" + SOURCE_INVOICE_ID + "'")
-        .setOperation("=")
-        .setVal(id),
-      "OR"));
-    Criterion criterion = new Criterion();
-    criterion.addCriterion(trTypeCrit);
-    criterion.addGroupOfCriterias(invoiceIdGroup);
-    return transactionDAO.getTransactionsByCriterion(criterion, conn)
-      .map(transactions -> {
-        linkedPendingPayments = transactions;
+        transactions.forEach(tr -> {
+          if (!existingTransactionMap.containsKey(tr.getId())) {
+            existingTransactions.add(tr);
+            existingTransactionMap.put(tr.getId(), tr);
+          }
+        });
         return null;
       });
   }
 
   private void setAllTransactions() {
-    allTransactions = Stream.of(allTransactionsToCreateOrUpdate.stream(), existingTransactions.stream(),
-        linkedEncumbrances.stream())
+    allTransactions = Stream.of(allTransactionsToCreateOrUpdate.stream(), existingTransactions.stream())
       .flatMap(Function.identity())
       .toList();
   }

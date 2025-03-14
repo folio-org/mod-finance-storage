@@ -2,11 +2,10 @@ package org.folio.service.transactions.batch;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.BatchTransactionDAO;
-import org.folio.okapi.common.OkapiToken;
-import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Batch;
@@ -22,7 +21,6 @@ import org.folio.service.budget.BudgetService;
 import org.folio.service.fund.FundService;
 import org.folio.service.ledger.LedgerService;
 
-import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +33,7 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.TRANSFER;
+import static org.folio.utils.MetadataUtils.generateMetadata;
 
 public class BatchTransactionService {
   private static final Logger logger = LogManager.getLogger();
@@ -78,6 +77,7 @@ public class BatchTransactionService {
       .map(v -> {
         BatchTransactionChecks.checkBudgetsAreActive(holder);
         prepareCreatingTransactions(holder);
+        prepareDeletingTransactions(holder, okapiHeaders);
         prepareUpdatingTransactions(holder);
         preparePatchingTransactions(holder);
         BatchTransactionChecks.checkRestrictedBudgets(holder);
@@ -90,30 +90,16 @@ public class BatchTransactionService {
   }
 
   private void populateMetadata(Batch batch, Map<String, String> okapiHeaders) {
-    // NOTE: Okapi usually populates metadata when a POST method is used with an entity with metadata.
-    // But in the case of the batch API there is no top-level metadata, so it is not populated automatically.
-    String userId = okapiHeaders.get(XOkapiHeaders.USER_ID);
-    if (userId == null) {
-      try {
-        userId = (new OkapiToken(okapiHeaders.get(XOkapiHeaders.TOKEN))).getUserIdWithoutValidation();
-      } catch (Exception ignored) {
-        // could not find user id - ignoring
-      }
-    }
+    Metadata newMd = generateMetadata(okapiHeaders);
     for (Transaction tr : batch.getTransactionsToCreate()) {
       if (tr.getMetadata() == null) {
-        Metadata md = new Metadata();
-        md.setUpdatedDate(new Date());
-        md.setCreatedDate(md.getUpdatedDate());
-        md.setCreatedByUserId(userId);
-        md.setUpdatedByUserId(userId);
-        tr.setMetadata(md);
+        tr.setMetadata(JsonObject.mapFrom(newMd).mapTo(Metadata.class));
       }
     }
     for (Transaction tr : batch.getTransactionsToUpdate()) {
       Metadata md = tr.getMetadata();
-      md.setUpdatedDate(new Date());
-      md.setUpdatedByUserId(userId);
+      md.setUpdatedDate(newMd.getUpdatedDate());
+      md.setUpdatedByUserId(newMd.getUpdatedByUserId());
     }
   }
 
@@ -167,6 +153,34 @@ public class BatchTransactionService {
       return;
     }
     throw new HttpException(500, "transactionPatches: not implemented");
+  }
+
+  private void prepareDeletingTransactions(BatchTransactionHolder holder, Map<String, String> okapiHeaders) {
+    if (holder.getTransactionsToCancelAndDelete().isEmpty()) {
+      return;
+    }
+    // For now only prepare deleting pending payments, there is no budget or encumbrance update for other types.
+    // This needs to be done before or during transaction updates, because encumbrances will have to be updated afterward.
+    try {
+      List<Transaction> pendingPaymentsToDelete = holder.getTransactionsToCancelAndDelete().stream()
+        .filter(tr -> tr.getTransactionType() == PENDING_PAYMENT)
+        .toList();
+
+      // Update transaction metadata which will be used to update the budget metadata
+      Metadata newMd = generateMetadata(okapiHeaders);
+      for (Transaction tr : pendingPaymentsToDelete) {
+        Metadata md = tr.getMetadata();
+        md.setUpdatedDate(newMd.getUpdatedDate());
+        md.setUpdatedByUserId(newMd.getUpdatedByUserId());
+      }
+
+      getBatchServiceForType(PENDING_PAYMENT).prepareDeletingTransactions(pendingPaymentsToDelete, holder);
+      logger.info("Successfully prepared {} pending payments for deletion", pendingPaymentsToDelete.size());
+    } catch (Exception ex) {
+      List<String> ids = holder.getTransactionsToCancelAndDelete().stream().map(Transaction::getId).toList();
+      logger.error("Failed to prepare pending payments for deletion, ids = {}", ids, ex);
+      throw ex;
+    }
   }
 
   private Future<Void> applyChanges(BatchTransactionHolder holder, DBConn conn) {

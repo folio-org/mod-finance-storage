@@ -36,6 +36,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -176,9 +177,15 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
   void testDeleteTransaction(VertxTestContext testContext) {
     String tenantId = "tenantname";
     String encumbranceId = UUID.randomUUID().toString();
+    String fundId = UUID.randomUUID().toString();
+    String fiscalYearId = UUID.randomUUID().toString();
     Transaction transaction = new Transaction()
       .withId(encumbranceId)
+      .withCurrency("USD")
+      .withFromFundId(fundId)
       .withTransactionType(ENCUMBRANCE)
+      .withAmount(0d)
+      .withFiscalYearId(fiscalYearId)
       .withEncumbrance(new Encumbrance()
         .withStatus(RELEASED));
 
@@ -187,6 +194,8 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
 
     doReturn(tenantId)
       .when(conn).getTenantId();
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 0d, 0d, 0d, 0d, false, false, false);
 
     Criterion criterion = createCriterionByIds(List.of(encumbranceId));
     doReturn(succeededFuture(createResults(List.of(transaction))))
@@ -198,6 +207,9 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     doReturn(succeededFuture(createResults(List.of())))
       .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
         crit -> crit.toString().equals(criterionBuilder.build().toString())));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
 
     doAnswer(invocation -> succeededFuture(createRowSet(List.of(transaction))))
       .when(conn).delete(anyString(), any(Criterion.class));
@@ -216,6 +228,16 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           assertThat(deleteTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
           Criterion deleteCriterion = deleteCriterions.get(0);
           assertThat(deleteCriterion.toString(), equalTo(expectedCriterion.toString()));
+
+          // Verify budget update did not change anything
+          ArgumentCaptor<String> updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(1)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
+          List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
+          assertThat(updateTableNames.get(0), equalTo(BUDGET_TABLE));
+          Budget savedBudget = (Budget)(updateEntities.get(0).get(0));
+          assertNull(savedBudget.getMetadata().getUpdatedDate());
+          assertThat(savedBudget.getEncumbered(), equalTo(0d));
         });
         testContext.completeNow();
       });

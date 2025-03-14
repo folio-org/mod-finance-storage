@@ -11,6 +11,8 @@ public interface BatchTransactionServiceInterface {
 
   void prepareUpdatingTransactions(List<Transaction> transactionsToUpdate, BatchTransactionHolder holder);
 
+  void prepareDeletingTransactions(List<Transaction> transactionsToDelete, BatchTransactionHolder holder);
+
   TransactionType getTransactionType();
 
 }
