@@ -40,6 +40,7 @@ import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.CREDIT;
+import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.util.ErrorCodes.LINKED_ENCUMBRANCES_NOT_FOUND;
@@ -185,7 +186,10 @@ public class BatchTransactionHolder {
         if (transactions.size() != idsOfTransactionsToDelete.size()) {
           throw new HttpException(400, "One or more transaction to delete was not found");
         }
-        transactionsToCancelAndDelete = transactions;
+        // Do not process 0-amount encumbrances, just delete them (so no budget activity check is done)
+        transactionsToCancelAndDelete = transactions.stream()
+          .filter(tr -> tr.getTransactionType() != ENCUMBRANCE || tr.getAmount() != 0d)
+          .toList();
         return transactionsToCancelAndDelete;
       });
   }
