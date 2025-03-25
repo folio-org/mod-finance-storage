@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.budget.BudgetExpenseClassDAO;
+import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
 import org.folio.dao.expense.ExpenseClassDAO;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.dao.fund.FundDAO;
@@ -23,6 +24,7 @@ import org.folio.service.budget.BudgetExpenseClassService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.budget.RolloverBudgetExpenseClassTotalsService;
 import org.folio.service.email.EmailService;
+import org.folio.service.exchangerate.ExchangeRateSourceService;
 import org.folio.service.financedata.FinanceDataService;
 import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
@@ -185,4 +187,10 @@ public class ServicesConfiguration {
   public JobNumberService jobNumberService(JobNumberDAO jobNumberDAO) {
     return new JobNumberService(jobNumberDAO);
   }
+
+  @Bean
+  public ExchangeRateSourceService exchangeRateSourceService(ExchangeRateSourceDAO exchangeRateSourceDAO) {
+    return new ExchangeRateSourceService(exchangeRateSourceDAO);
+  }
+
 }
