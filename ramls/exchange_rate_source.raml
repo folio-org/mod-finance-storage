@@ -1,0 +1,68 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: mod-finance-storage (Exchange Rate Sources)
+    content: <b>CRUD APIs used to manage expense rate sources.</b>
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+  exchange-rate-source: !include acq-models/mod-finance/schemas/exchange_rate_source.json
+
+traits:
+  validate: !include raml-util/traits/validation.raml
+
+/finance-storage/exchange-rate-source:
+  get:
+    description: Get exchange rate source
+    responses:
+      200:
+        description: "Exchange rate source successfully retrieved"
+      404:
+        description: "Exchange rate source not found"
+        body:
+          application/json:
+            type: errors
+  post:
+    description: Save exchange rate source
+    is: [validate]
+    body:
+      application/json:
+        type: exchange-rate-source
+        example: !include acq-models/mod-finance/examples/exchange_rate_source.sample
+    responses:
+      204:
+        description: "Exchange rate source successfully created"
+      409:
+        description: "Exchange rate source already exists"
+        body:
+          application/json:
+            type: errors
+  /{id}:
+    is: [validate]
+    put:
+      description: Update exchange rate source
+      body:
+        application/json:
+          type: exchange-rate-source
+          example: !include acq-models/mod-finance/examples/exchange_rate_source.sample
+      responses:
+        204:
+          description: "Exchange rate source successfully updated"
+        404:
+          description: "Exchange rate source not found"
+          body:
+            application/json:
+              type: errors
+    delete:
+      description: Delete exchange rate source
+      responses:
+        204:
+          description: "Exchange rate source successfully deleted"
+        404:
+          description: "Exchange rate source not found"
+          body:
+            application/json:
+              type: errors
