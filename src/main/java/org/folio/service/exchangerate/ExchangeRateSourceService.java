@@ -30,12 +30,13 @@ public class ExchangeRateSourceService {
         new HttpException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase())));
   }
 
-  public Future<Void> saveExchangeRateSource(ExchangeRateSource exchangeRateSource, RequestContext requestContext) {
+  public Future<ExchangeRateSource> saveExchangeRateSource(ExchangeRateSource exchangeRateSource, RequestContext requestContext) {
     removeSensitiveData(exchangeRateSource);
-    validateExchangeRateSource(exchangeRateSource);
-
-    var dbClient = requestContext.toDBClient();
-    return dbClient.withTrans(conn -> exchangeRateSourceDAO.saveExchangeRateSource(exchangeRateSource, conn))
+    if (!validateExchangeRateSource(exchangeRateSource)) {
+      return Future.failedFuture(new HttpException(422, ErrorCodes.EXCHANGE_RATE_SOURCE_INVALID.toError()));
+    }
+    return requestContext.toDBClient()
+      .withTrans(conn -> exchangeRateSourceDAO.saveExchangeRateSource(exchangeRateSource, conn))
       .recover(this::handleException)
       .onSuccess(v -> log.info("saveExchangeRateSource:: New exchange rate source was saved successfully"))
       .onFailure(t -> log.error("Failed to save exchange rate source", t));
@@ -43,10 +44,11 @@ public class ExchangeRateSourceService {
 
   public Future<Void> updateExchangeRateSource(String id, ExchangeRateSource exchangeRateSource, RequestContext requestContext) {
     removeSensitiveData(exchangeRateSource);
-    validateExchangeRateSource(exchangeRateSource);
-
-    var dbClient = requestContext.toDBClient();
-    return dbClient.withTrans(conn -> exchangeRateSourceDAO.updateExchangeRateSource(id, exchangeRateSource, conn))
+    if (!validateExchangeRateSource(exchangeRateSource)) {
+      return Future.failedFuture(new HttpException(422, ErrorCodes.EXCHANGE_RATE_SOURCE_INVALID.toError()));
+    }
+    return requestContext.toDBClient()
+      .withTrans(conn -> exchangeRateSourceDAO.updateExchangeRateSource(id, exchangeRateSource, conn))
       .recover(this::handleException)
       .onSuccess(v -> log.info("updateExchangeRateSource:: Exchange rate source with id: '{}' was updated successfully", id))
       .onFailure(t -> log.error("Failed to update exchange rate source with id: '{}'", id, t));
@@ -65,20 +67,16 @@ public class ExchangeRateSourceService {
     exchangeRateSource.setApiSecret(null);
   }
 
-  private void validateExchangeRateSource(ExchangeRateSource exchangeRateSource) {
-    var isValid = exchangeRateSource != null
+  private boolean validateExchangeRateSource(ExchangeRateSource exchangeRateSource) {
+    return exchangeRateSource != null
       && StringUtils.isNotEmpty(exchangeRateSource.getProviderUri())
       && StringUtils.isEmpty(exchangeRateSource.getApiKey())
       && StringUtils.isEmpty(exchangeRateSource.getApiSecret())
       && Objects.nonNull(exchangeRateSource.getRefreshInterval())
       && exchangeRateSource.getRefreshInterval() > 0;
-
-    if (!isValid) {
-      throw new HttpException(422, ErrorCodes.EXCHANGE_RATE_SOURCE_INVALID.toError());
-    }
   }
 
-  private Future<Void> handleException(Throwable t) {
+  private <T> Future<T> handleException(Throwable t) {
     if (t instanceof HttpException) {
       return Future.failedFuture(t);
     } else if (!(t instanceof IllegalStateException)) {

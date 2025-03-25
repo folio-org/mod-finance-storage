@@ -25,7 +25,7 @@ public interface ExchangeRateSourceDAO {
    * @param exchangeRateSource exchange rate source to save
    * @param conn DB connection
    */
-  Future<Void> saveExchangeRateSource(ExchangeRateSource exchangeRateSource, DBConn conn);
+  Future<ExchangeRateSource> saveExchangeRateSource(ExchangeRateSource exchangeRateSource, DBConn conn);
 
 
   /**

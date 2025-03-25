@@ -32,16 +32,15 @@ public class ExchangeRateSourceDAOImpl implements ExchangeRateSourceDAO {
   }
 
   @Override
-  public Future<Void> saveExchangeRateSource(ExchangeRateSource exchangeRateSource, DBConn conn) {
+  public Future<ExchangeRateSource> saveExchangeRateSource(ExchangeRateSource exchangeRateSource, DBConn conn) {
     return getExchangeRateSource(conn)
       .compose(existingExchangeRateSource -> {
         if (existingExchangeRateSource.isPresent()) {
           return Future.failedFuture(new IllegalStateException(CONFLICT.getReasonPhrase()));
         }
         exchangeRateSource.setId(defaultIfBlank(exchangeRateSource.getId(), UUID.randomUUID().toString()));
-        return conn.save(EXCHANGE_RATE_SOURCE_TABLE, exchangeRateSource.getId(), exchangeRateSource);
-      })
-      .mapEmpty();
+        return conn.saveAndReturnUpdatedEntity(EXCHANGE_RATE_SOURCE_TABLE, exchangeRateSource.getId(), exchangeRateSource);
+      });
   }
 
   @Override

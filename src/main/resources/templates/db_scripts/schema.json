@@ -707,6 +707,11 @@
           "arrayModifiers": ["fiscalYearId", "ledgerId", "groupId"]
         }
       ]
+    },
+    {
+      "tableName": "exchange_rate_source",
+      "fromModuleVersion": "mod-finance-storage-8.9.0",
+      "withMetadata": true
     }
   ]
 }

@@ -33,8 +33,12 @@ traits:
         type: exchange-rate-source
         example: !include acq-models/mod-finance/examples/exchange_rate_source.sample
     responses:
-      204:
+      201:
         description: "Exchange rate source successfully created"
+        body:
+          application/json:
+            type: exchange-rate-source
+            example: !include acq-models/mod-finance/examples/exchange_rate_source.sample
       409:
         description: "Exchange rate source already exists"
         body:
