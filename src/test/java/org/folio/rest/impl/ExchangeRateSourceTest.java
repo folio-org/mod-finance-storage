@@ -4,11 +4,11 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
-import static org.folio.rest.utils.TestEntities.EXCHANGE_RATE_SOURCE;
 import static org.hamcrest.Matchers.equalTo;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.TenantJob;
+import org.folio.rest.jaxrs.resource.FinanceStorageExchangeRateSource;
+import org.folio.rest.persist.HelperUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +17,10 @@ import org.junit.jupiter.api.Test;
 import io.restassured.http.Header;
 
 public class ExchangeRateSourceTest extends TestBase {
+
+  private static final String EXCHANGE_RATE_SOURCE_ENDPOINT = HelperUtils.getEndpoint(FinanceStorageExchangeRateSource.class);
+  private static final String EXCHANGE_RATE_SOURCE_ENDPOINT_BY_ID = EXCHANGE_RATE_SOURCE_ENDPOINT + "/{id}";
+  private static final String EXCHANGE_RATE_SOURCE_SAMPLE_PATH = "data/exchange-rate/exchange-rate-source.json";
 
   private static final String EXCHANGE_RATE_SOURCE_TEST_TENANT = "exchangeratesourcetesttenant";
   private static final Header EXCHANGE_RATE_SOURCE_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, EXCHANGE_RATE_SOURCE_TEST_TENANT);
@@ -41,62 +45,62 @@ public class ExchangeRateSourceTest extends TestBase {
 
   @Test
   void testGetExchangeRateSource() {
-    givenTestData(EXCHANGE_RATE_SOURCE_TENANT_HEADER, Pair.of(EXCHANGE_RATE_SOURCE, EXCHANGE_RATE_SOURCE.getPathToSampleFile()));
+    postData(EXCHANGE_RATE_SOURCE_ENDPOINT, getFile(EXCHANGE_RATE_SOURCE_SAMPLE_PATH), EXCHANGE_RATE_SOURCE_TENANT_HEADER);
 
-    getData(EXCHANGE_RATE_SOURCE.getEndpoint(), EXCHANGE_RATE_SOURCE_TENANT_HEADER)
+    getData(EXCHANGE_RATE_SOURCE_ENDPOINT, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
       .then().statusCode(200)
       .body("id", equalTo(EXCHANGE_RATE_SOURCE_ID));
   }
 
   @Test
   void testGetExchangeRateSourceNotExists() {
-    getData(EXCHANGE_RATE_SOURCE.getEndpoint(), EXCHANGE_RATE_SOURCE_TENANT_HEADER)
+    getData(EXCHANGE_RATE_SOURCE_ENDPOINT, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
       .then().statusCode(404);
   }
 
   @Test
   void testSaveExchangeRateSource() {
-    String sourceAsString = getFile(EXCHANGE_RATE_SOURCE.getPathToSampleFile());
-    postData(EXCHANGE_RATE_SOURCE.getEndpoint(), sourceAsString, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
+    String sourceAsString = getFile(EXCHANGE_RATE_SOURCE_SAMPLE_PATH);
+    postData(EXCHANGE_RATE_SOURCE_ENDPOINT, sourceAsString, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
       .then().statusCode(201);
   }
 
   @Test
   void testSaveExchangeRateSourceExists() {
-    givenTestData(EXCHANGE_RATE_SOURCE_TENANT_HEADER, Pair.of(EXCHANGE_RATE_SOURCE, EXCHANGE_RATE_SOURCE.getPathToSampleFile()));
+    postData(EXCHANGE_RATE_SOURCE_ENDPOINT, getFile(EXCHANGE_RATE_SOURCE_SAMPLE_PATH), EXCHANGE_RATE_SOURCE_TENANT_HEADER);
 
-    String sourceAsString = getFile(EXCHANGE_RATE_SOURCE.getPathToSampleFile());
-    postData(EXCHANGE_RATE_SOURCE.getEndpoint(), sourceAsString, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
+    String sourceAsString = getFile(EXCHANGE_RATE_SOURCE_SAMPLE_PATH);
+    postData(EXCHANGE_RATE_SOURCE_ENDPOINT, sourceAsString, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
       .then().statusCode(409);
   }
 
   @Test
   void testUpdateExchangeRateSource() {
-    givenTestData(EXCHANGE_RATE_SOURCE_TENANT_HEADER, Pair.of(EXCHANGE_RATE_SOURCE, EXCHANGE_RATE_SOURCE.getPathToSampleFile()));
+    postData(EXCHANGE_RATE_SOURCE_ENDPOINT, getFile(EXCHANGE_RATE_SOURCE_SAMPLE_PATH), EXCHANGE_RATE_SOURCE_TENANT_HEADER);
 
-    String sourceAsString = getFile(EXCHANGE_RATE_SOURCE.getPathToSampleFile());
-    putData(EXCHANGE_RATE_SOURCE.getEndpointWithId(), EXCHANGE_RATE_SOURCE_ID, sourceAsString, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
+    String sourceAsString = getFile(EXCHANGE_RATE_SOURCE_SAMPLE_PATH);
+    putData(EXCHANGE_RATE_SOURCE_ENDPOINT_BY_ID, EXCHANGE_RATE_SOURCE_ID, sourceAsString, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
       .then().statusCode(204);
   }
 
   @Test
   void testUpdateExchangeRateSourceNotExists() {
-    String sourceAsString = getFile(EXCHANGE_RATE_SOURCE.getPathToSampleFile());
-    putData(EXCHANGE_RATE_SOURCE.getEndpointWithId(), EXCHANGE_RATE_SOURCE_ID, sourceAsString, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
+    String sourceAsString = getFile(EXCHANGE_RATE_SOURCE_SAMPLE_PATH);
+    putData(EXCHANGE_RATE_SOURCE_ENDPOINT_BY_ID, EXCHANGE_RATE_SOURCE_ID, sourceAsString, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
       .then().statusCode(404);
   }
 
   @Test
   void testDeleteExchangeRateSource() {
-    givenTestData(EXCHANGE_RATE_SOURCE_TENANT_HEADER, Pair.of(EXCHANGE_RATE_SOURCE, EXCHANGE_RATE_SOURCE.getPathToSampleFile()));
+    postData(EXCHANGE_RATE_SOURCE_ENDPOINT, getFile(EXCHANGE_RATE_SOURCE_SAMPLE_PATH), EXCHANGE_RATE_SOURCE_TENANT_HEADER);
 
-    deleteData(EXCHANGE_RATE_SOURCE.getEndpointWithId(), EXCHANGE_RATE_SOURCE_ID, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
+    deleteData(EXCHANGE_RATE_SOURCE_ENDPOINT_BY_ID, EXCHANGE_RATE_SOURCE_ID, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
       .then().statusCode(204);
   }
 
   @Test
   void tesDeleteExchangeRateSourceNotExists() {
-    deleteData(EXCHANGE_RATE_SOURCE.getEndpointWithId(), EXCHANGE_RATE_SOURCE_ID, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
+    deleteData(EXCHANGE_RATE_SOURCE_ENDPOINT_BY_ID, EXCHANGE_RATE_SOURCE_ID, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
       .then().statusCode(404);
   }
 
