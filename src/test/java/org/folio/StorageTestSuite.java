@@ -22,6 +22,7 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.core.RestClientTest;
 import org.folio.rest.impl.BudgetTest;
 import org.folio.rest.impl.EntitiesCrudTest;
+import org.folio.rest.impl.ExchangeRateSourceTest;
 import org.folio.rest.impl.FinanceDataApiTest;
 import org.folio.rest.impl.GroupBudgetTest;
 import org.folio.rest.impl.GroupFundFYTest;
@@ -242,4 +243,7 @@ public class StorageTestSuite {
 
   @Nested
   class JobNumberTestNested extends JobNumberTest {}
+
+  @Nested
+  class ExchangeRateSourceTestNested extends ExchangeRateSourceTest {}
 }
