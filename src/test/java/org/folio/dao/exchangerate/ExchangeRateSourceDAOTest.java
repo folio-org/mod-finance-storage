@@ -22,7 +22,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 
-class ExchangeRateSourceDAOTest {
+public class ExchangeRateSourceDAOTest {
 
   private ExchangeRateSourceDAOImpl exchangeRateSourceDAO;
   private DBConn mockConn;

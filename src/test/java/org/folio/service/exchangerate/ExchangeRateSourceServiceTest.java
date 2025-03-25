@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.core.Future;
 
-class ExchangeRateSourceServiceTest {
+public class ExchangeRateSourceServiceTest {
 
   private ExchangeRateSourceService exchangeRateSourceService;
   private RequestContext requestContext;
