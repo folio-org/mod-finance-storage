@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.folio.CopilotGenerated;
 import org.folio.rest.jaxrs.model.ExchangeRateSource;
 import org.folio.rest.persist.DBConn;
 import org.folio.rest.persist.helpers.LocalRowSet;
@@ -22,6 +23,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 
+@CopilotGenerated(partiallyGenerated = true)
 public class ExchangeRateSourceDAOTest {
 
   private ExchangeRateSourceDAOImpl exchangeRateSourceDAO;

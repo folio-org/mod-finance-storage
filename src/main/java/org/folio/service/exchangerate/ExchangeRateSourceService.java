@@ -25,7 +25,7 @@ public class ExchangeRateSourceService {
 
   public Future<ExchangeRateSource> getExchangeRateSource(RequestContext requestContext) {
     var dbClient = requestContext.toDBClient();
-    return dbClient.withTrans(conn -> exchangeRateSourceDAO.getExchangeRateSource(conn))
+    return dbClient.withConn(conn -> exchangeRateSourceDAO.getExchangeRateSource(conn))
       .map(exchangeRateSource -> exchangeRateSource.orElseThrow(() ->
         new HttpException(NOT_FOUND.getStatusCode(), NOT_FOUND.getReasonPhrase())));
   }

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.folio.CopilotGenerated;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.exception.HttpException;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.core.Future;
 
+@CopilotGenerated(partiallyGenerated = true)
 public class ExchangeRateSourceServiceTest {
 
   private ExchangeRateSourceService exchangeRateSourceService;
@@ -33,7 +35,7 @@ public class ExchangeRateSourceServiceTest {
   @Test
   void getExchangeRateSource_returnsExchangeRateSource_whenExists() {
     var exchangeRateSource = new ExchangeRateSource();
-    when(dbClient.withTrans(any())).thenReturn(Future.succeededFuture(Optional.of(exchangeRateSource)));
+    when(dbClient.withConn(any())).thenReturn(Future.succeededFuture(Optional.of(exchangeRateSource)));
 
     Future<ExchangeRateSource> result = exchangeRateSourceService.getExchangeRateSource(requestContext);
 
@@ -42,7 +44,7 @@ public class ExchangeRateSourceServiceTest {
 
   @Test
   void getExchangeRateSource_throwsNotFound_whenNotExists() {
-    when(dbClient.withTrans(any())).thenReturn(Future.succeededFuture(Optional.empty()));
+    when(dbClient.withConn(any())).thenReturn(Future.succeededFuture(Optional.empty()));
 
     Future<ExchangeRateSource> result = exchangeRateSourceService.getExchangeRateSource(requestContext);
 
