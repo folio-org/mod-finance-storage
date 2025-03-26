@@ -59,7 +59,10 @@ public class ExchangeRateSourceService {
   }
 
   private boolean validateExchangeRateSource(ExchangeRateSource exchangeRateSource) {
-    return exchangeRateSource != null && StringUtils.isNotEmpty(exchangeRateSource.getProviderUri());
+    return exchangeRateSource != null
+      && StringUtils.isNotEmpty(exchangeRateSource.getProviderUri())
+      && StringUtils.isNotEmpty(exchangeRateSource.getApiKey())
+      && StringUtils.isNotEmpty(exchangeRateSource.getApiSecret());
   }
 
   private <T> Future<T> handleException(Throwable t) {

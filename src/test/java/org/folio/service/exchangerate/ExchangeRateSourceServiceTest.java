@@ -20,6 +20,9 @@ import io.vertx.core.Future;
 @CopilotGenerated(partiallyGenerated = true)
 public class ExchangeRateSourceServiceTest {
 
+  private static final ExchangeRateSource EXCHANGE_RATE_SOURCE_VALID = new ExchangeRateSource()
+    .withProviderUri("providerURI").withApiKey("apiKey").withApiSecret("apiSecret");
+
   private ExchangeRateSourceService exchangeRateSourceService;
   private RequestContext requestContext;
   private DBClient dbClient;
@@ -34,12 +37,11 @@ public class ExchangeRateSourceServiceTest {
 
   @Test
   void getExchangeRateSource_returnsExchangeRateSource_whenExists() {
-    var exchangeRateSource = new ExchangeRateSource();
-    when(dbClient.withConn(any())).thenReturn(Future.succeededFuture(Optional.of(exchangeRateSource)));
+    when(dbClient.withConn(any())).thenReturn(Future.succeededFuture(Optional.of(EXCHANGE_RATE_SOURCE_VALID)));
 
     Future<ExchangeRateSource> result = exchangeRateSourceService.getExchangeRateSource(requestContext);
 
-    assertEquals(exchangeRateSource, result.result());
+    assertEquals(EXCHANGE_RATE_SOURCE_VALID, result.result());
   }
 
   @Test
@@ -55,13 +57,12 @@ public class ExchangeRateSourceServiceTest {
 
   @Test
   void saveExchangeRateSource_savesSuccessfully_whenValid() {
-    var exchangeRateSource = new ExchangeRateSource().withProviderUri("providerURI");
-    when(dbClient.withTrans(any())).thenReturn(Future.succeededFuture(exchangeRateSource));
+    when(dbClient.withTrans(any())).thenReturn(Future.succeededFuture(EXCHANGE_RATE_SOURCE_VALID));
 
-    Future<ExchangeRateSource> result = exchangeRateSourceService.saveExchangeRateSource(exchangeRateSource, requestContext);
+    Future<ExchangeRateSource> result = exchangeRateSourceService.saveExchangeRateSource(EXCHANGE_RATE_SOURCE_VALID, requestContext);
 
     assertTrue(result.succeeded());
-    assertEquals(exchangeRateSource, result.result());
+    assertEquals(EXCHANGE_RATE_SOURCE_VALID, result.result());
   }
 
   @Test
@@ -77,20 +78,18 @@ public class ExchangeRateSourceServiceTest {
 
   @Test
   void updateExchangeRateSource_updatesSuccessfully_whenExists() {
-    var exchangeRateSource = new ExchangeRateSource().withProviderUri("providerURI");
     when(dbClient.withTrans(any())).thenReturn(Future.succeededFuture());
 
-    Future<Void> result = exchangeRateSourceService.updateExchangeRateSource(UUID.randomUUID().toString(), exchangeRateSource, requestContext);
+    Future<Void> result = exchangeRateSourceService.updateExchangeRateSource(UUID.randomUUID().toString(), EXCHANGE_RATE_SOURCE_VALID, requestContext);
 
     assertTrue(result.succeeded());
   }
 
   @Test
   void updateExchangeRateSource_fails_whenNotExists() {
-    var exchangeRateSource = new ExchangeRateSource().withProviderUri("providerURI");
     when(dbClient.withTrans(any())).thenReturn(Future.failedFuture(new HttpException(404, "Not Found")));
 
-    Future<Void> result = exchangeRateSourceService.updateExchangeRateSource(UUID.randomUUID().toString(), exchangeRateSource, requestContext);
+    Future<Void> result = exchangeRateSourceService.updateExchangeRateSource(UUID.randomUUID().toString(), EXCHANGE_RATE_SOURCE_VALID, requestContext);
 
     assertTrue(result.failed());
     assertInstanceOf(HttpException.class, result.cause());
