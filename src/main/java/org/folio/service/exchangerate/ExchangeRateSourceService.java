@@ -4,8 +4,6 @@ import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
-import java.util.Objects;
-
 import org.apache.commons.lang3.StringUtils;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
 import org.folio.rest.core.model.RequestContext;
@@ -31,7 +29,6 @@ public class ExchangeRateSourceService {
   }
 
   public Future<ExchangeRateSource> saveExchangeRateSource(ExchangeRateSource exchangeRateSource, RequestContext requestContext) {
-    removeSensitiveData(exchangeRateSource);
     if (!validateExchangeRateSource(exchangeRateSource)) {
       return Future.failedFuture(new HttpException(422, ErrorCodes.EXCHANGE_RATE_SOURCE_INVALID.toError()));
     }
@@ -43,7 +40,6 @@ public class ExchangeRateSourceService {
   }
 
   public Future<Void> updateExchangeRateSource(String id, ExchangeRateSource exchangeRateSource, RequestContext requestContext) {
-    removeSensitiveData(exchangeRateSource);
     if (!validateExchangeRateSource(exchangeRateSource)) {
       return Future.failedFuture(new HttpException(422, ErrorCodes.EXCHANGE_RATE_SOURCE_INVALID.toError()));
     }
@@ -62,18 +58,8 @@ public class ExchangeRateSourceService {
       .onFailure(t -> log.error("Failed to delete exchange rate source with id: '{}'", id, t));
   }
 
-  private void removeSensitiveData(ExchangeRateSource exchangeRateSource) {
-    exchangeRateSource.setApiKey(null);
-    exchangeRateSource.setApiSecret(null);
-  }
-
   private boolean validateExchangeRateSource(ExchangeRateSource exchangeRateSource) {
-    return exchangeRateSource != null
-      && StringUtils.isNotEmpty(exchangeRateSource.getProviderUri())
-      && StringUtils.isEmpty(exchangeRateSource.getApiKey())
-      && StringUtils.isEmpty(exchangeRateSource.getApiSecret())
-      && Objects.nonNull(exchangeRateSource.getRefreshInterval())
-      && exchangeRateSource.getRefreshInterval() > 0;
+    return exchangeRateSource != null && StringUtils.isNotEmpty(exchangeRateSource.getProviderUri());
   }
 
   private <T> Future<T> handleException(Throwable t) {
