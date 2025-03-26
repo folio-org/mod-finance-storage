@@ -1,0 +1,79 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: mod-finance-storage (Exchange Rate Sources)
+    content: <b>CRUD APIs used to manage expense rate sources.</b>
+
+types:
+  exchange-rate-source: !include acq-models/mod-finance/schemas/exchange_rate_source.json
+  errors: !include raml-util/schemas/errors.schema
+  UUID:
+    type: string
+    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+
+traits:
+  validate: !include raml-util/traits/validation.raml
+
+/finance-storage/exchange-rate-source:
+  get:
+    description: Get exchange rate source
+    responses:
+      200:
+        description: "Exchange rate source successfully retrieved"
+      404:
+        description: "Exchange rate source not found"
+        body:
+          application/json:
+            type: errors
+  post:
+    description: Save exchange rate source
+    is: [validate]
+    body:
+      application/json:
+        type: exchange-rate-source
+        example: !include acq-models/mod-finance/examples/exchange_rate_source.sample
+    responses:
+      201:
+        description: "Exchange rate source successfully created"
+        body:
+          application/json:
+            type: exchange-rate-source
+            example: !include acq-models/mod-finance/examples/exchange_rate_source.sample
+      409:
+        description: "Exchange rate source already exists"
+        body:
+          application/json:
+            type: errors
+  /{id}:
+    uriParameters:
+      id:
+        description: The UUID of the exchange rate source
+        type: UUID
+    is: [validate]
+    put:
+      description: Update exchange rate source
+      body:
+        application/json:
+          type: exchange-rate-source
+          example: !include acq-models/mod-finance/examples/exchange_rate_source.sample
+      responses:
+        204:
+          description: "Exchange rate source successfully updated"
+        404:
+          description: "Exchange rate source not found"
+          body:
+            application/json:
+              type: errors
+    delete:
+      description: Delete exchange rate source
+      responses:
+        204:
+          description: "Exchange rate source successfully deleted"
+        404:
+          description: "Exchange rate source not found"
+          body:
+            application/json:
+              type: errors

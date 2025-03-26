@@ -4,6 +4,8 @@ import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.budget.BudgetExpenseClassDAO;
 import org.folio.dao.budget.BudgetExpenseClassDAOImpl;
 import org.folio.dao.budget.BudgetPostgresDAO;
+import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
+import org.folio.dao.exchangerate.ExchangeRateSourceDAOImpl;
 import org.folio.dao.expense.ExpenseClassDAO;
 import org.folio.dao.expense.ExpenseClassDAOImpl;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
@@ -97,4 +99,10 @@ public class DAOConfiguration {
   public JobNumberDAO jobNumberDAO() {
     return new JobNumberPostgresDAO();
   }
+
+  @Bean
+  public ExchangeRateSourceDAO exchangeRateSourceDAO() {
+    return new ExchangeRateSourceDAOImpl();
+  }
+
 }

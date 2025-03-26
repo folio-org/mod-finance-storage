@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.dao.exchangerate.ExchangeRateSourceDAOTest;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
 import org.folio.dao.rollover.RolloverErrorDAOTest;
 import org.folio.dao.rollover.RolloverProgressDAOTest;
@@ -22,6 +23,7 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.core.RestClientTest;
 import org.folio.rest.impl.BudgetTest;
 import org.folio.rest.impl.EntitiesCrudTest;
+import org.folio.rest.impl.ExchangeRateSourceTest;
 import org.folio.rest.impl.FinanceDataApiTest;
 import org.folio.rest.impl.GroupBudgetTest;
 import org.folio.rest.impl.GroupFundFYTest;
@@ -39,6 +41,7 @@ import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.utils.DBClientTest;
 import org.folio.service.budget.BudgetServiceTest;
 import org.folio.service.email.EmailServiceTest;
+import org.folio.service.exchangerate.ExchangeRateSourceServiceTest;
 import org.folio.service.financedata.FinanceDataServiceTest;
 import org.folio.service.group.GroupServiceTest;
 import org.folio.service.rollover.LedgerRolloverServiceTest;
@@ -242,4 +245,13 @@ public class StorageTestSuite {
 
   @Nested
   class JobNumberTestNested extends JobNumberTest {}
+
+  @Nested
+  class ExchangeRateSourceTestNested extends ExchangeRateSourceTest {}
+
+  @Nested
+  class ExchangeRateSourceDAOTestNested extends ExchangeRateSourceDAOTest {}
+
+  @Nested
+  class ExchangeRateSourceServiceTestNested extends ExchangeRateSourceServiceTest {}
 }

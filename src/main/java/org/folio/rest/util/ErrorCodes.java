@@ -2,6 +2,11 @@ package org.folio.rest.util;
 
 import org.folio.rest.jaxrs.model.Error;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@AllArgsConstructor
+@Getter
 public enum ErrorCodes {
   GENERIC_ERROR_CODE("genericError", "Generic error"),
   UNIQUE_FIELD_CONSTRAINT_ERROR("uniqueField{0}{1}Error", "Field {0} must be unique"),
@@ -18,22 +23,12 @@ public enum ErrorCodes {
   LINKED_ENCUMBRANCES_NOT_FOUND("linkedEncumbrancesNotFound","Could not find some linked encumbrances in the database"),
   FAILED_TO_UPDATE_FUNDS("failedToUpdateFunds", "Failed to update funds"),
   FAILED_TO_UPDATE_BUDGETS("failedToUpdateBudgets", "Failed to update budgets"),
-  FAILED_TO_CREATE_ALLOCATIONS("failedToCreateAllocations", "Failed to create allocations");
+  FAILED_TO_CREATE_ALLOCATIONS("failedToCreateAllocations", "Failed to create allocations"),
+  EXCHANGE_RATE_SOURCE_ALREADY_EXISTS("exchangeRateSourceAlreadyExists", "Exchange rate source already exists"),
+  EXCHANGE_RATE_SOURCE_INVALID("exchangeRateSourceInvalid", "Exchange rate source content is invalid");
+
   private final String code;
   private final String description;
-
-  ErrorCodes(String code, String description) {
-    this.code = code;
-    this.description = description;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public String getCode() {
-    return code;
-  }
 
   @Override
   public String toString() {

@@ -279,6 +279,10 @@
           <showWeaveInfo>true</showWeaveInfo>
           <!-- Forces re-compilation, regardless of whether the compiler arguments or the sources have changed. Useful for local re-builds. -->
           <forceAjcCompile>true</forceAjcCompile>
+          <includes>
+            <include>**/impl/*.java</include>
+            <include>**/*.aj</include>
+          </includes>
           <aspectLibraries>
             <aspectLibrary>
               <groupId>org.folio</groupId>

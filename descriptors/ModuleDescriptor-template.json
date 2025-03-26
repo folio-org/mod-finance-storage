@@ -501,6 +501,32 @@
       ]
     },
     {
+      "id": "finance-storage.exchange-rate-source",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/exchange-rate-source",
+          "permissionsRequired": ["finance-storage.exchange-rate-source.item.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/exchange-rate-source",
+          "permissionsRequired": ["finance-storage.exchange-rate-source.item.post"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/exchange-rate-source/{id}",
+          "permissionsRequired": ["finance-storage.exchange-rate-source.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/exchange-rate-source/{id}",
+          "permissionsRequired": ["finance-storage.exchange-rate-source.item.delete"]
+        }
+      ]
+    },
+    {
       "id" : "_tenant",
       "version" : "2.0",
       "interfaceType" : "system",
@@ -1076,6 +1102,37 @@
       ]
     },
     {
+      "permissionName": "finance-storage.exchange-rate-source.item.get",
+      "displayName": "get exchange rate source",
+      "description": "Get exchange rate source"
+    },
+    {
+      "permissionName": "finance-storage.exchange-rate-source.item.post",
+      "displayName": "save exchange rate source",
+      "description": "Save exchange rate source"
+    },
+    {
+      "permissionName": "finance-storage.exchange-rate-source.item.put",
+      "displayName": "update exchange rate source",
+      "description": "Update exchange rate source"
+    },
+    {
+      "permissionName": "finance-storage.exchange-rate-source.item.delete",
+      "displayName": "delete exchange rate source",
+      "description": "Delete exchange rate source"
+    },
+    {
+      "permissionName": "finance-storage.exchange-rate-source.all",
+      "displayName": "All exchange-rate-source perms",
+      "description": "All permissions for the exchange rate source",
+      "subPermissions": [
+        "finance-storage.exchange-rate-source.item.get",
+        "finance-storage.exchange-rate-source.item.post",
+        "finance-storage.exchange-rate-source.item.put",
+        "finance-storage.exchange-rate-source.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance-storage.job-number.get",
       "displayName" : "job-number get",
       "description" : "Get job number"
@@ -1097,6 +1154,7 @@
         "finance-storage.fund-types.all",
         "finance-storage.fund-update-logs.all",
         "finance-storage.finance-data.all",
+        "finance-storage.exchange-rate-source.all",
         "finance-storage.job-number.get"
       ]
     }
