@@ -529,8 +529,8 @@
   ],
   "optional": [
     {
-      "id": "orders.rollover",
-      "version": "1.0"
+      "id": "orders",
+      "version": "12.0"
     }
   ],
   "permissionSets" : [
