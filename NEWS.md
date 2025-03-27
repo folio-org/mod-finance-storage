@@ -1,5 +1,13 @@
 ## 8.9.0 - Unreleased
 
+## 8.8.1 - Released (Sunflower R1 2025 Bug fix)
+The primary focus of this release was to add missed interface for Rollover functionality
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.0...v8.8.1)
+
+### Bug fixes
+* [BF-1169](https://folio-org.atlassian.net/browse/BF-1169) Unable to execute rollover process – 500 Internal Server Error
+
+
 ## 8.8.0 - Released (Sunflower R1 2025)
 The primary focus of this release was to separate Credited from Expended and improve different calculations
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.0...v8.8.0)
