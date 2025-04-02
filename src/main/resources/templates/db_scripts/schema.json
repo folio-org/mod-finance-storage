@@ -398,13 +398,13 @@
         {
           "fieldName": "payment",
           "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
-          "tOps": "ADD",
+          "tOps": "DELETE",
           "whereClause": "WHERE jsonb->>'transactionType' = 'Payment' OR jsonb->>'transactionType' = 'Pending payment'"
         },
         {
           "fieldName": "credit",
           "multiFieldNames": "amount, toFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
-          "tOps": "ADD",
+          "tOps": "DELETE",
           "whereClause": "WHERE jsonb->>'transactionType' = 'Credit'"
         }
       ],
