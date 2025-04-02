@@ -3,6 +3,7 @@ package org.folio.service.exchangerate;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static org.folio.rest.jaxrs.model.ExchangeRateSource.ProviderType.TREASURY_GOV;
 
 import org.apache.commons.lang3.StringUtils;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
@@ -40,7 +41,7 @@ public class ExchangeRateSourceService {
   }
 
   public Future<Void> updateExchangeRateSource(String id, ExchangeRateSource exchangeRateSource, RequestContext requestContext) {
-    if (!validateExchangeRateSource(exchangeRateSource)) {
+    if (Boolean.FALSE.equals(validateExchangeRateSource(exchangeRateSource))) {
       return Future.failedFuture(new HttpException(422, ErrorCodes.EXCHANGE_RATE_SOURCE_INVALID.toError()));
     }
     return requestContext.toDBClient()
@@ -61,7 +62,11 @@ public class ExchangeRateSourceService {
   private boolean validateExchangeRateSource(ExchangeRateSource exchangeRateSource) {
     return exchangeRateSource != null
       && StringUtils.isNotEmpty(exchangeRateSource.getProviderUri())
-      && StringUtils.isNotEmpty(exchangeRateSource.getApiKey())
+      && (exchangeRateSource.getProviderType() == TREASURY_GOV || isValidApiCredentials(exchangeRateSource));
+  }
+
+  private boolean isValidApiCredentials(ExchangeRateSource exchangeRateSource) {
+    return StringUtils.isNotEmpty(exchangeRateSource.getApiKey())
       && StringUtils.isNotEmpty(exchangeRateSource.getApiSecret());
   }
 
