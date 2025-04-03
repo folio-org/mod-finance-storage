@@ -1,5 +1,13 @@
 ## 8.9.0 - Unreleased
 
+## 8.8.2 - Released (Sunflower R1 2025 Bug fix)
+The primary focus of this release was to fix issue when canceling a paid invoice with 2 invoice-level adjustments with the same fund and expense class
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.1...v8.8.2)
+
+### Bug fixes
+* [MODFISTO-525](https://folio-org.atlassian.net/browse/MODFISTO-525) Error when cancelling a paid invoice with 2 invoice-level adjustments using the same fund and expense class
+
+
 ## 8.8.1 - Released (Sunflower R1 2025 Bug fix)
 The primary focus of this release was to add missed interface for Rollover functionality
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.0...v8.8.1)
