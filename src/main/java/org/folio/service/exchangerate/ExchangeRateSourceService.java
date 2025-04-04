@@ -3,7 +3,6 @@ package org.folio.service.exchangerate;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static org.folio.rest.jaxrs.model.ExchangeRateSource.ProviderType.TREASURY_GOV;
 
 import org.apache.commons.lang3.StringUtils;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
@@ -62,12 +61,16 @@ public class ExchangeRateSourceService {
   private boolean validateExchangeRateSource(ExchangeRateSource exchangeRateSource) {
     return exchangeRateSource != null
       && StringUtils.isNotEmpty(exchangeRateSource.getProviderUri())
-      && (exchangeRateSource.getProviderType() == TREASURY_GOV || isValidApiCredentials(exchangeRateSource));
+      && isValidApiCredentials(exchangeRateSource);
   }
 
   private boolean isValidApiCredentials(ExchangeRateSource exchangeRateSource) {
-    return StringUtils.isNotEmpty(exchangeRateSource.getApiKey())
-      && StringUtils.isNotEmpty(exchangeRateSource.getApiSecret());
+    return switch (exchangeRateSource.getProviderType()) {
+      case TREASURY_GOV -> true;
+      case CURRENCYAPI_COM -> StringUtils.isNotEmpty(exchangeRateSource.getApiKey());
+      default -> StringUtils.isNotEmpty(exchangeRateSource.getApiKey())
+        && StringUtils.isNotEmpty(exchangeRateSource.getApiSecret());
+    };
   }
 
   private <T> Future<T> handleException(Throwable t) {
