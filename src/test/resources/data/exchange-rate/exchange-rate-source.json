@@ -1,6 +1,7 @@
 {
   "id": "fef8766e-23b8-4e35-80a7-99ae7e0817fc",
   "enabled": true,
+  "providerType": "convera.com",
   "providerUri": "someProviderUri",
   "apiKey": "apiKey",
   "apiSecret": "apiSecret",

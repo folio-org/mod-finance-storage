@@ -40,7 +40,7 @@ public class ExchangeRateSourceService {
   }
 
   public Future<Void> updateExchangeRateSource(String id, ExchangeRateSource exchangeRateSource, RequestContext requestContext) {
-    if (!validateExchangeRateSource(exchangeRateSource)) {
+    if (Boolean.FALSE.equals(validateExchangeRateSource(exchangeRateSource))) {
       return Future.failedFuture(new HttpException(422, ErrorCodes.EXCHANGE_RATE_SOURCE_INVALID.toError()));
     }
     return requestContext.toDBClient()
@@ -61,8 +61,16 @@ public class ExchangeRateSourceService {
   private boolean validateExchangeRateSource(ExchangeRateSource exchangeRateSource) {
     return exchangeRateSource != null
       && StringUtils.isNotEmpty(exchangeRateSource.getProviderUri())
-      && StringUtils.isNotEmpty(exchangeRateSource.getApiKey())
-      && StringUtils.isNotEmpty(exchangeRateSource.getApiSecret());
+      && isValidApiCredentials(exchangeRateSource);
+  }
+
+  private boolean isValidApiCredentials(ExchangeRateSource exchangeRateSource) {
+    return switch (exchangeRateSource.getProviderType()) {
+      case TREASURY_GOV -> true;
+      case CURRENCYAPI_COM -> StringUtils.isNotEmpty(exchangeRateSource.getApiKey());
+      default -> StringUtils.isNotEmpty(exchangeRateSource.getApiKey())
+        && StringUtils.isNotEmpty(exchangeRateSource.getApiSecret());
+    };
   }
 
   private <T> Future<T> handleException(Throwable t) {
