@@ -9,6 +9,8 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -26,7 +28,6 @@ import org.junit.jupiter.api.BeforeAll;
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
-import io.restassured.response.ValidatableResponse;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
@@ -36,6 +37,7 @@ import io.vertx.core.json.JsonObject;
  * IDE during development.
  */
 public abstract class TestBase {
+
   protected final Logger logger = LogManager.getLogger(this.getClass());
 
   protected static final String TENANT_NAME = "diku";
@@ -67,9 +69,9 @@ public abstract class TestBase {
 
   @SafeVarargs
   final void givenTestData(Header header, Pair<TestEntities, String> ... testPairs) {
-    for(Pair<TestEntities, String> pair: testPairs) {
-
+    for (Pair<TestEntities, String> pair: testPairs) {
       String sample = getFile(pair.getRight());
+      logger.info("givenTestData:: Entity: {}, File: {}, Sample: {}", pair.getLeft(), pair.getRight(), sample);
       String id = new JsonObject(sample).getString("id");
       pair.getLeft().setId(id);
 
@@ -79,16 +81,16 @@ public abstract class TestBase {
     }
   }
 
-  ValidatableResponse verifyCollectionQuantity(String endpoint, int quantity, Header tenantHeader) {
-    return getData(endpoint, tenantHeader)
+  void verifyCollectionQuantity(String endpoint, int quantity, Header tenantHeader) {
+    getData(endpoint, tenantHeader)
       .then()
-        .log().all()
-        .statusCode(200)
-        .body("totalRecords", equalTo(quantity));
+      .log().all()
+      .statusCode(200)
+      .body("totalRecords", equalTo(quantity));
   }
 
-  ValidatableResponse verifyCollectionQuantity(String endpoint, int quantity) {
-    return verifyCollectionQuantity(endpoint, quantity, TENANT_HEADER);
+  void verifyCollectionQuantity(String endpoint, int quantity) {
+    verifyCollectionQuantity(endpoint, quantity, TENANT_HEADER);
   }
 
   Response getData(String endpoint, Header tenantHeader) {
@@ -105,8 +107,9 @@ public abstract class TestBase {
   public static String getFile(String filename) {
     String value;
     try {
-      InputStream inputStream = TestBase.class.getClassLoader().getResourceAsStream(filename);
-      value = IOUtils.toString(inputStream, "UTF-8");
+      try (InputStream inputStream = TestBase.class.getClassLoader().getResourceAsStream(filename)) {
+        value = IOUtils.toString(Objects.requireNonNull(inputStream), StandardCharsets.UTF_8);
+      }
     } catch (Exception e) {
       value = "";
     }
@@ -184,8 +187,8 @@ public abstract class TestBase {
       .delete(storageUrl(endpoint));
   }
 
-  String createEntity(String endpoint, Object entity, Header tenantHeader) {
-    return postData(endpoint, valueAsString(entity), tenantHeader)
+  void createEntity(String endpoint, Object entity, Header tenantHeader) {
+    postData(endpoint, valueAsString(entity), tenantHeader)
       .then().log().all()
       .statusCode(201)
       .extract()
@@ -259,5 +262,4 @@ public abstract class TestBase {
       .then()
         .statusCode(404);
   }
-
 }
