@@ -11,6 +11,16 @@
       "transactionType": "Allocation"
     },
     {
+      "id": "0d56240a-bacc-4ea5-af7b-0c3861be6afa",
+      "amount": 100000,
+      "currency": "USD",
+      "fiscalYearId": "43aba0df-70e4-435e-8463-d8f730d19e0b",
+      "source": "User",
+      "sourceFiscalYearId": "43aba0df-70e4-435e-8463-d8f730d19e0b",
+      "toFundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
+      "transactionType": "Allocation"
+    },
+    {
       "id": "d5c4df84-0ea6-4035-902c-f47780d2597e",
       "amount": 23000.00,
       "currency": "USD",
