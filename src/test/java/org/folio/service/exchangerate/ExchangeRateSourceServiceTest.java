@@ -7,11 +7,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.folio.CopilotGenerated;
+import org.folio.config.SecureStoreConfiguration;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.ExchangeRateSource;
 import org.folio.rest.persist.DBClient;
+import org.folio.tools.store.SecureStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +37,7 @@ public class ExchangeRateSourceServiceTest {
 
   @BeforeEach
   void setUp() {
-    exchangeRateSourceService = new ExchangeRateSourceService(mock(ExchangeRateSourceDAO.class));
+    exchangeRateSourceService = new ExchangeRateSourceService(mock(SecureStore.class), mock(SecureStoreConfiguration.class), mock(ExchangeRateSourceDAO.class));
     requestContext = mock(RequestContext.class);
     dbClient = mock(DBClient.class);
     when(requestContext.toDBClient()).thenReturn(dbClient);

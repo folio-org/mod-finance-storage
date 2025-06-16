@@ -10,11 +10,13 @@ import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
 import javax.ws.rs.core.Response;
 import java.util.Map;
 
+import org.folio.config.SecureStoreConfiguration;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.ExchangeRateSource;
 import org.folio.rest.jaxrs.resource.FinanceStorageExchangeRateSource;
 import org.folio.service.exchangerate.ExchangeRateSourceService;
 import org.folio.spring.SpringContextUtil;
+import org.folio.tools.store.SecureStore;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import io.vertx.core.AsyncResult;
@@ -24,6 +26,10 @@ import io.vertx.core.Vertx;
 
 public class ExchangeRateSourceAPI implements FinanceStorageExchangeRateSource {
 
+  @Autowired
+  private SecureStore secureStore;
+  @Autowired
+  private SecureStoreConfiguration secureStoreConfiguration;
   @Autowired
   private ExchangeRateSourceService exchangeRateSourceService;
 

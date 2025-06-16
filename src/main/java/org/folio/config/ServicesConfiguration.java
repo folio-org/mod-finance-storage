@@ -46,6 +46,7 @@ import org.folio.service.transactions.batch.BatchPendingPaymentService;
 import org.folio.service.transactions.batch.BatchTransactionService;
 import org.folio.service.transactions.batch.BatchTransactionServiceInterface;
 import org.folio.service.transactions.batch.BatchTransferService;
+import org.folio.tools.store.SecureStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 
@@ -189,8 +190,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public ExchangeRateSourceService exchangeRateSourceService(ExchangeRateSourceDAO exchangeRateSourceDAO) {
-    return new ExchangeRateSourceService(exchangeRateSourceDAO);
+  public ExchangeRateSourceService exchangeRateSourceService(SecureStore secureStore, SecureStoreConfiguration secureStoreConfiguration, ExchangeRateSourceDAO exchangeRateSourceDAO) {
+    return new ExchangeRateSourceService(secureStore, secureStoreConfiguration, exchangeRateSourceDAO);
   }
 
 }
