@@ -38,10 +38,8 @@ public class ExchangeRateSourceService {
     return dbClient.withConn(conn -> exchangeRateSourceDAO.getExchangeRateSource(conn))
       .map(exchangeRateSource -> exchangeRateSource.map(source -> {
         if (isSecureStoreEnabled()) {
-          secureStore.lookup(buildSecureStoreProperty(EXCHANGE_RATE_API_KEY, requestContext))
-            .ifPresent(source::withApiKey);
-          secureStore.lookup(buildSecureStoreProperty(EXCHANGE_RATE_API_SECRET, requestContext))
-            .ifPresent(source::withApiKey);
+          secureStore.lookup(buildSecureStoreProperty(EXCHANGE_RATE_API_KEY, requestContext)).ifPresent(source::withApiKey);
+          secureStore.lookup(buildSecureStoreProperty(EXCHANGE_RATE_API_SECRET, requestContext)).ifPresent(source::withApiSecret);
         }
         return source;
       }).orElseThrow(() ->
