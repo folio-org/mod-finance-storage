@@ -30,7 +30,6 @@ public class ExchangeRateSourceService {
   private static final String EXCHANGE_RATE_API_SECRET = "exchange-rate-api-secret";
 
   private SecureStore secureStore;
-  private SecureStoreConfiguration secureStoreConfiguration;
   private ExchangeRateSourceDAO exchangeRateSourceDAO;
 
   public Future<ExchangeRateSource> getExchangeRateSource(RequestContext requestContext) {
@@ -38,8 +37,8 @@ public class ExchangeRateSourceService {
     return dbClient.withConn(conn -> exchangeRateSourceDAO.getExchangeRateSource(conn))
       .map(exchangeRateSource -> exchangeRateSource.map(source -> {
         if (isSecureStoreEnabled()) {
-          secureStore.lookup(buildSecureStoreProperty(EXCHANGE_RATE_API_KEY, requestContext)).ifPresent(source::withApiKey);
-          secureStore.lookup(buildSecureStoreProperty(EXCHANGE_RATE_API_SECRET, requestContext)).ifPresent(source::withApiSecret);
+          secureStore.lookup(buildKey(EXCHANGE_RATE_API_KEY, requestContext)).ifPresent(source::withApiKey);
+          secureStore.lookup(buildKey(EXCHANGE_RATE_API_SECRET, requestContext)).ifPresent(source::withApiSecret);
         }
         return source;
       }).orElseThrow(() ->
@@ -52,7 +51,9 @@ public class ExchangeRateSourceService {
     }
     return requestContext.toDBClient()
       .withTrans(conn -> {
-        updateSecureStoreSource(exchangeRateSource, requestContext);
+        if (isSecureStoreEnabled()) {
+          updateSecureStoreSource(exchangeRateSource, requestContext);
+        }
         return exchangeRateSourceDAO.saveExchangeRateSource(exchangeRateSource, conn);
       })
       .recover(this::handleException)
@@ -66,7 +67,9 @@ public class ExchangeRateSourceService {
     }
     return requestContext.toDBClient()
       .withTrans(conn -> {
-        updateSecureStoreSource(exchangeRateSource, requestContext);
+        if (isSecureStoreEnabled()) {
+          updateSecureStoreSource(exchangeRateSource, requestContext);
+        }
         return exchangeRateSourceDAO.updateExchangeRateSource(id, exchangeRateSource, conn);
       })
       .recover(this::handleException)
@@ -78,8 +81,8 @@ public class ExchangeRateSourceService {
     var dbClient = requestContext.toDBClient();
     return dbClient.withTrans(conn -> {
         if (isSecureStoreEnabled()) {
-          secureStore.delete(buildSecureStoreProperty(EXCHANGE_RATE_API_KEY, requestContext));
-          secureStore.delete(buildSecureStoreProperty(EXCHANGE_RATE_API_SECRET, requestContext));
+          secureStore.delete(buildKey(EXCHANGE_RATE_API_KEY, requestContext));
+          secureStore.delete(buildKey(EXCHANGE_RATE_API_SECRET, requestContext));
         }
         return exchangeRateSourceDAO.deleteExchangeRateSource(id, conn);
       })
@@ -103,31 +106,32 @@ public class ExchangeRateSourceService {
     };
   }
 
-  private <T> Future<T> handleException(Throwable t) {
-    if (t instanceof HttpException) {
-      return Future.failedFuture(t);
-    } else if (!(t instanceof IllegalStateException)) {
-      t = new HttpException(INTERNAL_SERVER_ERROR.getStatusCode(), t);
-    } else if (NOT_FOUND.getReasonPhrase().equals(t.getMessage())) {
-      t = new HttpException(NOT_FOUND.getStatusCode(), t);
-    } else if (CONFLICT.getReasonPhrase().equals(t.getMessage())) {
-      t = new HttpException(CONFLICT.getStatusCode(), ErrorCodes.EXCHANGE_RATE_SOURCE_ALREADY_EXISTS.toError());
+  private <T> Future<T> handleException(Throwable throwable) {
+    if (throwable instanceof HttpException) {
+      return Future.failedFuture(throwable);
+    } else if (!(throwable instanceof IllegalStateException)) {
+      throwable = new HttpException(INTERNAL_SERVER_ERROR.getStatusCode(), throwable);
+    } else if (NOT_FOUND.getReasonPhrase().equals(throwable.getMessage())) {
+      throwable = new HttpException(NOT_FOUND.getStatusCode(), throwable);
+    } else if (CONFLICT.getReasonPhrase().equals(throwable.getMessage())) {
+      throwable = new HttpException(CONFLICT.getStatusCode(), ErrorCodes.EXCHANGE_RATE_SOURCE_ALREADY_EXISTS.toError());
     }
 
-    return Future.failedFuture(t);
+    return Future.failedFuture(throwable);
+  }
+
+  private boolean isSecureStoreEnabled() {
+    return EnumSet.of(VAULT, AWS_SSM).contains(SecureStoreConfiguration.getSecretStoreType());
   }
 
   private void updateSecureStoreSource(ExchangeRateSource exchangeRateSource, RequestContext requestContext) {
-    if (!isSecureStoreEnabled()) {
-      return;
-    }
-    var exchangeRateApiKey = buildSecureStoreProperty(EXCHANGE_RATE_API_KEY, requestContext);
+    var exchangeRateApiKey = buildKey(EXCHANGE_RATE_API_KEY, requestContext);
     if (StringUtils.isNotEmpty(exchangeRateSource.getApiKey())) {
       secureStore.set(exchangeRateApiKey, exchangeRateSource.getApiKey());
     } else {
       secureStore.delete(exchangeRateApiKey);
     }
-    var exchangeRateApiSecret = buildSecureStoreProperty(EXCHANGE_RATE_API_SECRET, requestContext);
+    var exchangeRateApiSecret = buildKey(EXCHANGE_RATE_API_SECRET, requestContext);
     if (StringUtils.isNotEmpty(exchangeRateSource.getApiSecret())) {
       secureStore.set(exchangeRateApiSecret, exchangeRateSource.getApiSecret());
     } else {
@@ -137,11 +141,7 @@ public class ExchangeRateSourceService {
     exchangeRateSource.withApiSecret(null);
   }
 
-  private boolean isSecureStoreEnabled() {
-    return EnumSet.of(VAULT, AWS_SSM).contains(secureStoreConfiguration.getSecureStoreType());
-  }
-
-  private String buildSecureStoreProperty(String property, RequestContext requestContext) {
-    return "%s_%s_%s".formatted(secureStoreConfiguration.getEnvId(), TenantTool.tenantId(requestContext.getHeaders()), property);
+  private String buildKey(String property, RequestContext requestContext) {
+    return "%s_%s_%s".formatted(SecureStoreConfiguration.getEnvId(), TenantTool.tenantId(requestContext.getHeaders()), property);
   }
 }

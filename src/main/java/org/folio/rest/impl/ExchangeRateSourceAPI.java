@@ -10,7 +10,6 @@ import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
 import javax.ws.rs.core.Response;
 import java.util.Map;
 
-import org.folio.config.SecureStoreConfiguration;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.ExchangeRateSource;
 import org.folio.rest.jaxrs.resource.FinanceStorageExchangeRateSource;
@@ -28,8 +27,6 @@ public class ExchangeRateSourceAPI implements FinanceStorageExchangeRateSource {
 
   @Autowired
   private SecureStore secureStore;
-  @Autowired
-  private SecureStoreConfiguration secureStoreConfiguration;
   @Autowired
   private ExchangeRateSourceService exchangeRateSourceService;
 

@@ -40,6 +40,33 @@ and the additional module metadata.
 
 Generated [API documentation](https://dev.folio.org/reference/api/#mod-finance-storage).
 
+### Secure storage environment variables
+
+#### AWS-SSM
+
+Required when `SECRET_STORE_TYPE=AWS_SSM`
+
+| Name                                          | Default value | Description                                                                                                                                                    |
+|:----------------------------------------------|:--------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| SECRET_STORE_AWS_SSM_REGION                   | -             | The AWS region to pass to the AWS SSM Client Builder. If not set, the AWS Default Region Provider Chain is used to determine which region to use.              |
+| SECRET_STORE_AWS_SSM_USE_IAM                  | true          | If true, will rely on the current IAM role for authorization instead of explicitly providing AWS credentials (access_key/secret_key)                           |
+| SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT | -             | The HTTP endpoint to use for retrieving AWS credentials. This is ignored if useIAM is true                                                                     |
+| SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH     | -             | The path component of the credentials endpoint URI. This value is appended to the credentials endpoint to form the URI from which credentials can be obtained. |
+
+#### Vault
+
+Required when `SECRET_STORE_STORE_TYPE=VAULT`
+
+| Name                                    | Default value | Description                                                                         |
+|:----------------------------------------|:--------------|:------------------------------------------------------------------------------------|
+| SECRET_STORE_VAULT_TOKEN                | -             | token for accessing vault, may be a root token                                      |
+| SECRET_STORE_VAULT_ADDRESS              | -             | the address of your vault                                                           |
+| SECRET_STORE_VAULT_ENABLE_SSL           | false         | whether or not to use SSL                                                           |
+| SECRET_STORE_VAULT_PEM_FILE_PATH        | -             | the path to an X.509 certificate in unencrypted PEM format, using UTF-8 encoding    |
+| SECRET_STORE_VAULT_KEYSTORE_PASSWORD    | -             | the password used to access the JKS keystore (optional)                             |
+| SECRET_STORE_VAULT_KEYSTORE_FILE_PATH   | -             | the path to a JKS keystore file containing a client cert and private key            |
+| SECRET_STORE_VAULT_TRUSTSTORE_FILE_PATH | -             | the path to a JKS truststore file containing Vault server certs that can be trusted |
+
 ## Code analysis
 
 [SonarQube analysis](https://sonarcloud.io/dashboard?id=org.folio%3Amod-finance-storage).

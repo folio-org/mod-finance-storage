@@ -7,8 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum SecureStoreType {
   EPHEMERAL("EPHEMERAL"),
-  VAULT("VAULT"),
-  AWS_SSM("AWS_SSM");
+  AWS_SSM("AWS_SSM"),
+  VAULT("VAULT");
 
   private final String value;
 }

@@ -1,6 +1,5 @@
 package org.folio.config;
 
-import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.folio.tools.store.SecureStore;
 import org.folio.tools.store.impl.AwsStore;
@@ -26,9 +25,9 @@ public class SecureStoreConfiguration {
 
   private static final String NOT_FOUND_MESSAGE = "Failed to find required config property: %s";
 
-  private static final String ENV = "ENV";
-  private static final String DEFAULT_ENV_ID = "folio";
-  private static final String SECRET_STORE_TYPE = "SECRET_STORE_TYPE";
+  public static final String ENV = "ENV";
+  public static final String DEFAULT_ENV_ID = "folio";
+  public static final String SECRET_STORE_TYPE = "SECRET_STORE_TYPE";
 
   private static final String SECRET_STORE_VAULT_TOKEN = "SECRET_STORE_VAULT_TOKEN";
   private static final String SECRET_STORE_VAULT_ADDRESS = "SECRET_STORE_VAULT_ADDRESS";
@@ -43,26 +42,37 @@ public class SecureStoreConfiguration {
   private static final String SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT = "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT";
   private static final String SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH = "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH";
 
-  @Getter
-  private String envId;
-  @Getter
-  private SecureStoreType secureStoreType;
+  public static String getEnvId() {
+    return Optional.of(System.getenv().get(ENV)).orElse(DEFAULT_ENV_ID);
+  }
+
+  public static SecureStoreType getSecretStoreType() {
+    return Optional.ofNullable(System.getenv().get(SECRET_STORE_TYPE))
+      .map(SecureStoreType::valueOf).orElse(EPHEMERAL);
+  }
 
   @Bean
   public SecureStore secureStore() {
-    envId = Optional.of(System.getenv(ENV)).orElse(DEFAULT_ENV_ID);
-    secureStoreType = Optional.ofNullable(System.getenv().get(SECRET_STORE_TYPE))
-      .map(SecureStoreType::valueOf).orElse(EPHEMERAL);
+    var secureStoreType = getSecretStoreType();
     log.info("secureStore:: Using {} secure store type", secureStoreType);
     return switch (secureStoreType) {
       case EPHEMERAL -> createEphemeralStore(new HashMap<>());
-      case VAULT -> createVaultStore();
       case AWS_SSM -> createAwsStore();
+      case VAULT -> createVaultStore();
     };
   }
 
   public SecureStore createEphemeralStore(Map<String, String> ephemeralProperties) {
     return EphemeralStore.create(new EphemeralConfigProperties(ephemeralProperties));
+  }
+
+  public SecureStore createAwsStore() {
+    return AwsStore.create(AwsConfigProperties.builder()
+      .region(getRequiredValue(SECRET_STORE_AWS_SSM_REGION))
+      .useIam(getValue(SECRET_STORE_AWS_SSM_USE_IAM, TRUE))
+      .ecsCredentialsEndpoint(getValue(SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT))
+      .ecsCredentialsPath(getValue(SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH))
+      .build());
   }
 
   public SecureStore createVaultStore() {
@@ -75,15 +85,6 @@ public class SecureStoreConfiguration {
       .keystoreFilePath(getValue(SECRET_STORE_VAULT_KEYSTORE_FILE_PATH))
       .truststoreFilePath(getValue(SECRET_STORE_VAULT_TRUSTSTORE_FILE_PATH))
       .secretRoot(DEFAULT_VAULT_SECRET_ROOT)
-      .build());
-  }
-
-  public SecureStore createAwsStore() {
-    return AwsStore.create(AwsConfigProperties.builder()
-      .region(getRequiredValue(SECRET_STORE_AWS_SSM_REGION))
-      .useIam(getValue(SECRET_STORE_AWS_SSM_USE_IAM, TRUE))
-      .ecsCredentialsEndpoint(getValue(SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT))
-      .ecsCredentialsPath(getValue(SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH))
       .build());
   }
 

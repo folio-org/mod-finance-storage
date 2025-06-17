@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.folio.CopilotGenerated;
-import org.folio.config.SecureStoreConfiguration;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.exception.HttpException;
@@ -37,7 +36,7 @@ public class ExchangeRateSourceServiceTest {
 
   @BeforeEach
   void setUp() {
-    exchangeRateSourceService = new ExchangeRateSourceService(mock(SecureStore.class), mock(SecureStoreConfiguration.class), mock(ExchangeRateSourceDAO.class));
+    exchangeRateSourceService = new ExchangeRateSourceService(mock(SecureStore.class), mock(ExchangeRateSourceDAO.class));
     requestContext = mock(RequestContext.class);
     dbClient = mock(DBClient.class);
     when(requestContext.toDBClient()).thenReturn(dbClient);
@@ -145,5 +144,4 @@ public class ExchangeRateSourceServiceTest {
     assertInstanceOf(HttpException.class, result.cause());
     assertEquals(404, ((HttpException) result.cause()).getCode());
   }
-
 }

@@ -103,5 +103,4 @@ public class ExchangeRateSourceTest extends TestBase {
     deleteData(EXCHANGE_RATE_SOURCE_ENDPOINT_BY_ID, EXCHANGE_RATE_SOURCE_ID, EXCHANGE_RATE_SOURCE_TENANT_HEADER)
       .then().statusCode(404);
   }
-
 }

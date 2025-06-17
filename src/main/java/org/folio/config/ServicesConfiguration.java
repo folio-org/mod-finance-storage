@@ -190,8 +190,7 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public ExchangeRateSourceService exchangeRateSourceService(SecureStore secureStore, SecureStoreConfiguration secureStoreConfiguration, ExchangeRateSourceDAO exchangeRateSourceDAO) {
-    return new ExchangeRateSourceService(secureStore, secureStoreConfiguration, exchangeRateSourceDAO);
+  public ExchangeRateSourceService exchangeRateSourceService(SecureStore secureStore, ExchangeRateSourceDAO exchangeRateSourceDAO) {
+    return new ExchangeRateSourceService(secureStore, exchangeRateSourceDAO);
   }
-
 }
