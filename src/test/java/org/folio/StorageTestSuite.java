@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.config.SecureStoreConfigurationTest;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAOTest;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
 import org.folio.dao.rollover.RolloverErrorDAOTest;
@@ -254,4 +255,7 @@ public class StorageTestSuite {
 
   @Nested
   class ExchangeRateSourceServiceTestNested extends ExchangeRateSourceServiceTest {}
+
+  @Nested
+  class SecureStoreConfigurationTestNested extends SecureStoreConfigurationTest {}
 }

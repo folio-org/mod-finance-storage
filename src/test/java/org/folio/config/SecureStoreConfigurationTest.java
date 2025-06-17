@@ -25,7 +25,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 
 @CopilotGenerated(partiallyGenerated = true, model = "GPT-4.1")
 @ExtendWith({VertxExtension.class, SystemStubsExtension.class})
-class SecureStoreConfigurationTest {
+public class SecureStoreConfigurationTest {
 
   @SystemStub
   private EnvironmentVariables environmentVariables;
