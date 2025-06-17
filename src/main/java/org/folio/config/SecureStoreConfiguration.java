@@ -42,17 +42,12 @@ public class SecureStoreConfiguration {
   private static final String SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT = "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT";
   private static final String SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH = "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH";
 
-  public static String getEnvId() {
-    return Optional.of(System.getenv().get(ENV)).orElse(DEFAULT_ENV_ID);
-  }
-
-  public static SecureStoreType getSecretStoreType() {
-    return Optional.ofNullable(System.getenv().get(SECRET_STORE_TYPE))
-      .map(SecureStoreType::valueOf).orElse(EPHEMERAL);
-  }
-
   @Bean
   public SecureStore secureStore() {
+    return getSecureStoreByType();
+  }
+
+  protected SecureStore getSecureStoreByType() {
     var secureStoreType = getSecretStoreType();
     log.info("secureStore:: Using {} secure store type", secureStoreType);
     return switch (secureStoreType) {
@@ -62,11 +57,11 @@ public class SecureStoreConfiguration {
     };
   }
 
-  public SecureStore createEphemeralStore(Map<String, String> ephemeralProperties) {
+  protected SecureStore createEphemeralStore(Map<String, String> ephemeralProperties) {
     return EphemeralStore.create(new EphemeralConfigProperties(ephemeralProperties));
   }
 
-  public SecureStore createAwsStore() {
+  protected SecureStore createAwsStore() {
     return AwsStore.create(AwsConfigProperties.builder()
       .region(getRequiredValue(SECRET_STORE_AWS_SSM_REGION))
       .useIam(getValue(SECRET_STORE_AWS_SSM_USE_IAM, TRUE))
@@ -75,7 +70,7 @@ public class SecureStoreConfiguration {
       .build());
   }
 
-  public SecureStore createVaultStore() {
+  protected SecureStore createVaultStore() {
     return VaultStore.create(VaultConfigProperties.builder()
       .token(getRequiredValue(SECRET_STORE_VAULT_TOKEN))
       .address(getRequiredValue(SECRET_STORE_VAULT_ADDRESS))
@@ -88,11 +83,20 @@ public class SecureStoreConfiguration {
       .build());
   }
 
-  private String getValue(String property) {
+  public static String getEnvId() {
+    return Optional.ofNullable(System.getenv().get(ENV)).orElse(DEFAULT_ENV_ID);
+  }
+
+  public static SecureStoreType getSecretStoreType() {
+    return Optional.ofNullable(System.getenv().get(SECRET_STORE_TYPE))
+      .map(SecureStoreType::valueOf).orElse(EPHEMERAL);
+  }
+
+  private static String getValue(String property) {
     return System.getenv().get(property);
   }
 
-  private Boolean getValue(String property, boolean defaultValue) {
+  private static Boolean getValue(String property, boolean defaultValue) {
     return Optional.ofNullable(System.getenv().get(property))
       .map(Boolean::parseBoolean).orElse(defaultValue);
   }
