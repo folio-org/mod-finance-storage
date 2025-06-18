@@ -66,5 +66,4 @@ public class ExchangeRateSourceAPI implements FinanceStorageExchangeRateSource {
       .onSuccess(v -> asyncResultHandler.handle(buildNoContentResponse()))
       .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
   }
-
 }

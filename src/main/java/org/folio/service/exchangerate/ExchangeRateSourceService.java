@@ -89,7 +89,7 @@ public class ExchangeRateSourceService {
 
   private boolean validateExchangeRateSource(ExchangeRateSource exchangeRateSource) {
     return exchangeRateSource == null
-      || !StringUtils.isNotEmpty(exchangeRateSource.getProviderUri())
+      || StringUtils.isEmpty(exchangeRateSource.getProviderUri())
       || !isValidApiCredentials(exchangeRateSource);
   }
 
