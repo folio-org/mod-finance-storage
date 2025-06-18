@@ -95,6 +95,11 @@
       "run": "after",
       "snippetPath": "migration/extract_credits_from_expenditures.sql",
       "fromModuleVersion": "mod-finance-storage-8.7.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/recalculate_budgets_with_credits.sql",
+      "fromModuleVersion": "mod-finance-storage-8.7.4"
     }
   ],
   "tables": [
