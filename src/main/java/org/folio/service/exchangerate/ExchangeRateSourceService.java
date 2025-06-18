@@ -132,6 +132,4 @@ public class ExchangeRateSourceService {
     exchangeRateSource.withApiKey(null);
     exchangeRateSource.withApiSecret(null);
   }
-
-
 }
