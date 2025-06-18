@@ -4,9 +4,11 @@ import lombok.extern.log4j.Log4j2;
 import org.folio.tools.store.SecureStore;
 import org.folio.tools.store.impl.AwsStore;
 import org.folio.tools.store.impl.EphemeralStore;
+import org.folio.tools.store.impl.FsspStore;
 import org.folio.tools.store.impl.VaultStore;
 import org.folio.tools.store.properties.AwsConfigProperties;
 import org.folio.tools.store.properties.EphemeralConfigProperties;
+import org.folio.tools.store.properties.FsspConfigProperties;
 import org.folio.tools.store.properties.VaultConfigProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -42,6 +44,13 @@ public class SecureStoreConfiguration {
   private static final String SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT = "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT";
   private static final String SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH = "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH";
 
+  private static final String SECRET_STORE_FSSP_ADDRESS = "SECRET_STORE_FSSP_ADDRESS";
+  private static final String SECRET_STORE_FSSP_SECRET_PATH = "SECRET_STORE_FSSP_SECRET_PATH";
+  private static final String SECRET_STORE_FSSP_ENABLE_SSL = "SECRET_STORE_FSSP_ENABLE_SSL";
+  private static final String SECRET_STORE_FSSP_TRUSTSTORE_PATH = "SECRET_STORE_FSSP_TRUSTSTORE_PATH";
+  private static final String SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE = "SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE";
+  private static final String SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD = "SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD";
+
   @Bean
   public SecureStore secureStore() {
     return getSecureStoreByType();
@@ -54,6 +63,7 @@ public class SecureStoreConfiguration {
       case EPHEMERAL -> createEphemeralStore(new HashMap<>());
       case AWS_SSM -> createAwsStore();
       case VAULT -> createVaultStore();
+      case FSSP -> createFssStore();
     };
   }
 
@@ -80,6 +90,17 @@ public class SecureStoreConfiguration {
       .keystoreFilePath(getValue(SECRET_STORE_VAULT_KEYSTORE_FILE_PATH))
       .truststoreFilePath(getValue(SECRET_STORE_VAULT_TRUSTSTORE_FILE_PATH))
       .secretRoot(DEFAULT_VAULT_SECRET_ROOT)
+      .build());
+  }
+
+  protected SecureStore createFssStore() {
+    return new FsspStore(FsspConfigProperties.builder()
+      .address(getRequiredValue(SECRET_STORE_FSSP_ADDRESS))
+      .secretPath(getValue(SECRET_STORE_FSSP_SECRET_PATH))
+      .enableSsl(getValue(SECRET_STORE_FSSP_ENABLE_SSL, FALSE))
+      .trustStorePath(getValue(SECRET_STORE_FSSP_TRUSTSTORE_PATH))
+      .trustStoreFileType(getValue(SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE))
+      .trustStorePassword(getValue(SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD))
       .build());
   }
 
