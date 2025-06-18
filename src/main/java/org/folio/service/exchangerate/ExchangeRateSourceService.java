@@ -3,24 +3,20 @@ package org.folio.service.exchangerate;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static org.folio.config.SecureStoreType.AWS_SSM;
-import static org.folio.config.SecureStoreType.VAULT;
+import static org.folio.utils.SecureStoreUtils.buildKey;
+import static org.folio.utils.SecureStoreUtils.isSecureStoreEnabled;
 
 import org.apache.commons.lang3.StringUtils;
-import org.folio.config.SecureStoreConfiguration;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.ExchangeRateSource;
-import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.util.ErrorCodes;
 
 import io.vertx.core.Future;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.folio.tools.store.SecureStore;
-
-import java.util.EnumSet;
 
 @Log4j2
 @AllArgsConstructor
@@ -120,10 +116,6 @@ public class ExchangeRateSourceService {
     return Future.failedFuture(throwable);
   }
 
-  private boolean isSecureStoreEnabled() {
-    return EnumSet.of(VAULT, AWS_SSM).contains(SecureStoreConfiguration.getSecretStoreType());
-  }
-
   private void updateSecureStoreSource(ExchangeRateSource exchangeRateSource, RequestContext requestContext) {
     var exchangeRateApiKey = buildKey(EXCHANGE_RATE_API_KEY, requestContext);
     if (StringUtils.isNotEmpty(exchangeRateSource.getApiKey())) {
@@ -141,7 +133,5 @@ public class ExchangeRateSourceService {
     exchangeRateSource.withApiSecret(null);
   }
 
-  private String buildKey(String property, RequestContext requestContext) {
-    return "%s_%s_%s".formatted(SecureStoreConfiguration.getEnvId(), TenantTool.tenantId(requestContext.getHeaders()), property);
-  }
+
 }

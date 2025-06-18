@@ -53,6 +53,7 @@ import org.folio.service.transactions.EncumbranceTest;
 import org.folio.service.transactions.PaymentCreditTest;
 import org.folio.service.transactions.PendingPaymentTest;
 import org.folio.utils.CalculationUtilsTest;
+import org.folio.utils.SecureStoreUtilsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -258,4 +259,7 @@ public class StorageTestSuite {
 
   @Nested
   class SecureStoreConfigurationTestNested extends SecureStoreConfigurationTest {}
+
+  @Nested
+  class SecureStoreUtilsTestNested extends SecureStoreUtilsTest {}
 }
