@@ -17,7 +17,7 @@ UPDATE ${myuniversity}_${mymodule}.budget AS budget
 SET
     jsonb = jsonb || jsonb_build_object(
         'credits', to_jsonb(COALESCE((budget.jsonb->>'credits')::numeric, 0) + credit_sums.total_credits),
-        'expenditures', to_jsonb(COALESCE((budget.jsonb->>'expenditures')::numeric, 0) - credit_sums.total_credits)
+        'expenditures', to_jsonb(COALESCE((budget.jsonb->>'expenditures')::numeric, 0) + credit_sums.total_credits)
     )
 FROM credit_sums
 WHERE budget.id = credit_sums.budget_id;
