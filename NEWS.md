@@ -1,5 +1,12 @@
 ## 8.8.0 - Unreleased
 
+## 8.7.4 - Released (Ramsons R2 2024 Bug Fix)
+The primary focus of this release was to fix the migration script that extracts credits from expenditures and to release a separate recalculation script
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.3...v8.7.4)
+
+### Bug fixes
+* [MODFIN-431](https://folio-org.atlassian.net/browse/MODFIN-431) - Inconsistencies in budget Credited and Expended totals following Ramsons upgrade
+
 ## 8.7.3 - Released (Ramsons R2 2024 Bug Fix)
 The primary focus of this release was to fix migration script to avoid duplication issue
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.2...v8.7.3)
