@@ -15,6 +15,7 @@ import org.folio.rest.jaxrs.model.ExchangeRateSource;
 import org.folio.rest.jaxrs.resource.FinanceStorageExchangeRateSource;
 import org.folio.service.exchangerate.ExchangeRateSourceService;
 import org.folio.spring.SpringContextUtil;
+import org.folio.tools.store.SecureStore;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import io.vertx.core.AsyncResult;
@@ -24,6 +25,8 @@ import io.vertx.core.Vertx;
 
 public class ExchangeRateSourceAPI implements FinanceStorageExchangeRateSource {
 
+  @Autowired
+  private SecureStore secureStore;
   @Autowired
   private ExchangeRateSourceService exchangeRateSourceService;
 
@@ -63,5 +66,4 @@ public class ExchangeRateSourceAPI implements FinanceStorageExchangeRateSource {
       .onSuccess(v -> asyncResultHandler.handle(buildNoContentResponse()))
       .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
   }
-
 }

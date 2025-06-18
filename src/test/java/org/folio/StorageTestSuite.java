@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.config.SecureStoreConfigurationTest;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAOTest;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
 import org.folio.dao.rollover.RolloverErrorDAOTest;
@@ -52,6 +53,7 @@ import org.folio.service.transactions.EncumbranceTest;
 import org.folio.service.transactions.PaymentCreditTest;
 import org.folio.service.transactions.PendingPaymentTest;
 import org.folio.utils.CalculationUtilsTest;
+import org.folio.utils.SecureStoreUtilsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -254,4 +256,10 @@ public class StorageTestSuite {
 
   @Nested
   class ExchangeRateSourceServiceTestNested extends ExchangeRateSourceServiceTest {}
+
+  @Nested
+  class SecureStoreConfigurationTestNested extends SecureStoreConfigurationTest {}
+
+  @Nested
+  class SecureStoreUtilsTestNested extends SecureStoreUtilsTest {}
 }
