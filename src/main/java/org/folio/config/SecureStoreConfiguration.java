@@ -113,7 +113,7 @@ public class SecureStoreConfiguration {
       .map(SecureStoreType::valueOf).orElse(EPHEMERAL);
   }
 
-  private String getRequiredValue(String key) {
+  private static String getRequiredValue(String key) {
     return Optional.ofNullable(System.getenv().get(key))
       .orElseThrow(() -> new NoSuchElementException(NOT_FOUND_MESSAGE.formatted(key)));
   }
