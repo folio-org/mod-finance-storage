@@ -113,17 +113,17 @@ public class SecureStoreConfiguration {
       .map(SecureStoreType::valueOf).orElse(EPHEMERAL);
   }
 
-  private static String getValue(String property) {
-    return System.getenv().get(property);
+  private static String getRequiredValue(String key) {
+    return Optional.ofNullable(System.getenv().get(key))
+      .orElseThrow(() -> new NoSuchElementException(NOT_FOUND_MESSAGE.formatted(key)));
   }
 
-  private static Boolean getValue(String property, boolean defaultValue) {
-    return Optional.ofNullable(System.getenv().get(property))
+  private static String getValue(String key) {
+    return Optional.ofNullable(System.getenv().get(key)).orElse("");
+  }
+
+  private static Boolean getValue(String key, boolean defaultValue) {
+    return Optional.ofNullable(System.getenv().get(key))
       .map(Boolean::parseBoolean).orElse(defaultValue);
-  }
-
-  private String getRequiredValue(String property) {
-    return Optional.ofNullable(System.getenv().get(property))
-      .orElseThrow(() -> new NoSuchElementException(NOT_FOUND_MESSAGE.formatted(property)));
   }
 }
