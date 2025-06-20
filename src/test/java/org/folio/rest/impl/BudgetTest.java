@@ -39,7 +39,7 @@ import io.vertx.core.json.JsonObject;
 
 public class BudgetTest extends TestBase {
 
-  private static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations-8.4.0/allocation_AFRICAHIST-FY24.json";
+  private static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations-8.4.0/allocation_AFRICAHIST-FY25.json";
   private static final String ENCUMBRANCE_SAMPLE_PATH = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
   private static final String BATCH_TRANSACTION_ENDPOINT = "/finance-storage/transactions/batch-all-or-nothing";
   private static final String BUDGET_ENDPOINT = TestEntities.BUDGET.getEndpoint();
@@ -62,11 +62,11 @@ public class BudgetTest extends TestBase {
     // search with fields from "fund"
     verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Inactive", 2, BUDGET_TENANT_HEADER);
     // search with fields from "FY"
-    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fiscalYear.name==FY19", 3, BUDGET_TENANT_HEADER);
+    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fiscalYear.name==Fiscal Year 2020", 3, BUDGET_TENANT_HEADER);
     // search with fields from "ledgers"
     verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=ledger.name==Ongoing", 7, BUDGET_TENANT_HEADER);
     // complex query
-    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Active AND ledger.name==Ongoing AND fiscalYear.code==FY2024", 4, BUDGET_TENANT_HEADER);
+    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Active AND ledger.name==Ongoing AND fiscalYear.code==FY2025", 4, BUDGET_TENANT_HEADER);
 
     // search with invalid cql query
     testInvalidCQLQuery(BUDGET_ENDPOINT + "?query=invalid-query");
