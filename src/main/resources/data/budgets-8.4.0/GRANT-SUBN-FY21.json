@@ -1,0 +1,17 @@
+{
+  "id": "0bfc8ba0-b61f-4852-bc5b-1f63ec039550",
+  "allocated": 0.00,
+  "allowableEncumbrance": 100,
+  "allowableExpenditure": 100,
+  "available": 0.00,
+  "awaitingPayment": 0.00,
+  "budgetStatus": "Active",
+  "credits": 0.00,
+  "encumbered": 0.00,
+  "expenditures": 0.00,
+  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
+  "fundId": "1b6d3338-186e-4e35-9e75-1b886b0da53e",
+  "name": "GRANT-SUBN-FY2021",
+  "netTransfers": 0,
+  "overEncumbrance": 0
+}

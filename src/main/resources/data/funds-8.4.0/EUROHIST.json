@@ -11,5 +11,6 @@
   ],
   "allocatedToIds": [
     "cf23adf0-61ba-4887-bf82-956c4aae2260"
-  ]
+  ],
+  "restrictByLocations": true
 }
