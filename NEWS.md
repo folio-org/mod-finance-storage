@@ -5,7 +5,7 @@ The primary focus of this release was to fix the migration script that extracts 
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.3...v8.7.4)
 
 ### Bug fixes
-* [MODFIN-431](https://folio-org.atlassian.net/browse/MODFIN-431) - Inconsistencies in budget Credited and Expended totals following Ramsons upgrade
+* [MODFISTO-528](https://folio-org.atlassian.net/browse/MODFISTO-528) - Inconsistencies in budget Credited and Expended totals following Ramsons upgrade
 
 ### Link to the recalculation script
 - [Budget recalculation script](https://github.com/folio-org/mod-finance-storage/blob/master/src/main/resources/templates/db_scripts/recalculate_budgets_with_credits.sql)
