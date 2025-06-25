@@ -1,0 +1,10 @@
+{
+  "id": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+  "name": "Fiscal Year 2026",
+  "code": "FY2026",
+  "currency": "USD",
+  "description": "Fiscal year for 2026",
+  "periodStart": "2026-01-01T00:00:00Z",
+  "periodEnd": "2026-12-31T23:59:59Z",
+  "series": "FY"
+}

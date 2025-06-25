@@ -1,0 +1,16 @@
+{
+  "id": "64a71a11-9143-4ebe-ac3a-b0ced57636ba",
+  "allocated": 0.00,
+  "allowableEncumbrance": 100,
+  "allowableExpenditure": 100,
+  "available": 0.00,
+  "awaitingPayment": 0.00,
+  "budgetStatus": "Active",
+  "credits": 0.00,
+  "encumbered": 0.00,
+  "expenditures": 0.00,
+  "fiscalYearId": "78110b4e-2f8e-4eef-81ee-3058c0c7a9ee",
+  "fundId": "e54b1f4d-7d05-4b1a-9368-3c36b75d8ac6",
+  "name": "STATE-SUBN-FY2020",
+  "netTransfers": 0.00
+}

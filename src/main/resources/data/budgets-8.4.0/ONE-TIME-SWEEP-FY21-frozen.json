@@ -1,0 +1,17 @@
+{
+  "id": "d5e1df1e-3c55-42b9-bd22-82ff3157e29f",
+  "allocated": 0.00,
+  "allowableEncumbrance": 100,
+  "allowableExpenditure": 100,
+  "available": 0.00,
+  "awaitingPayment": 0.00,
+  "budgetStatus": "Frozen",
+  "credits": 0.00,
+  "encumbered": 0.00,
+  "expenditures": 0.00,
+  "fiscalYearId": "684b5dc5-92f6-4db7-b996-b549d88f5e4e",
+  "fundId": "cf23adf0-61ba-4887-bf82-956c4aae2260",
+  "name": "ONE-TIME-SWEEP-FY2021",
+  "netTransfers": 0,
+  "overEncumbrance": 0.00
+}
