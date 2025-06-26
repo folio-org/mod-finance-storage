@@ -1,5 +1,9 @@
 ## 8.9.0 - Unreleased
 
+## 8.8.4 - Released (Sunflower R1 2025 Bug Fix)
+The primary focus of this release was to change the schema version of the recalculation script to run in Ramsons-only
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.3...v8.8.4)
+
 ## 8.8.3 - Released (Sunflower R1 2025 Bug Fix)
 The primary focus of this release was to fix the migration script that extracts credits from expenditures and to release a separate recalculation script
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.2...v8.8.3)
