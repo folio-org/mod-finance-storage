@@ -444,6 +444,14 @@
           "sqlExpressionQuery": "$"
         },
         {
+          "fieldName": "sourceInvoiceLineId",
+          "tOps": "ADD",
+          "removeAccents": false,
+          "caseSensitive": true,
+          "sqlExpression": "(jsonb->>'sourceInvoiceLineId')",
+          "sqlExpressionQuery": "$"
+        },
+        {
           "fieldName": "encumbrance.sourcePurchaseOrderId",
           "tOps": "ADD",
           "removeAccents": false,
