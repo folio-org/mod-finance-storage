@@ -398,14 +398,14 @@
         {
           "fieldName": "payment",
           "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
-          "tOps": "DELETE",
-          "whereClause": "WHERE jsonb->>'transactionType' = 'Payment' OR jsonb->>'transactionType' = 'Pending payment'"
+          "tOps": "ADD",
+          "whereClause": "WHERE (jsonb->>'transactionType' = 'Payment' OR jsonb->>'transactionType' = 'Pending payment') AND (jsonb ->> 'sourceInvoiceLineId') IS NOT NULL"
         },
         {
           "fieldName": "credit",
           "multiFieldNames": "amount, toFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
-          "tOps": "DELETE",
-          "whereClause": "WHERE jsonb->>'transactionType' = 'Credit'"
+          "tOps": "ADD",
+          "whereClause": "WHERE jsonb->>'transactionType' = 'Credit' AND (jsonb ->> 'sourceInvoiceLineId') IS NOT NULL"
         }
       ],
       "foreignKeys": [
@@ -441,6 +441,14 @@
           "removeAccents": false,
           "caseSensitive": true,
           "sqlExpression": "(jsonb->>'transactionType')",
+          "sqlExpressionQuery": "$"
+        },
+        {
+          "fieldName": "sourceInvoiceLineId",
+          "tOps": "ADD",
+          "removeAccents": false,
+          "caseSensitive": true,
+          "sqlExpression": "(jsonb->>'sourceInvoiceLineId')",
           "sqlExpressionQuery": "$"
         },
         {
