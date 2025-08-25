@@ -36,6 +36,7 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.TRANSFER;
 import static org.folio.utils.MetadataUtils.generateMetadata;
 
 public class BatchTransactionService {
+
   private static final Logger logger = LogManager.getLogger();
   private static final List<TransactionType> transactionTypesInOrder = List.of(ALLOCATION, TRANSFER, PAYMENT,
     PENDING_PAYMENT, ENCUMBRANCE);

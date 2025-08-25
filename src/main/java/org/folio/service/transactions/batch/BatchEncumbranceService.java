@@ -36,18 +36,18 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
   }
 
   private void updateBudgetForEncumbranceCreation(Budget budget, List<Transaction> encumbrances) {
-    CurrencyUnit currency = Monetary.getCurrency(encumbrances.get(0).getCurrency());
+    CurrencyUnit currency = Monetary.getCurrency(encumbrances.getFirst().getCurrency());
     encumbrances.forEach(encumbrance -> {
       double newEncumbered = sumMoney(budget.getEncumbered(), encumbrance.getAmount(), currency);
       budget.setEncumbered(newEncumbered);
     });
     calculateBudgetSummaryFields(budget);
-    updateBudgetMetadata(budget, encumbrances.get(0));
+    updateBudgetMetadata(budget, encumbrances.getFirst());
   }
 
   private void updateBudgetForEncumbranceUpdate(Budget budget, List<Transaction> encumbrances,
       Map<String, Transaction> existingTransactions) {
-    CurrencyUnit currency = Monetary.getCurrency(encumbrances.get(0).getCurrency());
+    CurrencyUnit currency = Monetary.getCurrency(encumbrances.getFirst().getCurrency());
     encumbrances.forEach(encumbrance -> {
       Transaction existingEncumbrance = existingTransactions.get(encumbrance.getId());
       if (isNotFromReleasedExceptToUnreleased(encumbrance, existingEncumbrance)) {
@@ -55,7 +55,7 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
       }
     });
     calculateBudgetSummaryFields(budget);
-    updateBudgetMetadata(budget, encumbrances.get(0));
+    updateBudgetMetadata(budget, encumbrances.getFirst());
   }
 
   private void updateBudget(Budget budget, CurrencyUnit currency, Transaction encumbrance, Transaction existingEncumbrance) {
@@ -79,8 +79,9 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
         encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
       newAmount = subtractMoney(newAmount, encumbrance.getEncumbrance().getAmountExpended(), currency);
       newAmount = sumMoney(newAmount, encumbrance.getEncumbrance().getAmountCredited(), currency);
-      encumbrance.setAmount(newAmount);
-      newEncumbered = sumMoney(newEncumbered, newAmount, currency);
+      double cappedAmount = Math.max(newAmount, 0d);
+      encumbrance.setAmount(cappedAmount);
+      newEncumbered = sumMoney(newEncumbered, cappedAmount, currency);
     } else {
       newEncumbered = sumMoney(newEncumbered, encumbrance.getAmount(), currency);
       newEncumbered = subtractMoney(newEncumbered, existingEncumbrance.getAmount(), currency);

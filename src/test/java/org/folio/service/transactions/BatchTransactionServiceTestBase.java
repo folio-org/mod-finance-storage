@@ -64,6 +64,7 @@ import static org.mockito.Mockito.doReturn;
 
 @ExtendWith(VertxExtension.class)
 public abstract class BatchTransactionServiceTestBase {
+
   private AutoCloseable mockitoMocks;
   protected BatchTransactionService batchTransactionService;
 
