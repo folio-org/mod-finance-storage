@@ -85,10 +85,10 @@ public class FinanceDataServiceTest {
   @Test
   void shouldSuccessfullyUpdateFinanceData(VertxTestContext testContext) {
     var collection = createTestFinanceDataCollection();
-    var oldFund = new Fund().withId(collection.getFyFinanceData().getFirst().getFundId())
+    var oldFund = new Fund().withId(collection.getFyFinanceData().get(0).getFundId())
       .withName("NAME").withCode("CODE").withFundStatus(Fund.FundStatus.ACTIVE)
       .withDescription("Old des");
-    var oldBudget = new Budget().withId(collection.getFyFinanceData().getFirst().getBudgetId())
+    var oldBudget = new Budget().withId(collection.getFyFinanceData().get(0).getBudgetId())
       .withName("NAME")
       .withBudgetStatus(Budget.BudgetStatus.ACTIVE);
     var fiscalYear = new FiscalYear()
@@ -170,7 +170,7 @@ public class FinanceDataServiceTest {
       .withBudgetAcqUnitIds(List.of("unit1"));
     var collection = new FyFinanceDataCollection()
       .withFyFinanceData(List.of(financeData));
-    var oldFund = new Fund().withId(collection.getFyFinanceData().getFirst().getFundId())
+    var oldFund = new Fund().withId(collection.getFyFinanceData().get(0).getFundId())
       .withName("NAME").withCode("CODE").withFundStatus(Fund.FundStatus.ACTIVE)
       .withDescription("Old des");
     var newBudget = new Budget().withId(UUID.randomUUID().toString())
@@ -246,11 +246,11 @@ public class FinanceDataServiceTest {
   private void verifyFundUpdates(FyFinanceDataCollection collection) {
     ArgumentCaptor<List<String>> fundIdsCaptor = ArgumentCaptor.forClass(List.class);
     verify(fundService).getFundsByIds(fundIdsCaptor.capture(), eq(dbConn));
-    assertEquals(collection.getFyFinanceData().getFirst().getFundId(), fundIdsCaptor.getValue().getFirst());
+    assertEquals(collection.getFyFinanceData().get(0).getFundId(), fundIdsCaptor.getValue().get(0));
 
     ArgumentCaptor<List<Fund>> fundCaptor = ArgumentCaptor.forClass(List.class);
     verify(fundService).updateFunds(fundCaptor.capture(), eq(dbConn));
-    Fund updatedFund = fundCaptor.getValue().getFirst();
+    Fund updatedFund = fundCaptor.getValue().get(0);
 
     assertNotEquals("CODE CHANGED", updatedFund.getCode());
     assertNotEquals("NAME CHANGED", updatedFund.getName());
@@ -262,7 +262,7 @@ public class FinanceDataServiceTest {
   private void verifyBudgetCreation() {
     ArgumentCaptor<List<Budget>> budgetCaptor = ArgumentCaptor.forClass(List.class);
     verify(budgetService).createBatchBudgets(budgetCaptor.capture(), eq(dbConn));
-    Budget createdBudget = budgetCaptor.getValue().getFirst();
+    Budget createdBudget = budgetCaptor.getValue().get(0);
 
     assertEquals("Active", createdBudget.getBudgetStatus().value());
     assertEquals(0.0, createdBudget.getAllocated());
@@ -273,11 +273,11 @@ public class FinanceDataServiceTest {
   private void verifyBudgetUpdates(FyFinanceDataCollection collection) {
     ArgumentCaptor<List<String>> budgetIdsCaptor = ArgumentCaptor.forClass(List.class);
     verify(budgetService).getBudgetsByIds(budgetIdsCaptor.capture(), eq(dbConn));
-    assertEquals(collection.getFyFinanceData().getFirst().getBudgetId(), budgetIdsCaptor.getValue().getFirst());
+    assertEquals(collection.getFyFinanceData().get(0).getBudgetId(), budgetIdsCaptor.getValue().get(0));
 
     ArgumentCaptor<List<Budget>> budgetCaptor = ArgumentCaptor.forClass(List.class);
     verify(budgetService).updateBatchBudgets(budgetCaptor.capture(), eq(dbConn), anyBoolean());
-    Budget updatedBudget = budgetCaptor.getValue().getFirst();
+    Budget updatedBudget = budgetCaptor.getValue().get(0);
 
     assertNotEquals("NAME CHANGED", updatedBudget.getName());
     assertNotEquals(1000.0, updatedBudget.getInitialAllocation());
@@ -293,9 +293,9 @@ public class FinanceDataServiceTest {
     Batch batch = batchCaptor.getValue();
 
     assertEquals(1, batch.getTransactionsToCreate().size());
-    Transaction tr = batch.getTransactionsToCreate().getFirst();
+    Transaction tr = batch.getTransactionsToCreate().get(0);
     assertEquals(Transaction.TransactionType.ALLOCATION, tr.getTransactionType());
-    assertEquals(tr.getAmount(), collection.getFyFinanceData().getFirst().getBudgetAllocationChange());
+    assertEquals(tr.getAmount(), collection.getFyFinanceData().get(0).getBudgetAllocationChange());
   }
 
   private FyFinanceDataCollection createTestFinanceDataCollection() {

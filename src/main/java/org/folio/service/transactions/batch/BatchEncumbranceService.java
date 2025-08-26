@@ -36,18 +36,18 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
   }
 
   private void updateBudgetForEncumbranceCreation(Budget budget, List<Transaction> encumbrances) {
-    CurrencyUnit currency = Monetary.getCurrency(encumbrances.getFirst().getCurrency());
+    CurrencyUnit currency = Monetary.getCurrency(encumbrances.get(0).getCurrency());
     encumbrances.forEach(encumbrance -> {
       double newEncumbered = sumMoney(budget.getEncumbered(), encumbrance.getAmount(), currency);
       budget.setEncumbered(newEncumbered);
     });
     calculateBudgetSummaryFields(budget);
-    updateBudgetMetadata(budget, encumbrances.getFirst());
+    updateBudgetMetadata(budget, encumbrances.get(0));
   }
 
   private void updateBudgetForEncumbranceUpdate(Budget budget, List<Transaction> encumbrances,
       Map<String, Transaction> existingTransactions) {
-    CurrencyUnit currency = Monetary.getCurrency(encumbrances.getFirst().getCurrency());
+    CurrencyUnit currency = Monetary.getCurrency(encumbrances.get(0).getCurrency());
     encumbrances.forEach(encumbrance -> {
       Transaction existingEncumbrance = existingTransactions.get(encumbrance.getId());
       if (isNotFromReleasedExceptToUnreleased(encumbrance, existingEncumbrance)) {
@@ -55,7 +55,7 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
       }
     });
     calculateBudgetSummaryFields(budget);
-    updateBudgetMetadata(budget, encumbrances.getFirst());
+    updateBudgetMetadata(budget, encumbrances.get(0));
   }
 
   private void updateBudget(Budget budget, CurrencyUnit currency, Transaction encumbrance, Transaction existingEncumbrance) {
