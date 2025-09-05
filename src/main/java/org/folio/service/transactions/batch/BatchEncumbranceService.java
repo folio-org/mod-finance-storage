@@ -75,12 +75,27 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(currency, newEncumbered, newAmount);
     } else if (isTransitionFromReleasedToUnreleased(encumbrance, existingEncumbrance)) {
-      double newAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
+      double newAmount;
+      if (encumbrance.getEncumbrance().getInitialAmountEncumbered() > 0) {
+        newAmount = subtractMoney(encumbrance.getEncumbrance().getInitialAmountEncumbered(),
+          encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
+        newAmount = subtractMoney(newAmount, encumbrance.getEncumbrance().getAmountExpended(), currency);
+        newAmount = sumMoney(newAmount, encumbrance.getEncumbrance().getAmountCredited(), currency);
+      } else {
+        newAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
+      }
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(newEncumbered, newAmount, currency);
     } else {
-      newEncumbered = sumMoney(newEncumbered, encumbrance.getAmount(), currency);
+      double newAmount;
+      if (encumbrance.getEncumbrance().getInitialAmountEncumbered() > 0) {
+        newAmount = encumbrance.getAmount();
+      } else {
+        newAmount = Math.min(encumbrance.getAmount(), existingEncumbrance.getEncumbrance().getInitialAmountEncumbered());
+      }
+      newEncumbered = sumMoney(newEncumbered, newAmount, currency);
       newEncumbered = subtractMoney(newEncumbered, existingEncumbrance.getAmount(), currency);
+      encumbrance.setAmount(newAmount);
     }
     budget.setEncumbered(newEncumbered);
   }
