@@ -160,13 +160,13 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
           Transaction savedTransaction = (Transaction)(updateEntities.get(0).get(0));
           assertNotNull(savedTransaction.getMetadata().getUpdatedDate());
-          assertThat(savedTransaction.getAmount(), equalTo(10d));
+          assertThat(savedTransaction.getAmount(), equalTo(5d));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
           Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
-          assertThat(savedBudget.getEncumbered(), equalTo(10d));
+          assertThat(savedBudget.getEncumbered(), equalTo(5d));
         });
         testContext.completeNow();
       });
