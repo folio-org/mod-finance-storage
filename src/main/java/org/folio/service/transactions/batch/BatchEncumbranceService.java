@@ -1,5 +1,6 @@
 package org.folio.service.transactions.batch;
 
+import lombok.extern.log4j.Log4j2;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -15,6 +16,7 @@ import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
+@Log4j2
 public class BatchEncumbranceService extends AbstractBatchTransactionService {
 
   @Override
@@ -72,7 +74,7 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
         existingEncumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
       newAmount = subtractMoney(newAmount, existingEncumbrance.getEncumbrance().getAmountExpended(), currency);
       newAmount = sumMoney(newAmount, encumbrance.getEncumbrance().getAmountCredited(), currency);
-      // prevent the new encumbrance from exceeding the initial amount or from going negative
+      // prevent the new encumbrance from exceeding the initial encumbered amount or from going negative
       if (newAmount > encumbrance.getEncumbrance().getInitialAmountEncumbered()) {
         newAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
       } else if (newAmount < 0) {
@@ -81,10 +83,9 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(currency, newEncumbered, newAmount);
     } else if (isTransitionFromReleasedToUnreleased(encumbrance, existingEncumbrance)) {
-      // prevent the new encumbrance from going negative and prevent it going above the initial amount
+      // prevent the new encumbrance from going negative and prevent it going above the initial encumbered amount
       double newAmount;
-      if (encumbrance.getEncumbrance().getInitialAmountEncumbered() > 0
-        && encumbrance.getAmount() <= encumbrance.getEncumbrance().getInitialAmountEncumbered()) {
+      if (encumbrance.getEncumbrance().getInitialAmountEncumbered() > 0 && encumbrance.getAmount() <= encumbrance.getEncumbrance().getInitialAmountEncumbered()) {
         newAmount = subtractMoney(encumbrance.getEncumbrance().getInitialAmountEncumbered(),
           encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
         newAmount = subtractMoney(newAmount, encumbrance.getEncumbrance().getAmountExpended(), currency);
@@ -95,7 +96,7 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(newEncumbered, newAmount, currency);
     } else {
-      // partially allow the new encumbrance to go negative but prevent it going above the initial amount
+      // allow the new encumbrance to go negative but prevent it going above the initial encumbered amount
       double newAmount;
       if (encumbrance.getEncumbrance().getInitialAmountEncumbered() > 0
         && encumbrance.getAmount() <= encumbrance.getEncumbrance().getInitialAmountEncumbered()) {
