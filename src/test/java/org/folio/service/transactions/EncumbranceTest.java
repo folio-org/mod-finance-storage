@@ -119,9 +119,9 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     "0,0,0,0,0,0",     // zero amount
     "5,5,0,0,0,0",     // zero amount and zero initial budget encumbered
     "5,5,0,5,0,0",     // decrease amount
-    "5,5,10,5,5,5",    // increase amount and breach upper limit
     "5,5,10,0,5,5",    // increase amount and breach lower limit
     "5,5,10,10,10,10", // increase amount
+    "5,5,10,5,5,5",    // increase amount and breach upper limit
   })
   void testUpdateEncumbrance(double oldAmount, double oldInitialEncumbered,
                              double newAmount, double newInitialAmountEncumbered,
@@ -389,9 +389,9 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
 
   @ParameterizedTest
   @CsvSource({
+    "0,8,10,8,8,8", // increase amount and breach upper limit
     "0,8,0,8,2,2",  // zero amount
     "0,8,0,0,0,0",  // zero amount and zero initial budget encumbered
-    "0,8,10,8,8,8", // increase amount and breach upper limit
     "0,8,-2,8,2,2"  // decrease amount and breach lower limit
   })
   void testUnreleaseEncumbrance(double oldAmount, double oldInitialEncumbered,
@@ -570,6 +570,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
       .when(conn).updateBatch(anyString(), anyList());
 
+    // New encumbrance amount of -45 is less than 0 and will get capped at 5 (i.e. the initial encumbrance amount)
     testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
       .onComplete(event -> {
         testContext.verify(() -> {
@@ -636,6 +637,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
       .when(conn).updateBatch(anyString(), anyList());
 
+    // Encumbrance amount of 10 is greater than the initial encumbrance amount of 5 and will get capped at 5
     testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
       .onComplete(event -> {
         testContext.verify(() -> {
