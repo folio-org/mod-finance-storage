@@ -67,7 +67,7 @@ public class StorageTestSuite {
   private static final Logger logger = LogManager.getLogger(StorageTestSuite.class);
 
   private static Vertx vertx;
-  private static int port = NetworkUtils.nextFreePort();
+  private static final int port = NetworkUtils.nextFreePort();
   public static final Header URL_TO_HEADER = new Header("X-Okapi-Url-to", "http://localhost:" + port);
   private static TenantJob tenantJob;
 
@@ -141,8 +141,7 @@ public class StorageTestSuite {
       }
     });
 
-    deploymentComplete.get(60, TimeUnit.SECONDS);
-
+    deploymentComplete.get(360, TimeUnit.SECONDS);
   }
 
   @Nested
