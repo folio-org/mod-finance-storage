@@ -704,7 +704,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
     doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
       .when(conn).updateBatch(anyString(), anyList());
 
-    // Encumbrance amount of 5 less than awaiting payment amount of 50 so the encumbrance will be capped at 5
+    // Encumbrance amount of 5 is less than awaiting payment amount of 50 so the encumbrance will be capped at 5 to prevent the final encumbrance amount of -45
     testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
       .onComplete(event -> {
         testContext.verify(() -> {
