@@ -63,53 +63,78 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
   private void updateBudget(Budget budget, CurrencyUnit currency, Transaction encumbrance, Transaction existingEncumbrance) {
     double newEncumbered = budget.getEncumbered();
     if (isEncumbranceReleased(encumbrance)) {
-      newEncumbered = subtractMoney(newEncumbered, existingEncumbrance.getAmount(), currency);
       encumbrance.setAmount(0d);
+      newEncumbered = subtractMoney(newEncumbered, existingEncumbrance.getAmount(), currency);
     } else if (isTransitionFromUnreleasedToPending(encumbrance, existingEncumbrance)) {
       encumbrance.setAmount(0d);
       encumbrance.getEncumbrance().setInitialAmountEncumbered(0d);
       newEncumbered = subtractMoney(newEncumbered, existingEncumbrance.getAmount(), currency);
     } else if (isTransitionFromPendingToUnreleased(encumbrance, existingEncumbrance)) {
-      double newAmount = subtractMoney(encumbrance.getEncumbrance().getInitialAmountEncumbered(),
-        existingEncumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
-      newAmount = subtractMoney(newAmount, existingEncumbrance.getEncumbrance().getAmountExpended(), currency);
-      newAmount = sumMoney(newAmount, encumbrance.getEncumbrance().getAmountCredited(), currency);
+      double initialAmountEncumbered = existingEncumbrance.getEncumbrance().getInitialAmountEncumbered();
+      double awaitingPayment = existingEncumbrance.getEncumbrance().getAmountAwaitingPayment();
+      double expended = existingEncumbrance.getEncumbrance().getAmountExpended();
+      double credited = existingEncumbrance.getEncumbrance().getAmountCredited();
+
+      double newAmount = subtractMoney(initialAmountEncumbered, awaitingPayment, currency);
+      newAmount = subtractMoney(newAmount, expended, currency);
+      newAmount = sumMoney(newAmount, credited, currency);
+
       // prevent the new encumbrance from exceeding the initial encumbered amount or from going negative
-      if (newAmount > encumbrance.getEncumbrance().getInitialAmountEncumbered()) {
-        newAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
-      } else if (newAmount < 0) {
-        newAmount = 0;
-      }
+      newAmount = restrictNewAmountOnUnrelease(Encumbrance.Status.PENDING, encumbrance, newAmount, 0d);
+
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(currency, newEncumbered, newAmount);
     } else if (isTransitionFromReleasedToUnreleased(encumbrance, existingEncumbrance)) {
-      // prevent the new encumbrance from going negative and prevent it going above the initial encumbered amount
+      double initialAmountEncumbered = encumbrance.getEncumbrance().getInitialAmountEncumbered();
+      double awaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
+      double expended = encumbrance.getEncumbrance().getAmountExpended();
+      double credited = encumbrance.getEncumbrance().getAmountCredited();
+
+      // prevent the new encumbrance from exceeding the initial encumbered amount or from going below initial encumbered amount
       double newAmount;
-      if (encumbrance.getEncumbrance().getInitialAmountEncumbered() > 0
-        && encumbrance.getAmount() <= encumbrance.getEncumbrance().getInitialAmountEncumbered()) {
-        newAmount = subtractMoney(encumbrance.getEncumbrance().getInitialAmountEncumbered(),
-          encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
-        newAmount = subtractMoney(newAmount, encumbrance.getEncumbrance().getAmountExpended(), currency);
-        newAmount = sumMoney(newAmount, encumbrance.getEncumbrance().getAmountCredited(), currency);
+      if (isNonZeroEncumbrance(encumbrance)) {
+        newAmount = subtractMoney(initialAmountEncumbered, awaitingPayment, currency);
+        newAmount = subtractMoney(newAmount, expended, currency);
+        newAmount = sumMoney(newAmount, credited, currency);
+        newAmount = restrictNewAmountOnUnrelease(Encumbrance.Status.RELEASED, encumbrance, newAmount, encumbrance.getEncumbrance().getInitialAmountEncumbered());
       } else {
         newAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
       }
+
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(newEncumbered, newAmount, currency);
     } else {
-      // allow the new encumbrance to go negative but prevent it going above the initial encumbered amount
+      // prevent the new encumbrance from exceeding the initial encumbered amount but allow it to go negative
       double newAmount;
-      if (encumbrance.getEncumbrance().getInitialAmountEncumbered() > 0
-        && encumbrance.getAmount() <= encumbrance.getEncumbrance().getInitialAmountEncumbered()) {
+      if (isNonZeroEncumbrance(encumbrance)) {
         newAmount = encumbrance.getAmount();
       } else {
         newAmount = Math.min(encumbrance.getAmount(), existingEncumbrance.getEncumbrance().getInitialAmountEncumbered());
       }
+
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(newEncumbered, newAmount, currency);
       newEncumbered = subtractMoney(newEncumbered, existingEncumbrance.getAmount(), currency);
     }
     budget.setEncumbered(newEncumbered);
+  }
+
+  private static boolean isNonZeroEncumbrance(Transaction encumbrance) {
+    return encumbrance.getEncumbrance().getInitialAmountEncumbered() > 0
+      && encumbrance.getAmount() <= encumbrance.getEncumbrance().getInitialAmountEncumbered();
+  }
+
+  private static double restrictNewAmountOnUnrelease(Encumbrance.Status fromStatus, Transaction encumbrance, double newAmount, double cappedAmount) {
+    if (newAmount > encumbrance.getEncumbrance().getInitialAmountEncumbered()) {
+      log.warn("restrictNewAmountOnUnrelease:: Transition from {} to UNRELEASED, new amount is exceeding initial encumbered: {}, capped amount: {}",
+        fromStatus.name(), newAmount, encumbrance.getEncumbrance().getInitialAmountEncumbered());
+      newAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
+    } else if (newAmount < 0) {
+      log.warn("restrictNewAmountOnUnrelease:: Transition from {} to UNRELEASED, new amount going below 0: {}, capped amount: {}",
+        fromStatus.name(), newAmount, cappedAmount);
+      newAmount = cappedAmount;
+    }
+    return newAmount;
   }
 
   private boolean isEncumbranceReleased(Transaction encumbrance) {
