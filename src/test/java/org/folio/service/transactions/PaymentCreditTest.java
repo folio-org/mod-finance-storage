@@ -615,59 +615,58 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
       });
   }
 
-  @ParameterizedTest
-  @EnumSource(Encumbrance.Status.class)
-  void testCancelCreditWithLinkedEncumbrance(Encumbrance.Status encumbranceStatus, VertxTestContext testContext) {
-    String creditId = UUID.randomUUID().toString();
-    String encumbranceId = UUID.randomUUID().toString();
-    String invoiceId = UUID.randomUUID().toString();
-    String fundId = UUID.randomUUID().toString();
-    String fiscalYearId = UUID.randomUUID().toString();
-    String currency = "USD";
+  @Test
+  void testCancelCreditWithUnreleasedEncumbranceAndPositiveAmounts(VertxTestContext testContext) {
+    var creditId = UUID.randomUUID().toString();
+    var encumbranceId = UUID.randomUUID().toString();
+    var invoiceId = UUID.randomUUID().toString();
+    var fundId = UUID.randomUUID().toString();
+    var fiscalYearId = UUID.randomUUID().toString();
+    var currency = "USD";
 
-    Transaction existingCredit = new Transaction()
+    var existingCredit = new Transaction()
       .withId(creditId)
       .withTransactionType(CREDIT)
       .withSourceInvoiceId(invoiceId)
       .withToFundId(fundId)
       .withFiscalYearId(fiscalYearId)
-      .withAmount(5d)
+      .withAmount(3d)
       .withCurrency(currency)
       .withInvoiceCancelled(false)
       .withPaymentEncumbranceId(encumbranceId)
       .withMetadata(new Metadata());
 
-    Transaction newPayment = JsonObject.mapFrom(existingCredit).mapTo(Transaction.class);
-    newPayment.setInvoiceCancelled(true);
+    var cancelledCredit = JsonObject.mapFrom(existingCredit).mapTo(Transaction.class);
+    cancelledCredit.setInvoiceCancelled(true);
 
-    Transaction existingEncumbrance = new Transaction()
+    // Create an UNRELEASED encumbrance with positive amounts to trigger lines 85-90
+    var existingEncumbrance = new Transaction()
       .withId(encumbranceId)
       .withTransactionType(ENCUMBRANCE)
-      .withCurrency("USD")
+      .withCurrency(currency)
       .withFromFundId(fundId)
-      .withAmount(encumbranceStatus == UNRELEASED ? 10d : 0d)
+      .withAmount(10d)
       .withFiscalYearId(fiscalYearId)
       .withSource(PO_LINE)
       .withEncumbrance(new Encumbrance()
-        .withStatus(encumbranceStatus)
-        .withAmountAwaitingPayment(0d)
-        .withAmountExpended(0d)
-        .withAmountCredited(5d)
-        .withInitialAmountEncumbered(5d))
+        .withStatus(UNRELEASED)
+        .withAmountAwaitingPayment(2d)  // Positive amount
+        .withAmountExpended(1d)         // Positive amount
+        .withAmountCredited(5d)         // Positive amount
+        .withInitialAmountEncumbered(15d))
       .withMetadata(new Metadata());
 
-    Batch batch = new Batch();
-    batch.getTransactionsToUpdate().add(newPayment);
+    var batch = new Batch();
+    batch.getTransactionsToUpdate().add(cancelledCredit);
 
-    setupFundBudgetLedger(fundId, fiscalYearId, encumbranceStatus == UNRELEASED ? 10d : 0d, 0d,
-      5d, 0d, false, false, false);
+    setupFundBudgetLedger(fundId, fiscalYearId, 10d, 2d, 5d, 1d, false, false, false);
 
-    Criterion paymentCriterion = createCriterionByIds(List.of(creditId));
+    var creditCriterion = createCriterionByIds(List.of(creditId));
     doReturn(succeededFuture(createResults(List.of(existingCredit))))
       .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
-        crit -> crit.toString().equals(paymentCriterion.toString())));
+        crit -> crit.toString().equals(creditCriterion.toString())));
 
-    Criterion encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
+    var encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
     doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
       .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
         crit -> crit.toString().equals(encumbranceCriterion.toString())));
@@ -681,44 +680,444 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
     testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
       .onComplete(event -> {
         testContext.verify(() -> {
-          // Verify payment update
-          ArgumentCaptor<String> updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          // Verify credit and encumbrance updates
+          var updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
           verify(conn, times(2)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
-          List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
-          List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
+          var updateTableNames = updateTableNamesCaptor.getAllValues();
+          var updateEntities = updateEntitiesCaptor.getAllValues();
 
           assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Transaction savedCredit = (Transaction)(updateEntities.get(0).get(0));
+          var savedCredit = (Transaction)(updateEntities.get(0).get(0));
           assertThat(savedCredit.getTransactionType(), equalTo(CREDIT));
           assertNotNull(savedCredit.getMetadata().getUpdatedDate());
           assertThat(savedCredit.getAmount(), equalTo(0d));
-          assertThat(savedCredit.getVoidedAmount(), equalTo(5d));
+          assertThat(savedCredit.getVoidedAmount(), equalTo(3d));
 
-          // Verify encumbrance update
-          assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Transaction savedEncumbrance = (Transaction)(updateEntities.get(0).get(1));
+          // Verify encumbrance update - this tests lines 85-90 specifically
+          var savedEncumbrance = (Transaction)(updateEntities.get(0).get(1));
           assertThat(savedEncumbrance.getTransactionType(), equalTo(ENCUMBRANCE));
-          assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(encumbranceStatus));
+          assertThat(savedEncumbrance.getEncumbrance().getStatus(), equalTo(UNRELEASED));
           assertNotNull(savedEncumbrance.getMetadata().getUpdatedDate());
-          assertThat(savedEncumbrance.getAmount(), equalTo(encumbranceStatus == UNRELEASED ? 5d : 0d));
-          assertThat(savedEncumbrance.getEncumbrance().getInitialAmountEncumbered(), equalTo(5d));
-          assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d));
-          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(0d));
-          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(0d));
+
+          // Lines 85-90: credited amount should be reduced and encumbrance amount should be reduced
+          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(2d)); // 5d - 3d
+          assertThat(savedEncumbrance.getAmount(), equalTo(7d)); // 10d - 3d (lines 87-89)
+          assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(2d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(1d)); // unchanged
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
-          Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
+          var savedBudget = (Budget)(updateEntities.get(1).get(0));
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
-          assertThat(savedBudget.getEncumbered(), equalTo(encumbranceStatus == UNRELEASED ? 5d : 0d));
-          assertThat(savedBudget.getAwaitingPayment(), equalTo(0d));
-          assertThat(savedBudget.getExpenditures(), equalTo(0d));
-          assertThat(savedBudget.getCredits(), equalTo(0d));
+          assertThat(savedBudget.getEncumbered(), equalTo(7d)); // Updated based on new encumbrance amount
+          assertThat(savedBudget.getAwaitingPayment(), equalTo(2d));
+          assertThat(savedBudget.getExpenditures(), equalTo(1d));
+          assertThat(savedBudget.getCredits(), equalTo(2d)); // 5d - 3d
         });
         testContext.completeNow();
       });
   }
 
+
+  @Test
+  void testCancelCreditWithUnreleasedEncumbranceAndOnlyAwaitingPayment(VertxTestContext testContext) {
+    var creditId = UUID.randomUUID().toString();
+    var encumbranceId = UUID.randomUUID().toString();
+    var invoiceId = UUID.randomUUID().toString();
+    var fundId = UUID.randomUUID().toString();
+    var fiscalYearId = UUID.randomUUID().toString();
+    var currency = "USD";
+
+    var existingCredit = new Transaction()
+      .withId(creditId)
+      .withTransactionType(CREDIT)
+      .withSourceInvoiceId(invoiceId)
+      .withToFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(2d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withPaymentEncumbranceId(encumbranceId)
+      .withMetadata(new Metadata());
+
+    var cancelledCredit = JsonObject.mapFrom(existingCredit).mapTo(Transaction.class);
+    cancelledCredit.setInvoiceCancelled(true);
+
+    // Create UNRELEASED encumbrance with only awaitingPayment > 0 (expended = 0, credited = 0)
+    var existingEncumbrance = new Transaction()
+      .withId(encumbranceId)
+      .withTransactionType(ENCUMBRANCE)
+      .withCurrency(currency)
+      .withFromFundId(fundId)
+      .withAmount(8d)
+      .withFiscalYearId(fiscalYearId)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withStatus(UNRELEASED)
+        .withAmountAwaitingPayment(3d)  // Only this is positive
+        .withAmountExpended(0d)         // Zero
+        .withAmountCredited(0d)         // Zero
+        .withInitialAmountEncumbered(10d))
+      .withMetadata(new Metadata());
+
+    var batch = new Batch();
+    batch.getTransactionsToUpdate().add(cancelledCredit);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 8d, 3d, 0d, 0d, false, false, false);
+
+    var creditCriterion = createCriterionByIds(List.of(creditId));
+    doReturn(succeededFuture(createResults(List.of(existingCredit))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(creditCriterion.toString())));
+
+    var encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
+    doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(encumbranceCriterion.toString())));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).saveBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
+
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          var updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(2)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          var updateEntities = updateEntitiesCaptor.getAllValues();
+
+          var savedEncumbrance = (Transaction)(updateEntities.get(0).get(1));
+          // Verify lines 85-90 executed with awaitingPayment > 0 condition
+          assertThat(savedEncumbrance.getAmount(), equalTo(6d)); // 8d - 2d
+          assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(3d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(0d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(0d)); // 0d - 2d = 0d (default)
+        });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  void testCancelCreditWithUnreleasedEncumbranceAndOnlyExpended(VertxTestContext testContext) {
+    var creditId = UUID.randomUUID().toString();
+    var encumbranceId = UUID.randomUUID().toString();
+    var invoiceId = UUID.randomUUID().toString();
+    var fundId = UUID.randomUUID().toString();
+    var fiscalYearId = UUID.randomUUID().toString();
+    var currency = "USD";
+
+    var existingCredit = new Transaction()
+      .withId(creditId)
+      .withTransactionType(CREDIT)
+      .withSourceInvoiceId(invoiceId)
+      .withToFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(1.5d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withPaymentEncumbranceId(encumbranceId)
+      .withMetadata(new Metadata());
+
+    var cancelledCredit = JsonObject.mapFrom(existingCredit).mapTo(Transaction.class);
+    cancelledCredit.setInvoiceCancelled(true);
+
+    // Create UNRELEASED encumbrance with only expended > 0 (awaitingPayment = 0, credited = 0)
+    var existingEncumbrance = new Transaction()
+      .withId(encumbranceId)
+      .withTransactionType(ENCUMBRANCE)
+      .withCurrency(currency)
+      .withFromFundId(fundId)
+      .withAmount(5d)
+      .withFiscalYearId(fiscalYearId)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withStatus(UNRELEASED)
+        .withAmountAwaitingPayment(0d)  // Zero
+        .withAmountExpended(2d)         // Only this is positive
+        .withAmountCredited(0d)         // Zero
+        .withInitialAmountEncumbered(8d))
+      .withMetadata(new Metadata());
+
+    var batch = new Batch();
+    batch.getTransactionsToUpdate().add(cancelledCredit);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 5d, 0d, 0d, 2d, false, false, false);
+
+    var creditCriterion = createCriterionByIds(List.of(creditId));
+    doReturn(succeededFuture(createResults(List.of(existingCredit))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(creditCriterion.toString())));
+
+    var encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
+    doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(encumbranceCriterion.toString())));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).saveBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
+
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          var updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(2)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          var updateEntities = updateEntitiesCaptor.getAllValues();
+
+          var savedEncumbrance = (Transaction)(updateEntities.get(0).get(1));
+          // Verify lines 85-90 executed with expended > 0 condition
+          assertThat(savedEncumbrance.getAmount(), equalTo(3.5d)); // 5d - 1.5d
+          assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(2d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(0d)); // 0d - 1.5d = 0d (default)
+        });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  void testCancelCreditWithUnreleasedEncumbranceAndOnlyCredited(VertxTestContext testContext) {
+    var creditId = UUID.randomUUID().toString();
+    var encumbranceId = UUID.randomUUID().toString();
+    var invoiceId = UUID.randomUUID().toString();
+    var fundId = UUID.randomUUID().toString();
+    var fiscalYearId = UUID.randomUUID().toString();
+    var currency = "USD";
+
+    var existingCredit = new Transaction()
+      .withId(creditId)
+      .withTransactionType(CREDIT)
+      .withSourceInvoiceId(invoiceId)
+      .withToFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(1d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withPaymentEncumbranceId(encumbranceId)
+      .withMetadata(new Metadata());
+
+    var cancelledCredit = JsonObject.mapFrom(existingCredit).mapTo(Transaction.class);
+    cancelledCredit.setInvoiceCancelled(true);
+
+    // Create UNRELEASED encumbrance with only credited > 0 (awaitingPayment = 0, expended = 0)
+    var existingEncumbrance = new Transaction()
+      .withId(encumbranceId)
+      .withTransactionType(ENCUMBRANCE)
+      .withCurrency(currency)
+      .withFromFundId(fundId)
+      .withAmount(6d)
+      .withFiscalYearId(fiscalYearId)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withStatus(UNRELEASED)
+        .withAmountAwaitingPayment(0d)  // Zero
+        .withAmountExpended(0d)         // Zero
+        .withAmountCredited(3d)         // Only this is positive
+        .withInitialAmountEncumbered(9d))
+      .withMetadata(new Metadata());
+
+    var batch = new Batch();
+    batch.getTransactionsToUpdate().add(cancelledCredit);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 6d, 0d, 3d, 0d, false, false, false);
+
+    var creditCriterion = createCriterionByIds(List.of(creditId));
+    doReturn(succeededFuture(createResults(List.of(existingCredit))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(creditCriterion.toString())));
+
+    var encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
+    doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(encumbranceCriterion.toString())));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).saveBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
+
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          var updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(2)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          var updateEntities = updateEntitiesCaptor.getAllValues();
+
+          var savedEncumbrance = (Transaction)(updateEntities.get(0).get(1));
+          // Verify lines 85-90 executed with credited > 0 condition
+          assertThat(savedEncumbrance.getAmount(), equalTo(5d)); // 6d - 1d
+          assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(0d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(2d)); // 3d - 1d
+        });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  void testCancelCreditWithUnreleasedEncumbranceAndAllZeroAmounts(VertxTestContext testContext) {
+    var creditId = UUID.randomUUID().toString();
+    var encumbranceId = UUID.randomUUID().toString();
+    var invoiceId = UUID.randomUUID().toString();
+    var fundId = UUID.randomUUID().toString();
+    var fiscalYearId = UUID.randomUUID().toString();
+    var currency = "USD";
+
+    var existingCredit = new Transaction()
+      .withId(creditId)
+      .withTransactionType(CREDIT)
+      .withSourceInvoiceId(invoiceId)
+      .withToFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(2d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withPaymentEncumbranceId(encumbranceId)
+      .withMetadata(new Metadata());
+
+    var cancelledCredit = JsonObject.mapFrom(existingCredit).mapTo(Transaction.class);
+    cancelledCredit.setInvoiceCancelled(true);
+
+    // Create UNRELEASED encumbrance with all amounts = 0 (should NOT trigger lines 87-89)
+    var existingEncumbrance = new Transaction()
+      .withId(encumbranceId)
+      .withTransactionType(ENCUMBRANCE)
+      .withCurrency(currency)
+      .withFromFundId(fundId)
+      .withAmount(4d)
+      .withFiscalYearId(fiscalYearId)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withStatus(UNRELEASED)
+        .withAmountAwaitingPayment(0d)  // Zero
+        .withAmountExpended(0d)         // Zero
+        .withAmountCredited(0d)         // Zero
+        .withInitialAmountEncumbered(6d))
+      .withMetadata(new Metadata());
+
+    var batch = new Batch();
+    batch.getTransactionsToUpdate().add(cancelledCredit);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 4d, 0d, 0d, 0d, false, false, false);
+
+    var creditCriterion = createCriterionByIds(List.of(creditId));
+    doReturn(succeededFuture(createResults(List.of(existingCredit))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(creditCriterion.toString())));
+
+    var encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
+    doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(encumbranceCriterion.toString())));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).saveBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
+
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          var updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(2)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          var updateEntities = updateEntitiesCaptor.getAllValues();
+
+          var savedEncumbrance = (Transaction)(updateEntities.get(0).get(1));
+          // Verify lines 87-89 NOT executed (all amounts are 0, so condition is false)
+          assertThat(savedEncumbrance.getAmount(), equalTo(4d)); // Should remain unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(0d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(0d)); // 0d - 2d = 0d (default)
+        });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  void testCancelCreditWithReleasedEncumbrance(VertxTestContext testContext) {
+    var creditId = UUID.randomUUID().toString();
+    var encumbranceId = UUID.randomUUID().toString();
+    var invoiceId = UUID.randomUUID().toString();
+    var fundId = UUID.randomUUID().toString();
+    var fiscalYearId = UUID.randomUUID().toString();
+    var currency = "USD";
+
+    var existingCredit = new Transaction()
+      .withId(creditId)
+      .withTransactionType(CREDIT)
+      .withSourceInvoiceId(invoiceId)
+      .withToFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(2d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withPaymentEncumbranceId(encumbranceId)
+      .withMetadata(new Metadata());
+
+    var cancelledCredit = JsonObject.mapFrom(existingCredit).mapTo(Transaction.class);
+    cancelledCredit.setInvoiceCancelled(true);
+
+    // Create RELEASED encumbrance (should NOT trigger lines 87-89 regardless of amounts)
+    var existingEncumbrance = new Transaction()
+      .withId(encumbranceId)
+      .withTransactionType(ENCUMBRANCE)
+      .withCurrency(currency)
+      .withFromFundId(fundId)
+      .withAmount(3d)
+      .withFiscalYearId(fiscalYearId)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withStatus(RELEASED)  // RELEASED, not UNRELEASED
+        .withAmountAwaitingPayment(1d)  // Positive
+        .withAmountExpended(1d)         // Positive
+        .withAmountCredited(3d)         // Positive
+        .withInitialAmountEncumbered(8d))
+      .withMetadata(new Metadata());
+
+    var batch = new Batch();
+    batch.getTransactionsToUpdate().add(cancelledCredit);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 3d, 1d, 3d, 1d, false, false, false);
+
+    var creditCriterion = createCriterionByIds(List.of(creditId));
+    doReturn(succeededFuture(createResults(List.of(existingCredit))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(creditCriterion.toString())));
+
+    var encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
+    doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(encumbranceCriterion.toString())));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).saveBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
+
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          var updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(2)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          var updateEntities = updateEntitiesCaptor.getAllValues();
+
+          var savedEncumbrance = (Transaction)(updateEntities.get(0).get(1));
+          // Verify lines 87-89 NOT executed (encumbrance is RELEASED)
+          assertThat(savedEncumbrance.getAmount(), equalTo(3d)); // Should remain unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(1d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(1d)); // unchanged
+          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(1d)); // 3d - 2d
+        });
+        testContext.completeNow();
+      });
+  }
 
   @Test
   void testCreatePaymentWithNegativeAmount(VertxTestContext testContext) {
