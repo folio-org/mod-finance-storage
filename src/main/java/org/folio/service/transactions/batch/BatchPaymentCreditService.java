@@ -15,6 +15,7 @@ import java.util.Map;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 import static org.folio.utils.MoneyUtils.subtractMoney;
+import static org.folio.utils.MoneyUtils.subtractMoneyOrDefault;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
 public class BatchPaymentCreditService extends AbstractBatchTransactionService {
@@ -71,6 +72,7 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
   private void updateEncumbranceToCancelTransaction(Transaction transaction, Transaction encumbrance, CurrencyUnit currency) {
     // NOTE: we can't unrelease the encumbrance automatically because the payment/credit does not say if the encumbrance
     // was released automatically or not (as opposed to a pending payment).
+    double awaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
     double expended = encumbrance.getEncumbrance().getAmountExpended();
     double credited = encumbrance.getEncumbrance().getAmountCredited();
     double amount = encumbrance.getAmount();
@@ -80,9 +82,10 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
         amount = sumMoney(amount, transaction.getAmount(), currency);
       }
     } else {
-      credited = subtractMoney(credited, transaction.getAmount(), currency);
-      if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED) {
-        amount = subtractMoney(amount, transaction.getAmount(), currency);
+      credited = subtractMoneyOrDefault(credited, transaction.getAmount(), 0d, currency);
+      if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED
+        && (awaitingPayment > 0 || expended > 0 || credited > 0)) {
+        amount = subtractMoneyOrDefault(amount, transaction.getAmount(), 0d, currency);
       }
     }
     encumbrance.getEncumbrance().setAmountExpended(expended);
@@ -91,7 +94,7 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
   }
 
   private void updateEncumbranceToApplyTransaction(Transaction transaction, Transaction encumbrance, CurrencyUnit currency,
-      Map<String, Transaction> existingTransactionMap) {
+                                                   Map<String, Transaction> existingTransactionMap) {
     MonetaryAmount expended = Money.of(encumbrance.getEncumbrance().getAmountExpended(), currency);
     MonetaryAmount credited = Money.of(encumbrance.getEncumbrance().getAmountCredited(), currency);
     MonetaryAmount awaitingPayment = Money.of(encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
@@ -118,7 +121,7 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     if (budgetToTransactions.isEmpty()) {
       return;
     }
-    Map<String, Transaction>  existingTransactionMap = holder.getExistingTransactionMap();
+    Map<String, Transaction> existingTransactionMap = holder.getExistingTransactionMap();
     budgetToTransactions.forEach((budget, transactionsForBudget) -> {
       transactionsForBudget.forEach(transaction -> {
         if (cancelledTransaction(transaction, existingTransactionMap)) {

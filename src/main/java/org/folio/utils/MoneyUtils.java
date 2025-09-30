@@ -8,14 +8,13 @@ import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
 
+import lombok.experimental.UtilityClass;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.javamoney.moneta.Money;
 import org.javamoney.moneta.function.MonetaryFunctions;
 
+@UtilityClass
 public final class MoneyUtils {
-
-  private MoneyUtils() {
-  }
 
   public static Double subtractMoney(Double minuend, Double subtrahend, CurrencyUnit currency) {
     return Money.of(minuend, currency)
@@ -24,15 +23,16 @@ public final class MoneyUtils {
       .doubleValue();
   }
 
+  public static Double subtractMoneyOrDefault(Double minuend, Double subtrahend, Double defaulted, CurrencyUnit currency) {
+    var amount = Money.of(minuend, currency).subtract(Money.of(subtrahend, currency));
+    return amount.isNegativeOrZero() ? defaulted : amount.getNumber().doubleValue();
+  }
+
   public static Double sumMoney(Double addend, Double amount, CurrencyUnit currency) {
     return Money.of(addend, currency)
       .add(Money.of(amount, currency))
       .getNumber()
       .doubleValue();
-  }
-
-  public static Double subtractMoneyNonNegative(Double minuend, Double subtrahend, CurrencyUnit currency) {
-    return BigDecimal.valueOf(subtractMoney(minuend, subtrahend, currency)).max(BigDecimal.ZERO).doubleValue();
   }
 
   public static Double sumMoney(CurrencyUnit currency, Double ... values) {
