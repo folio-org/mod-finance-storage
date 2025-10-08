@@ -16,7 +16,6 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.subtractMoneyOrDefault;
-import static org.folio.utils.MoneyUtils.sumMoney;
 
 public class BatchPaymentCreditService extends AbstractBatchTransactionService {
 
@@ -75,11 +74,13 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     double awaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
     double expended = encumbrance.getEncumbrance().getAmountExpended();
     double credited = encumbrance.getEncumbrance().getAmountCredited();
+    double initialAmountEncumbered = encumbrance.getEncumbrance().getInitialAmountEncumbered();
     double amount = encumbrance.getAmount();
     if (transaction.getTransactionType() == PAYMENT) {
       expended = subtractMoney(expended, transaction.getAmount(), currency);
       if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED) {
-        amount = sumMoney(amount, transaction.getAmount(), currency);
+        // Reverse the calculation to subtract from the initial encumbered the new recalculated expense
+        amount = subtractMoneyOrDefault(initialAmountEncumbered, expended, 0d, currency);
       }
     } else {
       credited = subtractMoneyOrDefault(credited, transaction.getAmount(), 0d, currency);
