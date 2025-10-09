@@ -71,14 +71,16 @@ Required when `SECRET_STORE_STORE_TYPE=VAULT`
 
 Required when `SECRET_STORE_TYPE=FSSP`
 
-| Name                                   | Default value         | Description                                 |
-|:---------------------------------------|:----------------------|:--------------------------------------------|
-| SECRET_STORE_FSSP_ADDRESS              | -                     | The address (URL) of the FSSP service.      |
-| SECRET_STORE_FSSP_SECRET_PATH          | secure-store/entries  | The path in FSSP where secrets are stored.  |
-| SECRET_STORE_FSSP_ENABLE_SSL           | false                 | Whether to use SSL for the FSSP connection. |
-| SECRET_STORE_FSSP_TRUSTSTORE_PATH      | -                     | Truststore file path for SSL connections.   |
-| SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE | -                     | Truststore file type (e.g., JKS, PKCS12).   |
-| SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD  | -                     | Truststore password for SSL connections.    |
+| Name                                     | Default value         | Description                                         |
+|:-----------------------------------------|:----------------------|:----------------------------------------------------|
+| SECRET_STORE_FSSP_ADDRESS                | -                     | The address (URL) of the FSSP service.              |
+| SECRET_STORE_FSSP_SECRET_PATH            | secure-store/entries  | The path in FSSP where secrets are stored.          |
+| SECRET_STORE_FSSP_KEYSTORE_PATH          | -                     | The path to the key store file.                     |
+| SECRET_STORE_FSSP_KEYSTORE_FILE_TYPE     | jks                   | The type of the key store file (e.g., "jks", "pem") |
+| SECRET_STORE_FSSP_KEYSTORE_PASSWORD      | -                     | The password for the key store file.                |
+| SECRET_STORE_FSSP_TRUSTSTORE_PATH        | -                     | The path to the trust store file.                   |
+| SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE   | jks                   | Truststore file type (e.g., JKS, PKCS12).           |
+| SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD    | -                     | Truststore password for SSL connections.            |
 
 ## Code analysis
 

@@ -30,6 +30,7 @@ public class SecureStoreConfiguration {
   public static final String ENV = "ENV";
   public static final String DEFAULT_ENV_ID = "folio";
   public static final String SECRET_STORE_TYPE = "SECRET_STORE_TYPE";
+  public static final String DEFAULT_FILE_TYPE = "jks";
 
   private static final String SECRET_STORE_VAULT_TOKEN = "SECRET_STORE_VAULT_TOKEN";
   private static final String SECRET_STORE_VAULT_ADDRESS = "SECRET_STORE_VAULT_ADDRESS";
@@ -46,7 +47,10 @@ public class SecureStoreConfiguration {
 
   private static final String SECRET_STORE_FSSP_ADDRESS = "SECRET_STORE_FSSP_ADDRESS";
   private static final String SECRET_STORE_FSSP_SECRET_PATH = "SECRET_STORE_FSSP_SECRET_PATH";
-  private static final String SECRET_STORE_FSSP_ENABLE_SSL = "SECRET_STORE_FSSP_ENABLE_SSL";
+  private static final String SECRET_STORE_FSSP_KEYSTORE_PATH = "SECRET_STORE_FSSP_KEYSTORE_PATH";
+  private static final String SECRET_STORE_FSSP_KEYSTORE_FILE_TYPE = "SECRET_STORE_FSSP_KEYSTORE_FILE_TYPE";
+  private static final String SECRET_STORE_FSSP_KEYSTORE_PASSWORD = "SECRET_STORE_FSSP_KEYSTORE_PASSWORD";
+
   private static final String SECRET_STORE_FSSP_TRUSTSTORE_PATH = "SECRET_STORE_FSSP_TRUSTSTORE_PATH";
   private static final String SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE = "SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE";
   private static final String SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD = "SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD";
@@ -97,9 +101,11 @@ public class SecureStoreConfiguration {
     return new FsspStore(FsspConfigProperties.builder()
       .address(getRequiredValue(SECRET_STORE_FSSP_ADDRESS))
       .secretPath(getValue(SECRET_STORE_FSSP_SECRET_PATH))
-      .enableSsl(getValue(SECRET_STORE_FSSP_ENABLE_SSL, FALSE))
+      .keyStorePath(getValue(SECRET_STORE_FSSP_KEYSTORE_PATH))
+      .keyStoreFileType(getValue(SECRET_STORE_FSSP_KEYSTORE_FILE_TYPE, DEFAULT_FILE_TYPE))
+      .keyStorePassword(getValue(SECRET_STORE_FSSP_KEYSTORE_PASSWORD))
       .trustStorePath(getValue(SECRET_STORE_FSSP_TRUSTSTORE_PATH))
-      .trustStoreFileType(getValue(SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE))
+      .trustStoreFileType(getValue(SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE, DEFAULT_FILE_TYPE))
       .trustStorePassword(getValue(SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD))
       .build());
   }
@@ -125,5 +131,9 @@ public class SecureStoreConfiguration {
   private static Boolean getValue(String key, boolean defaultValue) {
     return Optional.ofNullable(System.getenv().get(key))
       .map(Boolean::parseBoolean).orElse(defaultValue);
+  }
+
+  private static String getValue(String key, String defaultValue) {
+    return Optional.ofNullable(System.getenv().get(key)).orElse(defaultValue);
   }
 }
