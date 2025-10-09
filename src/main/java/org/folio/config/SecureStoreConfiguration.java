@@ -46,6 +46,10 @@ public class SecureStoreConfiguration {
 
   private static final String SECRET_STORE_FSSP_ADDRESS = "SECRET_STORE_FSSP_ADDRESS";
   private static final String SECRET_STORE_FSSP_SECRET_PATH = "SECRET_STORE_FSSP_SECRET_PATH";
+  private static final String SECRET_STORE_FSSP_KEYSTORE_PATH = "SECRET_STORE_FSSP_KEYSTORE_PATH";
+  private static final String SECRET_STORE_FSSP_KEYSTORE_FILE_TYPE = "SECRET_STORE_FSSP_KEYSTORE_FILE_TYPE";
+  private static final String SECRET_STORE_FSSP_KEYSTORE_PASSWORD = "SECRET_STORE_FSSP_KEYSTORE_PASSWORD";
+
   private static final String SECRET_STORE_FSSP_TRUSTSTORE_PATH = "SECRET_STORE_FSSP_TRUSTSTORE_PATH";
   private static final String SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE = "SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE";
   private static final String SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD = "SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD";
@@ -96,6 +100,9 @@ public class SecureStoreConfiguration {
     return new FsspStore(FsspConfigProperties.builder()
       .address(getRequiredValue(SECRET_STORE_FSSP_ADDRESS))
       .secretPath(getValue(SECRET_STORE_FSSP_SECRET_PATH))
+      .keyStorePath(getValue(SECRET_STORE_FSSP_KEYSTORE_PATH))
+      .keyStoreFileType(getValue(SECRET_STORE_FSSP_KEYSTORE_FILE_TYPE))
+      .keyStorePassword(getValue(SECRET_STORE_FSSP_KEYSTORE_PASSWORD))
       .trustStorePath(getValue(SECRET_STORE_FSSP_TRUSTSTORE_PATH))
       .trustStoreFileType(getValue(SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE))
       .trustStorePassword(getValue(SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD))
