@@ -99,6 +99,7 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     MonetaryAmount expended = Money.of(encumbrance.getEncumbrance().getAmountExpended(), currency);
     MonetaryAmount credited = Money.of(encumbrance.getEncumbrance().getAmountCredited(), currency);
     MonetaryAmount awaitingPayment = Money.of(encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
+    MonetaryAmount initialAmountEncumbered = Money.of(encumbrance.getEncumbrance().getInitialAmountEncumbered(), currency);
     MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
     Transaction existingTransaction = existingTransactionMap.get(transaction.getId());
     if (existingTransaction != null) {
@@ -107,6 +108,11 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     if (transaction.getTransactionType() == PAYMENT) {
       expended = expended.add(amount);
       awaitingPayment = awaitingPayment.subtract(amount);
+      if (amount.add(expended).add(awaitingPayment).isLessThan(initialAmountEncumbered)
+        && credited.isGreaterThan(Money.of(0, currency))) {
+        MonetaryAmount newAmount = Money.of(encumbrance.getAmount(), currency).add(credited);
+        encumbrance.setAmount(newAmount.getNumber().doubleValue());
+      }
     } else {
       credited = credited.add(amount);
       awaitingPayment = awaitingPayment.add(amount);
