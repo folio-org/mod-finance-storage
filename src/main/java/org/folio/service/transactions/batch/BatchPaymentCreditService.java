@@ -79,7 +79,7 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     if (transaction.getTransactionType() == PAYMENT) {
       expended = subtractMoney(expended, transaction.getAmount(), currency);
       if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED) {
-        // Recalculated the encumbrance amount from the facts again
+        // Recalculate the encumbrance amount from the facts again
         amount = subtractMoneyOrDefault(initialAmountEncumbered, awaitingPayment, 0d, currency);
         amount = subtractMoneyOrDefault(amount, expended, 0d, currency);
         amount = sumMoney(amount, credited, currency);
