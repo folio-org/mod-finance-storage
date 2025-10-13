@@ -16,6 +16,7 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.subtractMoneyOrDefault;
+import static org.folio.utils.MoneyUtils.sumMoney;
 
 public class BatchPaymentCreditService extends AbstractBatchTransactionService {
 
