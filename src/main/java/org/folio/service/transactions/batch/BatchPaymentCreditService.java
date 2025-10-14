@@ -111,7 +111,8 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     if (transaction.getTransactionType() == PAYMENT) {
       expended = expended.add(amount);
       awaitingPayment = awaitingPayment.subtract(amount);
-      if (amount.add(expended).add(awaitingPayment).isLessThan(initialAmountEncumbered)
+      // Add the missing credit amount back to the encumbrance if the actual encumbrance amount was capped at the initial amount encumbered
+      if (amount.add(awaitingPayment).add(expended).isLessThan(initialAmountEncumbered)
         && credited.isGreaterThan(Money.of(0, currency))) {
         MonetaryAmount newAmount = Money.of(encumbrance.getAmount(), currency).add(credited);
         encumbrance.setAmount(newAmount.getNumber().doubleValue());
@@ -141,7 +142,7 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
         }
       });
       calculateBudgetSummaryFields(budget);
-      updateBudgetMetadata(budget, transactionsForBudget.get(0));
+      updateBudgetMetadata(budget, transactionsForBudget.getFirst());
     });
   }
 

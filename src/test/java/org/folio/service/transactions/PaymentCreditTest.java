@@ -2,6 +2,7 @@ package org.folio.service.transactions;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
+import org.folio.CopilotGenerated;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.AwaitingPayment;
 import org.folio.rest.jaxrs.model.Batch;
@@ -1212,6 +1213,137 @@ public class PaymentCreditTest extends BatchTransactionServiceTestBase {
         testContext.verify(() -> {
           assertThat(event.cause(), instanceOf(HttpException.class));
           assertThat(((HttpException) event.cause()).getCode(), equalTo(400));
+        });
+        testContext.completeNow();
+      });
+  }
+
+  @Test
+  @CopilotGenerated(partiallyGenerated = true, model = "GPT-4.1")
+  void testPaymentWithEncumbranceCreditsAddedBackWhenCappedAtInitialAmount(VertxTestContext testContext) {
+    var paymentId = UUID.randomUUID().toString();
+    var pendingPaymentId = UUID.randomUUID().toString();
+    var encumbranceId = UUID.randomUUID().toString();
+    var invoiceId = UUID.randomUUID().toString();
+    var fundId = UUID.randomUUID().toString();
+    var fiscalYearId = UUID.randomUUID().toString();
+    var currency = "USD";
+
+    var payment = new Transaction()
+      .withId(paymentId)
+      .withTransactionType(PAYMENT)
+      .withSourceInvoiceId(invoiceId)
+      .withFromFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(3d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withPaymentEncumbranceId(encumbranceId);
+
+    var existingPendingPayment = new Transaction()
+      .withId(pendingPaymentId)
+      .withTransactionType(PENDING_PAYMENT)
+      .withSourceInvoiceId(invoiceId)
+      .withFromFundId(fundId)
+      .withFiscalYearId(fiscalYearId)
+      .withAmount(3d)
+      .withCurrency(currency)
+      .withInvoiceCancelled(false)
+      .withAwaitingPayment(new AwaitingPayment()
+        .withEncumbranceId(encumbranceId)
+        .withReleaseEncumbrance(true));
+
+    // Create encumbrance scenario where amount + awaitingPayment + expended < initialAmountEncumbered && credited > 0
+    // This triggers lines 119-123: adding credited amount back to encumbrance
+    var existingEncumbrance = new Transaction()
+      .withId(encumbranceId)
+      .withTransactionType(ENCUMBRANCE)
+      .withCurrency(currency)
+      .withFromFundId(fundId)
+      .withAmount(8d)  // Current encumbrance amount (capped)
+      .withFiscalYearId(fiscalYearId)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withStatus(RELEASED)
+        .withAmountAwaitingPayment(3d)
+        .withAmountExpended(2d)
+        .withAmountCredited(4d)  // Existing credits > 0 (triggers condition)
+        .withInitialAmountEncumbered(15d)) // Initial amount > (3+0+5) = 8
+      .withMetadata(new Metadata());
+
+    var batch = new Batch();
+    batch.getTransactionsToCreate().add(payment);
+
+    setupFundBudgetLedger(fundId, fiscalYearId, 8d, 3d, 10d, 2d, false, false, false);
+
+    var paymentCriterion = createCriterionByIds(List.of(paymentId));
+    doReturn(succeededFuture(createResults(List.of())))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(paymentCriterion.toString())));
+
+    var encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
+    doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(encumbranceCriterion.toString())));
+
+    var snippet = "WHERE (jsonb->>'transactionType') = 'Pending payment'  AND  (  (jsonb->>'sourceInvoiceId') = '" + invoiceId + "')    ";
+    doReturn(succeededFuture(createResults(List.of(existingPendingPayment))))
+      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
+        crit -> crit.toString().equals(snippet)));
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).saveBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
+      .when(conn).updateBatch(anyString(), anyList());
+
+    doAnswer(invocation -> succeededFuture(createRowSet(List.of(existingPendingPayment))))
+      .when(conn).delete(anyString(), any(Criterion.class));
+
+    testContext.assertComplete(batchTransactionService.processBatch(batch, requestContext))
+      .onComplete(event -> {
+        testContext.verify(() -> {
+          // Verify payment creation
+          var saveTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(1)).saveBatch(saveTableNamesCaptor.capture(), saveEntitiesCaptor.capture());
+          var saveTableNames = saveTableNamesCaptor.getAllValues();
+          var saveEntities = saveEntitiesCaptor.getAllValues();
+          assertThat(saveTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+
+          var savedPayment = (Transaction)(saveEntities.getFirst().getFirst());
+          assertThat(savedPayment.getTransactionType(), equalTo(PAYMENT));
+          assertNotNull(savedPayment.getMetadata().getCreatedDate());
+          assertThat(savedPayment.getAmount(), equalTo(3d));
+
+          // Verify encumbrance update - this tests lines 119-123 specifically
+          var updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          verify(conn, times(2)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
+          var updateTableNames = updateTableNamesCaptor.getAllValues();
+          var updateEntities = updateEntitiesCaptor.getAllValues();
+          assertThat(updateTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+
+          var savedEncumbrance = (Transaction)(updateEntities.getFirst().getFirst());
+          assertThat(savedEncumbrance.getTransactionType(), equalTo(ENCUMBRANCE));
+          assertNotNull(savedEncumbrance.getMetadata().getUpdatedDate());
+
+          // Verify lines 119-123: Since (3 + 0 + 5) = 8 < 15 && credited (4) > 0
+          // The encumbrance amount should be increased by credited amount: 8 + 4 = 12
+          assertThat(savedEncumbrance.getAmount(), equalTo(12d)); // 8d + 4d (credited added back)
+          assertThat(savedEncumbrance.getEncumbrance().getAmountAwaitingPayment(), equalTo(0d)); // 3d - 3d
+          assertThat(savedEncumbrance.getEncumbrance().getAmountExpended(), equalTo(5d)); // 2d + 3d
+          assertThat(savedEncumbrance.getEncumbrance().getAmountCredited(), equalTo(4d)); // unchanged
+
+          // Verify pending payment deletion
+          var deleteTableNamesCaptor = ArgumentCaptor.forClass(String.class);
+          var deleteCriterionCaptor = ArgumentCaptor.forClass(Criterion.class);
+          verify(conn, times(1)).delete(deleteTableNamesCaptor.capture(), deleteCriterionCaptor.capture());
+          var deleteTableNames = deleteTableNamesCaptor.getAllValues();
+          var deleteCriteria = deleteCriterionCaptor.getAllValues();
+
+          var pendingPaymentCriterionByIds = createCriterionByIds(List.of(pendingPaymentId));
+          assertThat(deleteTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+          var deleteCriterion = deleteCriteria.getFirst();
+          assertThat(deleteCriterion.toString(), equalTo(pendingPaymentCriterionByIds.toString()));
         });
         testContext.completeNow();
       });
