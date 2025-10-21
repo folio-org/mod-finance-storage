@@ -1,5 +1,6 @@
 package org.folio.service.transactions.batch;
 
+import lombok.extern.log4j.Log4j2;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Encumbrance;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -18,6 +19,7 @@ import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.subtractMoneyOrDefault;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
+@Log4j2
 public class BatchPaymentCreditService extends AbstractBatchTransactionService {
 
   @Override
@@ -70,61 +72,61 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
   }
 
   private void updateEncumbranceToCancelTransaction(Transaction transaction, Transaction encumbrance, CurrencyUnit currency) {
-    // NOTE: we can't unrelease the encumbrance automatically because the payment/credit does not say if the encumbrance
-    // was released automatically or not (as opposed to a pending payment).
     double awaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
     double expended = encumbrance.getEncumbrance().getAmountExpended();
     double credited = encumbrance.getEncumbrance().getAmountCredited();
-    double initialAmountEncumbered = encumbrance.getEncumbrance().getInitialAmountEncumbered();
     double amount = encumbrance.getAmount();
+
+    double newExpended = expended;
+    double newCredited = credited;
     if (transaction.getTransactionType() == PAYMENT) {
-      expended = subtractMoney(expended, transaction.getAmount(), currency);
+      newExpended = subtractMoney(expended, transaction.getAmount(), currency);
+      log.info("updateEncumbranceToCancelTransaction:: Expended oldAmount={} amount={} newAmount={}", expended, amount, newExpended);
+
       if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED) {
-        // Recalculate the encumbrance amount from the facts again
-        amount = subtractMoneyOrDefault(initialAmountEncumbered, awaitingPayment, 0d, currency);
-        amount = subtractMoneyOrDefault(amount, expended, 0d, currency);
-        amount = sumMoney(amount, credited, currency);
+        amount = EncumbranceRecalculationUtil.recalculate(encumbrance, currency, awaitingPayment, newExpended, newCredited);
       }
     } else {
-      credited = subtractMoneyOrDefault(credited, transaction.getAmount(), 0d, currency);
+      newCredited = subtractMoneyOrDefault(credited, transaction.getAmount(), 0d, currency);
+      log.info("updateEncumbranceToCancelTransaction:: Credited oldAmount={} amount={} newAmount={}", credited, amount, newCredited);
+
       if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED
-        && (awaitingPayment > 0 || expended > 0 || credited > 0)) {
+        && (awaitingPayment > 0 || newExpended > 0 || newCredited > 0)) {
         amount = subtractMoneyOrDefault(amount, transaction.getAmount(), 0d, currency);
       }
     }
-    encumbrance.getEncumbrance().setAmountExpended(expended);
-    encumbrance.getEncumbrance().setAmountCredited(credited);
+    encumbrance.getEncumbrance().setAmountExpended(newExpended);
+    encumbrance.getEncumbrance().setAmountCredited(newCredited);
     encumbrance.setAmount(amount);
   }
 
   private void updateEncumbranceToApplyTransaction(Transaction transaction, Transaction encumbrance, CurrencyUnit currency,
                                                    Map<String, Transaction> existingTransactionMap) {
-    MonetaryAmount expended = Money.of(encumbrance.getEncumbrance().getAmountExpended(), currency);
-    MonetaryAmount credited = Money.of(encumbrance.getEncumbrance().getAmountCredited(), currency);
-    MonetaryAmount awaitingPayment = Money.of(encumbrance.getEncumbrance().getAmountAwaitingPayment(), currency);
-    MonetaryAmount initialAmountEncumbered = Money.of(encumbrance.getEncumbrance().getInitialAmountEncumbered(), currency);
-    MonetaryAmount amount = Money.of(transaction.getAmount(), currency);
+    double initialAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
+    double awaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
+    double expended = encumbrance.getEncumbrance().getAmountExpended();
+    double credited = encumbrance.getEncumbrance().getAmountCredited();
+    double amount = transaction.getAmount();
     Transaction existingTransaction = existingTransactionMap.get(transaction.getId());
     if (existingTransaction != null) {
-      amount = amount.subtract(Money.of(existingTransaction.getAmount(), currency));
+      amount = subtractMoney(amount, existingTransaction.getAmount(), currency);
     }
     if (transaction.getTransactionType() == PAYMENT) {
-      expended = expended.add(amount);
-      awaitingPayment = awaitingPayment.subtract(amount);
+      expended = sumMoney(expended, amount, currency);
+      awaitingPayment = subtractMoney(awaitingPayment, amount, currency);
       // Add the missing credit amount back to the encumbrance if the actual encumbrance amount was capped at the initial amount encumbered
-      if (amount.add(awaitingPayment).add(expended).isLessThan(initialAmountEncumbered)
-        && credited.isGreaterThan(Money.of(0, currency))) {
-        MonetaryAmount newAmount = Money.of(encumbrance.getAmount(), currency).add(credited);
-        encumbrance.setAmount(newAmount.getNumber().doubleValue());
+      if (sumMoney(currency, amount, awaitingPayment, expended) < initialAmount && credited > 0) {
+        double newAmount = sumMoney(encumbrance.getAmount(), credited, currency);
+        encumbrance.setAmount(newAmount);
       }
     } else {
-      credited = credited.add(amount);
-      awaitingPayment = awaitingPayment.add(amount);
+      credited = sumMoney(credited, amount, currency);
+      awaitingPayment = sumMoney(awaitingPayment, amount, currency);
     }
     encumbrance.getEncumbrance()
-      .withAmountExpended(expended.getNumber().doubleValue())
-      .withAmountCredited(credited.getNumber().doubleValue())
-      .withAmountAwaitingPayment(awaitingPayment.getNumber().doubleValue());
+      .withAmountExpended(expended)
+      .withAmountCredited(credited)
+      .withAmountAwaitingPayment(awaitingPayment);
   }
 
   private void updateBudgets(List<Transaction> transactions, BatchTransactionHolder holder) {
@@ -186,5 +188,4 @@ public class BatchPaymentCreditService extends AbstractBatchTransactionService {
     List<Transaction> linkedPendingPayments = holder.getLinkedPendingPayments();
     linkedPendingPayments.forEach(holder::addTransactionToDeleteWithoutProcessing);
   }
-
 }
