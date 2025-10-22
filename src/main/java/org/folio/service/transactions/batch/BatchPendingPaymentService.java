@@ -4,6 +4,8 @@ import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.groupingBy;
 import static org.folio.rest.jaxrs.model.Encumbrance.Status.RELEASED;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
+import static org.folio.service.transactions.batch.EncumbranceUtil.updateNewAmountWithUnappliedCreditOnApproval;
+import static org.folio.service.transactions.batch.EncumbranceUtil.calculateNewAmountDefaultOnZero;
 import static org.folio.utils.CalculationUtils.calculateBudgetSummaryFields;
 import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.sumMoney;
@@ -53,8 +55,8 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
     applyPendingPayments(pendingPayments, holder, delete);
   }
 
-  private void updateEncumbrances(List<Transaction> encumbrances,
-      Map<String, Transaction> existingTransactionMap, List<Transaction> pendingPayments, boolean delete) {
+  private void updateEncumbrances(List<Transaction> encumbrances, Map<String, Transaction> existingTransactionMap,
+                                  List<Transaction> pendingPayments, boolean delete) {
     Map<String, List<Transaction>> pendingPaymentsByEncumbranceId = pendingPayments.stream()
       .filter(tr -> tr.getAwaitingPayment() != null && tr.getAwaitingPayment().getEncumbranceId() != null)
       .collect(groupingBy(tr -> tr.getAwaitingPayment().getEncumbranceId()));
@@ -66,7 +68,7 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
   }
 
   private void updateEncumbrance(Transaction encumbrance, List<Transaction> pendingPayments,
-      Map<String, Transaction> existingTransactionMap, boolean delete) {
+                                 Map<String, Transaction> existingTransactionMap, boolean delete) {
     boolean releaseEncumbrance = false;
     for (Transaction pendingPayment : pendingPayments) {
       CurrencyUnit currency = Monetary.getCurrency(pendingPayment.getCurrency());
@@ -89,33 +91,26 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
 
   private void updateEncumbranceToCancelTransaction(Transaction encumbrance, double amount, CurrencyUnit currency) {
     double awaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
+    double newAwaitingPayment = subtractMoney(awaitingPayment, amount, currency);
     double expended = encumbrance.getEncumbrance().getAmountExpended();
     double credited = encumbrance.getEncumbrance().getAmountCredited();
-    double newAwaitingPayment = subtractMoney(awaitingPayment, amount, currency);
-    log.info("updateEncumbranceToCancelTransaction:: Awaiting payment oldAmount={} amount={} newAmount={}",
-      awaitingPayment, amount, newAwaitingPayment);
     if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED) {
-      amount = EncumbranceRecalculationUtil.recalculate(encumbrance, currency, newAwaitingPayment, expended, credited);
+      amount = calculateNewAmountDefaultOnZero(encumbrance, currency, newAwaitingPayment, expended, credited);
+      encumbrance.setAmount(amount);
     }
+    log.info("updateEncumbranceToCancelTransaction:: Awaiting payment oldAmount={} amount={} newAmount={}", awaitingPayment, amount, newAwaitingPayment);
     encumbrance.getEncumbrance().setAmountAwaitingPayment(newAwaitingPayment);
-    encumbrance.setAmount(amount);
   }
 
   private void updateEncumbranceToApplyTransaction(Transaction encumbrance, double amount, CurrencyUnit currency) {
-    double initialAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
     double awaitingPayment = encumbrance.getEncumbrance().getAmountAwaitingPayment();
     double newAwaitingPayment = sumMoney(awaitingPayment, amount, currency);
-    log.info("updateEncumbranceToApplyTransaction:: Awaiting payment oldAmount={} amount={} newAmount={}",
-      awaitingPayment, amount, newAwaitingPayment);
-    double expended = encumbrance.getEncumbrance().getAmountExpended();
-    double credited = encumbrance.getEncumbrance().getAmountCredited();
     if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED) {
-      double oldAmount = encumbrance.getAmount();
       double newAmount = subtractMoney(encumbrance.getAmount(), amount, currency);
-      log.info("updateEncumbranceToApplyTransaction:: Encumbrance initialAmount={} oldAmount={} amount={} awaitingPayment={} expended={} credited={} newAmount={}",
-        initialAmount, oldAmount, amount, newAwaitingPayment, expended,  credited, newAmount);
-      encumbrance.setAmount(newAmount);
+      // Add unapplied credit amount back to the encumbrance on invoice approval if the awaiting payment is negative
+      updateNewAmountWithUnappliedCreditOnApproval(encumbrance, currency, awaitingPayment, newAmount);
     }
+    log.info("updateEncumbranceToApplyTransaction:: Awaiting payment oldAmount={} amount={} newAmount={}", awaitingPayment, amount, newAwaitingPayment);
     encumbrance.getEncumbrance().setAmountAwaitingPayment(newAwaitingPayment);
   }
 
@@ -145,8 +140,7 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
     pendingPayment.setAmount(0d);
   }
 
-  private void applyPendingPayment(Budget budget, Transaction pendingPayment, Transaction existingTransaction,
-      CurrencyUnit currency) {
+  private void applyPendingPayment(Budget budget, Transaction pendingPayment, Transaction existingTransaction, CurrencyUnit currency) {
     double amount = pendingPayment.getAmount();
     if (existingTransaction != null) {
       amount = subtractMoney(amount, existingTransaction.getAmount(), currency);
