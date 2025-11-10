@@ -10,6 +10,7 @@ documentation:
 types:
   groupFundFiscalYear: !include acq-models/mod-finance/schemas/group_fund_fiscal_year.json
   groupFundFiscalYearCollection: !include acq-models/mod-finance/schemas/group_fund_fiscal_year_collection.json
+  groupFundFiscalYearBatchRequest: !include acq-models/mod-finance/schemas/group_fund_fiscal_year_batch_request.json
   errors: !include raml-util/schemas/errors.schema
   uuid:
     type: "string"
@@ -38,6 +39,33 @@ resourceTypes:
       searchable: {description: "with valid searchable fields: e.g.", example: "group.name == History and and fund.fundStatus == Active and fiscalYear.periodEnd < 2020-01-01 and fundType.name == Monographs and ledger.name == One-time"},
       pageable
     ]
+  /batch:
+    post:
+      description: Query group-fund-fiscal-year records by multiple fundIds in a single request
+      is: [validate]
+      body:
+        application/json:
+          type: groupFundFiscalYearBatchRequest
+      responses:
+        200:
+          description: "Returns matching group-fund-fiscal-year records"
+          body:
+            application/json:
+              type: groupFundFiscalYearCollection
+        400:
+          description: "Bad request"
+          body:
+            text/plain:
+              example: "Bad request"
+            application/json:
+              type: errors
+        500:
+          description: "Internal server error"
+          body:
+            text/plain:
+              example: "Internal server error, contact administrator"
+            application/json:
+              type: errors
   /{id}:
     uriParameters:
       id:

@@ -9,6 +9,7 @@ import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.model.GroupCollection;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
+import org.folio.rest.jaxrs.model.GroupFundFiscalYearBatchRequest;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYearCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroupFundFiscalYears;
 import org.folio.rest.jaxrs.resource.FinanceStorageGroups;
@@ -121,5 +122,15 @@ public class GroupAPI implements FinanceStorageGroups, FinanceStorageGroupFundFi
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.put(GROUP_FUND_FY_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageGroupFundFiscalYearsByIdResponse.class,
         asyncResultHandler);
+  }
+
+  @Override
+  @Validate
+  public void postFinanceStorageGroupFundFiscalYearsBatch(GroupFundFiscalYearBatchRequest entity,
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    groupService.getGroupFundFiscalYearsByFundIds(entity, new RequestContext(vertxContext, okapiHeaders))
+      .onSuccess(collection -> asyncResultHandler.handle(succeededFuture(
+        PostFinanceStorageGroupFundFiscalYearsBatchResponse.respond200WithApplicationJson(collection))))
+      .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
   }
 }

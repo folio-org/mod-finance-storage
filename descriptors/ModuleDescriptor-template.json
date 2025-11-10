@@ -229,6 +229,11 @@
         },
         {
           "methods": ["POST"],
+          "pathPattern": "/finance-storage/group-fund-fiscal-years/batch",
+          "permissionsRequired": ["finance-storage.group-fund-fiscal-years.batch.post"]
+        },
+        {
+          "methods": ["POST"],
           "pathPattern": "/finance-storage/group-fund-fiscal-years",
           "permissionsRequired": ["finance-storage.group-fund-fiscal-years.item.post"]
         },
@@ -819,6 +824,11 @@
       "description" : "Get a collection of group/fund/fiscal year records relations"
     },
     {
+      "permissionName" : "finance-storage.group-fund-fiscal-years.batch.post",
+      "displayName" : "Query multiple group fund fiscal years by fundIds in a single request",
+      "description" : "Query multiple group fund fiscal years by fundIds in a single request"
+    },
+    {
       "permissionName" : "finance-storage.group-fund-fiscal-years.item.post",
       "displayName" : "Create a new group/fund/fiscal year records relation",
       "description" : "Create a new group/fund/fiscal year records relation"
@@ -849,6 +859,7 @@
         "finance-storage.groups.item.put",
         "finance-storage.groups.item.delete",
         "finance-storage.group-fund-fiscal-years.collection.get",
+        "finance-storage.group-fund-fiscal-years.batch.post",
         "finance-storage.group-fund-fiscal-years.item.post",
         "finance-storage.group-fund-fiscal-years.item.get",
         "finance-storage.group-fund-fiscal-years.item.put",

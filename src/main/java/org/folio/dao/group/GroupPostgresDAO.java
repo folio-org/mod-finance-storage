@@ -1,15 +1,20 @@
 package org.folio.dao.group;
 
 import io.vertx.core.Future;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
+import org.folio.rest.jaxrs.model.GroupFundFiscalYearBatchRequest;
+import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBConn;
 import org.folio.rest.persist.interfaces.Results;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,6 +65,41 @@ public class GroupPostgresDAO implements GroupDAO {
       .onSuccess(rowSet -> logger.info("Successfully updated {} batch group fund fiscal years", groupFundFiscalYears.size()))
       .onFailure(e -> logger.error("Update batch group fund fiscal years failed, ids={}", ids, e))
       .mapEmpty();
+  }
+
+  @Override
+  public Future<List<GroupFundFiscalYear>> getGroupFundFiscalYearsByFundIds(GroupFundFiscalYearBatchRequest batchRequest, DBConn conn) {
+    List<String> fundIds = batchRequest.getFundIds();
+
+    if (CollectionUtils.isEmpty(fundIds)) {
+      return Future.succeededFuture(Collections.emptyList());
+    }
+
+    CriterionBuilder fundIdCriterionBuilder = new CriterionBuilder("OR");
+    fundIds.forEach(fundId -> fundIdCriterionBuilder.with("fundId", fundId));
+    Criterion criterion = fundIdCriterionBuilder.build();
+
+    // Add optional filters
+    if (StringUtils.isNotBlank(batchRequest.getFiscalYearId())) {
+      Criteria fiscalYearIdCriteria = new Criteria();
+      fiscalYearIdCriteria.addField("fiscalYearId")
+        .setOperation("=")
+        .setVal(batchRequest.getFiscalYearId())
+        .setJSONB(false);
+      criterion.addCriterion(fiscalYearIdCriteria);
+    }
+    if (StringUtils.isNotBlank(batchRequest.getGroupId())) {
+      Criteria groupIdCriteria = new Criteria();
+      groupIdCriteria.addField("groupId")
+        .setOperation("=")
+        .setVal(batchRequest.getGroupId())
+        .setJSONB(false);
+      criterion.addCriterion(groupIdCriteria);
+    }
+
+    return conn.get(GROUP_FUND_FY_TABLE, GroupFundFiscalYear.class, criterion)
+      .map(Results::getResults)
+      .onFailure(e -> logger.error("Getting group fund fiscal years by batch failed, criterion: {}", criterion, e));
   }
 
 }
