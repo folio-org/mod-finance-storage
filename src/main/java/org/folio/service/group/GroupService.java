@@ -9,6 +9,8 @@ import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Group;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
+import org.folio.rest.jaxrs.model.GroupFundFiscalYearBatchRequest;
+import org.folio.rest.jaxrs.model.GroupFundFiscalYearCollection;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.DBConn;
@@ -53,5 +55,14 @@ public class GroupService {
       gffy.setBudgetId(budget.getId());
     }
     return groupDAO.updateBatchGroupFundFiscalYear(groupFundFiscalYears, conn);
+  }
+
+  public Future<GroupFundFiscalYearCollection> getGroupFundFiscalYearsByFundIds(GroupFundFiscalYearBatchRequest batchRequest,
+                                                                                RequestContext requestContext) {
+    DBClient client = dbClientFactory.getDbClient(requestContext);
+    return client.withConn(conn -> groupDAO.getGroupFundFiscalYearsByFundIds(batchRequest, conn))
+      .map(results -> new GroupFundFiscalYearCollection()
+        .withGroupFundFiscalYears(results)
+        .withTotalRecords(results.size()));
   }
 }
