@@ -1,6 +1,8 @@
 package org.folio.service.transactions.batch;
 
 import io.vertx.core.Future;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.collections4.CollectionUtils;
 import org.folio.dao.transactions.BatchTransactionDAO;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Batch;
@@ -45,9 +47,12 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.util.ErrorCodes.LINKED_ENCUMBRANCES_NOT_FOUND;
 
+@Log4j2
 public class BatchTransactionHolder {
+
   private static final String TRANSACTION_TYPE = "transactionType";
   private static final String SOURCE_INVOICE_ID = "sourceInvoiceId";
+  private static final String PAYMENT_ENCUMBRANCE_ID = "paymentEncumbranceId";
 
   private final BatchTransactionDAO transactionDAO;
   private final FundService fundService;
@@ -56,6 +61,7 @@ public class BatchTransactionHolder {
 
   private List<Transaction> allTransactionsToCreate;
   private List<Transaction> allTransactionsToUpdate;
+  private List<Transaction> allTransactionsToDelete;
   private List<TransactionPatch> allTransactionPatches;
   private Set<String> idsOfTransactionsToDelete;
   private List<Transaction> transactionsToCancelAndDelete;
@@ -63,6 +69,7 @@ public class BatchTransactionHolder {
   private List<Transaction> existingTransactions;
   private List<Transaction> linkedEncumbrances;
   private List<Transaction> linkedPendingPayments;
+  private List<Transaction> linkedPayments;
   private List<Transaction> allTransactions;
   private List<Fund> allFunds;
   private List<Budget> allBudgets;
@@ -88,10 +95,10 @@ public class BatchTransactionHolder {
       .collect(toCollection(ArrayList::new));
 
     return loadTransactionsToDelete(conn)
-      .compose(transactionsToDelete -> BatchTransactionChecks.checkTransactionsToDelete(
-        transactionsToDelete, transactionDAO, conn))
+      .compose(transactionsToDelete -> BatchTransactionChecks.checkTransactionsToDelete(transactionsToDelete, transactionDAO, conn))
       .compose(v -> loadExistingTransactions(conn))
       .compose(v -> loadLinkedPendingPayments(conn))
+      .compose(v -> loadLinkedPayments(idsOfTransactionsToDelete, conn))
       .compose(v -> loadLinkedEncumbrances(conn))
       .map(v -> {
         setAllTransactions();
@@ -112,6 +119,10 @@ public class BatchTransactionHolder {
 
   public List<Transaction> getAllTransactionsToUpdate() {
     return allTransactionsToUpdate;
+  }
+
+  public List<Transaction> getAllTransactionsToDelete() {
+    return allTransactionsToDelete;
   }
 
   public List<TransactionPatch> getAllTransactionPatches() {
@@ -142,6 +153,10 @@ public class BatchTransactionHolder {
     return linkedPendingPayments;
   }
 
+
+  public List<Transaction> getLinkedPayments() {
+    return linkedPayments;
+  }
   public boolean budgetExpendituresAreRestricted(String budgetId) {
     return budgetIdToRestrictedExpenditures.get(budgetId);
   }
@@ -173,7 +188,7 @@ public class BatchTransactionHolder {
   }
 
   public String getCurrency() {
-    return allTransactions.get(0).getCurrency();
+    return allTransactions.getFirst().getCurrency();
   }
 
   private Future<List<Transaction>> loadTransactionsToDelete(DBConn conn) {
@@ -186,6 +201,7 @@ public class BatchTransactionHolder {
         if (transactions.size() != idsOfTransactionsToDelete.size()) {
           throw new HttpException(400, "One or more transaction to delete was not found");
         }
+        allTransactionsToDelete = transactions;
         // Do not process 0-amount encumbrances, just delete them (so no budget activity check is done)
         transactionsToCancelAndDelete = transactions.stream()
           .filter(tr -> tr.getTransactionType() != ENCUMBRANCE || tr.getAmount() != 0d)
@@ -221,20 +237,21 @@ public class BatchTransactionHolder {
       linkedPendingPayments = new ArrayList<>();
       return succeededFuture();
     }
-    Criteria trTypeCrit = new Criteria()
+    Criteria primaryCriteria = new Criteria()
       .addField("'" + TRANSACTION_TYPE + "'")
       .setOperation("=")
       .setVal(PENDING_PAYMENT.value());
-    GroupedCriterias invoiceIdGroup = new GroupedCriterias();
-    invoiceIds.forEach(id -> invoiceIdGroup.addCriteria(
-      new Criteria()
+    GroupedCriterias secondaryCriteria = new GroupedCriterias();
+    invoiceIds.forEach(id -> {
+      Criteria field = new Criteria()
         .addField("'" + SOURCE_INVOICE_ID + "'")
         .setOperation("=")
-        .setVal(id),
-      "OR"));
+        .setVal(id);
+      secondaryCriteria.addCriteria(field, "OR");
+    });
     Criterion criterion = new Criterion();
-    criterion.addCriterion(trTypeCrit);
-    criterion.addGroupOfCriterias(invoiceIdGroup);
+    criterion.addCriterion(primaryCriteria);
+    criterion.addGroupOfCriterias(secondaryCriteria);
     return transactionDAO.getTransactionsByCriterion(criterion, conn)
       .map(transactions -> {
         linkedPendingPayments = transactions;
@@ -248,22 +265,55 @@ public class BatchTransactionHolder {
       });
   }
 
+  private Future<Void> loadLinkedPayments(Set<String> transactionsToDelete, DBConn conn) {
+    if (CollectionUtils.isEmpty(transactionsToDelete)) {
+      linkedPayments = new ArrayList<>();
+      return succeededFuture();
+    }
+    Criteria primaryCriteria = new Criteria()
+      .addField("'" + TRANSACTION_TYPE + "'")
+      .setOperation("=")
+      .setVal(PAYMENT.value());
+    GroupedCriterias secondaryCriteria = new GroupedCriterias();
+    transactionsToDelete.forEach(id -> {
+      Criteria criteria = new Criteria()
+        .addField("'" + PAYMENT_ENCUMBRANCE_ID + "'")
+        .setOperation("=")
+        .setVal(id);
+      secondaryCriteria.addCriteria(criteria, "OR");
+    });
+    Criterion criterion = new Criterion();
+    criterion.addCriterion(primaryCriteria);
+    criterion.addGroupOfCriterias(secondaryCriteria);
+    return transactionDAO.getTransactionsByCriterion(criterion, conn)
+      .map(transactions -> {
+        linkedPayments = transactions;
+        return null;
+      });
+  }
+
   private Future<Void> loadLinkedEncumbrances(DBConn conn) {
-    List<Transaction> transactionsToCreateUpdateOrDelete = Stream.of(allTransactionsToCreateOrUpdate.stream(),
-        transactionsToCancelAndDelete.stream(), linkedPendingPayments.stream())
+    List<Transaction> transactionsToCreateUpdateOrDelete = Stream.of(
+      allTransactionsToCreateOrUpdate.stream(),
+        transactionsToCancelAndDelete.stream(),
+        linkedPayments.stream()
+      )
       .flatMap(Function.identity())
       .toList();
-    List<String> ids = transactionsToCreateUpdateOrDelete.stream().map(tr -> {
-      if (List.of(PAYMENT, CREDIT).contains(tr.getTransactionType())) {
-        return tr.getPaymentEncumbranceId();
-      } else if (tr.getTransactionType() == PENDING_PAYMENT && tr.getAwaitingPayment() != null) {
-        return tr.getAwaitingPayment().getEncumbranceId();
-      } else {
-        return null;
-      }
-    }).filter(Objects::nonNull)
+    List<String> ids = transactionsToCreateUpdateOrDelete.stream()
+      .map(tr -> {
+        if (List.of(PAYMENT, CREDIT).contains(tr.getTransactionType())) {
+          return tr.getPaymentEncumbranceId();
+        } else if (tr.getTransactionType() == PENDING_PAYMENT && tr.getAwaitingPayment() != null) {
+          return tr.getAwaitingPayment().getEncumbranceId();
+        } else {
+          return null;
+        }
+      })
+      .filter(Objects::nonNull)
       .distinct()
       .toList();
+    log.info("loadLinkedEncumbrances:: Ids: {}", ids);
     return transactionDAO.getTransactionsByIds(ids, conn)
       .map(transactions -> {
         if (transactions.size() != ids.size()) {

@@ -14,7 +14,6 @@ import org.folio.rest.persist.CriterionBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
@@ -210,15 +209,20 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
       .when(conn).getTenantId();
 
     Criterion criterion = createCriterionByIds(List.of(encumbranceId));
-    doReturn(succeededFuture(createResults(List.of(transaction))))
-      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
-        crit -> crit.toString().equals(criterion.toString())));
-
     CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
     criterionBuilder.withJson("awaitingPayment.encumbranceId", "=", encumbranceId);
-    doReturn(succeededFuture(createResults(List.of())))
-      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
-        crit -> crit.toString().equals(criterionBuilder.build().toString())));
+
+    // Mock transaction queries with specific matchers
+    doAnswer(invocation -> {
+      Criterion crit = invocation.getArgument(2);
+      if (crit.toString().equals(criterion.toString())) {
+        return succeededFuture(createResults(List.of(transaction)));
+      } else if (crit.toString().equals(criterionBuilder.build().toString())) {
+        return succeededFuture(createResults(List.of()));
+      } else {
+        return succeededFuture(createResults(List.of()));
+      }
+    }).when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), any(Criterion.class));
 
     doAnswer(invocation -> succeededFuture(createRowSet(List.of(transaction))))
       .when(conn).delete(anyString(), any(Criterion.class));

@@ -456,14 +456,19 @@ public class PendingPaymentTest extends BatchTransactionServiceTestBase {
     setupFundBudgetLedger(fundId, fiscalYearId, 0d, 5d, 0d, 0d, false, false, false);
 
     Criterion pendingPaymentCriterion = createCriterionByIds(List.of(pendingPaymentId));
-    doReturn(succeededFuture(createResults(List.of(existingPendingPayment))))
-      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
-        crit -> crit.toString().equals(pendingPaymentCriterion.toString())));
-
     Criterion encumbranceCriterion = createCriterionByIds(List.of(encumbranceId));
-    doReturn(succeededFuture(createResults(List.of(existingEncumbrance))))
-      .when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), argThat(
-        crit -> crit.toString().equals(encumbranceCriterion.toString())));
+
+    // Mock transaction queries with specific matchers
+    doAnswer(invocation -> {
+      Criterion crit = invocation.getArgument(2);
+      if (crit.toString().equals(pendingPaymentCriterion.toString())) {
+        return succeededFuture(createResults(List.of(existingPendingPayment)));
+      } else if (crit.toString().equals(encumbranceCriterion.toString())) {
+        return succeededFuture(createResults(List.of(existingEncumbrance)));
+      } else {
+        return succeededFuture(createResults(List.of()));
+      }
+    }).when(conn).get(eq(TRANSACTIONS_TABLE), eq(Transaction.class), any(Criterion.class));
 
     doAnswer(invocation -> succeededFuture(createRowSet(invocation.getArgument(1))))
       .when(conn).updateBatch(anyString(), anyList());
