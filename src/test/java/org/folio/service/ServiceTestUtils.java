@@ -9,6 +9,7 @@ import org.folio.rest.persist.helpers.LocalRowDesc;
 import org.folio.rest.persist.helpers.LocalRowSet;
 import org.folio.rest.persist.interfaces.Results;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 public class ServiceTestUtils {
@@ -30,4 +31,10 @@ public class ServiceTestUtils {
     return results;
   }
 
+  public static <T, C> T callPrivateMethod(C object, String methodName, Class<T> returnType, Class<?>[] paramTypes, Object[] params)
+    throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    var method = object.getClass().getDeclaredMethod(methodName, paramTypes);
+    method.setAccessible(true);
+    return returnType.cast(method.invoke(object, params));
+  }
 }

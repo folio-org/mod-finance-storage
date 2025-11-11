@@ -11,6 +11,8 @@ import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.TransactionPatch;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.CriterionBuilder;
+import org.folio.service.ServiceTestUtils;
+import org.folio.service.transactions.batch.BatchTransactionHolder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -733,5 +735,246 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
         });
         testContext.completeNow();
       });
+  }
+
+  // Tests for relinkPaymentsIfNeeded private method using reflection
+
+  @Test
+  void testRelinkPaymentsWhenEncumbranceChangesFunds() throws Exception {
+    // Given: Old encumbrance being deleted from oldFund, new encumbrance being created on newFund, same POL
+    String oldEncumbranceId = UUID.randomUUID().toString();
+    String newEncumbranceId = UUID.randomUUID().toString();
+    String paymentId = UUID.randomUUID().toString();
+    String oldFundId = UUID.randomUUID().toString();
+    String newFundId = UUID.randomUUID().toString();
+    String poLineId = UUID.randomUUID().toString();
+
+    Transaction oldEncumbrance = new Transaction()
+      .withId(oldEncumbranceId)
+      .withFromFundId(oldFundId)
+      .withTransactionType(ENCUMBRANCE)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withSourcePoLineId(poLineId));
+
+    Transaction newEncumbrance = new Transaction()
+      .withId(newEncumbranceId)
+      .withFromFundId(newFundId)
+      .withTransactionType(ENCUMBRANCE)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withSourcePoLineId(poLineId));
+
+    Transaction payment = new Transaction()
+      .withId(paymentId)
+      .withTransactionType(Transaction.TransactionType.PAYMENT)
+      .withPaymentEncumbranceId(oldEncumbranceId);
+
+    BatchTransactionHolder holder = org.mockito.Mockito.mock(BatchTransactionHolder.class);
+    org.mockito.Mockito.when(holder.getLinkedPayments()).thenReturn(List.of(payment));
+    org.mockito.Mockito.when(holder.getAllTransactionsToCreate()).thenReturn(List.of(newEncumbrance));
+    org.mockito.Mockito.when(holder.getAllTransactionsToDelete()).thenReturn(List.of(oldEncumbrance));
+
+    List<Transaction> transactionsToUpdate = new ArrayList<>();
+
+    // When
+    ServiceTestUtils.callPrivateMethod(
+      batchTransactionService,
+      "relinkPaymentsIfNeeded",
+      Void.class,
+      new Class<?>[]{BatchTransactionHolder.class, List.class},
+      new Object[]{holder, transactionsToUpdate}
+    );
+
+    // Then
+    assertThat(transactionsToUpdate.size(), equalTo(1));
+    assertThat(transactionsToUpdate.get(0).getId(), equalTo(paymentId));
+    assertThat(transactionsToUpdate.get(0).getPaymentEncumbranceId(), equalTo(newEncumbranceId));
+  }
+
+  @Test
+  void testRelinkPaymentsNotAppliedWhenSameFund() throws Exception {
+    // Given: Old and new encumbrance have same fund (should not relink)
+    String oldEncumbranceId = UUID.randomUUID().toString();
+    String newEncumbranceId = UUID.randomUUID().toString();
+    String paymentId = UUID.randomUUID().toString();
+    String sameFundId = UUID.randomUUID().toString();
+    String poLineId = UUID.randomUUID().toString();
+
+    Transaction oldEncumbrance = new Transaction()
+      .withId(oldEncumbranceId)
+      .withFromFundId(sameFundId)
+      .withTransactionType(ENCUMBRANCE)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withSourcePoLineId(poLineId));
+
+    Transaction newEncumbrance = new Transaction()
+      .withId(newEncumbranceId)
+      .withFromFundId(sameFundId)
+      .withTransactionType(ENCUMBRANCE)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withSourcePoLineId(poLineId));
+
+    Transaction payment = new Transaction()
+      .withId(paymentId)
+      .withTransactionType(Transaction.TransactionType.PAYMENT)
+      .withPaymentEncumbranceId(oldEncumbranceId);
+
+    BatchTransactionHolder holder = org.mockito.Mockito.mock(BatchTransactionHolder.class);
+    org.mockito.Mockito.when(holder.getLinkedPayments()).thenReturn(List.of(payment));
+    org.mockito.Mockito.when(holder.getAllTransactionsToCreate()).thenReturn(List.of(newEncumbrance));
+    org.mockito.Mockito.when(holder.getAllTransactionsToDelete()).thenReturn(List.of(oldEncumbrance));
+
+    List<Transaction> transactionsToUpdate = new ArrayList<>();
+
+    // When
+    ServiceTestUtils.callPrivateMethod(
+      batchTransactionService,
+      "relinkPaymentsIfNeeded",
+      Void.class,
+      new Class<?>[]{BatchTransactionHolder.class, List.class},
+      new Object[]{holder, transactionsToUpdate}
+    );
+
+    // Then
+    assertThat(transactionsToUpdate.size(), equalTo(0));
+    assertThat(payment.getPaymentEncumbranceId(), equalTo(oldEncumbranceId));
+  }
+
+  @Test
+  void testRelinkPaymentsNotAppliedWhenDifferentPOL() throws Exception {
+    // Given: Old and new encumbrance have different POL (should not relink)
+    String oldEncumbranceId = UUID.randomUUID().toString();
+    String newEncumbranceId = UUID.randomUUID().toString();
+    String paymentId = UUID.randomUUID().toString();
+    String oldFundId = UUID.randomUUID().toString();
+    String newFundId = UUID.randomUUID().toString();
+    String poLineId1 = UUID.randomUUID().toString();
+    String poLineId2 = UUID.randomUUID().toString();
+
+    Transaction oldEncumbrance = new Transaction()
+      .withId(oldEncumbranceId)
+      .withFromFundId(oldFundId)
+      .withTransactionType(ENCUMBRANCE)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withSourcePoLineId(poLineId1));
+
+    Transaction newEncumbrance = new Transaction()
+      .withId(newEncumbranceId)
+      .withFromFundId(newFundId)
+      .withTransactionType(ENCUMBRANCE)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withSourcePoLineId(poLineId2));
+
+    Transaction payment = new Transaction()
+      .withId(paymentId)
+      .withTransactionType(Transaction.TransactionType.PAYMENT)
+      .withPaymentEncumbranceId(oldEncumbranceId);
+
+    BatchTransactionHolder holder = org.mockito.Mockito.mock(BatchTransactionHolder.class);
+    org.mockito.Mockito.when(holder.getLinkedPayments()).thenReturn(List.of(payment));
+    org.mockito.Mockito.when(holder.getAllTransactionsToCreate()).thenReturn(List.of(newEncumbrance));
+    org.mockito.Mockito.when(holder.getAllTransactionsToDelete()).thenReturn(List.of(oldEncumbrance));
+
+    List<Transaction> transactionsToUpdate = new ArrayList<>();
+
+    // When
+    ServiceTestUtils.callPrivateMethod(
+      batchTransactionService,
+      "relinkPaymentsIfNeeded",
+      Void.class,
+      new Class<?>[]{BatchTransactionHolder.class, List.class},
+      new Object[]{holder, transactionsToUpdate}
+    );
+
+    // Then
+    assertThat(transactionsToUpdate.size(), equalTo(0));
+    assertThat(payment.getPaymentEncumbranceId(), equalTo(oldEncumbranceId));
+  }
+
+  @Test
+  void testRelinkPaymentsHandlesMultiplePayments() throws Exception {
+    // Given: Multiple payments linked to old encumbrance
+    String oldEncumbranceId = UUID.randomUUID().toString();
+    String newEncumbranceId = UUID.randomUUID().toString();
+    String payment1Id = UUID.randomUUID().toString();
+    String payment2Id = UUID.randomUUID().toString();
+    String oldFundId = UUID.randomUUID().toString();
+    String newFundId = UUID.randomUUID().toString();
+    String poLineId = UUID.randomUUID().toString();
+
+    Transaction oldEncumbrance = new Transaction()
+      .withId(oldEncumbranceId)
+      .withFromFundId(oldFundId)
+      .withTransactionType(ENCUMBRANCE)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withSourcePoLineId(poLineId));
+
+    Transaction newEncumbrance = new Transaction()
+      .withId(newEncumbranceId)
+      .withFromFundId(newFundId)
+      .withTransactionType(ENCUMBRANCE)
+      .withSource(PO_LINE)
+      .withEncumbrance(new Encumbrance()
+        .withSourcePoLineId(poLineId));
+
+    Transaction payment1 = new Transaction()
+      .withId(payment1Id)
+      .withTransactionType(Transaction.TransactionType.PAYMENT)
+      .withPaymentEncumbranceId(oldEncumbranceId);
+
+    Transaction payment2 = new Transaction()
+      .withId(payment2Id)
+      .withTransactionType(Transaction.TransactionType.PAYMENT)
+      .withPaymentEncumbranceId(oldEncumbranceId);
+
+    BatchTransactionHolder holder = org.mockito.Mockito.mock(BatchTransactionHolder.class);
+    org.mockito.Mockito.when(holder.getLinkedPayments()).thenReturn(List.of(payment1, payment2));
+    org.mockito.Mockito.when(holder.getAllTransactionsToCreate()).thenReturn(List.of(newEncumbrance));
+    org.mockito.Mockito.when(holder.getAllTransactionsToDelete()).thenReturn(List.of(oldEncumbrance));
+
+    List<Transaction> transactionsToUpdate = new ArrayList<>();
+
+    // When
+    ServiceTestUtils.callPrivateMethod(
+      batchTransactionService,
+      "relinkPaymentsIfNeeded",
+      Void.class,
+      new Class<?>[]{BatchTransactionHolder.class, List.class},
+      new Object[]{holder, transactionsToUpdate}
+    );
+
+    // Then
+    assertThat(transactionsToUpdate.size(), equalTo(2));
+    assertThat(payment1.getPaymentEncumbranceId(), equalTo(newEncumbranceId));
+    assertThat(payment2.getPaymentEncumbranceId(), equalTo(newEncumbranceId));
+  }
+
+  @Test
+  void testRelinkPaymentsSkipsWhenNoLinkedPayments() throws Exception {
+    // Given: No linked payments
+    BatchTransactionHolder holder = org.mockito.Mockito.mock(BatchTransactionHolder.class);
+    org.mockito.Mockito.when(holder.getLinkedPayments()).thenReturn(List.of());
+    org.mockito.Mockito.when(holder.getAllTransactionsToCreate()).thenReturn(List.of());
+    org.mockito.Mockito.when(holder.getAllTransactionsToDelete()).thenReturn(List.of());
+
+    List<Transaction> transactionsToUpdate = new ArrayList<>();
+
+    // When
+    ServiceTestUtils.callPrivateMethod(
+      batchTransactionService,
+      "relinkPaymentsIfNeeded",
+      Void.class,
+      new Class<?>[]{BatchTransactionHolder.class, List.class},
+      new Object[]{holder, transactionsToUpdate}
+    );
+
+    // Then
+    assertThat(transactionsToUpdate.size(), equalTo(0));
   }
 }
