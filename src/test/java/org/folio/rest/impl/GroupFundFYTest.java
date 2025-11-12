@@ -1,5 +1,6 @@
 package org.folio.rest.impl;
 
+import static org.awaitility.Awaitility.await;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.purge;
@@ -12,6 +13,7 @@ import static org.hamcrest.Matchers.hasSize;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYearBatchRequest;
@@ -98,13 +100,15 @@ public class GroupFundFYTest extends TestBase {
       .filter(gffy -> fundIds.contains(gffy.getFundId()))
       .count();
 
-    assertThat(result.getGroupFundFiscalYears(), hasSize((int) expectedCount));
-    assertThat(result.getTotalRecords(), equalTo((int) expectedCount));
+    await().atMost(5, TimeUnit.SECONDS)
+      .until(() ->
+        result.getGroupFundFiscalYears().size() == expectedCount
+        && result.getTotalRecords() == expectedCount
+      );
 
     // Verify all returned records have fundIds from the request
-    result.getGroupFundFiscalYears().forEach(gffy -> {
-      assertThat("FundId should be in the requested list", fundIds.contains(gffy.getFundId()));
-    });
+    result.getGroupFundFiscalYears().forEach(gffy ->
+      assertThat("FundId should be in the requested list", fundIds.contains(gffy.getFundId())));
 
     purge(GROUP_FUND_FY_TENANT_HEADER);
     deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
@@ -120,7 +124,7 @@ public class GroupFundFYTest extends TestBase {
       .as(GroupFundFiscalYearCollection.class);
 
     // Get a specific record to use for filtering
-    GroupFundFiscalYear sampleRecord = allRecords.getGroupFundFiscalYears().get(0);
+    GroupFundFiscalYear sampleRecord = allRecords.getGroupFundFiscalYears().getFirst();
     List<String> fundIds = List.of(sampleRecord.getFundId());
 
     // Create batch request with filters
@@ -142,7 +146,7 @@ public class GroupFundFYTest extends TestBase {
     assertThat(result.getGroupFundFiscalYears(), hasSize(1));
     assertThat(result.getTotalRecords(), equalTo(1));
 
-    GroupFundFiscalYear resultRecord = result.getGroupFundFiscalYears().get(0);
+    GroupFundFiscalYear resultRecord = result.getGroupFundFiscalYears().getFirst();
     assertThat(resultRecord.getFundId(), equalTo(sampleRecord.getFundId()));
     assertThat(resultRecord.getFiscalYearId(), equalTo(sampleRecord.getFiscalYearId()));
     assertThat(resultRecord.getGroupId(), equalTo(sampleRecord.getGroupId()));
@@ -179,10 +183,12 @@ public class GroupFundFYTest extends TestBase {
       .extract()
       .as(GroupFundFiscalYearCollection.class);
 
-    // Verify all records are returned - should match the original count
-    int expectedCount = allRecords.getGroupFundFiscalYears().size();
-    assertThat(result.getGroupFundFiscalYears(), hasSize(expectedCount));
-    assertThat(result.getTotalRecords(), equalTo(expectedCount));
+    await().atMost(5, TimeUnit.SECONDS).until(() -> {
+      // Verify all records are returned - should match the original count
+      int expectedCount = allRecords.getGroupFundFiscalYears().size();
+      return result.getGroupFundFiscalYears().size() == expectedCount
+        && result.getTotalRecords() == expectedCount;
+    });
 
     purge(GROUP_FUND_FY_TENANT_HEADER);
     deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
@@ -273,13 +279,14 @@ public class GroupFundFYTest extends TestBase {
       .extract()
       .as(GroupFundFiscalYearCollection.class);
 
-    // Verify only real records are returned - should match the original count since we queried all real fundIds
-    int expectedCount = allRecords.getGroupFundFiscalYears().size();
-    assertThat(result.getGroupFundFiscalYears(), hasSize(expectedCount));
-    assertThat(result.getTotalRecords(), equalTo(expectedCount));
+    await().atMost(5, TimeUnit.SECONDS).until(() -> {
+      // Verify only real records are returned - should match the original count since we queried all real fundIds
+      int expectedCount = allRecords.getGroupFundFiscalYears().size();
+      return result.getGroupFundFiscalYears().size() == expectedCount
+        && result.getTotalRecords() == expectedCount;
+    });
 
     purge(GROUP_FUND_FY_TENANT_HEADER);
     deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
   }
-
 }
