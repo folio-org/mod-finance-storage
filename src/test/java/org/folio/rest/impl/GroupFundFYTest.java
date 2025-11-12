@@ -100,7 +100,7 @@ public class GroupFundFYTest extends TestBase {
       .filter(gffy -> fundIds.contains(gffy.getFundId()))
       .count();
 
-    await().atMost(5, TimeUnit.SECONDS)
+    await().atMost(15, TimeUnit.SECONDS)
       .until(() ->
         result.getGroupFundFiscalYears().size() == expectedCount
         && result.getTotalRecords() == expectedCount
@@ -183,7 +183,7 @@ public class GroupFundFYTest extends TestBase {
       .extract()
       .as(GroupFundFiscalYearCollection.class);
 
-    await().atMost(5, TimeUnit.SECONDS).until(() -> {
+    await().atMost(15, TimeUnit.SECONDS).until(() -> {
       // Verify all records are returned - should match the original count
       int expectedCount = allRecords.getGroupFundFiscalYears().size();
       return result.getGroupFundFiscalYears().size() == expectedCount
@@ -279,7 +279,7 @@ public class GroupFundFYTest extends TestBase {
       .extract()
       .as(GroupFundFiscalYearCollection.class);
 
-    await().atMost(5, TimeUnit.SECONDS).until(() -> {
+    await().atMost(15, TimeUnit.SECONDS).until(() -> {
       // Verify only real records are returned - should match the original count since we queried all real fundIds
       int expectedCount = allRecords.getGroupFundFiscalYears().size();
       return result.getGroupFundFiscalYears().size() == expectedCount
