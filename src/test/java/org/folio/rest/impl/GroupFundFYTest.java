@@ -23,69 +23,57 @@ import io.restassured.http.Header;
 
 public class GroupFundFYTest extends TestBase {
 
-  private static final Header GROUP_FUND_FY_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, "groupfundfy");
-
   @Test
   public void testGetQuery() {
-    TenantJob tenantJob = prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
+    Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_query");
+    TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
 
-    // search for GET
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint(), GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint(), GROUP_FUND_FY.getInitialQuantity(), tenantHeader);
 
-    // search by field from "groups"
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==NonExistent", 0, GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==History", GROUP_FUND_FY.getInitialQuantity(), GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==NonExistent", 0, tenantHeader);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==History", GROUP_FUND_FY.getInitialQuantity(), tenantHeader);
 
-    // search by field from "FY"
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fiscalYear.code==NonExistent", 0, GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fiscalYear.code==FY2025", 12, GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fiscalYear.code==NonExistent", 0, tenantHeader);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fiscalYear.code==FY2025", 12, tenantHeader);
 
-    // search by field from "fund"
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fund.code==NonExistent", 0, GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fund.fundStatus==Active", 12, GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fund.name=European", 2, GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fund.code==NonExistent", 0, tenantHeader);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fund.fundStatus==Active", 12, tenantHeader);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fund.name=European", 2, tenantHeader);
 
-    // search by field from "fund type"
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fundType.name==NonExistent", 0, GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fundType.name==Approvals", 2, GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fundType.name==NonExistent", 0, tenantHeader);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=fundType.name==Approvals", 2, tenantHeader);
 
-    // search with fields from "ledgers"
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=ledger.name==One-time", 12, GROUP_FUND_FY_TENANT_HEADER);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=ledger.name==One-time", 12, tenantHeader);
 
-    // search by fields from different tables
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==History and fiscalYear.code==FY2025", 12, GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fiscalYear.periodEnd < 2026-01-01 and fund.fundStatus==Inactive and ledger.name==One-time", 1, GROUP_FUND_FY_TENANT_HEADER);
-    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fundType.name==Approvals and ledger.name==One-time", 2, GROUP_FUND_FY_TENANT_HEADER);
-    // search with invalid cql query
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.name==History and fiscalYear.code==FY2025", 12, tenantHeader);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fiscalYear.periodEnd < 2026-01-01 and fund.fundStatus==Inactive and ledger.name==One-time", 1, tenantHeader);
+    verifyCollectionQuantity(GROUP_FUND_FY.getEndpoint() + "?query=group.code==HIST and fundType.name==Approvals and ledger.name==One-time", 2, tenantHeader);
     testInvalidCQLQuery(GROUP_FUND_FY.getEndpoint() + "?query=invalid-query");
 
-    purge(GROUP_FUND_FY_TENANT_HEADER);
-    deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
+    purge(tenantHeader);
+    deleteTenant(tenantJob, tenantHeader);
   }
 
   @Test
   public void testBatchEndpointSuccess() {
-    // Prepare tenant with sample data
-    TenantJob tenantJob = prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
+    Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_success");
+    TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
 
-    // Get all group-fund-fiscal-year records to extract fundIds
-    GroupFundFiscalYearCollection allRecords = getData(GROUP_FUND_FY.getEndpoint(), GROUP_FUND_FY_TENANT_HEADER)
+    GroupFundFiscalYearCollection allRecords = getData(GROUP_FUND_FY.getEndpoint(), tenantHeader)
       .as(GroupFundFiscalYearCollection.class);
 
-    // Extract 3 unique fundIds from the sample data
     List<String> fundIds = allRecords.getGroupFundFiscalYears().stream()
       .map(GroupFundFiscalYear::getFundId)
       .distinct()
       .limit(3)
       .toList();
 
-    // Create batch request
     GroupFundFiscalYearBatchRequest batchRequest = new GroupFundFiscalYearBatchRequest()
       .withFundIds(fundIds);
 
     GroupFundFiscalYearCollection result = postData(GROUP_FUND_FY.getEndpoint() + "/batch",
       valueAsString(batchRequest),
-      GROUP_FUND_FY_TENANT_HEADER)
+      tenantHeader)
       .then()
       .statusCode(200)
       .extract()
@@ -101,15 +89,16 @@ public class GroupFundFYTest extends TestBase {
     result.getGroupFundFiscalYears().forEach(gffy ->
       assertThat("FundId should be in the requested list", fundIds.contains(gffy.getFundId())));
 
-    purge(GROUP_FUND_FY_TENANT_HEADER);
-    deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
+    purge(tenantHeader);
+    deleteTenant(tenantJob, tenantHeader);
   }
 
   @Test
   public void testBatchEndpointWithFilters() {
-    TenantJob tenantJob = prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
+    Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_filters");
+    TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
 
-    GroupFundFiscalYearCollection allRecords = getData(GROUP_FUND_FY.getEndpoint(), GROUP_FUND_FY_TENANT_HEADER)
+    GroupFundFiscalYearCollection allRecords = getData(GROUP_FUND_FY.getEndpoint(), tenantHeader)
       .as(GroupFundFiscalYearCollection.class);
 
     GroupFundFiscalYear sampleRecord = allRecords.getGroupFundFiscalYears().getFirst();
@@ -122,7 +111,7 @@ public class GroupFundFYTest extends TestBase {
 
     GroupFundFiscalYearCollection result = postData(GROUP_FUND_FY.getEndpoint() + "/batch",
       valueAsString(batchRequest),
-      GROUP_FUND_FY_TENANT_HEADER)
+      tenantHeader)
       .then()
       .statusCode(200)
       .extract()
@@ -136,15 +125,16 @@ public class GroupFundFYTest extends TestBase {
     assertThat(resultRecord.getFiscalYearId(), equalTo(sampleRecord.getFiscalYearId()));
     assertThat(resultRecord.getGroupId(), equalTo(sampleRecord.getGroupId()));
 
-    purge(GROUP_FUND_FY_TENANT_HEADER);
-    deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
+    purge(tenantHeader);
+    deleteTenant(tenantJob, tenantHeader);
   }
 
   @Test
   public void testBatchEndpointWithMultipleFunds() {
-    TenantJob tenantJob = prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
+    Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_multi");
+    TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
 
-    GroupFundFiscalYearCollection allRecords = getData(GROUP_FUND_FY.getEndpoint(), GROUP_FUND_FY_TENANT_HEADER)
+    GroupFundFiscalYearCollection allRecords = getData(GROUP_FUND_FY.getEndpoint(), tenantHeader)
       .as(GroupFundFiscalYearCollection.class);
 
     List<String> allFundIds = allRecords.getGroupFundFiscalYears().stream()
@@ -157,7 +147,7 @@ public class GroupFundFYTest extends TestBase {
 
     GroupFundFiscalYearCollection result = postData(GROUP_FUND_FY.getEndpoint() + "/batch",
       valueAsString(batchRequest),
-      GROUP_FUND_FY_TENANT_HEADER)
+      tenantHeader)
       .then()
       .statusCode(200)
       .extract()
@@ -167,30 +157,32 @@ public class GroupFundFYTest extends TestBase {
     assertThat(result.getGroupFundFiscalYears().size(), equalTo(expectedCount));
     assertThat(result.getTotalRecords(), equalTo(expectedCount));
 
-    purge(GROUP_FUND_FY_TENANT_HEADER);
-    deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
+    purge(tenantHeader);
+    deleteTenant(tenantJob, tenantHeader);
   }
 
   @Test
   public void testBatchEndpointEmptyFundIds() {
-    TenantJob tenantJob = prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
+    Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_empty");
+    TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
 
     GroupFundFiscalYearBatchRequest batchRequest = new GroupFundFiscalYearBatchRequest()
       .withFundIds(new ArrayList<>());
 
     postData(GROUP_FUND_FY.getEndpoint() + "/batch",
       valueAsString(batchRequest),
-      GROUP_FUND_FY_TENANT_HEADER)
+      tenantHeader)
       .then()
       .statusCode(422);
 
-    purge(GROUP_FUND_FY_TENANT_HEADER);
-    deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
+    purge(tenantHeader);
+    deleteTenant(tenantJob, tenantHeader);
   }
 
   @Test
   public void testBatchEndpointNonExistentFundIds() {
-    TenantJob tenantJob = prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
+    Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_nonexist");
+    TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
 
     List<String> nonExistentFundIds = List.of(
       UUID.randomUUID().toString(),
@@ -203,7 +195,7 @@ public class GroupFundFYTest extends TestBase {
 
     GroupFundFiscalYearCollection result = postData(GROUP_FUND_FY.getEndpoint() + "/batch",
       valueAsString(batchRequest),
-      GROUP_FUND_FY_TENANT_HEADER)
+      tenantHeader)
       .then()
       .statusCode(200)
       .extract()
@@ -212,15 +204,16 @@ public class GroupFundFYTest extends TestBase {
     assertThat(result.getGroupFundFiscalYears(), hasSize(0));
     assertThat(result.getTotalRecords(), equalTo(0));
 
-    purge(GROUP_FUND_FY_TENANT_HEADER);
-    deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
+    purge(tenantHeader);
+    deleteTenant(tenantJob, tenantHeader);
   }
 
   @Test
   public void testBatchEndpointLargeNumberOfFundIds() {
-    TenantJob tenantJob = prepareTenant(GROUP_FUND_FY_TENANT_HEADER, true, true);
+    Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_large");
+    TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
 
-    GroupFundFiscalYearCollection allRecords = getData(GROUP_FUND_FY.getEndpoint(), GROUP_FUND_FY_TENANT_HEADER)
+    GroupFundFiscalYearCollection allRecords = getData(GROUP_FUND_FY.getEndpoint(), tenantHeader)
       .as(GroupFundFiscalYearCollection.class);
 
     List<String> realFundIds = allRecords.getGroupFundFiscalYears().stream()
@@ -238,7 +231,7 @@ public class GroupFundFYTest extends TestBase {
 
     GroupFundFiscalYearCollection result = postData(GROUP_FUND_FY.getEndpoint() + "/batch",
       valueAsString(batchRequest),
-      GROUP_FUND_FY_TENANT_HEADER)
+      tenantHeader)
       .then()
       .statusCode(200)
       .extract()
@@ -248,7 +241,7 @@ public class GroupFundFYTest extends TestBase {
     assertThat(result.getGroupFundFiscalYears().size(), equalTo(expectedCount));
     assertThat(result.getTotalRecords(), equalTo(expectedCount));
 
-    purge(GROUP_FUND_FY_TENANT_HEADER);
-    deleteTenant(tenantJob, GROUP_FUND_FY_TENANT_HEADER);
+    purge(tenantHeader);
+    deleteTenant(tenantJob, tenantHeader);
   }
 }
