@@ -237,11 +237,7 @@ public class BatchTransactionService {
         logger.info("relinkPaymentsIfNeeded:: Old encumbrance id={}, from fund id={}", oldEncumbrance.getId(), oldEncumbrance.getFromFundId());
         newEncumbrance = createTransactions.stream()
           .filter(Objects::nonNull)
-          .filter(tr -> !StringUtils.equals(tr.getFromFundId(), oldEncumbrance.getFromFundId())
-            && StringUtils.equals(tr.getFiscalYearId(), oldEncumbrance.getFiscalYearId())
-            && StringUtils.equals(tr.getEncumbrance().getSourcePoLineId(), oldEncumbrance.getEncumbrance().getSourcePoLineId())
-            && Objects.equals(tr.getAmount(), oldEncumbrance.getAmount())
-            && Objects.equals(tr.getEncumbrance().getStatus(), oldEncumbrance.getEncumbrance().getStatus()))
+          .filter(tr -> isValidAnalogousEncumbrance(tr, oldEncumbrance))
           .filter(tr -> Objects.nonNull(tr.getId()))
           .findFirst().orElse(null);
       }
@@ -253,6 +249,14 @@ public class BatchTransactionService {
         logger.info("relinkPaymentsIfNeeded:: Updated payment encumbranceId from={} to={}", oldId, payment.getPaymentEncumbranceId());
       }
     });
+  }
+
+  private boolean isValidAnalogousEncumbrance(Transaction tr, Transaction oldEncumbrance) {
+    return !StringUtils.equals(tr.getFromFundId(), oldEncumbrance.getFromFundId())
+      && StringUtils.equals(tr.getFiscalYearId(), oldEncumbrance.getFiscalYearId())
+      && StringUtils.equals(tr.getEncumbrance().getSourcePoLineId(), oldEncumbrance.getEncumbrance().getSourcePoLineId())
+      && Objects.equals(tr.getAmount(), oldEncumbrance.getAmount())
+      && Objects.equals(tr.getEncumbrance().getStatus(), oldEncumbrance.getEncumbrance().getStatus());
   }
 
   private Future<Void> deleteTransactions(BatchTransactionHolder holder, DBConn conn) {

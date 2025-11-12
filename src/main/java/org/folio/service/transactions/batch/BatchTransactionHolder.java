@@ -153,10 +153,10 @@ public class BatchTransactionHolder {
     return linkedPendingPayments;
   }
 
-
   public List<Transaction> getLinkedPayments() {
     return linkedPayments;
   }
+
   public boolean budgetExpendituresAreRestricted(String budgetId) {
     return budgetIdToRestrictedExpenditures.get(budgetId);
   }
@@ -294,7 +294,7 @@ public class BatchTransactionHolder {
 
   private Future<Void> loadLinkedEncumbrances(DBConn conn) {
     List<Transaction> transactionsToCreateUpdateOrDelete = Stream.of(
-      allTransactionsToCreateOrUpdate.stream(),
+        allTransactionsToCreateOrUpdate.stream(),
         transactionsToCancelAndDelete.stream(),
         linkedPayments.stream()
       )
