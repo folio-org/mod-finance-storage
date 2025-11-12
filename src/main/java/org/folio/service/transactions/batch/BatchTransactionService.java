@@ -3,6 +3,8 @@ package org.folio.service.transactions.batch;
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.transactions.BatchTransactionDAO;
@@ -24,6 +26,7 @@ import org.folio.service.ledger.LedgerService;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static io.vertx.core.Future.succeededFuture;
@@ -36,7 +39,9 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.TRANSFER;
 import static org.folio.utils.MetadataUtils.generateMetadata;
 
 public class BatchTransactionService {
+
   private static final Logger logger = LogManager.getLogger();
+
   private static final List<TransactionType> transactionTypesInOrder = List.of(ALLOCATION, TRANSFER, PAYMENT,
     PENDING_PAYMENT, ENCUMBRANCE);
   private final DBClientFactory dbClientFactory;
@@ -47,8 +52,8 @@ public class BatchTransactionService {
   private final Map<TransactionType, BatchTransactionServiceInterface> serviceMap;
 
   public BatchTransactionService(DBClientFactory dbClientFactory, BatchTransactionDAO transactionDAO,
-      FundService fundService, BudgetService budgetService, LedgerService ledgerService,
-      Set<BatchTransactionServiceInterface> batchTransactionStrategies) {
+                                 FundService fundService, BudgetService budgetService, LedgerService ledgerService,
+                                 Set<BatchTransactionServiceInterface> batchTransactionStrategies) {
     this.dbClientFactory = dbClientFactory;
     this.transactionDAO = transactionDAO;
     this.fundService = fundService;
@@ -207,10 +212,51 @@ public class BatchTransactionService {
     if (transactions.isEmpty()) {
       return succeededFuture();
     }
+    relinkPaymentsIfNeeded(holder, transactions);
     return transactionDAO.updateTransactions(transactions, conn)
       .onSuccess(v -> logger.info("Batch transactions: successfully updated {} transactions", transactions.size()))
       .onFailure(t -> logger.error("Batch transactions: failed to update transactions, transactions = {}",
         Json.encode(transactions), t));
+  }
+
+  private void relinkPaymentsIfNeeded(BatchTransactionHolder holder, List<Transaction> transactions) {
+    List<Transaction> payments = holder.getLinkedPayments();
+    List<Transaction> createTransactions = holder.getAllTransactionsToCreate();
+    List<Transaction> deletingTransactions = holder.getAllTransactionsToDelete();
+    if (CollectionUtils.isEmpty(payments) || CollectionUtils.isEmpty(createTransactions) || CollectionUtils.isEmpty(deletingTransactions)) {
+      return;
+    }
+    payments.forEach(payment -> {
+      var oldEncumbrance = deletingTransactions.stream()
+        .filter(Objects::nonNull)
+        .filter(tr -> tr.getTransactionType() == ENCUMBRANCE)
+        .filter(tr -> StringUtils.equals(payment.getPaymentEncumbranceId(), tr.getId()))
+        .findFirst().orElse(null);
+      Transaction newEncumbrance = null;
+      if (Objects.nonNull(oldEncumbrance)) {
+        logger.info("relinkPaymentsIfNeeded:: Old encumbrance id={}, from fund id={}", oldEncumbrance.getId(), oldEncumbrance.getFromFundId());
+        newEncumbrance = createTransactions.stream()
+          .filter(Objects::nonNull)
+          .filter(tr -> isValidAnalogousEncumbrance(tr, oldEncumbrance))
+          .filter(tr -> Objects.nonNull(tr.getId()))
+          .findFirst().orElse(null);
+      }
+      if (Objects.nonNull(newEncumbrance)) {
+        logger.info("relinkPaymentsIfNeeded:: New encumbrance id={} from fund id={}", newEncumbrance.getId(), newEncumbrance.getFromFundId());
+        var oldId = payment.getPaymentEncumbranceId();
+        payment.setPaymentEncumbranceId(newEncumbrance.getId());
+        transactions.add(payment);
+        logger.info("relinkPaymentsIfNeeded:: Updated payment encumbranceId from={} to={}", oldId, payment.getPaymentEncumbranceId());
+      }
+    });
+  }
+
+  private boolean isValidAnalogousEncumbrance(Transaction tr, Transaction oldEncumbrance) {
+    return !StringUtils.equals(tr.getFromFundId(), oldEncumbrance.getFromFundId())
+      && StringUtils.equals(tr.getFiscalYearId(), oldEncumbrance.getFiscalYearId())
+      && StringUtils.equals(tr.getEncumbrance().getSourcePoLineId(), oldEncumbrance.getEncumbrance().getSourcePoLineId())
+      && Objects.equals(tr.getAmount(), oldEncumbrance.getAmount())
+      && Objects.equals(tr.getEncumbrance().getStatus(), oldEncumbrance.getEncumbrance().getStatus());
   }
 
   private Future<Void> deleteTransactions(BatchTransactionHolder holder, DBConn conn) {

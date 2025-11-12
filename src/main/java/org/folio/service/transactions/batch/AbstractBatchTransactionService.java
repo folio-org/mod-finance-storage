@@ -82,17 +82,16 @@ public abstract class AbstractBatchTransactionService implements BatchTransactio
     if (encumbrances.isEmpty()) {
       return encumbrances;
     }
-    // if an encumbrance  is already marked for update, use the object from transactionsToUpdate to continue
+    // If an encumbrance is already marked for update, use the object from transactionsToUpdate to continue
     Map<String, Transaction> transactionsToUpdateMap = holder.getAllTransactionsToUpdate().stream()
       .collect(toMap(Transaction::getId, identity()));
     encumbrances = encumbrances.stream()
       .map(tr -> requireNonNullElse(transactionsToUpdateMap.get(tr.getId()), tr))
       .toList();
-    // otherwise add it, so it gets saved (assuming encumbrances are processed after pending payments)
+    // Otherwise add it, so it gets saved (assuming encumbrances are processed after pending payments)
     encumbrances.stream()
       .filter(tr -> !transactionsToUpdateMap.containsKey(tr.getId()))
       .forEach(tr -> holder.addTransactionToUpdate(tr, JsonObject.mapFrom(tr).mapTo(Transaction.class)));
-
     return encumbrances;
   }
 }
