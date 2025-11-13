@@ -7,11 +7,16 @@ import io.vertx.core.Vertx;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.core.model.RequestContext;
+import org.folio.rest.exception.HttpException;
+import org.folio.rest.jaxrs.model.BatchIdCollection;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.resource.FinanceStorageBudgets;
+import org.folio.rest.persist.HelperUtils;
 import org.folio.rest.persist.PgUtil;
 import org.folio.service.budget.BudgetService;
 import org.folio.spring.SpringContextUtil;
@@ -19,10 +24,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.RestConstants.OKAPI_URL;
+import static org.folio.rest.jaxrs.resource.FinanceStorageBudgets.PostFinanceStorageBudgetsBatchResponse.respond200WithApplicationJson;
 import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
 import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
 
 public class BudgetAPI implements FinanceStorageBudgets {
+
+  private static final Logger logger = LogManager.getLogger(BudgetAPI.class);
+
   public static final String BUDGET_TABLE = "budget";
 
   @Autowired
@@ -52,6 +61,19 @@ public class BudgetAPI implements FinanceStorageBudgets {
       .onSuccess(createdBudget -> asyncResultHandler.handle(succeededFuture(
         buildResponseWithLocation(okapiHeaders.get(OKAPI_URL), "/finance-storage/budgets", createdBudget))))
       .onFailure(t -> asyncResultHandler.handle(buildErrorResponse(t)));
+  }
+
+  @Override
+  public void postFinanceStorageBudgetsBatch(BatchIdCollection entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    new RequestContext(vertxContext, okapiHeaders).toDBClient()
+      .withConn(conn -> budgetService.getBudgetsByIds(entity.getIds(), conn)
+        .map(budgets -> new BudgetCollection().withBudgets(budgets).withTotalRecords(budgets.size()))
+        .onSuccess(budgets -> asyncResultHandler.handle(succeededFuture(respond200WithApplicationJson(budgets))))
+        .onFailure(throwable -> {
+          HttpException cause = (HttpException) throwable;
+          logger.error("Failed to get funds by ids {}", entity.getIds(), cause);
+          HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
+        }));
   }
 
   @Override
