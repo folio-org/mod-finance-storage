@@ -17,6 +17,11 @@
           "permissionsRequired": ["finance-storage.budgets.item.post"]
         },
         {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/budgets/batch",
+          "permissionsRequired": ["finance-storage.budgets.batch.post"]
+        },
+        {
           "methods": ["GET"],
           "pathPattern": "/finance-storage/budgets/{id}",
           "permissionsRequired": ["finance-storage.budgets.item.get"]
@@ -175,6 +180,11 @@
           "methods": ["POST"],
           "pathPattern": "/finance-storage/funds",
           "permissionsRequired": ["finance-storage.funds.item.post"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/funds/batch",
+          "permissionsRequired": ["finance-storage.funds.batch.post"]
         },
         {
           "methods": ["GET"],

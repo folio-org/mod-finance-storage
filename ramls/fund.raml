@@ -11,6 +11,7 @@ types:
   errors: !include raml-util/schemas/errors.schema
   fund: !include acq-models/mod-finance/schemas/fund.json
   fund_collection: !include acq-models/mod-finance/schemas/fund_collection.json
+  batch-id-collection: !include acq-models/common/schemas/batch_id_collection.json
   UUID:
     type: string
     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
@@ -39,6 +40,33 @@ resourceTypes:
       searchable: {description: "with valid searchable fields: for example code", example: "[\"code\", \"MEDGRANT\", \"=\"]"},
       pageable
     ]
+  /batch:
+    post:
+      description: Query fund records by multiple IDs in a single request
+      is: [ validate ]
+      body:
+        application/json:
+          type: batch-id-collection
+      responses:
+        200:
+          description: "Returns matching fund records"
+          body:
+            application/json:
+              type: fund_collection
+        400:
+          description: "Bad request"
+          body:
+            text/plain:
+              example: "Bad request"
+            application/json:
+              type: errors
+        500:
+          description: "Internal server error"
+          body:
+            text/plain:
+              example: "Internal server error, contact administrator"
+            application/json:
+              type: errors
   /{id}:
     uriParameters:
       id:
