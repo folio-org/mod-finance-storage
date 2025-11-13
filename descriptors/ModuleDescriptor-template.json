@@ -17,6 +17,11 @@
           "permissionsRequired": ["finance-storage.budgets.item.post"]
         },
         {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/budgets/batch",
+          "permissionsRequired": ["finance-storage.budgets.batch.post"]
+        },
+        {
           "methods": ["GET"],
           "pathPattern": "/finance-storage/budgets/{id}",
           "permissionsRequired": ["finance-storage.budgets.item.get"]
@@ -175,6 +180,11 @@
           "methods": ["POST"],
           "pathPattern": "/finance-storage/funds",
           "permissionsRequired": ["finance-storage.funds.item.post"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/funds/batch",
+          "permissionsRequired": ["finance-storage.funds.batch.post"]
         },
         {
           "methods": ["GET"],
@@ -571,6 +581,11 @@
       "description" : "Get a collection of budgets"
     },
     {
+      "permissionName" : "finance-storage.budgets.batch.post",
+      "displayName" : "budget-batch post",
+      "description" : "Get budgets in batch"
+    },
+    {
       "permissionName" : "finance-storage.budgets.item.post",
       "displayName" : "budget-item post",
       "description" : "Create a new budget"
@@ -601,6 +616,7 @@
       "description" : "All permissions for the budget",
       "subPermissions" : [
         "finance-storage.budgets.collection.get",
+        "finance-storage.budgets.batch.post",
         "finance-storage.budgets.item.post",
         "finance-storage.budgets.item.get",
         "finance-storage.budgets.item.put",
@@ -762,6 +778,11 @@
       "description" : "Get collection of funds"
     },
     {
+      "permissionName" : "finance-storage.funds.batch.post",
+      "displayName" : "funds-batch post",
+      "description" : "Get funds in batch"
+    },
+    {
       "permissionName" : "finance-storage.funds.item.post",
       "displayName" : "fund-item post",
       "description" : "Create a new fund"
@@ -787,6 +808,7 @@
       "description" : "All permissions for the fund",
       "subPermissions" : [
         "finance-storage.funds.collection.get",
+        "finance-storage.funds.batch.post",
         "finance-storage.funds.item.post",
         "finance-storage.funds.item.get",
         "finance-storage.funds.item.put",
