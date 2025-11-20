@@ -7,12 +7,14 @@ import static org.folio.rest.util.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
 
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
@@ -142,6 +144,19 @@ public final class HelperUtils {
       f = f.compose(r -> method.apply(item));
     }
     return f;
+  }
+
+  /**
+   * Create a query like "id==(123e4567-e89b-12d3-a456-426614174000 or 123e4567-e89b-12d3-a456-426614174001)".
+   *
+   * @param fieldName must be a valid field name, validate beforehand to avoid CQL injection!
+   * @param strictMatch true for == operator, false for = operator
+   */
+  public static String convertFieldListToCqlQuery(Collection<String> values, String fieldName, boolean strictMatch) {
+    final var operator = strictMatch ? "==" : "=";
+    final var prefix = fieldName + operator + "(";
+    final var suffix = ")";
+    return values.stream().collect(Collectors.joining(" or ", prefix, suffix));
   }
 
 }
