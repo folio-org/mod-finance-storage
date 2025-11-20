@@ -35,21 +35,21 @@ public class TransactionTotalApi implements FinanceStorageTransactionTotals {
   @Override
   public void postFinanceStorageTransactionTotalsBatch(TransactionTotalBatch batchRequest, Map<String, String> okapiHeaders,
                                                        Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    String fundQuery;
-    if (CollectionUtils.isNotEmpty(batchRequest.getToFundIds())) {
-      fundQuery = convertFieldListToCqlQuery(batchRequest.getToFundIds(), "toFundId", true);
-    } else if (CollectionUtils.isNotEmpty(batchRequest.getFromFundIds())) {
-      fundQuery = convertFieldListToCqlQuery(batchRequest.getFromFundIds(), "fromFundId", true);
-    } else {
-      var exception = new HttpException(HttpStatus.SC_BAD_REQUEST, "At least one of 'toFundIds' or 'fromFundIds' must be provided");
+    var toFundIdsPresent = CollectionUtils.isNotEmpty(batchRequest.getToFundIds());
+    var fromFundIdsPresent = CollectionUtils.isNotEmpty(batchRequest.getFromFundIds());
+    if (!toFundIdsPresent && !fromFundIdsPresent || toFundIdsPresent && fromFundIdsPresent) {
+      var exception = new HttpException(HttpStatus.SC_UNPROCESSABLE_ENTITY, "Either 'toFundIds' or 'fromFundIds' must be provided, but not both");
       asyncResultHandler.handle(buildErrorResponse(exception));
       return;
     }
 
+    String fundQuery = toFundIdsPresent
+      ? convertFieldListToCqlQuery(batchRequest.getToFundIds(), "toFundId", true)
+      : convertFieldListToCqlQuery(batchRequest.getFromFundIds(), "fromFundId", true);
     var trTypeValues = batchRequest.getTransactionTypes().stream().map(TransactionType::value).toList();
     var trTypeQuery = convertFieldListToCqlQuery(trTypeValues, "transactionType", true);
 
-    var query = String.format("(fiscalYearId==%s AND %s) AND %s", batchRequest.getFiscalYearId(), trTypeQuery, fundQuery);
+    var query = "(fiscalYearId==%s AND %s) AND %s".formatted(batchRequest.getFiscalYearId(), trTypeQuery, fundQuery);
 
     PgUtil.get(TRANSACTION_TOTALS_VIEW, TransactionTotal.class, TransactionTotalCollection.class, query, 0, Integer.MAX_VALUE, okapiHeaders, vertxContext,
       FinanceStorageTransactionTotals.PostFinanceStorageTransactionTotalsBatchResponse.class, asyncResultHandler);
