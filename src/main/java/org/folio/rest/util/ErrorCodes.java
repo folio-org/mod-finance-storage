@@ -25,7 +25,8 @@ public enum ErrorCodes {
   FAILED_TO_UPDATE_BUDGETS("failedToUpdateBudgets", "Failed to update budgets"),
   FAILED_TO_CREATE_ALLOCATIONS("failedToCreateAllocations", "Failed to create allocations"),
   EXCHANGE_RATE_SOURCE_ALREADY_EXISTS("exchangeRateSourceAlreadyExists", "Exchange rate source already exists"),
-  EXCHANGE_RATE_SOURCE_INVALID("exchangeRateSourceInvalid", "Exchange rate source content is invalid");
+  EXCHANGE_RATE_SOURCE_INVALID("exchangeRateSourceInvalid", "Exchange rate source content is invalid"),
+  INCORRECT_FUND_IDS_PROVIDED("incorrectFundIdsProvided", "Either 'toFundIds' or 'fromFundIds' must be provided, but not both");
 
   private final String code;
   private final String description;

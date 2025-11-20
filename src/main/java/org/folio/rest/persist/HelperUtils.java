@@ -21,6 +21,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.vertx.core.Future;
+
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Parameter;
@@ -30,6 +32,9 @@ import org.folio.rest.persist.interfaces.Results;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+
 import org.folio.rest.exception.HttpException;
 
 public final class HelperUtils {
@@ -146,17 +151,10 @@ public final class HelperUtils {
     return f;
   }
 
-  /**
-   * Create a query like "id==(123e4567-e89b-12d3-a456-426614174000 or 123e4567-e89b-12d3-a456-426614174001)".
-   *
-   * @param fieldName must be a valid field name, validate beforehand to avoid CQL injection!
-   * @param strictMatch true for == operator, false for = operator
-   */
-  public static String convertFieldListToCqlQuery(Collection<String> values, String fieldName, boolean strictMatch) {
-    final var operator = strictMatch ? "==" : "=";
-    final var prefix = fieldName + operator + "(";
-    final var suffix = ")";
-    return values.stream().collect(Collectors.joining(" or ", prefix, suffix));
+  public static <T> List<T> getRowSetAsList(RowSet<Row> rowSet, Class<T> entityClass) {
+    return IteratorUtils.toList(rowSet.iterator()).stream()
+      .map(row -> row.getJsonObject("jsonb").mapTo(entityClass))
+      .toList();
   }
 
 }
