@@ -27,6 +27,7 @@ import static org.folio.rest.utils.TestEntities.BUDGET;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
 @ExtendWith(VertxExtension.class)
@@ -99,6 +100,33 @@ public class TransactionTotalApiTest extends TestBase {
       .statusCode(200)
       .body("transactionTotals[0].amount", equalTo(5000.0F))
       .body("totalRecords", equalTo(1));
+  }
+
+  @Test
+  void getFinanceStorageTransactionTotalsBatchIncorrectParameters() {
+    // Neither toFundIds nor fromFundIds provided
+    var batchRequest = new TransactionTotalBatch()
+      .withFiscalYearId(FISCAL_YEAR.getId())
+      .withTransactionTypes(List.of(TransactionType.ALLOCATION, TransactionType.TRANSFER, TransactionType.ROLLOVER_TRANSFER));
+
+    postData(TRANSACTION_TOTALS_BATCH_ENDPOINT, valueAsString(batchRequest), TRANSACTION_TENANT_HEADER)
+      .then()
+      .log().all()
+      .statusCode(422)
+      .body("errors[0].message", equalTo("Either 'toFundIds' or 'fromFundIds' must be provided, but not both"))
+      .body("total_records", equalTo(1));
+
+    // Both toFundIds nor fromFundIds provided
+    batchRequest
+      .withToFundIds(List.of(FUND.getId()))
+      .withFromFundIds(List.of(FUND.getId()));
+
+    postData(TRANSACTION_TOTALS_BATCH_ENDPOINT, valueAsString(batchRequest), TRANSACTION_TENANT_HEADER)
+      .then()
+      .log().all()
+      .statusCode(422)
+      .body("errors[0].message", equalTo("Either 'toFundIds' or 'fromFundIds' must be provided, but not both"))
+      .body("total_records", equalTo(1));
   }
 
   private void setUpTestData() {
