@@ -66,14 +66,14 @@ public class BudgetAPI implements FinanceStorageBudgets {
   @Override
   public void postFinanceStorageBudgetsBatch(BatchIdCollection entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     new RequestContext(vertxContext, okapiHeaders).toDBClient()
-      .withConn(conn -> budgetService.getBudgetsByIds(entity.getIds(), conn)
-        .map(budgets -> new BudgetCollection().withBudgets(budgets).withTotalRecords(budgets.size()))
-        .onSuccess(budgets -> asyncResultHandler.handle(succeededFuture(respond200WithApplicationJson(budgets))))
-        .onFailure(throwable -> {
-          HttpException cause = (HttpException) throwable;
-          logger.error("Failed to get funds by ids {}", entity.getIds(), cause);
-          HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
-        }));
+      .withConn(conn -> budgetService.getBudgetsByIds(entity.getIds(), conn))
+      .map(budgets -> new BudgetCollection().withBudgets(budgets).withTotalRecords(budgets.size()))
+      .onSuccess(budgets -> asyncResultHandler.handle(succeededFuture(respond200WithApplicationJson(budgets))))
+      .onFailure(throwable -> {
+        HttpException cause = (HttpException) throwable;
+        logger.error("Failed to get funds by ids {}", entity.getIds(), cause);
+        HelperUtils.replyWithErrorResponse(asyncResultHandler, cause);
+      });
   }
 
   @Override
