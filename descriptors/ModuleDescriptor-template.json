@@ -454,6 +454,11 @@
           "methods": ["GET"],
           "pathPattern": "/finance-storage/transaction-totals",
           "permissionsRequired": ["finance-storage.transaction-totals.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/transaction-totals/batch",
+          "permissionsRequired": ["finance-storage.transaction-totals.batch.post"]
         }
       ]
     },
@@ -1071,11 +1076,17 @@
       "description" : "Get collection of transaction totals"
     },
     {
+      "permissionName" : "finance-storage.transaction-totals.batch.post",
+      "displayName" : "finance-storage.transaction-totals.batch post",
+      "description" : "Get collection of transaction totals in batch"
+    },
+    {
       "permissionName" : "finance-storage.transaction-totals.all",
       "displayName" : "All transaction totals perms",
       "description" : "All permissions for the transaction total",
       "subPermissions" : [
-        "finance-storage.transaction-totals.collection.get"
+        "finance-storage.transaction-totals.collection.get",
+        "finance-storage.transaction-totals.batch.post"
       ]
     },
     {

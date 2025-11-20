@@ -26,6 +26,8 @@ import org.folio.dao.transactions.BatchTransactionDAO;
 import org.folio.dao.transactions.BatchTransactionPostgresDAO;
 import org.folio.dao.transactions.TemporaryEncumbranceDAO;
 import org.folio.dao.transactions.TemporaryEncumbrancePostgresDAO;
+import org.folio.dao.transactions.TransactionTotalDAO;
+import org.folio.dao.transactions.TransactionTotalPostgresDAO;
 import org.springframework.context.annotation.Bean;
 
 public class DAOConfiguration {
@@ -103,6 +105,11 @@ public class DAOConfiguration {
   @Bean
   public ExchangeRateSourceDAO exchangeRateSourceDAO() {
     return new ExchangeRateSourceDAOImpl();
+  }
+
+  @Bean
+  public TransactionTotalDAO transactionTotalDAO() {
+    return new TransactionTotalPostgresDAO();
   }
 
 }
