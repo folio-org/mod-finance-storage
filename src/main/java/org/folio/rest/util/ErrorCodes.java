@@ -26,7 +26,7 @@ public enum ErrorCodes {
   FAILED_TO_CREATE_ALLOCATIONS("failedToCreateAllocations", "Failed to create allocations"),
   EXCHANGE_RATE_SOURCE_ALREADY_EXISTS("exchangeRateSourceAlreadyExists", "Exchange rate source already exists"),
   EXCHANGE_RATE_SOURCE_INVALID("exchangeRateSourceInvalid", "Exchange rate source content is invalid"),
-  INCORRECT_FUND_IDS_PROVIDED("incorrectFundIdsProvided", "Either 'toFundIds' or 'fromFundIds' must be provided, but not both");
+  INCORRECT_FUND_IDS_PROVIDED("incorrectFundIdsProvided", "Both 'toFundIds' and 'fromFundIds' must not be provided");
 
   private final String code;
   private final String description;
