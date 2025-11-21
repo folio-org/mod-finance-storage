@@ -9,6 +9,7 @@ import org.folio.rest.jaxrs.model.TransactionTotalBatch;
 import org.folio.rest.jaxrs.model.TransactionType;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactionTotals;
 import org.folio.rest.persist.HelperUtils;
+import org.folio.rest.util.ErrorCodes;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,20 +105,9 @@ public class TransactionTotalApiTest extends TestBase {
 
   @Test
   void getFinanceStorageTransactionTotalsBatchIncorrectParameters() {
-    // Neither toFundIds nor fromFundIds provided
     var batchRequest = new TransactionTotalBatch()
       .withFiscalYearId(FISCAL_YEAR.getId())
-      .withTransactionTypes(List.of(TransactionType.ALLOCATION, TransactionType.TRANSFER, TransactionType.ROLLOVER_TRANSFER));
-
-    postData(TRANSACTION_TOTALS_BATCH_ENDPOINT, valueAsString(batchRequest), TRANSACTION_TENANT_HEADER)
-      .then()
-      .log().all()
-      .statusCode(422)
-      .body("errors[0].message", equalTo("Either 'toFundIds' or 'fromFundIds' must be provided, but not both"))
-      .body("total_records", equalTo(1));
-
-    // Both toFundIds nor fromFundIds provided
-    batchRequest
+      .withTransactionTypes(List.of(TransactionType.ALLOCATION, TransactionType.TRANSFER, TransactionType.ROLLOVER_TRANSFER))
       .withToFundIds(List.of(FUND.getId()))
       .withFromFundIds(List.of(FUND.getId()));
 
@@ -125,7 +115,7 @@ public class TransactionTotalApiTest extends TestBase {
       .then()
       .log().all()
       .statusCode(422)
-      .body("errors[0].message", equalTo("Either 'toFundIds' or 'fromFundIds' must be provided, but not both"))
+      .body("errors[0].message", equalTo(ErrorCodes.INCORRECT_FUND_IDS_PROVIDED.getDescription()))
       .body("total_records", equalTo(1));
   }
 

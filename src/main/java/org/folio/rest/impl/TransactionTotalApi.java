@@ -48,7 +48,7 @@ public class TransactionTotalApi implements FinanceStorageTransactionTotals {
                                                        Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     var toFundIdsPresent = CollectionUtils.isNotEmpty(batchRequest.getToFundIds());
     var fromFundIdsPresent = CollectionUtils.isNotEmpty(batchRequest.getFromFundIds());
-    if (!toFundIdsPresent && !fromFundIdsPresent || toFundIdsPresent && fromFundIdsPresent) {
+    if (toFundIdsPresent && fromFundIdsPresent) {
       var exception = new HttpException(HttpStatus.SC_UNPROCESSABLE_ENTITY, INCORRECT_FUND_IDS_PROVIDED);
       asyncResultHandler.handle(buildErrorResponse(exception));
       return;
