@@ -59,8 +59,13 @@ public class TenantApiTestUtil {
             if(result.failed()) {
               future.completeExceptionally(result.cause());
             } else {
-              TenantJob completedJob = result.result().bodyAsJson(TenantJob.class);
-              future.complete(completedJob);
+              // Add delay to ensure async database operations complete and are visible
+              try {
+                Thread.sleep(500);
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+              future.complete(tenantJob);
             }
           });
         }
