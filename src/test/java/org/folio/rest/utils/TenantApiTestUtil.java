@@ -59,7 +59,8 @@ public class TenantApiTestUtil {
             if(result.failed()) {
               future.completeExceptionally(result.cause());
             } else {
-              future.complete(tenantJob);
+              TenantJob completedJob = result.result().bodyAsJson(TenantJob.class);
+              future.complete(completedJob);
             }
           });
         }
