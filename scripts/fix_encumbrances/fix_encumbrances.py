@@ -502,9 +502,20 @@ async def fix_poline_encumbrance_fund_id(poline, order_encumbrances):
 def check_if_fd_needs_updates_and_update_fd(poline, order_encumbrances, fd) -> bool:
     poline_id = poline['id']
     fd_fund_id = fd['fundId']
+    fd_expense_class_id = fd.get('expenseClassId', None)
+
     for enc in order_encumbrances:
+        enc_expense_class_id = enc.get('expenseClassId', None)
+
         if enc['encumbrance']['sourcePoLineId'] == poline_id and float(enc['amount']) != 0.0 and \
                 enc['fromFundId'] == fd_fund_id:
+            # Check if expenseClassId matches (both None or both equal)
+            if enc_expense_class_id != fd_expense_class_id:
+                print(f"  Skipping encumbrance {enc['id']} for poline {poline_id} ({poline['poLineNumber']}) "
+                      f"due to non-matching expenseClassId (encumbrance: {enc_expense_class_id}, "
+                      f"fund distribution: {fd_expense_class_id})")
+                continue
+
             fd_encumbrance_id = fd['encumbrance']
             if enc['id'] == fd_encumbrance_id:
                 return False
