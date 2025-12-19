@@ -114,7 +114,7 @@ public class StorageTestSuite {
 
     CompletableFuture<String> undeploymentComplete = new CompletableFuture<>();
 
-    vertx.close(res -> {
+    vertx.close().onComplete(res -> {
       if (res.succeeded()) {
         undeploymentComplete.complete(null);
       } else {
@@ -134,7 +134,7 @@ public class StorageTestSuite {
 
     CompletableFuture<String> deploymentComplete = new CompletableFuture<>();
 
-    vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
+    vertx.deployVerticle(RestVerticle.class.getName(), options).onComplete(res -> {
       if (res.succeeded()) {
         deploymentComplete.complete(res.result());
       } else {

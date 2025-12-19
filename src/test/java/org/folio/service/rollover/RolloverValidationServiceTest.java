@@ -1,5 +1,6 @@
 package org.folio.service.rollover;
 
+import static org.folio.service.ServiceTestUtils.createRowDesc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -14,7 +15,6 @@ import java.util.UUID;
 
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.persist.DBConn;
-import org.folio.rest.persist.helpers.LocalRowDesc;
 import org.folio.rest.persist.helpers.LocalRowSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +32,7 @@ import io.vertx.pgclient.impl.RowImpl;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
-import io.vertx.sqlclient.impl.RowDesc;
+import io.vertx.sqlclient.internal.RowDesc;
 
 @ExtendWith(VertxExtension.class)
 public class RolloverValidationServiceTest {
@@ -66,7 +66,7 @@ public class RolloverValidationServiceTest {
 
     when(conn.getTenantId()).thenReturn("test");
 
-    RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
+    RowDesc rowDesc = createRowDesc("foo");
     Row row = new RowImpl(rowDesc);
     row.addBoolean(false);
     RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
@@ -91,7 +91,7 @@ public class RolloverValidationServiceTest {
 
     when(conn.getTenantId()).thenReturn("test");
 
-    RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
+    RowDesc rowDesc = createRowDesc("foo");
     Row row = new RowImpl(rowDesc);
     row.addBoolean(true);
     RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
