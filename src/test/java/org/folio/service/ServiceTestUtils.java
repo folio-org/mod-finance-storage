@@ -1,11 +1,13 @@
 package org.folio.service;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.vertx.core.json.JsonObject;
 import io.vertx.pgclient.impl.RowImpl;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.impl.RowDesc;
-import org.folio.rest.persist.helpers.LocalRowDesc;
+import io.vertx.sqlclient.internal.RowDesc;
 import org.folio.rest.persist.helpers.LocalRowSet;
 import org.folio.rest.persist.interfaces.Results;
 
@@ -14,8 +16,14 @@ import java.util.List;
 
 public class ServiceTestUtils {
 
+  public static RowDesc createRowDesc(String... columnNames) {
+    var rowDesc = mock(RowDesc.class);
+    when(rowDesc.columnNames()).thenReturn(List.of(columnNames));
+    return rowDesc;
+  }
+
   public static <T> RowSet<Row> createRowSet(List<T> list) {
-    RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
+    var rowDesc = createRowDesc("foo");
     List<Row> rows = list.stream().map(item -> {
       Row row = new RowImpl(rowDesc);
       row.addJsonObject(JsonObject.mapFrom(item));

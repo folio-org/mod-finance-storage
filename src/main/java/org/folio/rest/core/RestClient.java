@@ -16,10 +16,10 @@ import org.folio.util.PercentCodec;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpResponseExpectation;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.predicate.ResponsePredicate;
 
 public class RestClient {
 
@@ -48,17 +48,17 @@ public class RestClient {
       logger.debug("Calling GET {}", endpoint);
       String url = requestContext.getHeaders().get(RestConstants.OKAPI_URL) + endpoint;
       return webClient.getAbs(url)
-          .putHeader(OKAPI_HEADER_TENANT, requestContext.getHeaders().get(OKAPI_HEADER_TENANT))
-          .putHeader(OKAPI_HEADER_TOKEN, requestContext.getHeaders().get(OKAPI_HEADER_TOKEN))
-          .expect(ResponsePredicate.SC_OK)
-          .send()
-          .map(HttpResponse::bodyAsJsonObject)
-          .onSuccess(body -> {
-            if (logger.isDebugEnabled()) {
-              logger.debug("The response body for GET {}: {}", endpoint, nonNull(body) ? body.encodePrettily() : null);
-            }
-          })
-          .onFailure(e -> logger.error(EXCEPTION_CALLING_ENDPOINT_MSG, HttpMethod.GET, endpoint, e.getMessage()));
+        .putHeader(OKAPI_HEADER_TENANT, requestContext.getHeaders().get(OKAPI_HEADER_TENANT))
+        .putHeader(OKAPI_HEADER_TOKEN, requestContext.getHeaders().get(OKAPI_HEADER_TOKEN))
+        .send()
+        .expecting(HttpResponseExpectation.SC_OK)
+        .map(HttpResponse::bodyAsJsonObject)
+        .onSuccess(body -> {
+          if (logger.isDebugEnabled()) {
+            logger.debug("The response body for GET {}: {}", endpoint, nonNull(body) ? body.encodePrettily() : null);
+          }
+        })
+        .onFailure(e -> logger.error(EXCEPTION_CALLING_ENDPOINT_MSG, HttpMethod.GET, endpoint, e.getMessage()));
     } catch (Exception e) {
       logger.error(EXCEPTION_CALLING_ENDPOINT_MSG, HttpMethod.GET, endpoint, e.getMessage(), e);
       return Future.failedFuture(e);
@@ -74,15 +74,15 @@ public class RestClient {
       }
 
       return webClient.postAbs(requestContext.getHeaders().get(OKAPI_URL) + baseEndpoint)
-          .putHeader(OKAPI_HEADER_TENANT, requestContext.getHeaders().get(OKAPI_HEADER_TENANT))
-          .putHeader(OKAPI_HEADER_TOKEN, requestContext.getHeaders().get(OKAPI_HEADER_TOKEN))
-          .expect(ResponsePredicate.status(200, 299))
-          .sendJsonObject(recordData)
-          .onSuccess(body -> logger.info(
-              "'POST {}' request successfully processed. Record with '{}' id has been created", baseEndpoint, body))
-          .onFailure(e -> logger.error("'POST {}' request failed: {}. Request body: {}",
-              baseEndpoint, e.getCause(), recordData.encodePrettily()))
-          .mapEmpty();
+        .putHeader(OKAPI_HEADER_TENANT, requestContext.getHeaders().get(OKAPI_HEADER_TENANT))
+        .putHeader(OKAPI_HEADER_TOKEN, requestContext.getHeaders().get(OKAPI_HEADER_TOKEN))
+        .sendJsonObject(recordData)
+        .expecting(HttpResponseExpectation.SC_SUCCESS)
+        .onSuccess(body -> logger.info(
+          "'POST {}' request successfully processed. Record with '{}' id has been created", baseEndpoint, body))
+        .onFailure(e -> logger.error("'POST {}' request failed: {}. Request body: {}",
+          baseEndpoint, e.getCause(), recordData.encodePrettily()))
+        .mapEmpty();
     } catch (Exception e) {
       logger.error("'POST {}' request failed: {}.", baseEndpoint, e.getCause());
       return Future.failedFuture(e);

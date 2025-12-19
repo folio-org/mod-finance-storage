@@ -7,11 +7,10 @@ import io.vertx.junit5.VertxTestContext;
 import io.vertx.pgclient.impl.RowImpl;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.impl.RowDesc;
+import io.vertx.sqlclient.internal.RowDesc;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.DBConn;
-import org.folio.rest.persist.helpers.LocalRowDesc;
 import org.folio.rest.persist.helpers.LocalRowSet;
 import org.folio.rest.persist.interfaces.Results;
 import org.junit.jupiter.api.AfterEach;
@@ -26,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import static org.folio.service.ServiceTestUtils.createRowDesc;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,7 +84,7 @@ public class RolloverBudgetDAOTest {
     LedgerFiscalYearRolloverBudget budget = new LedgerFiscalYearRolloverBudget().withId(id);
     List<LedgerFiscalYearRolloverBudget> budgets = List.of(budget);
 
-    RowDesc rowDesc = new LocalRowDesc(List.of("foo"));
+    RowDesc rowDesc = createRowDesc("foo");
     Row row = new RowImpl(rowDesc);
     row.addJsonObject(new JsonObject().put("id", id));
     RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));

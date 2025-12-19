@@ -27,6 +27,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static io.vertx.core.Future.succeededFuture;
@@ -102,9 +103,10 @@ public class BatchTransactionService {
       }
     }
     for (Transaction tr : batch.getTransactionsToUpdate()) {
-      Metadata md = tr.getMetadata();
+      Metadata md = Optional.ofNullable(tr.getMetadata()).orElseGet(Metadata::new);
       md.setUpdatedDate(newMd.getUpdatedDate());
       md.setUpdatedByUserId(newMd.getUpdatedByUserId());
+      tr.setMetadata(md);
     }
   }
 
@@ -174,9 +176,10 @@ public class BatchTransactionService {
       // Update transaction metadata which will be used to update the budget metadata
       Metadata newMd = generateMetadata(okapiHeaders);
       for (Transaction tr : pendingPaymentsToDelete) {
-        Metadata md = tr.getMetadata();
+        Metadata md = Optional.ofNullable(tr.getMetadata()).orElseGet(Metadata::new);
         md.setUpdatedDate(newMd.getUpdatedDate());
         md.setUpdatedByUserId(newMd.getUpdatedByUserId());
+        tr.setMetadata(md);
       }
 
       getBatchServiceForType(PENDING_PAYMENT).prepareDeletingTransactions(pendingPaymentsToDelete, holder);
