@@ -7,14 +7,12 @@ import static org.folio.rest.util.ErrorCodes.UNIQUE_FIELD_CONSTRAINT_ERROR;
 
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;

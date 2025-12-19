@@ -15,7 +15,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.okapi.common.GenericCompositeFuture;
 import org.folio.okapi.common.OkapiToken;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.core.model.RequestContext;
@@ -153,7 +152,7 @@ public class FinanceDataService {
   private Future<Void> updateFundAndBudget(FyFinanceDataCollection entity, DBConn conn) {
     var updateFundFuture = processFundUpdate(entity, conn);
     var updateBudgetFuture = processBudgetUpdate(entity, conn);
-    return GenericCompositeFuture.all(List.of(updateFundFuture, updateBudgetFuture))
+    return Future.all(List.of(updateFundFuture, updateBudgetFuture))
       .mapEmpty();
   }
 

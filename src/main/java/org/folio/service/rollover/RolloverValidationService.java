@@ -13,7 +13,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.folio.rest.exception.HttpException;
 import io.vertx.sqlclient.Tuple;
-import io.vertx.sqlclient.impl.ArrayTuple;
+import io.vertx.sqlclient.internal.ArrayTuple;
 import org.folio.rest.persist.DBConn;
 
 public class RolloverValidationService {
