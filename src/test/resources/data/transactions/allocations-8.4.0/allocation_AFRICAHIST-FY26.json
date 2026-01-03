@@ -2,9 +2,9 @@
   "id": "a0b1e290-c42f-435a-b9d7-4ae7f77eb4ef",
   "amount": 21000,
   "currency": "USD",
-  "fiscalYearId": "43aba0df-70e4-435e-8463-d8f730d19e0b",
+  "fiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
   "source": "User",
-  "sourceFiscalYearId": "43aba0df-70e4-435e-8463-d8f730d19e0b",
+  "sourceFiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
   "toFundId": "7fbd5d84-62d1-44c6-9c45-6cb173998bbd",
   "transactionType": "Allocation"
 }
