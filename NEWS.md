@@ -1,5 +1,13 @@
 ## 8.8.0 - Unreleased
 
+## 8.7.5 - Released (Ramsons R2 2024 Bug Fix)
+The primary focus of this release was to implement RMB logging improvements and security fixes
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.4...v8.7.5)
+
+### Bug fixes
+* [MODFISTO-544](https://folio-org.atlassian.net/browse/MODFISTO-544) - Ramsons CSP - RMB 35.3.2 Vertx 4.5.23 fixing CVE-2025-67735 netty CRLF
+* [MODFISTO-540](https://folio-org.atlassian.net/browse/MODFISTO-540) - Ramsons CSP - RMB Logging release - RMB 35.3.1
+
 ## 8.7.4 - Released (Ramsons R2 2024 Bug Fix)
 The primary focus of this release was to fix the migration script that extracts credits from expenditures and to release a separate recalculation script
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.7.3...v8.7.4)
