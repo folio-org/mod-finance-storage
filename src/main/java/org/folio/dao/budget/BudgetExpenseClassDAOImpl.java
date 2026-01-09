@@ -30,7 +30,7 @@ public class BudgetExpenseClassDAOImpl implements BudgetExpenseClassDAO {
           becList.add(row.get(JsonObject.class, 0).mapTo(BudgetExpenseClass.class)));
         return becList;
       })
-      .onSuccess(becList -> logger.info("Successfully retrieved {} temporary budget expense classes with budgetid {}",
+      .onSuccess(becList -> logger.info("Successfully retrieved {} temporary budget expense classes with budgetId {}",
         becList.size(), budgetId))
       .onFailure(e -> logger.error("Getting temporary budget expense classes by budgetId {} failed", budgetId, e));
   }
