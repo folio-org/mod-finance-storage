@@ -3,6 +3,7 @@ package org.folio.service.transactions.batch;
 import io.vertx.core.json.JsonObject;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Transaction;
 
 import java.util.List;
@@ -66,8 +67,10 @@ public abstract class AbstractBatchTransactionService implements BatchTransactio
   }
 
   void updateBudgetMetadata(Budget budget, Transaction transaction) {
-    budget.getMetadata().setUpdatedDate(transaction.getMetadata().getUpdatedDate());
-    budget.getMetadata().setUpdatedByUserId(transaction.getMetadata().getUpdatedByUserId());
+    Metadata md = Optional.ofNullable(budget.getMetadata()).orElseGet(Metadata::new);
+    md.setUpdatedDate(transaction.getMetadata().getUpdatedDate());
+    md.setUpdatedByUserId(transaction.getMetadata().getUpdatedByUserId());
+    budget.setMetadata(md);
   }
 
   List<Transaction> prepareEncumbrancesToProcess(List<Transaction> transactions, BatchTransactionHolder holder,

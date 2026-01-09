@@ -26,6 +26,7 @@ import org.folio.rest.impl.BudgetTest;
 import org.folio.rest.impl.EntitiesCrudTest;
 import org.folio.rest.impl.ExchangeRateSourceTest;
 import org.folio.rest.impl.FinanceDataApiTest;
+import org.folio.rest.impl.FundTest;
 import org.folio.rest.impl.GroupBudgetTest;
 import org.folio.rest.impl.GroupFundFYTest;
 import org.folio.rest.impl.GroupTest;
@@ -113,7 +114,7 @@ public class StorageTestSuite {
 
     CompletableFuture<String> undeploymentComplete = new CompletableFuture<>();
 
-    vertx.close(res -> {
+    vertx.close().onComplete(res -> {
       if (res.succeeded()) {
         undeploymentComplete.complete(null);
       } else {
@@ -133,7 +134,7 @@ public class StorageTestSuite {
 
     CompletableFuture<String> deploymentComplete = new CompletableFuture<>();
 
-    vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
+    vertx.deployVerticle(RestVerticle.class.getName(), options).onComplete(res -> {
       if (res.succeeded()) {
         deploymentComplete.complete(res.result());
       } else {
@@ -240,6 +241,9 @@ public class StorageTestSuite {
 
   @Nested
   class FinanceDataServiceTestNested extends FinanceDataServiceTest {}
+
+  @Nested
+  class FundTestNested extends FundTest {}
 
   @Nested
   class TransactionTotalApiTestNested extends TransactionTotalApiTest {}

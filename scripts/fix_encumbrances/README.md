@@ -96,3 +96,4 @@ After the mode selection, it is possible to select the operation(s) to execute:
 - [MODFISTO-514](https://folio-org.atlassian.net/browse/MODFISTO-514) - Remove links to encumbrances for pending orders in an old FY
 - [MODFISTO-417](https://folio-org.atlassian.net/browse/MODFISTO-417) - Fix encumbrances with a bad orderType
 - [MODFISTO-491](https://folio-org.atlassian.net/browse/MODFISTO-491) - Fix inconsistent reEncumber values
+- [MODFISTO-538](https://folio-org.atlassian.net/browse/MODFISTO-538) - Encumbrance script for fixing links does not consider expenseClassId when matching encumbrances

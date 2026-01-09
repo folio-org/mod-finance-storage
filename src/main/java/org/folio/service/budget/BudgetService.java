@@ -19,7 +19,6 @@ import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.dao.budget.BudgetDAO;
-import org.folio.okapi.common.GenericCompositeFuture;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
@@ -83,7 +82,7 @@ public class BudgetService {
         var futures = budgets.stream()
           .map(budget -> groupService.updateBudgetIdForGroupFundFiscalYears(budget, conn))
           .toList();
-        return GenericCompositeFuture.join(futures)
+        return Future.join(futures)
           .mapEmpty();
       });
   }

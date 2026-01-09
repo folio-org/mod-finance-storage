@@ -19,6 +19,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.vertx.core.Future;
+
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Parameter;
@@ -28,6 +30,9 @@ import org.folio.rest.persist.interfaces.Results;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+
 import org.folio.rest.exception.HttpException;
 
 public final class HelperUtils {
@@ -142,6 +147,12 @@ public final class HelperUtils {
       f = f.compose(r -> method.apply(item));
     }
     return f;
+  }
+
+  public static <T> List<T> getRowSetAsList(RowSet<Row> rowSet, Class<T> entityClass) {
+    return IteratorUtils.toList(rowSet.iterator()).stream()
+      .map(row -> row.getJsonObject("jsonb").mapTo(entityClass))
+      .toList();
   }
 
 }

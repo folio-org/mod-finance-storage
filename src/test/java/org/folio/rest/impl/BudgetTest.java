@@ -16,6 +16,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +24,9 @@ import java.util.UUID;
 import io.vertx.core.json.Json;
 import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.Batch;
+import org.folio.rest.jaxrs.model.BatchIdCollection;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.BudgetCollection;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.model.Transaction;
@@ -39,10 +42,11 @@ import io.vertx.core.json.JsonObject;
 
 public class BudgetTest extends TestBase {
 
-  private static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations-8.4.0/allocation_AFRICAHIST-FY25.json";
+  private static final String ALLOCATION_SAMPLE_PATH = "data/transactions/allocations-8.4.0/allocation_AFRICAHIST-FY26.json";
   private static final String ENCUMBRANCE_SAMPLE_PATH = "data/transactions/encumbrances/encumbrance_AFRICAHIST_306857_1.json";
   private static final String BATCH_TRANSACTION_ENDPOINT = "/finance-storage/transactions/batch-all-or-nothing";
   private static final String BUDGET_ENDPOINT = TestEntities.BUDGET.getEndpoint();
+  private static final String BUDGET_BATCH_ENDPOINT = BUDGET_ENDPOINT + "/batch";
   private static final String BUDGET_TEST_TENANT = "budgettesttenantapi";
   private static final Header BUDGET_TENANT_HEADER = new Header(OKAPI_HEADER_TENANT, BUDGET_TEST_TENANT);
   private static TenantJob tenantJob;
@@ -66,10 +70,33 @@ public class BudgetTest extends TestBase {
     // search with fields from "ledgers"
     verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=ledger.name==Ongoing", 7, BUDGET_TENANT_HEADER);
     // complex query
-    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Active AND ledger.name==Ongoing AND fiscalYear.code==FY2025", 4, BUDGET_TENANT_HEADER);
+    verifyCollectionQuantity(BUDGET_ENDPOINT + "?query=fund.fundStatus==Active AND ledger.name==Ongoing AND fiscalYear.code==FY2026", 4, BUDGET_TENANT_HEADER);
 
     // search with invalid cql query
     testInvalidCQLQuery(BUDGET_ENDPOINT + "?query=invalid-query");
+    purge(BUDGET_TENANT_HEADER);
+  }
+
+  @Test
+  void testGetBudgetsBatch() {
+    tenantJob = prepareTenant(BUDGET_TENANT_HEADER, true, true);
+
+    var allRecords = getData(BUDGET_ENDPOINT, BUDGET_TENANT_HEADER).as(BudgetCollection.class);
+    List<String> ids = allRecords.getBudgets().stream()
+      .map(Budget::getId)
+      .distinct()
+      .limit(3)
+      .toList();
+
+    var budgetIds = new BatchIdCollection().withIds(ids);
+    var budgetCollection = postData(BUDGET_BATCH_ENDPOINT, valueAsString(budgetIds), BUDGET_TENANT_HEADER)
+      .then()
+      .statusCode(200)
+      .extract().body()
+      .as(BudgetCollection.class);
+
+    assertEquals(3, budgetCollection.getBudgets().size());
+
     purge(BUDGET_TENANT_HEADER);
   }
 

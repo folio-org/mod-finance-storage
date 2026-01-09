@@ -1,0 +1,10 @@
+{
+  "id": "37d34359-68a6-41b3-89c2-96bfb2cb2716",
+  "name": "Fiscal Year 2027",
+  "code": "FY2027",
+  "currency": "USD",
+  "description": "Fiscal year for 2027",
+  "periodStart": "2027-01-01T00:00:00Z",
+  "periodEnd": "2027-12-31T23:59:59Z",
+  "series": "FY"
+}

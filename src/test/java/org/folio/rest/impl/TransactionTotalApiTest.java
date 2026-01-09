@@ -5,8 +5,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.jaxrs.model.Transaction;
+import org.folio.rest.jaxrs.model.TransactionTotalBatch;
+import org.folio.rest.jaxrs.model.TransactionType;
 import org.folio.rest.jaxrs.resource.FinanceStorageTransactionTotals;
 import org.folio.rest.persist.HelperUtils;
+import org.folio.rest.util.ErrorCodes;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,18 +28,21 @@ import static org.folio.rest.utils.TestEntities.BUDGET;
 import static org.folio.rest.utils.TestEntities.FISCAL_YEAR;
 import static org.folio.rest.utils.TestEntities.FUND;
 import static org.folio.rest.utils.TestEntities.LEDGER;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
 @ExtendWith(VertxExtension.class)
 public class TransactionTotalApiTest extends TestBase {
 
   private static final String TRANSACTION_TOTALS_ENDPOINT = HelperUtils.getEndpoint(FinanceStorageTransactionTotals.class);
+  private static final String TRANSACTION_TOTALS_BATCH_ENDPOINT = TRANSACTION_TOTALS_ENDPOINT + "/batch";
 
   private static TenantJob tenantJob;
 
   @BeforeEach
   void prepareData() {
     tenantJob = prepareTenant(TRANSACTION_TENANT_HEADER, false, true);
+    setUpTestData();
   }
 
   @AfterEach
@@ -51,6 +57,69 @@ public class TransactionTotalApiTest extends TestBase {
 
   @Test
   void getFinanceStorageTransactionTotals() {
+    // We expect 1 entry: 20000 (50000 is intentionally ignored)
+    var toFundQuery = String.format("?query=(fiscalYearId==%s AND transactionType==(Allocation OR Transfer OR Rollover transfer)) AND toFundId==%s", FISCAL_YEAR.getId(), FUND.getId());
+    getData(TRANSACTION_TOTALS_ENDPOINT + toFundQuery, TRANSACTION_TENANT_HEADER)
+      .then()
+      .log().all()
+      .statusCode(200)
+      .body("transactionTotals[0].amount", equalTo(20000.0F))
+      .body("totalRecords", equalTo(1));
+
+    // We expect 1 entry: -5000
+    var fromFundQuery = String.format("?query=(fiscalYearId==%s AND transactionType==(Allocation OR Transfer OR Rollover transfer)) AND fromFundId==%s", FISCAL_YEAR.getId(), FUND.getId());
+    getData(TRANSACTION_TOTALS_ENDPOINT + fromFundQuery, TRANSACTION_TENANT_HEADER)
+      .then()
+      .log().all()
+      .statusCode(200)
+      .body("transactionTotals[0].amount", equalTo(5000.0F))
+      .body("totalRecords", equalTo(1));
+  }
+
+  @Test
+  void getFinanceStorageTransactionTotalsBatch() {
+    // We expect 1 entry: 20000 (50000 is intentionally ignored)
+    var toFundBatchRequest = new TransactionTotalBatch()
+      .withFiscalYearId(FISCAL_YEAR.getId())
+      .withTransactionTypes(List.of(TransactionType.ALLOCATION, TransactionType.TRANSFER, TransactionType.ROLLOVER_TRANSFER))
+      .withToFundIds(List.of(FUND.getId()));
+    postData(TRANSACTION_TOTALS_BATCH_ENDPOINT, valueAsString(toFundBatchRequest), TRANSACTION_TENANT_HEADER)
+      .then()
+      .log().all()
+      .statusCode(200)
+      .body("transactionTotals[0].amount", equalTo(20000.0F))
+      .body("totalRecords", equalTo(1));
+
+    // We expect 1 entry: -5000
+    var fromFundBatchRequest = new TransactionTotalBatch()
+      .withFiscalYearId(FISCAL_YEAR.getId())
+      .withTransactionTypes(List.of(TransactionType.ALLOCATION, TransactionType.TRANSFER, TransactionType.ROLLOVER_TRANSFER))
+      .withFromFundIds(List.of(FUND.getId()));
+    postData(TRANSACTION_TOTALS_BATCH_ENDPOINT, valueAsString(fromFundBatchRequest), TRANSACTION_TENANT_HEADER)
+      .then()
+      .log().all()
+      .statusCode(200)
+      .body("transactionTotals[0].amount", equalTo(5000.0F))
+      .body("totalRecords", equalTo(1));
+  }
+
+  @Test
+  void getFinanceStorageTransactionTotalsBatchIncorrectParameters() {
+    var batchRequest = new TransactionTotalBatch()
+      .withFiscalYearId(FISCAL_YEAR.getId())
+      .withTransactionTypes(List.of(TransactionType.ALLOCATION, TransactionType.TRANSFER, TransactionType.ROLLOVER_TRANSFER))
+      .withToFundIds(List.of(FUND.getId()))
+      .withFromFundIds(List.of(FUND.getId()));
+
+    postData(TRANSACTION_TOTALS_BATCH_ENDPOINT, valueAsString(batchRequest), TRANSACTION_TENANT_HEADER)
+      .then()
+      .log().all()
+      .statusCode(422)
+      .body("errors[0].message", equalTo(ErrorCodes.INCORRECT_FUND_IDS_PROVIDED.getDescription()))
+      .body("total_records", equalTo(1));
+  }
+
+  private void setUpTestData() {
     givenTestData(TRANSACTION_TENANT_HEADER,
       Pair.of(FISCAL_YEAR, FISCAL_YEAR.getPathToSampleFile()),
       Pair.of(LEDGER, LEDGER.getPathToSampleFile()),
@@ -82,27 +151,8 @@ public class TransactionTotalApiTest extends TestBase {
       .withFiscalYearId(FISCAL_YEAR.getId())
       .withSource(Transaction.Source.USER);
 
-    var batch = new Batch()
-      .withTransactionsToCreate(List.of(initialAllocation, increaseAllocation, decreaseAllocation));
+    var batch = new Batch().withTransactionsToCreate(List.of(initialAllocation, increaseAllocation, decreaseAllocation));
     postData(BATCH_TRANSACTION_ENDPOINT, valueAsString(batch), TRANSACTION_TENANT_HEADER)
       .then().statusCode(204);
-
-    // We expect 1 entry: 20000 (50000 is intentionally ignored)
-    var toFundQuery = String.format("?query=(fiscalYearId==%s AND transactionType==(Allocation OR Transfer OR Rollover transfer)) AND toFundId==%s", FISCAL_YEAR.getId(), FUND.getId());
-    getData(TRANSACTION_TOTALS_ENDPOINT + toFundQuery, TRANSACTION_TENANT_HEADER)
-      .then()
-      .log().all()
-      .statusCode(200)
-      .body("transactionTotals[0].amount", equalTo(20000.0F))
-      .body("totalRecords", equalTo(1));
-
-    // We expect 1 entry: -5000
-    var fromFundQuery = String.format("?query=(fiscalYearId==%s AND transactionType==(Allocation OR Transfer OR Rollover transfer)) AND fromFundId==%s", FISCAL_YEAR.getId(), FUND.getId());
-    getData(TRANSACTION_TOTALS_ENDPOINT + fromFundQuery, TRANSACTION_TENANT_HEADER)
-      .then()
-      .log().all()
-      .statusCode(200)
-      .body("transactionTotals[0].amount", equalTo(5000.0F))
-      .body("totalRecords", equalTo(1));
   }
 }
