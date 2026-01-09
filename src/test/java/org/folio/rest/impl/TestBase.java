@@ -6,7 +6,7 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.hasEntry;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
