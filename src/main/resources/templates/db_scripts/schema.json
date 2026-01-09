@@ -98,6 +98,11 @@
     },
     {
       "run": "after",
+      "snippetPath": "recalculate_budgets_with_credits.sql",
+      "fromModuleVersion": "mod-finance-storage-8.7.4"
+    },
+    {
+      "run": "after",
       "snippetPath": "all_finance_data_view.sql",
       "fromModuleVersion": "mod-finance-storage-8.8.0"
     },
@@ -398,13 +403,13 @@
         {
           "fieldName": "payment",
           "multiFieldNames": "amount, fromFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
-          "tOps": "ADD",
+          "tOps": "DELETE",
           "whereClause": "WHERE jsonb->>'transactionType' = 'Payment' OR jsonb->>'transactionType' = 'Pending payment'"
         },
         {
           "fieldName": "credit",
           "multiFieldNames": "amount, toFundId, sourceInvoiceId, sourceInvoiceLineId, transactionType, expenseClassId",
-          "tOps": "ADD",
+          "tOps": "DELETE",
           "whereClause": "WHERE jsonb->>'transactionType' = 'Credit'"
         }
       ],

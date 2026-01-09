@@ -1,5 +1,27 @@
 ## 8.9.0 - Unreleased
 
+## 8.8.4 - Released (Sunflower R1 2025 Bug Fix)
+The primary focus of this release was to change the schema version of the recalculation script to run in Ramsons-only
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.3...v8.8.4)
+
+## 8.8.3 - Released (Sunflower R1 2025 Bug Fix)
+The primary focus of this release was to fix the migration script that extracts credits from expenditures and to release a separate recalculation script
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.2...v8.8.3)
+
+### Bug fixes
+* [MODFISTO-529](https://folio-org.atlassian.net/browse/MODFISTO-529) - Inconsistencies in budget Credited and Expended totals following Ramsons upgrade (Sunflower release)
+
+### Link to the recalculation script
+- [Budget recalculation script](https://github.com/folio-org/mod-finance-storage/blob/master/src/main/resources/templates/db_scripts/recalculate_budgets_with_credits.sql)
+
+## 8.8.2 - Released (Sunflower R1 2025 Bug fix)
+The primary focus of this release was to fix issue when canceling a paid invoice with 2 invoice-level adjustments with the same fund and expense class
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.1...v8.8.2)
+
+### Bug fixes
+* [MODFISTO-525](https://folio-org.atlassian.net/browse/MODFISTO-525) Error when cancelling a paid invoice with 2 invoice-level adjustments using the same fund and expense class
+
+
 ## 8.8.1 - Released (Sunflower R1 2025 Bug fix)
 The primary focus of this release was to add missed interface for Rollover functionality
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.0...v8.8.1)
