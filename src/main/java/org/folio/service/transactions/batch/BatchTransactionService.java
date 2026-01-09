@@ -205,8 +205,8 @@ public class BatchTransactionService {
     }
     return transactionDAO.createTransactions(transactions, conn)
       .onSuccess(ids -> logger.info("Batch transactions: successfully created {} transactions", transactions.size()))
-      .onFailure(t -> logger.error("Batch transactions: failed to create transactions, transactions = {}",
-        Json.encode(transactions), t))
+      .onFailure(t -> logger.error("Batch transactions: failed to create transactions, transaction ids = {}",
+        getTransactionIds(transactions), t))
       .mapEmpty();
   }
 
@@ -218,8 +218,12 @@ public class BatchTransactionService {
     relinkPaymentsIfNeeded(holder, transactions);
     return transactionDAO.updateTransactions(transactions, conn)
       .onSuccess(v -> logger.info("Batch transactions: successfully updated {} transactions", transactions.size()))
-      .onFailure(t -> logger.error("Batch transactions: failed to update transactions, transactions = {}",
-        Json.encode(transactions), t));
+      .onFailure(t -> logger.error("Batch transactions: failed to update transactions, transaction ids = {}",
+        getTransactionIds(transactions), t));
+  }
+
+  private List<String> getTransactionIds(List<Transaction> transactions) {
+    return transactions.stream().filter(Objects::nonNull).map(Transaction::getId).filter(Objects::nonNull).toList();
   }
 
   private void relinkPaymentsIfNeeded(BatchTransactionHolder holder, List<Transaction> transactions) {

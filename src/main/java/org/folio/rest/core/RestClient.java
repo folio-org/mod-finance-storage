@@ -1,6 +1,5 @@
 package org.folio.rest.core;
 
-import static java.util.Objects.nonNull;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.folio.rest.RestConstants.OKAPI_URL;
@@ -53,11 +52,6 @@ public class RestClient {
         .send()
         .expecting(HttpResponseExpectation.SC_OK)
         .map(HttpResponse::bodyAsJsonObject)
-        .onSuccess(body -> {
-          if (logger.isDebugEnabled()) {
-            logger.debug("The response body for GET {}: {}", endpoint, nonNull(body) ? body.encodePrettily() : null);
-          }
-        })
         .onFailure(e -> logger.error(EXCEPTION_CALLING_ENDPOINT_MSG, HttpMethod.GET, endpoint, e.getMessage()));
     } catch (Exception e) {
       logger.error(EXCEPTION_CALLING_ENDPOINT_MSG, HttpMethod.GET, endpoint, e.getMessage(), e);
@@ -68,20 +62,12 @@ public class RestClient {
   public <T> Future<Void> postEmptyResponse(T entity, RequestContext requestContext) {
     try {
       JsonObject recordData = JsonObject.mapFrom(entity);
-
-      if (logger.isDebugEnabled()) {
-        logger.debug("Sending 'POST {}' with body: {}", baseEndpoint, recordData.encodePrettily());
-      }
-
       return webClient.postAbs(requestContext.getHeaders().get(OKAPI_URL) + baseEndpoint)
         .putHeader(OKAPI_HEADER_TENANT, requestContext.getHeaders().get(OKAPI_HEADER_TENANT))
         .putHeader(OKAPI_HEADER_TOKEN, requestContext.getHeaders().get(OKAPI_HEADER_TOKEN))
         .sendJsonObject(recordData)
         .expecting(HttpResponseExpectation.SC_SUCCESS)
-        .onSuccess(body -> logger.info(
-          "'POST {}' request successfully processed. Record with '{}' id has been created", baseEndpoint, body))
-        .onFailure(e -> logger.error("'POST {}' request failed: {}. Request body: {}",
-          baseEndpoint, e.getCause(), recordData.encodePrettily()))
+        .onFailure(e -> logger.error("'POST {}' request failed: {}", baseEndpoint, e.getCause()))
         .mapEmpty();
     } catch (Exception e) {
       logger.error("'POST {}' request failed: {}.", baseEndpoint, e.getCause());
