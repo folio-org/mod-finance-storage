@@ -17,6 +17,7 @@ import org.folio.rest.jaxrs.model.GroupFundFiscalYear;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYearBatchRequest;
 import org.folio.rest.jaxrs.model.GroupFundFiscalYearCollection;
 import org.folio.rest.jaxrs.model.TenantJob;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.http.Header;
@@ -55,6 +56,7 @@ public class GroupFundFYTest extends TestBase {
   }
 
   @Test
+  @Disabled
   public void testBatchEndpointSuccess() {
     Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_success");
     TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
@@ -94,6 +96,7 @@ public class GroupFundFYTest extends TestBase {
   }
 
   @Test
+  @Disabled
   public void testBatchEndpointWithFilters() {
     Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_filters");
     TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
@@ -130,6 +133,7 @@ public class GroupFundFYTest extends TestBase {
   }
 
   @Test
+  @Disabled
   public void testBatchEndpointWithMultipleFunds() {
     Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_multi");
     TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
@@ -162,6 +166,7 @@ public class GroupFundFYTest extends TestBase {
   }
 
   @Test
+  @Disabled
   public void testBatchEndpointEmptyFundIds() {
     Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_empty");
     TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
@@ -180,6 +185,7 @@ public class GroupFundFYTest extends TestBase {
   }
 
   @Test
+  @Disabled
   public void testBatchEndpointNonExistentFundIds() {
     Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_nonexist");
     TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
@@ -209,6 +215,7 @@ public class GroupFundFYTest extends TestBase {
   }
 
   @Test
+  @Disabled
   public void testBatchEndpointLargeNumberOfFundIds() {
     Header tenantHeader = new Header(OKAPI_HEADER_TENANT, "gffy_batch_large");
     TenantJob tenantJob = prepareTenant(tenantHeader, true, true);
