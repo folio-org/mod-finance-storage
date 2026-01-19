@@ -25,7 +25,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!--Dependency Properties-->
-    <vertx.version>5.0.6</vertx.version>
+    <vertx.version>5.0.7</vertx.version>
     <log4j.version>2.25.3</log4j.version>
     <aspectj.version>1.9.25.1</aspectj.version>
     <jackson-bom.version>2.20.1</jackson-bom.version>
