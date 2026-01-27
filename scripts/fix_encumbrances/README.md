@@ -69,7 +69,7 @@ After the mode selection, it is possible to select the operation(s) to execute:
 
 - Run all fixes (can be long).
 - Remove duplicate encumbrances (remove one when 2 encumbrances have the same `orderId`/`sourcePoLineId`/`fromFundId`/`expenseClassId`/`fiscalYearId`).
-- Fix order line - encumbrance relations: fix `encumbrance` links in PO lines in case the poline fund distribution refers to the encumbrance from the previous fiscal year; also fix the fund id in encumbrances if they don't match their po line distribution fund id. This whole step is disabled for past fiscal years.
+- Fix order line - encumbrance relations: fixes issues with the fiscal year rollover such as [MODORDERS-1388](https://folio-org.atlassian.net/browse/MODORDERS-1388); fixes `encumbrance` links in PO lines in case a poline fund distribution refers to an encumbrance from the previous fiscal year; updates the po line accordingly; also fixes the fund id in encumbrances if they don't match their po line distribution fund id. This whole step is disabled for past fiscal years.
 - Fix the `orderStatus` property of encumbrances for closed orders.
 - Fix the `orderStatus`, `orderType` and `reEncumber` properties of encumbrances for open and pending orders.
 - Remove pending order links to encumbrances in previous fiscal years (Quesnelia+ version only; current fiscal year only) - this resolves an issue when opening a pending order after FYRO. It only removes encumbrance links if they use a fund without an active budget.
