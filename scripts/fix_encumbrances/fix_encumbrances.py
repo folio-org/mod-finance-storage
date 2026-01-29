@@ -131,10 +131,14 @@ def get_fiscal_years_by_query(query) -> dict:
 
 
 async def get_chunk(url, query, key, last_id) -> list:
-    if last_id is None:
-        modified_query = query + ' AND cql.allRecords=1 sortBy id'
+    if query is None:
+        modified_query = ''
     else:
-        modified_query = query + f' AND id > {last_id} sortBy id'
+        modified_query = query + ' AND '
+    if last_id is None:
+        modified_query = modified_query + 'cql.allRecords=1 sortBy id'
+    else:
+        modified_query = modified_query + f'id > {last_id} sortBy id'
     params = {'query': modified_query, 'offset': 0, 'limit': MAX_BY_CHUNK}
     return await get_request_with_params(url, query, params, key)
 
@@ -225,6 +229,13 @@ async def get_ids_of_orders_with_status(status: str) -> list:
     query = f'workflowStatus=="{status}"'
     orders_ids = await get_order_ids_by_query(query)
     print(f'  {status} orders:', len(orders_ids))
+    return orders_ids
+
+
+async def get_ids_of_all_orders() -> list:
+    print('Retrieving order ids for all orders...')
+    orders_ids = await get_order_ids_by_query(None)
+    print(f'  all orders:', len(orders_ids))
     return orders_ids
 
 
@@ -451,7 +462,7 @@ async def update_encumbrance_fund_id(encumbrance, new_fund_id, poline):
 
 
 # Remove a duplicate encumbrance if it has a wrong fromFundId, and update the poline fd if needed
-async def fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline):
+async def fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline, order_encumbrances):
     encumbrances_with_right_fund = []
     encumbrances_with_bad_fund = []
     for encumbrance in encumbrances:
@@ -474,6 +485,7 @@ async def fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poli
               f"({poline['poLineNumber']})")
         await update_poline_encumbrance(encumbrance_to_remove, replace_by, poline)
         ids_to_delete.append(encumbrance_to_remove['id'])
+        order_encumbrances.remove(encumbrance_to_remove)
     await batch_delete(ids_to_delete)
 
 
@@ -496,57 +508,101 @@ async def fix_poline_encumbrance_fund_id(poline, order_encumbrances):
             return
         await update_encumbrance_fund_id(encumbrances[0], fd_fund_id, poline)
         return
-    await fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline)
+    await fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline, order_encumbrances)
 
 
-def check_if_fd_needs_updates_and_update_fd(poline, order_encumbrances, fd) -> bool:
-    poline_id = poline['id']
-    fd_fund_id = fd['fundId']
-    fd_expense_class_id = fd.get('expenseClassId', None)
-
+def look_for_matching_encumbrance(order_encumbrances, poline_id, fund_id, expense_class_id):
     for enc in order_encumbrances:
-        enc_expense_class_id = enc.get('expenseClassId', None)
-
-        if enc['encumbrance']['sourcePoLineId'] == poline_id and float(enc['amount']) != 0.0 and \
-                enc['fromFundId'] == fd_fund_id:
-            # Check if expenseClassId matches (both None or both equal)
-            if enc_expense_class_id != fd_expense_class_id:
-                print(f"  Skipping encumbrance {enc['id']} for poline {poline_id} ({poline['poLineNumber']}) "
-                      f"due to non-matching expenseClassId (encumbrance: {enc_expense_class_id}, "
-                      f"fund distribution: {fd_expense_class_id})")
-                continue
-
-            fd_encumbrance_id = fd['encumbrance']
-            if enc['id'] == fd_encumbrance_id:
-                return False
-            print(f"  Updating poline {poline_id} ({poline['poLineNumber']}) encumbrance {fd_encumbrance_id} "
-                  f"with new value {enc['id']}")
-            fd['encumbrance'] = enc['id']
-            return True
-    return False
+        if enc['encumbrance']['sourcePoLineId'] == poline_id and enc['fromFundId'] == fund_id and enc.get('expenseClassId') == expense_class_id:
+            return enc
+    return None
 
 
-# for each fund distribution check encumbrance relationship and modify if needed -
-#   in case if encumbrance id specified in fund distribution:
-#   get encumbrance by poline id and current FY<>transaction.FY and amount <> 0
-#   if fd.encumbrance != transaction.id --> set new encumbrance reference
-#   update poline if modified
-# (feature added with MODFISTO-350)
-async def fix_poline_encumbrance_link(poline, order_encumbrances):
-    poline_needs_updates = False
+def calculate_total_cost(cost):
+    total = 0
+    if 'listUnitPrice' in cost and 'quantityPhysical' in cost:
+        total = total + cost['listUnitPrice'] * cost['quantityPhysical']
+    if 'listUnitPriceElectronic' in cost and 'quantityElectronic' in cost:
+        total = total + cost['listUnitPriceElectronic'] * cost['quantityElectronic']
+    if 'discount' in cost:
+        if cost['discountType'] == 'amount':
+            discount = cost['discount']
+        else:
+            discount = round(total * cost['discount'] / 100, 2)
+        total = total - discount
+    if 'additionalCost' in cost:
+        total = total + cost['additionalCost']
+    return total
+
+
+def update_poline_like_rollover(poline, initial_encumbrances):
+    poline_number = poline['poLineNumber']
+    poline_cost = poline['cost']
+    poline_currency = poline_cost['currency']
+    if any(encumbrance['currency'] != poline_currency for encumbrance in initial_encumbrances):
+        print(f"  Warning: can't rollover po line {poline_number} because the po line is not using the system currency")
+        return
+    previous_poline_estimated_price = float(poline_cost['poLineEstimatedPrice'])
+    total_cost = calculate_total_cost(poline_cost)
+    total_initial_encumbrances = sum([enc['encumbrance']['initialAmountEncumbered'] for enc in initial_encumbrances])
+    fyro_adjustment = total_initial_encumbrances - total_cost
+    if 'fyroAdjustmentAmount' not in poline_cost or poline_cost['fyroAdjustmentAmount'] != fyro_adjustment:
+        print(f"  Updating po line {poline_number} fyroAdjustmentAmount to {fyro_adjustment}")
+        poline_cost['fyroAdjustmentAmount'] = fyro_adjustment
+    if 'poLineEstimatedPrice' not in poline_cost or poline_cost['poLineEstimatedPrice'] != total_initial_encumbrances:
+        print(f"  Updating po line {poline_number} poLineEstimatedPrice to {total_initial_encumbrances}")
+        poline_cost['poLineEstimatedPrice'] = total_initial_encumbrances
     for fd in poline['fundDistribution']:
-        if 'encumbrance' in fd:
-            if check_if_fd_needs_updates_and_update_fd(poline, order_encumbrances, fd):
-                poline_needs_updates = True
+        if fd['distributionType'] == 'amount':
+            if previous_poline_estimated_price == 0:
+                new_fd_value = 0.0
+            else:
+                new_fd_value = round((float(fd['value']) / previous_poline_estimated_price) * total_initial_encumbrances, 2)
+            if new_fd_value != float(fd['value']):
+                print(f"  Updating po line {poline_number} fund distribution value for {fd['code']} from {fd['value']} to {new_fd_value}")
+                fd['value'] = new_fd_value
 
-    # update poline if one or more fund distributions modified
-    if poline_needs_updates:
+
+# Update or remove the po line encumbrance links, and do a rollover if needed.
+# It is assumed that, if an encumbrance link is not up to date, the FYRO failed to process the po line.
+# In this case, the po line needs to be updated as in the order rollover.
+# See MODFIN-452 and mod-orders OrderRolloverService.java.
+async def fix_poline_encumbrance_links(poline, order_encumbrances):
+    poline_needs_update = False
+    encumbrance_link_was_updated = False
+    initial_encumbrances = []
+    poline_number = poline['poLineNumber']
+
+    for fd in poline['fundDistribution']:
+        matching_encumbrance = look_for_matching_encumbrance(order_encumbrances, poline['id'], fd['fundId'], fd.get('expenseClassId'))
+        if matching_encumbrance is None:
+            if 'encumbrance' in fd:
+                print(f"  Removing link from po line {poline_number} to encumbrance {fd['encumbrance']}")
+                del fd['encumbrance']
+                poline_needs_update = True
+        else:
+            initial_encumbrances.append(matching_encumbrance)
+            if 'encumbrance' not in fd:
+                print(f"  Adding link for po line {poline_number} to encumbrance {matching_encumbrance['id']}")
+                fd['encumbrance'] = matching_encumbrance['id']
+                poline_needs_update = True
+            elif matching_encumbrance['id'] != fd['encumbrance']:
+                print(f"  Updating link for po line {poline_number} from encumbrance {fd['encumbrance']} to "
+                      f"encumbrance {matching_encumbrance['id']}")
+                fd['encumbrance'] = matching_encumbrance['id']
+                encumbrance_link_was_updated = True
+                poline_needs_update = True
+
+    if encumbrance_link_was_updated:
+        update_poline_like_rollover(poline, initial_encumbrances)
+
+    if poline_needs_update:
         await update_poline(poline)
 
 
 async def process_poline_encumbrances_relations(poline, order_encumbrances):
     await fix_poline_encumbrance_fund_id(poline, order_encumbrances)
-    await fix_poline_encumbrance_link(poline, order_encumbrances)
+    await fix_poline_encumbrance_links(poline, order_encumbrances)
 
 
 # Get encumbrances for the fiscal year and call process_po_line_encumbrances_relations() for each po line
@@ -567,20 +623,20 @@ async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_s
 
 
 # Call process_order_encumbrances_relations() for each order
-async def fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id):
-    print('Fixing poline-encumbrance links...')
-    if len(open_orders_ids) == 0:
-        print('  Found no open orders.')
+async def fix_poline_encumbrances_relations(all_orders_ids, fiscal_year_id):
+    print('Fixing poline-encumbrance links for all orders in the current FY...')
+    if len(all_orders_ids) == 0:
+        print('  Found no order.')
         return
     orders_futures = []
     order_sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
-    for idx, order_id in enumerate(open_orders_ids):
+    for idx, order_id in enumerate(all_orders_ids):
         await order_sem.acquire()
-        progress(idx, len(open_orders_ids))
+        progress(idx, len(all_orders_ids))
         orders_futures.append(asyncio.ensure_future(process_order_encumbrances_relations(
             order_id, fiscal_year_id, order_sem)))
     await asyncio.gather(*orders_futures)
-    progress(len(open_orders_ids), len(open_orders_ids))
+    progress(len(all_orders_ids), len(all_orders_ids))
 
 
 # ---------------------------------------------------
@@ -1002,7 +1058,7 @@ async def all_operations(closed_orders_ids, open_orders_ids, pending_orders_ids,
     open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
     await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id, fy_is_current)
     if fy_is_current:
-        await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id)
+        await fix_poline_encumbrances_relations(open_orders_ids + closed_orders_ids + pending_orders_ids, fiscal_year_id)
         await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
         await fix_encumbrance_properties_for_open_and_pending_orders(fiscal_year_id)
         await remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_ids, fiscal_year_id)
@@ -1060,11 +1116,11 @@ async def run_operation(choice, fiscal_year_code, tenant, username, password):
         open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
         await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id, fy_is_current)
     elif choice == 3:
-        open_orders_ids = await get_ids_of_orders_with_status('Open')
         if not fy_is_current:
             print('Fiscal year is not current - fixing po line encumbrance relations is not needed.')
         else:
-            await fix_poline_encumbrances_relations(open_orders_ids, fiscal_year_id)
+            all_orders_ids = await get_ids_of_all_orders()
+            await fix_poline_encumbrances_relations(all_orders_ids, fiscal_year_id)
     elif choice == 4:
         if not fy_is_current:
             print('Fiscal year is not current - fixing encumbrance order status is not needed.')
