@@ -9,21 +9,22 @@ import java.util.UUID;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.models.EmailEntity;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.persist.DBConn;
+import org.folio.service.settings.CommonSettingsService;
 import org.folio.utils.EmailOkapiClient;
 
 import javax.ws.rs.core.MediaType;
 
+@Log4j2
+@RequiredArgsConstructor
 public class EmailService {
-
-  private static final Logger logger = LogManager.getLogger(EmailService.class);
 
   private static final String ACCEPT_KEY = "Accept";
   private static final String OKAPI_URL = "x-okapi-url";
@@ -32,47 +33,37 @@ public class EmailService {
   private static final String OKAPI_USER_ID = "x-okapi-user-id";
   private static final String UTC_ZONE_ID = "UTC";
   private static final String FORMAT_PATTERN = "dd-MM-yyyy HH:mm:ss";
-  private static final String CONFIGURATION_QUERY = "module==USERSBL and code==FOLIO_HOST";
   private static final String EMAIL_ENDPOINT = "/email";
   private static final String ROLLOVER_LOGS_ENDPOINT = "/finance/ledger/%s/rollover-logs";
   private static final String EMAIL_HEADER = "FOLIO ledger rollover";
   private static final String USERNAME_KEY = "username";
   private static final String PERSONAL_KEY = "personal";
   private static final String EMAIL_KEY = "email";
-  private static final String CONFIGS_KEY = "configs";
-  private static final String VALUE_KEY = "value";
 
   private static final String COMMIT_MESSAGE = "<p>Hi %s,<br><br>The results of your fiscal year rollover from %s " +
     "for %s are ready for review. Click <a href=\"%s\">here</a> to review the results.<br><br>FOLIO</p>";
   private static final String PREVIEW_MESSAGE = "<p>Hi %s,<br><br>The results of your fiscal year rollover test from %s " +
     "for %s are ready for review. Click <a href=\"%s\">here</a> to review the results.<br><br>FOLIO</p>";
 
-  private final RestClient configurationRestClient;
+  private final CommonSettingsService commonSettingsService;
   private final RestClient userRestClient;
   private final LedgerDAO ledgerDAO;
 
-  public EmailService(RestClient configurationRestClient, RestClient userRestClient, LedgerDAO ledgerDAO) {
-    this.configurationRestClient = configurationRestClient;
-    this.userRestClient = userRestClient;
-    this.ledgerDAO = ledgerDAO;
-  }
-
   public Future<Void> createAndSendEmail(RequestContext requestContext, LedgerFiscalYearRollover rollover, DBConn conn) {
-    logger.debug("createAndSendEmail:: Trying to create and send email");
-    return getHostAddress(requestContext)
-      .compose(hostAddressResponse -> getCurrentUser(requestContext)
+    log.debug("createAndSendEmail:: Trying to create and send email");
+    return commonSettingsService.getHostAddress(requestContext)
+      .compose(hostAddress -> getCurrentUser(requestContext)
         .compose(userResponse -> ledgerDAO.getLedgerById(rollover.getLedgerId(), conn)
           .compose(ledger -> {
-            String hostAddress = hostAddressResponse.getJsonArray(CONFIGS_KEY).getJsonObject(0).getMap().get(VALUE_KEY).toString();
             String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
             Map<String, String> headers = getHeaders(requestContext);
             EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
-            logger.info("createAndSendEmail:: Sending email");
+            log.info("createAndSendEmail:: Sending email");
 
             return sendEmail(requestContext, headers, emailEntity);
           })))
-      .onSuccess(v -> logger.info("createAndSendEmail:: Email sent"))
-      .onFailure(t -> logger.error("createAndSendEmail failed", t));
+      .onSuccess(v -> log.info("createAndSendEmail:: Email sent"))
+      .onFailure(t -> log.error("createAndSendEmail failed", t));
   }
 
   private Future<Void> sendEmail(RequestContext requestContext, Map<String, String> headers, EmailEntity emailEntity) {
@@ -111,10 +102,6 @@ public class EmailService {
 
   private String createRolloverLedgerLink(String hostAddress, String ledgerId) {
     return hostAddress + String.format(ROLLOVER_LOGS_ENDPOINT, ledgerId);
-  }
-
-  private Future<JsonObject> getHostAddress(RequestContext requestContext) {
-    return configurationRestClient.get(CONFIGURATION_QUERY, 0, 1, requestContext);
   }
 
   private Future<JsonObject> getCurrentUser(RequestContext requestContext) {

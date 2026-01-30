@@ -38,6 +38,7 @@ import org.folio.service.rollover.RolloverBudgetService;
 import org.folio.service.rollover.RolloverErrorService;
 import org.folio.service.rollover.RolloverProgressService;
 import org.folio.service.rollover.RolloverValidationService;
+import org.folio.service.settings.CommonSettingsService;
 import org.folio.service.transactions.TemporaryEncumbranceService;
 import org.folio.service.transactions.batch.BatchAllocationService;
 import org.folio.service.transactions.batch.BatchEncumbranceService;
@@ -146,10 +147,10 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public EmailService emailService(@Qualifier("configurationRestClient") RestClient configurationRestClient,
+  public EmailService emailService(CommonSettingsService commonSettingsService,
                                    @Qualifier("userRestClient") RestClient userRestClient,
                                    LedgerDAO ledgerDAO) {
-    return new EmailService(configurationRestClient, userRestClient, ledgerDAO);
+    return new EmailService(commonSettingsService, userRestClient, ledgerDAO);
   }
 
   @Bean
@@ -193,4 +194,10 @@ public class ServicesConfiguration {
   public ExchangeRateSourceService exchangeRateSourceService(SecureStore secureStore, ExchangeRateSourceDAO exchangeRateSourceDAO) {
     return new ExchangeRateSourceService(secureStore, exchangeRateSourceDAO);
   }
+
+  @Bean
+  public CommonSettingsService commonSettingsService(@Qualifier("settingsRestClient") RestClient settingsRestClient) {
+    return new CommonSettingsService(settingsRestClient);
+  }
+
 }
