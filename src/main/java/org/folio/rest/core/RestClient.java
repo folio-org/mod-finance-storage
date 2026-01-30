@@ -42,6 +42,10 @@ public class RestClient {
     return get(requestContext, baseEndpoint + "/" + id);
   }
 
+  public Future<JsonObject> get(String path, RequestContext requestContext) {
+    return get(requestContext, baseEndpoint + path);
+  }
+
   private Future<JsonObject> get(RequestContext requestContext, String endpoint) {
     try {
       logger.debug("Calling GET {}", endpoint);

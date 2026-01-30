@@ -11,8 +11,8 @@ public class RestClientsConfiguration {
   }
 
   @Bean
-  public RestClient configurationRestClient() {
-    return new RestClient("/configurations/entries");
+  public RestClient settingsRestClient() {
+    return new RestClient("/settings");
   }
 
   @Bean

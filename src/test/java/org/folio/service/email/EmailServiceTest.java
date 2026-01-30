@@ -28,6 +28,7 @@ import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.DBConn;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.service.settings.CommonSettingsService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,8 @@ public class EmailServiceTest {
   private AutoCloseable mockitoMocks;
   @InjectMocks
   private EmailService emailService;
+  @Mock
+  private CommonSettingsService commonSettingsService;
   @Mock
   private RestClient restClient;
   @Mock
@@ -84,7 +87,7 @@ public class EmailServiceTest {
 
   @Test
   void shouldSendEmail(Vertx vertx) {
-    when(restClient.get(anyString(), anyInt(), anyInt(), eq(mockRequestContext))).thenReturn(succeededFuture(getHostAddressJson()));
+    when(commonSettingsService.getHostAddress(mockRequestContext)).thenReturn(succeededFuture("http://localhost:3030/"));
     when(restClient.getById(anyString(), eq(mockRequestContext))).thenReturn(succeededFuture(getUserJson()));
     when(ledgerDAO.getLedgerById(anyString(), any())).thenReturn(succeededFuture(new Ledger().withName("TestName")));
     when(dbClientFactory.getDbClient(mockRequestContext)).thenReturn(new DBClient(vertx, TEST_TENANT));
@@ -107,10 +110,4 @@ public class EmailServiceTest {
     return jsonObject;
   }
 
-  private JsonObject getHostAddressJson() {
-    JsonObject jsonObject = new JsonObject();
-    Map<String, String> config = Collections.singletonMap("value", "http://localhost:3030/");
-    jsonObject.put("configs", List.of(config));
-    return jsonObject;
-  }
 }
