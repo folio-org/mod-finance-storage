@@ -311,7 +311,8 @@
           "modulePermissions": [
             "orders.rollover.item.post",
             "users.item.get",
-            "email.message.post"
+            "email.message.post",
+            "host-address.item.get"
           ]
         },
         {
@@ -561,8 +562,8 @@
   ],
   "requires": [
     {
-      "id": "configuration",
-      "version": "2.0"
+      "id": "settings",
+      "version": "1.2"
     },
     {
       "id": "users",

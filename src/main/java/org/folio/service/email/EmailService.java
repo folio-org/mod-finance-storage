@@ -50,7 +50,7 @@ public class EmailService {
   private final LedgerDAO ledgerDAO;
 
   public Future<Void> createAndSendEmail(RequestContext requestContext, LedgerFiscalYearRollover rollover, DBConn conn) {
-    log.debug("createAndSendEmail:: Trying to create and send email");
+    log.debug("createAndSendEmail:: Trying to create and send email for rollover id: {}, ledger id: {}", rollover.getId(), rollover.getLedgerId());
     return commonSettingsService.getHostAddress(requestContext)
       .compose(hostAddress -> getCurrentUser(requestContext)
         .compose(userResponse -> ledgerDAO.getLedgerById(rollover.getLedgerId(), conn)
@@ -58,7 +58,7 @@ public class EmailService {
             String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
             Map<String, String> headers = getHeaders(requestContext);
             EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
-            log.info("createAndSendEmail:: Sending email");
+            log.info("createAndSendEmail:: Sending email for rollover id: {}, ledger id: {}", rollover.getId(), rollover.getLedgerId());
 
             return sendEmail(requestContext, headers, emailEntity);
           })))
