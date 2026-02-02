@@ -1,0 +1,142 @@
+{
+  "transactionsToCreate": [
+    {
+      "id": "e1261001-0001-4000-8000-000000000001",
+      "amount": 10.00,
+      "currency": "USD",
+      "description": "PO_Line: ABA Journal",
+      "encumbrance": {
+        "amountExpended": 0,
+        "amountAwaitingPayment": 0,
+        "initialAmountEncumbered": 10.00,
+        "status": "Unreleased",
+        "orderType": "One-Time",
+        "orderStatus": "Open",
+        "subscription": false,
+        "reEncumber": true,
+        "sourcePurchaseOrderId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "sourcePoLineId": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      },
+      "fiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "fromFundId": "4428a37c-8bae-4f0d-865d-970d83d5ad55",
+      "source": "PoLine",
+      "sourceFiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "transactionType": "Encumbrance"
+    },
+    {
+      "id": "e1004831-0001-4000-8000-000000000001",
+      "amount": 20.00,
+      "currency": "USD",
+      "description": "PO_Line: Journal of Library Science",
+      "encumbrance": {
+        "amountExpended": 0,
+        "amountAwaitingPayment": 0,
+        "initialAmountEncumbered": 20.00,
+        "status": "Unreleased",
+        "orderType": "Ongoing",
+        "orderStatus": "Open",
+        "subscription": true,
+        "reEncumber": true,
+        "sourcePurchaseOrderId": "f6a7b8c9-d0e1-4f2a-8b4c-5d6e7f8a9b0c",
+        "sourcePoLineId": "a7b8c9d0-e1f2-4a3b-8c5d-6e7f8a9b0c1d"
+      },
+      "fiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "fromFundId": "4428a37c-8bae-4f0d-865d-970d83d5ad55",
+      "source": "PoLine",
+      "sourceFiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "transactionType": "Encumbrance"
+    },
+    {
+      "id": "e1004841-0001-4000-8000-000000000001",
+      "amount": 20.00,
+      "currency": "USD",
+      "description": "PO_Line: Journal of Digital Information",
+      "encumbrance": {
+        "amountExpended": 0,
+        "amountAwaitingPayment": 0,
+        "initialAmountEncumbered": 20.00,
+        "status": "Unreleased",
+        "orderType": "Ongoing",
+        "orderStatus": "Open",
+        "subscription": true,
+        "reEncumber": true,
+        "sourcePurchaseOrderId": "0a1b2c3d-4e5f-4a6b-8c8d-9e0f1a2b3c4d",
+        "sourcePoLineId": "1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e"
+      },
+      "fiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "fromFundId": "4428a37c-8bae-4f0d-865d-970d83d5ad55",
+      "source": "PoLine",
+      "sourceFiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "transactionType": "Encumbrance"
+    },
+    {
+      "id": "e1004851-0001-4000-8000-000000000001",
+      "amount": 50.00,
+      "currency": "USD",
+      "description": "PO_Line: Reference Book Collection Package",
+      "encumbrance": {
+        "amountExpended": 0,
+        "amountAwaitingPayment": 0,
+        "initialAmountEncumbered": 50.00,
+        "status": "Unreleased",
+        "orderType": "One-Time",
+        "orderStatus": "Open",
+        "subscription": false,
+        "reEncumber": true,
+        "sourcePurchaseOrderId": "3d4e5f6a-7b8c-4d9e-8f1a-2b3c4d5e6f7a",
+        "sourcePoLineId": "4e5f6a7b-8c9d-4e0f-8a2b-3c4d5e6f7a8b"
+      },
+      "fiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "fromFundId": "65032151-39a5-4cef-8810-5350eb316300",
+      "source": "PoLine",
+      "sourceFiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "transactionType": "Encumbrance"
+    },
+    {
+      "id": "e1004852-0002-4000-8000-000000000002",
+      "amount": 50.00,
+      "currency": "USD",
+      "description": "PO_Line: Reference Book Collection Package",
+      "encumbrance": {
+        "amountExpended": 0,
+        "amountAwaitingPayment": 0,
+        "initialAmountEncumbered": 50.00,
+        "status": "Unreleased",
+        "orderType": "One-Time",
+        "orderStatus": "Open",
+        "subscription": false,
+        "reEncumber": true,
+        "sourcePurchaseOrderId": "3d4e5f6a-7b8c-4d9e-8f1a-2b3c4d5e6f7a",
+        "sourcePoLineId": "4e5f6a7b-8c9d-4e0f-8a2b-3c4d5e6f7a8b"
+      },
+      "fiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "fromFundId": "55f48dc6-efa7-4cfe-bc7c-4786efe493e3",
+      "source": "PoLine",
+      "sourceFiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "transactionType": "Encumbrance"
+    },
+    {
+      "id": "e1004861-0001-4000-8000-000000000001",
+      "amount": 50.00,
+      "currency": "USD",
+      "description": "PO_Line: Interesting Times",
+      "encumbrance": {
+        "amountExpended": 0,
+        "amountAwaitingPayment": 0,
+        "initialAmountEncumbered": 50.00,
+        "status": "Unreleased",
+        "orderType": "One-Time",
+        "orderStatus": "Open",
+        "subscription": false,
+        "reEncumber": true,
+        "sourcePurchaseOrderId": "8c9d0e1f-2a3b-4c4d-8e6f-7a8b9c0d1e2f",
+        "sourcePoLineId": "9d0e1f2a-3b4c-4d5e-8f7a-8b9c0d1e2f3a"
+      },
+      "fiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "fromFundId": "4428a37c-8bae-4f0d-865d-970d83d5ad55",
+      "source": "PoLine",
+      "sourceFiscalYearId": "0168e7fc-d0ef-4169-b6bf-16594a252b6d",
+      "transactionType": "Encumbrance"
+    }
+  ]
+}
