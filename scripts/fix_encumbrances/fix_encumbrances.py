@@ -8,94 +8,164 @@ from datetime import datetime
 from decimal import Decimal
 from itertools import islice, chain
 from http import HTTPStatus
+from http.cookiejar import CookieJar, Cookie
+from typing import Union
 
 import httpx
-import requests
 
 ITEM_MAX = 2147483647
 MAX_BY_CHUNK = 1000
 IDS_CHUNK = 15
 
+tenant = ''
+username = ''
 okapi_url = ''
+access_token_cookie: Union[Cookie, None] = None
+refresh_token_cookie: Union[Cookie, None] = None
 headers = {}
 client = httpx.AsyncClient()
 dryrun = False
+refresh_lock = asyncio.Lock()
 
 # request timeout in seconds
-ASYNC_CLIENT_TIMEOUT = 30
+ASYNC_CLIENT_TIMEOUT = 40
 
-# limit the number of parallel threads.
+# limit the number of concurrent tasks.
 # Try different values. Bigger values - for increasing performance, but could produce "Connection timeout exception"
-MAX_ACTIVE_THREADS = 7
+MAX_CONCURRENT_TASKS = 7
 
 
 # ---------------------------------------------------
 # Utility functions
 
-def raise_exception_for_reply(r):
-    raise Exception(f'Status code: {r.status_code}. Response: "{r.text}"')
+def handle_login_response(resp):
+    global access_token_cookie, refresh_token_cookie, headers
+
+    if resp.status_code != 201:
+        raise Exception(f'Status code: {resp.status_code}. Response: "{resp.text}"')
+    refresh_token_cookie = None
+    access_token_cookie = None
+    for cookie in resp.cookies.jar:
+        if cookie.name == 'folioRefreshToken':
+            refresh_token_cookie = cookie
+        elif cookie.name == 'folioAccessToken':
+            access_token_cookie = cookie
+    if refresh_token_cookie is None or access_token_cookie is None:
+        print('\nError during login: missing cookie')
+        raise SystemExit(1)
+    headers = { 'x-okapi-tenant': tenant, 'x-okapi-token': access_token_cookie.value, 'Content-Type': 'application/json' }
 
 
-def login(tenant, username, password):
-    login_headers = {'x-okapi-tenant': tenant, 'Content-Type': 'application/json'}
-    data = {'username': username, 'password': password}
+async def refresh_login():
+    async with refresh_lock:
+        if not access_token_cookie.is_expired():
+            # Token was refreshed by another concurrent task
+            return
+        # Refreshing access token...
+        if refresh_token_cookie.is_expired():
+            print('\nRefresh token has expired, refreshing the access token is unlikely to work. Trying user login.')
+            await login()
+            return
+        login_headers = { 'x-okapi-tenant': tenant, 'Content-Type': 'application/json' }
+        url = okapi_url + 'authn/refresh'
+        try:
+            jar = CookieJar()
+            jar.set_cookie(refresh_token_cookie)
+            resp = await client.post(url=url, headers=login_headers, cookies=jar, timeout=ASYNC_CLIENT_TIMEOUT)
+            handle_login_response(resp)
+        except Exception as err:
+            print('\nError during login refresh:', err)
+            raise SystemExit(1)
+
+
+async def login():
+    password = getpass.getpass('Password:')
+    login_headers = { 'x-okapi-tenant': tenant, 'Content-Type': 'application/json' }
+    data = { 'username': username, 'password': password }
+    url = okapi_url + 'authn/login-with-expiry'
     try:
-        r = requests.post(okapi_url + 'authn/login', headers=login_headers, json=data)
-        if r.status_code != 201:
-            raise_exception_for_reply(r)
-        print('Logged in successfully.')
-        okapi_token = r.json()['okapiToken']
-        return {'x-okapi-tenant': tenant, 'x-okapi-token': okapi_token, 'Content-Type': 'application/json'}
+        resp = await client.post(url=url, headers=login_headers, json=data, timeout=ASYNC_CLIENT_TIMEOUT)
+        handle_login_response(resp)
     except Exception as err:
         print('Error during login:', err)
         raise SystemExit(1)
 
 
+async def async_request_without_retry(method, params):
+    params['headers'] = headers
+    params['timeout'] = ASYNC_CLIENT_TIMEOUT
+    if method == 'get':
+        resp = await client.get(**params)
+    elif method == 'post':
+        resp = await client.post(**params)
+    elif method == 'put':
+        resp = await client.put(**params)
+    else:
+        print('\nError with async request: ', method, params)
+        raise SystemExit(1)
+    return resp
+
+
+async def async_request(method, params):
+    previous_access_token_value = access_token_cookie.value
+    try:
+        resp = await async_request_without_retry(method, params)
+    except httpx.ReadTimeout:
+        print(f'\nTimeout error for {method}', params)
+        print('Trying the same request again. If it fails try increasing ASYNC_CLIENT_TIMEOUT.')
+        resp = await async_request_without_retry(method, params)
+    if resp.status_code == 401:
+        if access_token_cookie.is_expired():
+            await refresh_login()
+            # Trying the request again after the token was refreshed...
+            resp = await async_request_without_retry(method, params)
+        elif previous_access_token_value != access_token_cookie.value:
+            # The access token was refreshed during the query, trying again...
+            resp = await async_request_without_retry(method, params)
+    return resp
+
+
 async def get_request_without_query(url: str) -> dict:
     try:
-        resp = await client.get(url, headers=headers, timeout=ASYNC_CLIENT_TIMEOUT)
-
+        resp = await async_request('get', { 'url': url })
         if resp.status_code == HTTPStatus.OK:
             return resp.json()
         else:
-            print(f'Error getting record with url {url} : \n{resp.text} ')
+            print(f'\nError getting record with url {url} ({resp.status_code}): \n{resp.text}')
             raise SystemExit(1)
     except Exception as err:
-        print(f'Error getting record with url {url} : {err=}')
+        print(f'\nError getting record with url {url} : {err=}')
         raise SystemExit(1)
 
 
-async def get_request_with_params(url: str, query: str, params: dict, key: str) -> list:
+async def get_request_with_params(url: str, params: dict, key: str) -> list:
     try:
-        resp = await client.get(url, headers=headers, params=params, timeout=ASYNC_CLIENT_TIMEOUT)
-
+        resp = await async_request('get', { 'url': url, 'params': params })
         if resp.status_code == HTTPStatus.OK:
             collection = resp.json()
             if key not in collection.keys():
                 raise Exception(f'Could not find key in result of get request; url={url}, key={key}')
             return collection[key]
         else:
-            print(f'Error getting records by {url} ?query= "{query}": \n{resp.text} ')
+            print(f'\nError getting records with {url} and params {params} ({resp.status_code}): \n{resp.text}')
             raise SystemExit(1)
     except Exception as err:
-        print(f'Error getting records by {url}?query={query}: {err=}')
+        print(f'\nError getting records with {url} and params {params}: {err=}')
         raise SystemExit(1)
 
 
 async def get_request(url: str, query: str, key: str) -> list:
-    params = {'query': query, 'offset': '0', 'limit': ITEM_MAX}
-    records = await get_request_with_params(url, query, params, key)
-    return records
+    return await get_request_with_params(url, { 'query': query, 'offset': 0, 'limit': ITEM_MAX }, key)
 
 
 async def post_request(url: str, data):
     if dryrun:
         return
     try:
-        resp = await client.post(url, headers=headers, data=json.dumps(data), timeout=ASYNC_CLIENT_TIMEOUT)
+        resp = await async_request('post', { 'url': url, 'data': json.dumps(data) })
         if resp.status_code == HTTPStatus.CREATED or resp.status_code == HTTPStatus.NO_CONTENT:
             return
-        print(f'Error in POST request {url} "{data}": {resp.text}')
+        print(f'Error in POST request {url} "{data}" ({resp.status_code}): {resp.text}')
         raise SystemExit(1)
 
     except Exception as err:
@@ -107,10 +177,10 @@ async def put_request(url: str, data):
     if dryrun:
         return
     try:
-        resp = await client.put(url, headers=headers, data=json.dumps(data), timeout=ASYNC_CLIENT_TIMEOUT)
+        resp = await async_request('put', { 'url': url, 'data': json.dumps(data) })
         if resp.status_code == HTTPStatus.NO_CONTENT:
             return
-        print(f'Error updating record {url} "{data}": {resp.text}')
+        print(f'Error updating record {url} "{data}" ({resp.status_code}): {resp.text}')
         raise SystemExit(1)
 
     except Exception as err:
@@ -118,16 +188,9 @@ async def put_request(url: str, data):
         raise SystemExit(1)
 
 
-def get_fiscal_years_by_query(query) -> dict:
-    params = {'query': query, 'offset': '0', 'limit': ITEM_MAX}
-    try:
-        r = requests.get(okapi_url + 'finance-storage/fiscal-years', headers=headers, params=params)
-        if r.status_code != 200:
-            raise_exception_for_reply(r)
-        return r.json()['fiscalYears']
-    except Exception as err:
-        print(f'Error getting fiscal years with query "{query}": {err}')
-        raise SystemExit(1)
+async def get_fiscal_years_by_query(query) -> list:
+    url = okapi_url + 'finance-storage/fiscal-years'
+    return await get_request(url, query, 'fiscalYears')
 
 
 async def get_chunk(url, query, key, last_id) -> list:
@@ -139,8 +202,8 @@ async def get_chunk(url, query, key, last_id) -> list:
         modified_query = modified_query + 'cql.allRecords=1 sortBy id'
     else:
         modified_query = modified_query + f'id > {last_id} sortBy id'
-    params = {'query': modified_query, 'offset': 0, 'limit': MAX_BY_CHUNK}
-    return await get_request_with_params(url, query, params, key)
+    params = { 'query': modified_query, 'offset': 0, 'limit': MAX_BY_CHUNK }
+    return await get_request_with_params(url, params, key)
 
 
 async def get_by_chunks(url, query, key) -> list:
@@ -174,7 +237,7 @@ async def get_orders_by_query(query) -> list:
     try:
         orders = await get_by_chunks(okapi_url + 'orders-storage/purchase-orders', query, 'purchaseOrders')
     except Exception as err:
-        print(f'Error getting orders with query "{query}": {err}')
+        print(f'\nError getting orders with query "{query}": {err}')
         raise SystemExit(1)
     return orders
 
@@ -188,7 +251,7 @@ async def get_order_ids_by_query(query) -> list:
     try:
         ids = await get_ids_by_chunks(okapi_url + 'orders-storage/purchase-orders', query, 'purchaseOrders')
     except Exception as err:
-        print(f'Error getting order ids with query "{query}": {err}')
+        print(f'\nError getting order ids with query "{query}": {err}')
         raise SystemExit(1)
     return ids
 
@@ -208,11 +271,11 @@ async def get_polines_by_ids(poline_ids) -> list:
     return polines
 
 
-def get_fiscal_year(fiscal_year_code) -> dict:
+async def get_fiscal_year(fiscal_year_code) -> dict:
     query = f'code=="{fiscal_year_code}"'
-    fiscal_years = get_fiscal_years_by_query(query)
+    fiscal_years = await get_fiscal_years_by_query(query)
     if len(fiscal_years) == 0:
-        print(f'Could not find fiscal year "{fiscal_year_code}".')
+        print(f'\nCould not find fiscal year "{fiscal_year_code}".')
         raise SystemExit(1)
     return fiscal_years[0]
 
@@ -433,11 +496,11 @@ async def remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id, fy_is
 async def remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id, fy_is_current):
     print('Removing duplicate encumbrances for open and closed orders...')
     futures = []
-    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_id in enumerate(open_and_closed_orders_ids):
         await sem.acquire()
         progress(idx, len(open_and_closed_orders_ids))
-        futures.append(asyncio.ensure_future(remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id, \
+        futures.append(asyncio.ensure_future(remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id,
             fy_is_current, sem)))
 
     nb_removed_encumbrances = await asyncio.gather(*futures)
@@ -629,7 +692,7 @@ async def fix_poline_encumbrances_relations(all_orders_ids, fiscal_year_id):
         print('  Found no order.')
         return
     orders_futures = []
-    order_sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    order_sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_id in enumerate(all_orders_ids):
         await order_sem.acquire()
         progress(idx, len(all_orders_ids))
@@ -677,7 +740,7 @@ async def fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fisc
         print('  Found no closed orders.')
         return
     fix_encumbrance_futures = []
-    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_id in enumerate(closed_orders_ids):
         await sem.acquire()
         progress(idx, len(closed_orders_ids))
@@ -736,7 +799,7 @@ async def fix_encumbrance_properties_for_open_and_pending_orders(fiscal_year_id)
         print('  Found no open or pending order.')
         return
     fix_encumbrance_futures = []
-    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order in enumerate(open_and_pending_orders):
         await sem.acquire()
         progress(idx, len(open_and_pending_orders))
@@ -811,8 +874,7 @@ async def remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_
         print('  Found no pending orders.')
         return
     fix_encumbrance_futures = []
-    max_active_order_threads = 5
-    sem = asyncio.Semaphore(max_active_order_threads)
+    sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_ids in enumerate(chunks(pending_orders_ids, IDS_CHUNK)):
         await sem.acquire()
         progress(idx, len(pending_orders_ids))
@@ -854,7 +916,7 @@ async def unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id
         print('  Found no open orders.')
         return
     enc_futures = []
-    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_id in enumerate(open_orders_ids):
         await sem.acquire()
         progress(idx, len(open_orders_ids))
@@ -897,7 +959,7 @@ async def release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id,
         print('  Found no open orders.')
         return
     enc_futures = []
-    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_id in enumerate(open_orders_ids):
         await sem.acquire()
         progress(idx, len(open_orders_ids))
@@ -946,7 +1008,7 @@ async def release_cancelled_order_line_encumbrances(fiscal_year_id, open_orders_
         print('  Found no open orders.')
         return
     enc_futures = []
-    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_id in enumerate(open_orders_ids):
         await sem.acquire()
         progress(idx, len(open_orders_ids))
@@ -981,7 +1043,7 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
     # Take closed orders into account because we might have to set a budget encumbered to 0
     print(f'Recalculating budget encumbered for {len(open_and_closed_orders_ids)} orders ...')
     enc_future = []
-    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_id in enumerate(open_and_closed_orders_ids):
         await sem.acquire()
         progress(idx, len(open_and_closed_orders_ids))
@@ -1038,7 +1100,7 @@ async def release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, f
         print('  Found no closed orders.')
         return
     nb_released_encumbrance_futures = []
-    sem = asyncio.Semaphore(MAX_ACTIVE_THREADS)
+    sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
 
     for idx, order_id in enumerate(closed_orders_ids):
         await sem.acquire()
@@ -1097,11 +1159,10 @@ def dryrun_mode_selection():
 # ---------------------------------------------------
 # Menu and running operations
 
-async def run_operation(choice, fiscal_year_code, tenant, username, password):
-    global headers
+async def run_operation(choice, fiscal_year_code):
     initial_time = time.time()
-    headers = login(tenant, username, password)
-    fiscal_year = get_fiscal_year(fiscal_year_code)
+    await login()
+    fiscal_year = await get_fiscal_year(fiscal_year_code)
     fy_is_current = test_fiscal_year_current(fiscal_year)
     fiscal_year_id = fiscal_year['id']
 
@@ -1161,7 +1222,7 @@ async def run_operation(choice, fiscal_year_code, tenant, username, password):
     print(f'Elapsed time: {hours} hour(s), {minutes} minute(s) and {seconds} second(s).')
 
 
-def menu(fiscal_year_code, tenant, username):
+def menu(fiscal_year_code):
     print('1) Run all fixes (can be long)')
     print('2) Remove duplicate encumbrances')
     print('3) Fix order line - encumbrance relations')
@@ -1188,15 +1249,15 @@ def menu(fiscal_year_code, tenant, username):
     if choice_i == 1 and dryrun:
         print("Note that, because dry-run mode is enabled, some operations will behave differently because they "
               "depend on the execution of previous ones, such as when recalculating the budget encumbrances.")
-    password = getpass.getpass('Password:')
-    asyncio.run(run_operation(choice_i, fiscal_year_code, tenant, username, password))
+    asyncio.run(run_operation(choice_i, fiscal_year_code))
 
 
 # ---------------------------------------------------
 # Main
 
 def main():
-    global okapi_url
+    global okapi_url, tenant, username
+
     if len(sys.argv) != 5:
         print("Syntax: ./fix_encumbrances.py 'fiscal_year_code' 'okapi_url' 'tenant' 'username'")
         raise SystemExit(1)
@@ -1205,7 +1266,7 @@ def main():
     tenant = sys.argv[3]
     username = sys.argv[4]
     dryrun_mode_selection()
-    menu(fiscal_year_code, tenant, username)
+    menu(fiscal_year_code)
 
 
 main()
