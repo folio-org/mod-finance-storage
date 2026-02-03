@@ -16,6 +16,7 @@ import httpx
 ITEM_MAX = 2147483647
 MAX_BY_CHUNK = 1000
 IDS_CHUNK = 15
+LINE_CLEAR = '\x1b[2K'
 
 tenant = ''
 username = ''
@@ -37,6 +38,11 @@ MAX_CONCURRENT_TASKS = 7
 
 # ---------------------------------------------------
 # Utility functions
+
+# Clears the current line (which could be the progress line) before printing
+def clear_print(*args):
+    print(LINE_CLEAR, *args)
+
 
 def handle_login_response(resp):
     global access_token_cookie, refresh_token_cookie, headers
@@ -165,11 +171,11 @@ async def post_request(url: str, data):
         resp = await async_request('post', { 'url': url, 'data': json.dumps(data) })
         if resp.status_code == HTTPStatus.CREATED or resp.status_code == HTTPStatus.NO_CONTENT:
             return
-        print(f'Error in POST request {url} "{data}" ({resp.status_code}): {resp.text}')
+        print(f'\nError in POST request {url} "{data}" ({resp.status_code}): {resp.text}')
         raise SystemExit(1)
 
     except Exception as err:
-        print(f'Error in POST request {url} "{data}": {err=}')
+        print(f'\nError in POST request {url} "{data}": {err=}')
         raise SystemExit(1)
 
 
@@ -180,11 +186,11 @@ async def put_request(url: str, data):
         resp = await async_request('put', { 'url': url, 'data': json.dumps(data) })
         if resp.status_code == HTTPStatus.NO_CONTENT:
             return
-        print(f'Error updating record {url} "{data}" ({resp.status_code}): {resp.text}')
+        print(f'\nError updating record {url} "{data}" ({resp.status_code}): {resp.text}')
         raise SystemExit(1)
 
     except Exception as err:
-        print(f'Error updating record {url} "{data}": {err=}')
+        print(f'\nError updating record {url} "{data}": {err=}')
         raise SystemExit(1)
 
 
@@ -323,7 +329,7 @@ async def get_budget_by_fund_id(fund_id, fiscal_year_id) -> dict:
     query = f'fundId=={fund_id} AND fiscalYearId=={fiscal_year_id}'
     budgets = await get_budgets_by_query(query)
     if len(budgets) == 0:
-        print(f'Could not find budget for fund "{fund_id}" and fiscal year "{fiscal_year_id}".')
+        print(f'\nCould not find budget for fund "{fund_id}" and fiscal year "{fiscal_year_id}".')
         raise SystemExit(1)
     return budgets[0]
 
@@ -484,7 +490,7 @@ async def remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id, fy_is
         encumbrance_changes = prepare_encumbrance_changes(duplicates, order, polines, fy_is_current)
         if len(encumbrance_changes) == 0:
             return 0
-        print(f"  Removing the following encumbrances for order {order_id}:")
+        clear_print(f"  Removing the following encumbrances for order {order_id}:")
         for change in encumbrance_changes:
             print(f"    {change['remove']['id']}")
         await remove_encumbrances_and_update_polines(encumbrance_changes)
@@ -520,7 +526,7 @@ async def get_polines_by_order_id(order_id) -> list:
 async def update_encumbrance_fund_id(encumbrance, new_fund_id, poline):
     encumbrance['fromFundId'] = new_fund_id
     encumbrance_id = encumbrance['id']
-    print(f"  Fixing fromFundId for po line {poline['id']} ({poline['poLineNumber']}) encumbrance {encumbrance_id}")
+    clear_print(f"  Fixing fromFundId for po line {poline['id']} ({poline['poLineNumber']}) encumbrance {encumbrance_id}")
     await batch_update([encumbrance])
 
 
@@ -534,17 +540,17 @@ async def fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poli
         else:
             encumbrances_with_bad_fund.append(encumbrance)
     if len(encumbrances_with_bad_fund) == 0:
-        print(f"  Warning: there is a remaining duplicate encumbrance for poline {poline['id']} "
+        clear_print(f"  Warning: there is a remaining duplicate encumbrance for poline {poline['id']} "
               f"({poline['poLineNumber']}).")
         return
     if len(encumbrances_with_right_fund) != 1:
-        print(f"  Problem fixing encumbrances for poline {poline['id']} ({poline['poLineNumber']}), "
+        clear_print(f"  Problem fixing encumbrances for poline {poline['id']} ({poline['poLineNumber']}), "
               "please fix by hand.")
         return
     replace_by = encumbrances_with_right_fund[0]
     ids_to_delete = []
     for encumbrance_to_remove in encumbrances_with_bad_fund:
-        print(f"  Removing encumbrance {encumbrance_to_remove['id']} for po line {poline['id']} "
+        clear_print(f"  Removing encumbrance {encumbrance_to_remove['id']} for po line {poline['id']} "
               f"({poline['poLineNumber']})")
         await update_poline_encumbrance(encumbrance_to_remove, replace_by, poline)
         ids_to_delete.append(encumbrance_to_remove['id'])
@@ -603,17 +609,17 @@ def update_poline_like_rollover(poline, initial_encumbrances):
     poline_cost = poline['cost']
     poline_currency = poline_cost['currency']
     if any(encumbrance['currency'] != poline_currency for encumbrance in initial_encumbrances):
-        print(f"  Warning: can't rollover po line {poline_number} because the po line is not using the system currency")
+        clear_print(f"  Warning: can't rollover po line {poline_number} because the po line is not using the system currency")
         return
     previous_poline_estimated_price = float(poline_cost['poLineEstimatedPrice'])
     total_cost = calculate_total_cost(poline_cost)
     total_initial_encumbrances = sum([enc['encumbrance']['initialAmountEncumbered'] for enc in initial_encumbrances])
     fyro_adjustment = total_initial_encumbrances - total_cost
     if 'fyroAdjustmentAmount' not in poline_cost or poline_cost['fyroAdjustmentAmount'] != fyro_adjustment:
-        print(f"  Updating po line {poline_number} fyroAdjustmentAmount to {fyro_adjustment}")
+        clear_print(f"  Updating po line {poline_number} fyroAdjustmentAmount to {fyro_adjustment}")
         poline_cost['fyroAdjustmentAmount'] = fyro_adjustment
     if 'poLineEstimatedPrice' not in poline_cost or poline_cost['poLineEstimatedPrice'] != total_initial_encumbrances:
-        print(f"  Updating po line {poline_number} poLineEstimatedPrice to {total_initial_encumbrances}")
+        clear_print(f"  Updating po line {poline_number} poLineEstimatedPrice to {total_initial_encumbrances}")
         poline_cost['poLineEstimatedPrice'] = total_initial_encumbrances
     for fd in poline['fundDistribution']:
         if fd['distributionType'] == 'amount':
@@ -622,7 +628,7 @@ def update_poline_like_rollover(poline, initial_encumbrances):
             else:
                 new_fd_value = round((float(fd['value']) / previous_poline_estimated_price) * total_initial_encumbrances, 2)
             if new_fd_value != float(fd['value']):
-                print(f"  Updating po line {poline_number} fund distribution value for {fd['code']} from {fd['value']} to {new_fd_value}")
+                clear_print(f"  Updating po line {poline_number} fund distribution value for {fd['code']} from {fd['value']} to {new_fd_value}")
                 fd['value'] = new_fd_value
 
 
@@ -640,17 +646,17 @@ async def fix_poline_encumbrance_links(poline, order_encumbrances):
         matching_encumbrance = look_for_matching_encumbrance(order_encumbrances, poline['id'], fd['fundId'], fd.get('expenseClassId'))
         if matching_encumbrance is None:
             if 'encumbrance' in fd:
-                print(f"  Removing link from po line {poline_number} to encumbrance {fd['encumbrance']}")
+                clear_print(f"  Removing link from po line {poline_number} to encumbrance {fd['encumbrance']}")
                 del fd['encumbrance']
                 poline_needs_update = True
         else:
             initial_encumbrances.append(matching_encumbrance)
             if 'encumbrance' not in fd:
-                print(f"  Adding link for po line {poline_number} to encumbrance {matching_encumbrance['id']}")
+                clear_print(f"  Adding link for po line {poline_number} to encumbrance {matching_encumbrance['id']}")
                 fd['encumbrance'] = matching_encumbrance['id']
                 poline_needs_update = True
             elif matching_encumbrance['id'] != fd['encumbrance']:
-                print(f"  Updating link for po line {poline_number} from encumbrance {fd['encumbrance']} to "
+                clear_print(f"  Updating link for po line {poline_number} from encumbrance {fd['encumbrance']} to "
                       f"encumbrance {matching_encumbrance['id']}")
                 fd['encumbrance'] = matching_encumbrance['id']
                 encumbrance_link_was_updated = True
@@ -714,7 +720,7 @@ async def get_encumbrances_to_fix_order_status(order_id, fiscal_year_id) -> list
 
 async def fix_encumbrances_order_status(order_id, encumbrances):
     try:
-        print(f'\n  Fixing the following encumbrance(s) for order {order_id} :')
+        clear_print(f'  Fixing the following encumbrance(s) for order {order_id} :')
         for encumbrance in encumbrances:
             print(f"    {encumbrance['id']}")
             encumbrance['encumbrance']['orderStatus'] = 'Closed'
@@ -769,7 +775,7 @@ async def get_encumbrances_to_fix_properties(order, fiscal_year_id) -> list:
 
 async def fix_encumbrances_properties(order, encumbrances):
     try:
-        print(f"\n  Fixing the following encumbrance(s) for order {order['id']} :")
+        clear_print(f"  Fixing the following encumbrance(s) for order {order['id']} :")
         for encumbrance in encumbrances:
             print(f"    {encumbrance['id']}")
             encumbrance['encumbrance']['orderStatus'] = order['workflowStatus']
@@ -890,7 +896,7 @@ async def remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_
 # Unrelease open orders encumbrances with non-zero amounts
 
 async def unrelease_encumbrances(order_id, encumbrances):
-    print(f'\n  Unreleasing the following encumbrance(s) for order {order_id} :')
+    clear_print(f'  Unreleasing the following encumbrance(s) for order {order_id} :')
     for encumbrance in encumbrances:
         print(f"    {encumbrance['id']}")
         encumbrance['encumbrance']['status'] = 'Unreleased'
@@ -932,7 +938,7 @@ async def unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id
 # Release open orders encumbrances with negative amounts (see MODFISTO-368)
 
 async def release_encumbrances(order_id, encumbrances):
-    print(f'\n  Releasing the following encumbrances for order {order_id} :')
+    clear_print(f'  Releasing the following encumbrances for order {order_id} :')
     for encumbrance in encumbrances:
         print(f"    {encumbrance['id']}")
         encumbrance['encumbrance']['status'] = 'Released'
@@ -1028,7 +1034,7 @@ async def update_budgets(encumbered, fund_id, fiscal_year_id, sem) -> int:
 
     # Cast into decimal values, so 0 == 0.0 == 0.00 will return true
     if Decimal(str(budget['encumbered'])) != Decimal(encumbered):
-        print(f"    Budget \"{budget['name']}\": changing encumbered from {budget['encumbered']} to {encumbered}")
+        clear_print(f"    Budget \"{budget['name']}\": changing encumbered from {budget['encumbered']} to {encumbered}")
         budget['encumbered'] = encumbered
 
         url = f"{okapi_url}finance-storage/budgets/{budget['id']}"
