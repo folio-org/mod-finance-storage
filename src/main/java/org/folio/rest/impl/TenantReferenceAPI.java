@@ -96,7 +96,9 @@ public class TenantReferenceAPI extends TenantAPI {
           .withPostIgnore()
           .add("transactions/allocations-8.4.0", BATCH_ENDPOINT)
           .withPostIgnore()
-          .add("transactions/transfers-8.4.0", BATCH_ENDPOINT);
+          .add("transactions/transfers-8.4.0", BATCH_ENDPOINT)
+          .withPostIgnore()
+          .add("transactions/encumbrances-8.4.0", BATCH_ENDPOINT);
       }
       loadData = true;
     }
