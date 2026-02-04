@@ -385,7 +385,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                 GROUP BY fund_id
             ) AS subquery
             LEFT JOIN ${myuniversity}_${mymodule}.fund fund ON subquery.fund_id=fund.id
-            WHERE subquery.fund_id=budget.fundId AND fund.ledgerId=(%2$L::jsonb->>''ledgerId'')::uuid AND budget.fiscalYearId=(%2$L::jsonb->>''toFiscalYearId'')::uuid
+            WHERE subquery.fund_id=budget.fundId AND budget.fiscalYearId=(%2$L::jsonb->>''toFiscalYearId'')::uuid
                 AND (NOT budget.jsonb ? ''ledgerRolloverId'' OR budget.jsonb->>''ledgerRolloverId''=%2$L::jsonb->>''id'');';
 
         IF _rollover_record->>'rolloverType' = 'Preview' THEN
