@@ -1,5 +1,12 @@
 ## 8.9.0 - Unreleased
 
+## 8.8.6 - Released (Sunflower R1 2025 Bug Fix)
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.5...v8.8.6)
+
+### Bug fixes
+* [MODFISTO-549](https://folio-org.atlassian.net/browse/MODFISTO-549) Encumbered amount is not updated in budget details for multi-ledger PO lines after rollover until "Recalculate budget totals"
+
 ## 8.8.5 - Released (Sunflower R1 2025 Bug Fix)
 The primary focus of the release was to update to RMB 35.4.2 and Vertx 4.5.23
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.4...v8.8.5)
