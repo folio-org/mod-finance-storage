@@ -41,7 +41,7 @@ public class EncumbranceUtil {
       double available = sumMoney(currency, oldAmount, newAwaitingPayment, newExpended, newCredited);
       double newAmountUnapplied = calculateNewAmount(encumbrance, currency, newAwaitingPayment, newExpended, newCredited);
       log.info("updateNewAmountWithUnappliedCreditOnPayment:: Encumbrance initialAmount={} oldAmount={} awaitingPayment={} expended={} credited={} amount={} " +
-          "available={} newAmountUnapplied={}", initialAmount, oldAmount, newAwaitingPayment, newExpended, newCredited, amount, available, newAmountUnapplied);
+        "available={} newAmountUnapplied={}", initialAmount, oldAmount, newAwaitingPayment, newExpended, newCredited, amount, available, newAmountUnapplied);
       if (available > initialAmount && (newAmountUnapplied > 0 && newAmountUnapplied <= initialAmount)) {
         encumbrance.setAmount(newAmountUnapplied);
       }
@@ -50,13 +50,17 @@ public class EncumbranceUtil {
 
   // Here we calculate the new amount based on the facts at hand, and in case of negative amount we default them immediately at 0
   public static double calculateNewAmountDefaultOnZero(Transaction encumbrance, CurrencyUnit currency,
-                                                       double awaitingPayment, double expended, double credited) {
+                                                       double awaitingPayment, double expended, double credited, boolean applyCapping) {
     double initialAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
     double newAmount = subtractMoneyOrDefault(initialAmount, awaitingPayment, 0d, currency);
-    newAmount = subtractMoneyOrDefault(newAmount, expended, 0d, currency);
+    if (applyCapping) {
+      newAmount = subtractMoney(newAmount, expended, currency);
+    } else {
+      newAmount = subtractMoneyOrDefault(newAmount, expended, 0d, currency);
+    }
     newAmount = sumMoney(newAmount, credited, currency);
     log.info("calculateNewAmountDefaultOnZero:: Encumbrance initialAmount={} oldAmount={} awaitingPayment={} expended={} " +
-        "credited={} newAmount={}", initialAmount, encumbrance.getAmount(), awaitingPayment, expended, credited, newAmount);
+      "credited={} newAmount={}", initialAmount, encumbrance.getAmount(), awaitingPayment, expended, credited, newAmount);
     return newAmount;
   }
 
@@ -68,7 +72,7 @@ public class EncumbranceUtil {
     newAmount = subtractMoney(newAmount, expended, currency);
     newAmount = sumMoney(newAmount, credited, currency);
     log.info("calculateNewAmount:: Encumbrance initialAmount={} oldAmount={} awaitingPayment={} expended={} " +
-        "credited={} newAmount={}", initialAmount, encumbrance.getAmount(), awaitingPayment, expended, credited, newAmount);
+      "credited={} newAmount={}", initialAmount, encumbrance.getAmount(), awaitingPayment, expended, credited, newAmount);
     return newAmount;
   }
 
