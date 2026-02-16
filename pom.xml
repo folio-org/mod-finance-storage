@@ -25,7 +25,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!--Dependency Properties-->
-    <vertx.version>5.0.6</vertx.version>
+    <vertx.version>5.0.8</vertx.version>
     <log4j.version>2.25.3</log4j.version>
     <aspectj.version>1.9.25.1</aspectj.version>
     <jackson-bom.version>2.20.1</jackson-bom.version>
@@ -37,9 +37,9 @@
 
     <!--Maven plugin properties-->
     <aspectj-maven-plugin.version>1.14.1</aspectj-maven-plugin.version>
-    <exec-maven-plugin.version>3.6.2</exec-maven-plugin.version>
+    <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
     <maven-resources-plugin.version>3.4.0</maven-resources-plugin.version>
-    <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+    <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
     <maven-antrun-plugin.version>3.2.0</maven-antrun-plugin.version>
     <maven-shade-plugin.version>3.6.1</maven-shade-plugin.version>
     <maven-release-plugin.version>3.3.1</maven-release-plugin.version>
