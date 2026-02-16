@@ -96,8 +96,8 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           verify(conn, times(1)).saveBatch(saveTableNamesCaptor.capture(), saveEntitiesCaptor.capture());
           List<String> saveTableNames = saveTableNamesCaptor.getAllValues();
           List<List<Object>> saveEntities = saveEntitiesCaptor.getAllValues();
-          assertThat(saveTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Transaction savedTransaction = (Transaction)(saveEntities.get(0).get(0));
+          assertThat(saveTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedTransaction = (Transaction)(saveEntities.getFirst().getFirst());
           assertNotNull(savedTransaction.getMetadata());
           assertThat(savedTransaction.getAmount(), equalTo(encumbrance.getAmount()));
 
@@ -105,9 +105,9 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           ArgumentCaptor<String> updateTableNamesCaptor = ArgumentCaptor.forClass(String.class);
           verify(conn, times(1)).updateBatch(updateTableNamesCaptor.capture(), updateEntitiesCaptor.capture());
           List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
-          assertThat(updateTableNames.get(0), equalTo(BUDGET_TABLE));
+          assertThat(updateTableNames.getFirst(), equalTo(BUDGET_TABLE));
           List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
-          Budget savedBudget = (Budget)(updateEntities.get(0).get(0));
+          Budget savedBudget = (Budget)(updateEntities.getFirst().getFirst());
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
           assertThat(savedBudget.getEncumbered(), equalTo(5d));
         });
@@ -173,14 +173,14 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
           List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
 
-          assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Transaction savedTransaction = (Transaction)(updateEntities.get(0).get(0));
+          assertThat(updateTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedTransaction = (Transaction)(updateEntities.getFirst().getFirst());
           assertNotNull(savedTransaction.getMetadata().getUpdatedDate());
           assertThat(savedTransaction.getAmount(), equalTo(expectedAmount));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
-          Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
+          Budget savedBudget = (Budget)(updateEntities.get(1).getFirst());
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
           assertThat(savedBudget.getEncumbered(), equalTo(expectedBudgetEncumbered));
         });
@@ -240,8 +240,8 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           List<Criterion> deleteCriterions = deleteCriterionCaptor.getAllValues();
 
           Criterion expectedCriterion = createCriterionByIds(List.of(encumbranceId));
-          assertThat(deleteTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Criterion deleteCriterion = deleteCriterions.get(0);
+          assertThat(deleteTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+          Criterion deleteCriterion = deleteCriterions.getFirst();
           assertThat(deleteCriterion.toString(), equalTo(expectedCriterion.toString()));
         });
         testContext.completeNow();
@@ -303,7 +303,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
         HttpException exception = (HttpException)thrown;
         testContext.verify(() -> {
           assertThat(exception.getCode(), equalTo(422));
-          assertThat(exception.getErrors().getErrors().get(0).getMessage(),
+          assertThat(exception.getErrors().getErrors().getFirst().getMessage(),
             equalTo(BUDGET_RESTRICTED_ENCUMBRANCE_ERROR.getDescription()));
         });
         testContext.completeNow();
@@ -345,7 +345,7 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
         HttpException exception = (HttpException)event.cause();
         testContext.verify(() -> {
           assertEquals(400, exception.getCode());
-          assertEquals("budgetIsNotActiveOrPlanned", exception.getErrors().getErrors().get(0).getCode());
+          assertEquals("budgetIsNotActiveOrPlanned", exception.getErrors().getErrors().getFirst().getCode());
         });
         testContext.completeNow();
       });
@@ -453,13 +453,13 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
           List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
 
-          assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Transaction savedTransaction = (Transaction)(updateEntities.get(0).get(0));
+          assertThat(updateTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedTransaction = (Transaction)(updateEntities.getFirst().getFirst());
           assertThat(savedTransaction.getAmount(), equalTo(expectedAmount));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
-          Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
+          Budget savedBudget = (Budget)(updateEntities.get(1).getFirst());
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
           assertThat(savedBudget.getEncumbered(), equalTo(expectedBudgetEncumbered));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(5d));
@@ -519,13 +519,13 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
           List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
 
-          assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Transaction savedTransaction = (Transaction)(updateEntities.get(0).get(0));
+          assertThat(updateTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedTransaction = (Transaction)(updateEntities.getFirst().getFirst());
           assertThat(savedTransaction.getAmount(), equalTo(3d));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
-          Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
+          Budget savedBudget = (Budget)(updateEntities.get(1).getFirst());
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
           assertThat(savedBudget.getEncumbered(), equalTo(3d));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(5d));
@@ -586,13 +586,13 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
           List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
 
-          assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Transaction savedTransaction = (Transaction)(updateEntities.get(0).get(0));
+          assertThat(updateTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedTransaction = (Transaction)(updateEntities.getFirst().getFirst());
           assertThat(savedTransaction.getAmount(), equalTo(0d));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
-          Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
+          Budget savedBudget = (Budget)(updateEntities.get(1).getFirst());
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
           assertThat(savedBudget.getEncumbered(), equalTo(0d));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(50d));
@@ -653,13 +653,13 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
           List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
 
-          assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Transaction savedTransaction = (Transaction)(updateEntities.get(0).get(0));
+          assertThat(updateTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedTransaction = (Transaction)(updateEntities.getFirst().getFirst());
           assertThat(savedTransaction.getAmount(), equalTo(5d));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
-          Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
+          Budget savedBudget = (Budget)(updateEntities.get(1).getFirst());
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
           assertThat(savedBudget.getEncumbered(), equalTo(5d));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(50d));
@@ -720,15 +720,15 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
           List<String> updateTableNames = updateTableNamesCaptor.getAllValues();
           List<List<Object>> updateEntities = updateEntitiesCaptor.getAllValues();
 
-          assertThat(updateTableNames.get(0), equalTo(TRANSACTIONS_TABLE));
-          Transaction savedTransaction = (Transaction)(updateEntities.get(0).get(0));
-          assertThat(savedTransaction.getAmount(), equalTo(5d));
+          assertThat(updateTableNames.getFirst(), equalTo(TRANSACTIONS_TABLE));
+          Transaction savedTransaction = (Transaction)(updateEntities.getFirst().getFirst());
+          assertThat(savedTransaction.getAmount(), equalTo(0d));
 
           // Verify budget update
           assertThat(updateTableNames.get(1), equalTo(BUDGET_TABLE));
-          Budget savedBudget = (Budget)(updateEntities.get(1).get(0));
+          Budget savedBudget = (Budget)(updateEntities.get(1).getFirst());
           assertNotNull(savedBudget.getMetadata().getUpdatedDate());
-          assertThat(savedBudget.getEncumbered(), equalTo(5d));
+          assertThat(savedBudget.getEncumbered(), equalTo(0d));
           assertThat(savedBudget.getAwaitingPayment(), equalTo(50d));
           assertThat(savedBudget.getExpenditures(), equalTo(0d));
           assertThat(savedBudget.getCredits(), equalTo(0d));
@@ -788,8 +788,8 @@ public class EncumbranceTest extends BatchTransactionServiceTestBase {
 
     // Then
     assertThat(transactionsToUpdate.size(), equalTo(1));
-    assertThat(transactionsToUpdate.get(0).getId(), equalTo(paymentId));
-    assertThat(transactionsToUpdate.get(0).getPaymentEncumbranceId(), equalTo(newEncumbranceId));
+    assertThat(transactionsToUpdate.getFirst().getId(), equalTo(paymentId));
+    assertThat(transactionsToUpdate.getFirst().getPaymentEncumbranceId(), equalTo(newEncumbranceId));
   }
 
   @Test

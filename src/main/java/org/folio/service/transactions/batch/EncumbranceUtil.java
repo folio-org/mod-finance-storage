@@ -78,7 +78,7 @@ public class EncumbranceUtil {
 
   // In most situation we should safeguard the encumbrance amount from potential flawed calculations in the system by defaulting
   // the amount to either 0 or at the "initial encumbered amount" which is our upper limit that we should not be exceeding
-  public static double defaultNewAmountOnUnrelease(Transaction encumbrance, double newAmount, double defaultAmount, Encumbrance.Status fromStatus) {
+  public static double defaultNewAmountOnUnrelease(Transaction encumbrance, double newAmount, Encumbrance.Status fromStatus) {
     double initialAmount = encumbrance.getEncumbrance().getInitialAmountEncumbered();
     if (newAmount > initialAmount) {
       log.warn("defaultNewAmountOnUnrelease:: Transition from {} to UNRELEASED with newAmount={} " +
@@ -86,8 +86,8 @@ public class EncumbranceUtil {
       newAmount = initialAmount;
     } else if (newAmount < 0) {
       log.warn("capNewAmountOnUnrelease:: Transition from {} to UNRELEASED with newAmount={} " +
-        "going below 0 and will be defaulted at defaultAmount={}", fromStatus.name(), newAmount, defaultAmount);
-      newAmount = defaultAmount;
+        "going below 0 and will be defaulted at defaultAmount={}", fromStatus.name(), newAmount, 0);
+      newAmount = 0;
     }
     return newAmount;
   }
