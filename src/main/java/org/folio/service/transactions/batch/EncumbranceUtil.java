@@ -11,6 +11,7 @@ import static org.folio.utils.MoneyUtils.subtractMoney;
 import static org.folio.utils.MoneyUtils.subtractMoneyOrDefault;
 import static org.folio.utils.MoneyUtils.sumMoney;
 
+// TODO CI retrigger
 @Log4j2
 @UtilityClass
 public class EncumbranceUtil {
