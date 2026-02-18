@@ -312,7 +312,7 @@
             "orders.rollover.item.post",
             "users.item.get",
             "email.message.post",
-            "host-address.item.get"
+            "base-url.item.get"
           ]
         },
         {
