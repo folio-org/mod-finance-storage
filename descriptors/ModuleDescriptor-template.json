@@ -562,8 +562,8 @@
   ],
   "requires": [
     {
-      "id": "settings",
-      "version": "1.2"
+      "id": "base-url",
+      "version": "1.0"
     },
     {
       "id": "users",

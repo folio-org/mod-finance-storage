@@ -196,8 +196,8 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public CommonSettingsService commonSettingsService(@Qualifier("settingsRestClient") RestClient settingsRestClient) {
-    return new CommonSettingsService(settingsRestClient);
+  public CommonSettingsService commonSettingsService(@Qualifier("defaultRestClient") RestClient defaultRestClient) {
+    return new CommonSettingsService(defaultRestClient);
   }
 
 }
