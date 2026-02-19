@@ -18,9 +18,9 @@ import lombok.extern.log4j.Log4j2;
 @RequiredArgsConstructor
 public class CommonSettingsService {
 
-  public static final String HOST_ADDRESS_ENDPOINT = "/host-address";
+  public static final String HOST_ADDRESS_ENDPOINT = "/base-url";
   public static final String HOST_ADDRESS_KEY_FIELD = "key";
-  public static final String HOST_ADDRESS_VALUE_FIELD = "value";
+  public static final String HOST_ADDRESS_VALUE_FIELD = "baseUrl";
 
   @Value("${finance.storage.cache.settings.expiration.time.seconds:30}")
   private long cacheExpirationTime;
