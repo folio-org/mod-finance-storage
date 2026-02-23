@@ -188,7 +188,7 @@ public class FinanceDataService {
 
   private Fund setNewValues(Fund fund, FyFinanceDataCollection entity) {
     var fundFinanceData = entity.getFyFinanceData().stream()
-      .filter(data -> data.getFundId().equals(fund.getId()))
+      .filter(data -> Objects.equals(data.getFundId(), fund.getId()))
       .findFirst()
       .orElseThrow();
 
