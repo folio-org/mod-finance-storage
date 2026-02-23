@@ -151,6 +151,94 @@ public class FinanceDataServiceTest {
   }
 
   @Test
+  void shouldUpdateFundAndBudgetWhenCollectionContainsNullBudgetId(VertxTestContext testContext) {
+    String fiscalYearId = UUID.randomUUID().toString();
+    String fundId1 = UUID.randomUUID().toString();
+    String fundId2 = UUID.randomUUID().toString();
+    String budgetId1 = UUID.randomUUID().toString();
+
+    // Entry with existing budgetId
+    FyFinanceData dataWithBudget = new FyFinanceData()
+      .withFiscalYearId(fiscalYearId)
+      .withFundId(fundId1)
+      .withBudgetId(budgetId1)
+      .withFundStatus("Inactive")
+      .withFundDescription("Updated Desc")
+      .withBudgetStatus("Inactive")
+      .withBudgetAllowableExpenditure(90.0)
+      .withBudgetAllowableEncumbrance(80.0);
+    // Entry with null budgetId - should not cause NPE with Objects.equals in setNewValues
+    FyFinanceData dataWithNullBudgetId = new FyFinanceData()
+      .withFiscalYearId(fiscalYearId)
+      .withFundId(fundId2)
+      .withFundStatus("Active")
+      .withBudgetStatus("Active")
+      .withBudgetAllocationChange(1.0);
+
+    var collection = new FyFinanceDataCollection()
+      .withFyFinanceData(List.of(dataWithBudget, dataWithNullBudgetId));
+    var fund1 = new Fund().withId(fundId1).withFundStatus(Fund.FundStatus.ACTIVE).withDescription("Old");
+    var fund2 = new Fund().withId(fundId2).withFundStatus(Fund.FundStatus.ACTIVE);
+    var budget1 = new Budget().withId(budgetId1).withBudgetStatus(Budget.BudgetStatus.ACTIVE);
+    var fiscalYear = new FiscalYear()
+      .withPeriodStart(Date.from(Instant.now().minus(100, ChronoUnit.DAYS)))
+      .withPeriodEnd(Date.from(Instant.now().plus(100, ChronoUnit.DAYS)))
+      .withCurrency("USD");
+
+    List<Budget> createdBudgets = new ArrayList<>();
+    when(requestContext.toDBClient()).thenReturn(dbClient);
+    when(dbClient.withTrans(any())).thenAnswer(invocation -> {
+      Function<DBConn, Future<Void>> function = invocation.getArgument(0);
+      return function.apply(dbConn);
+    });
+    when(fiscalYearService.getFiscalYearById(anyString(), any(DBConn.class)))
+      .thenReturn(Future.succeededFuture(fiscalYear));
+    when(fundService.getFundsByIds(any(), any(DBConn.class)))
+      .thenReturn(Future.succeededFuture(List.of(fund1, fund2)));
+    when(fundService.updateFunds(any(), any(DBConn.class)))
+      .thenReturn(Future.succeededFuture());
+    when(budgetService.createBatchBudgets(anyList(), any(DBConn.class)))
+      .thenAnswer(invocation -> {
+        List<Budget> budgets = invocation.getArgument(0);
+        createdBudgets.addAll(budgets.stream().map(b -> mapFrom(b).mapTo(Budget.class)).toList());
+        return Future.succeededFuture();
+      });
+    when(budgetService.getBudgetsByIds(any(), any(DBConn.class)))
+      .thenAnswer(invocation -> {
+        List<String> ids = invocation.getArgument(0);
+        List<Budget> result = new ArrayList<>();
+        if (ids.contains(budgetId1)) result.add(budget1);
+        result.addAll(createdBudgets.stream().filter(b -> ids.contains(b.getId())).toList());
+        return Future.succeededFuture(result);
+      });
+    when(budgetService.updateBatchBudgets(any(), any(DBConn.class), anyBoolean()))
+      .thenReturn(Future.succeededFuture());
+    when(batchTransactionService.processBatch(any(Batch.class), any(DBConn.class), anyMap()))
+      .thenReturn(Future.succeededFuture());
+
+    testContext.assertComplete(financeDataService.update(collection, requestContext)
+      .onComplete(testContext.succeeding(result -> {
+        testContext.verify(() -> {
+          ArgumentCaptor<List<Fund>> fundCaptor = ArgumentCaptor.forClass(List.class);
+          verify(fundService).updateFunds(fundCaptor.capture(), eq(dbConn));
+          Fund updatedFund1 = fundCaptor.getValue().stream()
+            .filter(f -> f.getId().equals(fundId1)).findFirst().orElseThrow();
+          assertEquals(Fund.FundStatus.INACTIVE, updatedFund1.getFundStatus());
+          assertEquals("Updated Desc", updatedFund1.getDescription());
+
+          ArgumentCaptor<List<Budget>> budgetCaptor = ArgumentCaptor.forClass(List.class);
+          verify(budgetService).updateBatchBudgets(budgetCaptor.capture(), eq(dbConn), anyBoolean());
+          Budget updatedBudget1 = budgetCaptor.getValue().stream()
+            .filter(b -> b.getId().equals(budgetId1)).findFirst().orElseThrow();
+          assertEquals(Budget.BudgetStatus.INACTIVE, updatedBudget1.getBudgetStatus());
+          assertEquals(90.0, updatedBudget1.getAllowableExpenditure());
+          assertEquals(80.0, updatedBudget1.getAllowableEncumbrance());
+        });
+        testContext.completeNow();
+      })));
+  }
+
+  @Test
   void shouldCreateNewBudgetAndAllocation(VertxTestContext testContext) {
     String fiscalYearId = UUID.randomUUID().toString();
     String fundId = UUID.randomUUID().toString();
