@@ -95,7 +95,7 @@ public class BatchPendingPaymentService extends AbstractBatchTransactionService 
     double expended = encumbrance.getEncumbrance().getAmountExpended();
     double credited = encumbrance.getEncumbrance().getAmountCredited();
     if (encumbrance.getEncumbrance().getStatus() == Encumbrance.Status.UNRELEASED) {
-      amount = calculateNewAmountDefaultOnZero(encumbrance, currency, newAwaitingPayment, expended, credited);
+      amount = calculateNewAmountDefaultOnZero(encumbrance, currency, newAwaitingPayment, expended, credited, false);
       encumbrance.setAmount(amount);
     }
     log.info("updateEncumbranceToCancelTransaction:: Awaiting payment oldAmount={} amount={} newAmount={}", awaitingPayment, amount, newAwaitingPayment);

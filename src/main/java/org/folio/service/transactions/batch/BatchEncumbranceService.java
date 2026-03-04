@@ -79,7 +79,7 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
       double credited = encumbrance.getEncumbrance().getAmountCredited();
       // prevent the new encumbrance from exceeding the initial amount or from going negative
       double newAmount = calculateNewAmount(encumbrance, currency, awaitingPayment, expended, credited);
-      newAmount = defaultNewAmountOnUnrelease(encumbrance, newAmount, 0d, Encumbrance.Status.PENDING);
+      newAmount = defaultNewAmountOnUnrelease(encumbrance, newAmount, Encumbrance.Status.PENDING);
       log.info("updateBudget::pending->unreleased Encumbrance initialAmount={} oldAmount={} newAmount={}", initialAmount, encumbrance.getAmount(), newAmount);
       encumbrance.setAmount(newAmount);
       newEncumbered = sumMoney(currency, newEncumbered, newAmount);
@@ -91,7 +91,7 @@ public class BatchEncumbranceService extends AbstractBatchTransactionService {
       double newAmount;
       if (isNonZeroEncumbrance(encumbrance)) {
         newAmount = calculateNewAmount(encumbrance, currency, awaitingPayment, expended, credited);
-        newAmount = defaultNewAmountOnUnrelease(encumbrance, newAmount, initialAmount, Encumbrance.Status.RELEASED);
+        newAmount = defaultNewAmountOnUnrelease(encumbrance, newAmount, Encumbrance.Status.RELEASED);
       } else {
         newAmount = initialAmount;
       }

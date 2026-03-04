@@ -312,7 +312,7 @@
             "orders.rollover.item.post",
             "users.item.get",
             "email.message.post",
-            "host-address.item.get"
+            "base-url.item.get"
           ]
         },
         {
@@ -562,8 +562,8 @@
   ],
   "requires": [
     {
-      "id": "settings",
-      "version": "1.2"
+      "id": "base-url",
+      "version": "1.0"
     },
     {
       "id": "users",

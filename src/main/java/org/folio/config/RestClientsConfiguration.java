@@ -1,18 +1,19 @@
 package org.folio.config;
 
+import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.core.RestClient;
 import org.springframework.context.annotation.Bean;
 
 public class RestClientsConfiguration {
 
   @Bean
-  public RestClient orderRolloverRestClient() {
-    return new RestClient("/orders/rollover");
+  public RestClient defaultRestClient() {
+    return new RestClient(StringUtils.EMPTY);
   }
 
   @Bean
-  public RestClient settingsRestClient() {
-    return new RestClient("/settings");
+  public RestClient orderRolloverRestClient() {
+    return new RestClient("/orders/rollover");
   }
 
   @Bean
