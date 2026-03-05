@@ -6,7 +6,7 @@ This release fixes issue when updating allocation fails when fund budgetId is nu
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.7...v8.8.7)
 
 ### Bug fixes
-* [/MODFISTO-554](https://folio-org.atlassian.net/browse//MODFISTO-554) Updating allocation fails when fund budgetId is null
+* [MODFISTO-554](https://folio-org.atlassian.net/browse//MODFISTO-554) Updating allocation fails when fund budgetId is null
 
 ## 8.8.7 - Released (Sunflower R1 2025 Bug Fix)
 This release fixes issue that the rollover script was not appied during the upgrade.
