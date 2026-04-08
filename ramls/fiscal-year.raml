@@ -11,6 +11,7 @@ types:
   errors: !include raml-util/schemas/errors.schema
   fiscal-year: !include acq-models/mod-finance/schemas/fiscal_year.json
   fiscal-year-collection: !include acq-models/mod-finance/schemas/fiscal_year_collection.json
+  fiscal-year-hierarchy: !include acq-models/mod-finance/schemas/fiscalyearheirarchy.json
   UUID:
     type: string
     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
@@ -49,3 +50,16 @@ resourceTypes:
         exampleItem: !include acq-models/mod-finance/examples/fiscal_year.sample
         schema: fiscal-year
     is: [validate]
+    /hierarchy:
+      get:
+        description: Get fiscal year hierarchy (Ledger -> Group -> Fund -> Budget -> Expense Class tree)
+        responses:
+          200:
+            body:
+              application/json:
+                type: fiscal-year-hierarchy
+                example: !include acq-models/mod-finance/examples/fiscalyearheirarchy.sample
+          404:
+            description: Fiscal year not found
+          400:
+            description: Bad request
