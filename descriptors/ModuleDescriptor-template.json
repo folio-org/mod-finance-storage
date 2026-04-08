@@ -125,6 +125,11 @@
           "permissionsRequired": ["finance-storage.fiscal-years.item.get"]
         },
         {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/fiscal-years/{id}/hierarchy",
+          "permissionsRequired": ["finance-storage.fiscal-years.item.get"]
+        },
+        {
           "methods": ["PUT"],
           "pathPattern": "/finance-storage/fiscal-years/{id}",
           "permissionsRequired": ["finance-storage.fiscal-years.item.put"]

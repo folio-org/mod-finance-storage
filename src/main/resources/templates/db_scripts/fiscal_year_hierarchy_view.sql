@@ -29,4 +29,5 @@ LEFT JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year gffy
   ON gffy.budgetid = budget.id AND gffy.fundid = fund.id AND gffy.fiscalyearid = fy.id
 LEFT JOIN ${myuniversity}_${mymodule}.groups ON groups.id = gffy.groupid
 LEFT JOIN ${myuniversity}_${mymodule}.budget_expense_class bec ON bec.budgetid = budget.id
-LEFT JOIN ${myuniversity}_${mymodule}.expense_class ON expense_class.id = bec.expenseclassid;
+LEFT JOIN ${myuniversity}_${mymodule}.expense_class
+  ON expense_class.id::text = (bec.jsonb ->> 'expenseClassId');
