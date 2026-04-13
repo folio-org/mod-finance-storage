@@ -21,11 +21,11 @@
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
     <ramlfiles_acq_models_path>${ramlfiles_path}/acq-models</ramlfiles_acq_models_path>
-    <raml-module-builder.version>36.0.0-SNAPSHOT</raml-module-builder.version>
+    <raml-module-builder.version>36.0.0</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!--Dependency Properties-->
-    <vertx.version>5.0.8</vertx.version>
+    <vertx.version>5.0.10</vertx.version>
     <log4j.version>2.25.3</log4j.version>
     <aspectj.version>1.9.25.1</aspectj.version>
     <jackson-bom.version>2.21.1</jackson-bom.version>
