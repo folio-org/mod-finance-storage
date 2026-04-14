@@ -21,7 +21,7 @@
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
     <ramlfiles_acq_models_path>${ramlfiles_path}/acq-models</ramlfiles_acq_models_path>
-    <raml-module-builder.version>36.0.0-SNAPSHOT</raml-module-builder.version>
+    <raml-module-builder.version>36.0.0</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!--Dependency Properties-->
@@ -33,7 +33,7 @@
 
     <!--Folio dependencies properties-->
     <folio-module-descriptor-validator.version>1.0.1</folio-module-descriptor-validator.version>
-    <folio-di-support.version>4.0.0-SNAPSHOT</folio-di-support.version>
+    <folio-di-support.version>4.0.0</folio-di-support.version>
 
     <!--Maven plugin properties-->
     <aspectj-maven-plugin.version>1.14.1</aspectj-maven-plugin.version>
