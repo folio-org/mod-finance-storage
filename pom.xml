@@ -25,11 +25,11 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!--Dependency Properties-->
-    <vertx.version>5.0.8</vertx.version>
-    <log4j.version>2.25.3</log4j.version>
+    <vertx.version>5.0.11</vertx.version>
+    <log4j.version>2.25.4</log4j.version>
     <aspectj.version>1.9.25.1</aspectj.version>
-    <jackson-bom.version>2.21.1</jackson-bom.version>
-    <caffeine.version>3.2.3</caffeine.version>
+    <jackson-bom.version>2.21.3</jackson-bom.version>
+    <caffeine.version>3.2.4</caffeine.version>
 
     <!--Folio dependencies properties-->
     <folio-module-descriptor-validator.version>1.0.1</folio-module-descriptor-validator.version>
@@ -113,7 +113,7 @@
     <dependency>
       <groupId>org.folio</groupId>
       <artifactId>folio-secret-store-common</artifactId>
-      <version>4.0.0</version>
+      <version>4.0.1</version>
     </dependency>
     <dependency>
       <groupId>org.folio</groupId>
