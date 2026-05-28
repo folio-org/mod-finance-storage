@@ -110,6 +110,38 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbr
 	END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbrance_status(_transaction jsonb, _rollover_record jsonb) RETURNS varchar as $$
+  DECLARE
+		encumbrance_rollover jsonb DEFAULT null;
+		rollover_orderType VARCHAR DEFAULT null;
+  BEGIN
+    IF NOT (_transaction->'encumbrance'->>'reEncumber')::boolean
+    THEN
+      RETURN 'Released';
+    END IF;
+		IF
+      _transaction->'encumbrance'->>'orderType'='Ongoing' AND (_transaction->'encumbrance'->>'subscription')::boolean
+		THEN
+      rollover_orderType := 'Ongoing-Subscription';
+    ELSIF
+      _transaction->'encumbrance'->>'orderType'='Ongoing'
+		THEN
+      rollover_orderType := 'Ongoing';
+    ELSIF
+      _transaction->'encumbrance'->>'orderType'='One-Time'
+		THEN
+      rollover_orderType := 'One-time';
+    ELSE
+      RETURN 'Released';
+    END IF;
+    IF _rollover_record @? format('$.encumbrancesRollover[*] ? (@.orderType == "%s")', rollover_orderType)::jsonpath
+    THEN
+      RETURN 'Unreleased';
+    END IF;
+    RETURN 'Released';
+  END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id text, _rollover_record jsonb) RETURNS VOID as $$
     DECLARE
         missing_penny_with_po_line refcursor;
@@ -139,11 +171,7 @@ CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.rollover_order(_order_id 
                         'amountAwaitingPayment', 0,
                         'amountExpended', 0,
                         'amountCredited', 0,
-                        'status', CASE WHEN input_encumbrancesRolloverLen > 0 THEN
-                                    CASE WHEN (tr.jsonb->'encumbrance'->>'reEncumber')::boolean THEN 'Unreleased' ELSE 'Released' END
-                                  ELSE
-                                    'Released'
-                                  END
+                        'status', ${myuniversity}_${mymodule}.calculate_planned_encumbrance_status(tr.jsonb, _rollover_record)
                     ),
                 'metadata', _rollover_record->'metadata' || jsonb_build_object('createdDate', to_char(clock_timestamp(),'YYYY-MM-DD"T"HH24:MI:SS.MSTZHTZM'))
 
