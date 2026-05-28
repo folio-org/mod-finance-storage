@@ -112,7 +112,6 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION ${myuniversity}_${mymodule}.calculate_planned_encumbrance_status(_transaction jsonb, _rollover_record jsonb) RETURNS varchar as $$
   DECLARE
-    encumbrance_rollover jsonb DEFAULT null;
     rollover_orderType VARCHAR DEFAULT null;
   BEGIN
     IF NOT (_transaction->'encumbrance'->>'reEncumber')::boolean
