@@ -1,4 +1,12 @@
-## 8.9.0 - Released (Trillium R1 2025)
+## 8.9.1 - Released (Trillium R1 2026 Bug Fix)
+This release fixes issue with ledger rollover logic to handle encumbrances correctly when only one type is selected.
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.9.0...v8.9.1)
+
+### Bug fixes
+* [MODFISTO-560](https://folio-org.atlassian.net/browse/MODFISTO-560) Fix ledger rollover logic to handle encumbrances correctly when only one type is selected
+
+## 8.9.0 - Released (Trillium R1 2026)
 The primary focus of this release was to upgrade to Vert.x 5.0, implement batch endpoints, alternate exchange rate API and fix encumbrance issues.
 
 [Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.0...v8.9.0)
