@@ -1,5 +1,13 @@
 ## 8.9.0 - Unreleased
 
+## 8.8.9 - Released (Sunflower R1 2025 Bug Fix)
+This release fixes issue with ledger rollover logic to handle encumbrances correctly when only one type is selected.
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.8.8...v8.8.9)
+
+### Bug fixes
+* [MODFISTO-559](https://folio-org.atlassian.net/browse/MODFISTO-559) Fix ledger rollover logic to handle encumbrances correctly when only one type is selected
+
 ## 8.8.8 - Released (Sunflower R1 2025 Bug Fix)
 This release fixes issue when updating allocation fails when fund budgetId is null.
 
