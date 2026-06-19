@@ -86,6 +86,7 @@ async def refresh_login():
 
 async def login():
     password = getpass.getpass('Password:')
+    print()
     login_headers = { 'x-okapi-tenant': tenant, 'Content-Type': 'application/json' }
     data = { 'username': username, 'password': password }
     url = okapi_url + 'authn/login-with-expiry'
@@ -366,6 +367,12 @@ def progress(index, total_elements, label=''):
         print()
 
 
+def end_progress():
+    sys.stdout.write('                                                                                                        ')
+    sys.stdout.write('\r')
+    sys.stdout.flush()
+
+
 async def update_poline(poline):
     url = f"{okapi_url}orders-storage/po-lines/{poline['id']}"
     await put_request(url, poline)
@@ -383,6 +390,35 @@ def chunks(iterable, n) -> list:
         except StopIteration:
             return
         yield list(chain((first_el,), chunk_it))
+
+
+def flatten(l: list) -> list:
+    return list(chain.from_iterable(l))
+
+
+def print_summary(modifications: list):
+    if len(modifications) == 0:
+        print("\n  No modification was needed for this step")
+        return
+    print("\n  Summary of modifications:")
+    modifications.sort(key = lambda m: (m['po_id'], m['poline_id']))
+    current_po = None
+    current_poline = None
+    order_ids = set()
+    poline_ids = set()
+    encumbrance_ids = set()
+    for modification in modifications:
+        order_ids.add(modification['po_id'])
+        poline_ids.add(modification['poline_id'])
+        encumbrance_ids.add(modification['encumbrance_id'])
+        if modification['po_id'] != current_po:
+            current_po = modification['po_id']
+            print(f"    Order: {current_po}")
+        if modification['poline_id'] != current_poline:
+            current_poline = modification['poline_id']
+            print(f"      Line: {current_poline}")
+        print(f"        Encumbrance: {modification['encumbrance_id']}")
+    print(f"  Totals: orders: {len(order_ids)}  lines: {len(poline_ids)}  encumbrances: {len(encumbrance_ids)}")
 
 
 # ---------------------------------------------------
@@ -476,31 +512,32 @@ async def remove_encumbrances_and_update_polines(encumbrance_changes):
     await batch_delete(ids_to_delete)
 
 
-async def remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id, fy_is_current, sem) -> int:
+async def remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id, fy_is_current, sem) -> list:
+    modifications = []
     try:
         order_encumbrances = await get_order_encumbrances(order_id, fiscal_year_id)
         if len(order_encumbrances) == 0:
-            return 0
+            return modifications
         duplicates = find_duplicates(order_encumbrances)
         if len(duplicates) == 0:
-            return 0
+            return modifications
         # there are duplicates, let's get the order and fund distributions to better choose which encumbrances to remove
         order = await get_order_by_id(order_id)
         polines = await get_polines_by_order_id(order_id)
         encumbrance_changes = prepare_encumbrance_changes(duplicates, order, polines, fy_is_current)
         if len(encumbrance_changes) == 0:
-            return 0
-        clear_print(f"  Removing the following encumbrances for order {order_id}:")
+            return modifications
         for change in encumbrance_changes:
-            print(f"    {change['remove']['id']}")
+            enc = change['remove']
+            modifications.append({ 'po_id': enc['encumbrance']['sourcePurchaseOrderId'], 'poline_id': enc['encumbrance']['sourcePoLineId'], 'encumbrance_id': enc['id'] })
         await remove_encumbrances_and_update_polines(encumbrance_changes)
-        return len(encumbrance_changes)
+        return modifications
     finally:
         sem.release()
 
 
 async def remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id, fy_is_current):
-    print('Removing duplicate encumbrances for open and closed orders...')
+    print('\nRemoving duplicate encumbrances for open and closed orders...')
     futures = []
     sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_id in enumerate(open_and_closed_orders_ids):
@@ -509,9 +546,9 @@ async def remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_
         futures.append(asyncio.ensure_future(remove_duplicate_encumbrances_in_order(order_id, fiscal_year_id,
             fy_is_current, sem)))
 
-    nb_removed_encumbrances = await asyncio.gather(*futures)
-    progress(len(open_and_closed_orders_ids), len(open_and_closed_orders_ids))
-    print(f'  Removed {sum(nb_removed_encumbrances)} encumbrance(s).')
+    modifications = flatten(await asyncio.gather(*futures))
+    end_progress()
+    print_summary(modifications)
 
 
 # ---------------------------------------------------
@@ -531,7 +568,8 @@ async def update_encumbrance_fund_id(encumbrance, new_fund_id, poline):
 
 
 # Remove a duplicate encumbrance if it has a wrong fromFundId, and update the poline fd if needed
-async def fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline, order_encumbrances):
+async def fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline, order_encumbrances) -> list:
+    modifications = []
     encumbrances_with_right_fund = []
     encumbrances_with_bad_fund = []
     for encumbrance in encumbrances:
@@ -542,28 +580,31 @@ async def fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poli
     if len(encumbrances_with_bad_fund) == 0:
         clear_print(f"  Warning: there is a remaining duplicate encumbrance for poline {poline['id']} "
               f"({poline['poLineNumber']}).")
-        return
+        return modifications
     if len(encumbrances_with_right_fund) != 1:
         clear_print(f"  Problem fixing encumbrances for poline {poline['id']} ({poline['poLineNumber']}), "
               "please fix by hand.")
-        return
+        return modifications
     replace_by = encumbrances_with_right_fund[0]
     ids_to_delete = []
     for encumbrance_to_remove in encumbrances_with_bad_fund:
         clear_print(f"  Removing encumbrance {encumbrance_to_remove['id']} for po line {poline['id']} "
               f"({poline['poLineNumber']})")
+        modifications.append({ 'po_id': poline['purchaseOrderId'], 'poline_id': poline['id'], 'encumbrance_id': encumbrance_to_remove['id'] })
         await update_poline_encumbrance(encumbrance_to_remove, replace_by, poline)
         ids_to_delete.append(encumbrance_to_remove['id'])
         order_encumbrances.remove(encumbrance_to_remove)
     await batch_delete(ids_to_delete)
+    return modifications
 
 
 # Fix encumbrance fromFundId if it doesn't match the po line fund distribution (see MODFISTO-384, MODFISTO-385)
-async def fix_poline_encumbrance_fund_id(poline, order_encumbrances):
+async def fix_poline_encumbrance_fund_id(poline, order_encumbrances) -> list:
+    modifications = []
     fds = poline['fundDistribution']
     # we can't fix the fundId if there is more than 1 fund distribution in the po line
     if len(fds) != 1:
-        return
+        return modifications
 
     fd_fund_id = fds[0]['fundId']
     encumbrances = []
@@ -571,13 +612,16 @@ async def fix_poline_encumbrance_fund_id(poline, order_encumbrances):
         if enc['encumbrance']['sourcePoLineId'] == poline['id']:
             encumbrances.append(enc)
     if len(encumbrances) == 0:
-        return
+        return modifications
     if len(encumbrances) == 1:
-        if encumbrances[0]['fromFundId'] == fd_fund_id:
-            return
-        await update_encumbrance_fund_id(encumbrances[0], fd_fund_id, poline)
-        return
-    await fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline, order_encumbrances)
+        enc = encumbrances[0]
+        if enc['fromFundId'] == fd_fund_id:
+            return modifications
+        await update_encumbrance_fund_id(enc, fd_fund_id, poline)
+        modifications.append({ 'po_id': poline['purchaseOrderId'], 'poline_id': poline['id'], 'encumbrance_id': enc['id'] })
+        return modifications
+    modifications = await fix_fund_id_with_duplicate_encumbrances(encumbrances, fd_fund_id, poline, order_encumbrances)
+    return modifications
 
 
 def look_for_matching_encumbrance(order_encumbrances, poline_id, fund_id, expense_class_id):
@@ -636,7 +680,8 @@ def update_poline_like_rollover(poline, initial_encumbrances):
 # It is assumed that, if an encumbrance link is not up to date, the FYRO failed to process the po line.
 # In this case, the po line needs to be updated as in the order rollover.
 # See MODFIN-452 and mod-orders OrderRolloverService.java.
-async def fix_poline_encumbrance_links(poline, order_encumbrances):
+async def fix_poline_encumbrance_links(poline, order_encumbrances) -> list:
+    modifications = []
     poline_needs_update = False
     encumbrance_link_was_updated = False
     initial_encumbrances = []
@@ -647,17 +692,23 @@ async def fix_poline_encumbrance_links(poline, order_encumbrances):
         if matching_encumbrance is None:
             if 'encumbrance' in fd:
                 clear_print(f"  Removing link from po line {poline_number} to encumbrance {fd['encumbrance']}")
+                modifications.append({ 'po_id': poline['purchaseOrderId'], 'poline_id': poline['id'], 'encumbrance_id': fd['encumbrance'] })
                 del fd['encumbrance']
                 poline_needs_update = True
         else:
             initial_encumbrances.append(matching_encumbrance)
             if 'encumbrance' not in fd:
                 clear_print(f"  Adding link for po line {poline_number} to encumbrance {matching_encumbrance['id']}")
+                if 'encumbrance' in fd:
+                    modifications.append({ 'po_id': poline['purchaseOrderId'], 'poline_id': poline['id'], 'encumbrance_id': fd['encumbrance'] })
+                modifications.append({ 'po_id': poline['purchaseOrderId'], 'poline_id': poline['id'], 'encumbrance_id': matching_encumbrance['id'] })
                 fd['encumbrance'] = matching_encumbrance['id']
                 poline_needs_update = True
             elif matching_encumbrance['id'] != fd['encumbrance']:
                 clear_print(f"  Updating link for po line {poline_number} from encumbrance {fd['encumbrance']} to "
                       f"encumbrance {matching_encumbrance['id']}")
+                modifications.append({ 'po_id': poline['purchaseOrderId'], 'poline_id': poline['id'], 'encumbrance_id': fd['encumbrance'] })
+                modifications.append({ 'po_id': poline['purchaseOrderId'], 'poline_id': poline['id'], 'encumbrance_id': matching_encumbrance['id'] })
                 fd['encumbrance'] = matching_encumbrance['id']
                 encumbrance_link_was_updated = True
                 poline_needs_update = True
@@ -668,32 +719,39 @@ async def fix_poline_encumbrance_links(poline, order_encumbrances):
     if poline_needs_update:
         await update_poline(poline)
 
+    return modifications
 
-async def process_poline_encumbrances_relations(poline, order_encumbrances):
-    await fix_poline_encumbrance_fund_id(poline, order_encumbrances)
-    await fix_poline_encumbrance_links(poline, order_encumbrances)
+
+async def process_poline_encumbrances_relations(poline, order_encumbrances) -> list:
+    poline_modifications = []
+    poline_modifications.extend(await fix_poline_encumbrance_fund_id(poline, order_encumbrances))
+    poline_modifications.extend(await fix_poline_encumbrance_links(poline, order_encumbrances))
+    return poline_modifications
 
 
 # Get encumbrances for the fiscal year and call process_po_line_encumbrances_relations() for each po line
-async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_sem):
+async def process_order_encumbrances_relations(order_id, fiscal_year_id, order_sem) -> list:
+    po_modifications = []
     po_lines = await get_polines_by_order_id(order_id)
     if len(po_lines) == 0:
         order_sem.release()
-        return
+        return po_modifications
     order_encumbrances = await get_order_encumbrances(order_id, fiscal_year_id)
     if len(order_encumbrances) == 0:
         order_sem.release()
-        return
+        return po_modifications
 
     for po_line in po_lines:
-        await process_poline_encumbrances_relations(po_line, order_encumbrances)
+        po_line_modifications = await process_poline_encumbrances_relations(po_line, order_encumbrances)
+        po_modifications.extend(po_line_modifications)
 
     order_sem.release()
+    return po_modifications
 
 
 # Call process_order_encumbrances_relations() for each order
 async def fix_poline_encumbrances_relations(all_orders_ids, fiscal_year_id):
-    print('Fixing poline-encumbrance links for all orders in the current FY...')
+    print('\nFixing poline-encumbrance links for all orders in the current FY...')
     if len(all_orders_ids) == 0:
         print('  Found no order.')
         return
@@ -704,8 +762,9 @@ async def fix_poline_encumbrances_relations(all_orders_ids, fiscal_year_id):
         progress(idx, len(all_orders_ids))
         orders_futures.append(asyncio.ensure_future(process_order_encumbrances_relations(
             order_id, fiscal_year_id, order_sem)))
-    await asyncio.gather(*orders_futures)
-    progress(len(all_orders_ids), len(all_orders_ids))
+    modifications = flatten(await asyncio.gather(*orders_futures))
+    end_progress()
+    print_summary(modifications)
 
 
 # ---------------------------------------------------
@@ -718,30 +777,32 @@ async def get_encumbrances_to_fix_order_status(order_id, fiscal_year_id) -> list
     return await get_request(url, query, 'transactions')
 
 
-async def fix_encumbrances_order_status(order_id, encumbrances):
+async def fix_encumbrances_order_status(order_id, encumbrances) -> list:
+    modifications = []
     try:
-        clear_print(f'  Fixing the following encumbrance(s) for order {order_id} :')
-        for encumbrance in encumbrances:
-            print(f"    {encumbrance['id']}")
-            encumbrance['encumbrance']['orderStatus'] = 'Closed'
+        for enc in encumbrances:
+            modifications.append({ 'po_id': enc['encumbrance']['sourcePurchaseOrderId'], 'poline_id': enc['encumbrance']['sourcePoLineId'], 'encumbrance_id': enc['id'] })
+            enc['encumbrance']['orderStatus'] = 'Closed'
         await batch_update(encumbrances)
     except Exception as err:
         print(f'Error when fixing order status in encumbrances for order {order_id}:', err)
         raise SystemExit(1)
+    return modifications
 
 
-async def fix_encumbrance_order_status_for_closed_order(order_id, fiscal_year_id, sem) -> int:
+async def fix_encumbrance_order_status_for_closed_order(order_id, fiscal_year_id, sem) -> list:
+    modifications = []
     try:
         encumbrances = await get_encumbrances_to_fix_order_status(order_id, fiscal_year_id)
         if len(encumbrances) != 0:
-            await fix_encumbrances_order_status(order_id, encumbrances)
+            modifications = await fix_encumbrances_order_status(order_id, encumbrances)
     finally:
         sem.release()
-    return len(encumbrances)
+    return modifications
 
 
 async def fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id):
-    print('Fixing encumbrance order status for closed orders...')
+    print('\nFixing encumbrance order status for closed orders...')
     if len(closed_orders_ids) == 0:
         print('  Found no closed orders.')
         return
@@ -753,10 +814,9 @@ async def fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fisc
         fixed_encumbrance_future = asyncio.ensure_future(fix_encumbrance_order_status_for_closed_order(
             order_id, fiscal_year_id, sem))
         fix_encumbrance_futures.append(fixed_encumbrance_future)
-    nb_fixed_encumbrances = await asyncio.gather(*fix_encumbrance_futures)
-    progress(len(closed_orders_ids), len(closed_orders_ids))
-
-    print(f'  Fixed order status for {sum(nb_fixed_encumbrances)} encumbrance(s).')
+    modifications = flatten(await asyncio.gather(*fix_encumbrance_futures))
+    end_progress()
+    print_summary(modifications)
 
 
 # ---------------------------------------------------
@@ -773,32 +833,34 @@ async def get_encumbrances_to_fix_properties(order, fiscal_year_id) -> list:
     return await get_request(url, query, 'transactions')
 
 
-async def fix_encumbrances_properties(order, encumbrances):
+async def fix_encumbrances_properties(order, encumbrances) -> list:
+    modifications = []
     try:
-        clear_print(f"  Fixing the following encumbrance(s) for order {order['id']} :")
-        for encumbrance in encumbrances:
-            print(f"    {encumbrance['id']}")
-            encumbrance['encumbrance']['orderStatus'] = order['workflowStatus']
-            encumbrance['encumbrance']['orderType'] = order['orderType']
-            encumbrance['encumbrance']['reEncumber'] = order['reEncumber']
+        for enc in encumbrances:
+            modifications.append({ 'po_id': order['id'], 'poline_id': enc['encumbrance']['sourcePoLineId'], 'encumbrance_id': enc['id'] })
+            enc['encumbrance']['orderStatus'] = order['workflowStatus']
+            enc['encumbrance']['orderType'] = order['orderType']
+            enc['encumbrance']['reEncumber'] = order['reEncumber']
         await batch_update(encumbrances)
     except Exception as err:
         print(f"Error when fixing encumbrance properties for order {order['id']}:", err)
         raise SystemExit(1)
+    return modifications
 
 
-async def fix_encumbrance_properties_for_open_or_pending_order(order, fiscal_year_id, sem) -> int:
+async def fix_encumbrance_properties_for_open_or_pending_order(order, fiscal_year_id, sem) -> list:
+    modifications = []
     try:
         encumbrances = await get_encumbrances_to_fix_properties(order, fiscal_year_id)
         if len(encumbrances) != 0:
-            await fix_encumbrances_properties(order, encumbrances)
+            modifications = await fix_encumbrances_properties(order, encumbrances)
     finally:
         sem.release()
-    return len(encumbrances)
+    return modifications
 
 
 async def fix_encumbrance_properties_for_open_and_pending_orders(fiscal_year_id):
-    print('Fixing encumbrance properties (orderStatus, orderType, reEncumber) for open and pending orders...')
+    print('\nFixing encumbrance properties (orderStatus, orderType, reEncumber) for open and pending orders...')
     query = 'workflowStatus==("Open" OR "Pending")'
     open_and_pending_orders = await get_orders_by_query(query)
     if len(open_and_pending_orders) == 0:
@@ -812,10 +874,9 @@ async def fix_encumbrance_properties_for_open_and_pending_orders(fiscal_year_id)
         fixed_encumbrance_future = asyncio.ensure_future(fix_encumbrance_properties_for_open_or_pending_order(
             order, fiscal_year_id, sem))
         fix_encumbrance_futures.append(fixed_encumbrance_future)
-    nb_fixed_encumbrances = await asyncio.gather(*fix_encumbrance_futures)
-    progress(len(open_and_pending_orders), len(open_and_pending_orders))
-
-    print(f'  Fixed properties for {sum(nb_fixed_encumbrances)} encumbrance(s).')
+    modifications = flatten(await asyncio.gather(*fix_encumbrance_futures))
+    end_progress()
+    print_summary(modifications)
 
 
 # ---------------------------------------------------
@@ -850,32 +911,32 @@ async def select_encumbrances_without_active_budgets(encumbrances) -> list:
         )]
 
 
-async def remove_links_to_encumbrances(encumbrances) -> int:
+async def remove_links_to_encumbrances(encumbrances) -> list:
+    modifications = []
     poline_ids = list(set(map(lambda enc: enc['encumbrance']['sourcePoLineId'], encumbrances)))
     encumbrance_ids = list(map(lambda enc: enc['id'], encumbrances))
     polines = await get_polines_by_ids(poline_ids)
-    nb_removed = 0
     for poline in polines:
         for fd in poline['fundDistribution']:
             if 'encumbrance' in fd and fd['encumbrance'] in encumbrance_ids:
+                modifications.append({ 'po_id': poline['purchaseOrderId'], 'poline_id': poline['id'], 'encumbrance_id': fd['encumbrance'] })
                 del fd['encumbrance']
-                nb_removed = nb_removed + 1
         await update_poline(poline)
-    return nb_removed
+    return modifications
 
 
-async def remove_pending_order_links(order_ids, fiscal_year_id, sem) -> int:
+async def remove_pending_order_links(order_ids, fiscal_year_id, sem) -> list:
+    modifications = []
     encumbrances = await get_orders_encumbrances_with_different_fy(order_ids, fiscal_year_id)
     filtered_encumbrances = await select_encumbrances_without_active_budgets(encumbrances)
-    nb_removed = 0
     if len(filtered_encumbrances) != 0:
-        nb_removed = nb_removed + await remove_links_to_encumbrances(filtered_encumbrances)
+        modifications = await remove_links_to_encumbrances(filtered_encumbrances)
     sem.release()
-    return nb_removed
+    return modifications
 
 
 async def remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_ids, fiscal_year_id):
-    print('Remove pending order links to encumbrances in previous fiscal years...')
+    print('\nRemove pending order links to encumbrances in previous fiscal years...')
     if len(pending_orders_ids) == 0:
         print('  Found no pending orders.')
         return
@@ -886,38 +947,39 @@ async def remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_
         progress(idx, len(pending_orders_ids))
         fixed_encumbrance_future = asyncio.ensure_future(remove_pending_order_links(order_ids, fiscal_year_id, sem))
         fix_encumbrance_futures.append(fixed_encumbrance_future)
-    nb_fixed_encumbrances = await asyncio.gather(*fix_encumbrance_futures)
-    progress(len(pending_orders_ids), len(pending_orders_ids))
-
-    print(f'  Removed pending order links to {sum(nb_fixed_encumbrances)} encumbrance(s).')
+    modifications = flatten(await asyncio.gather(*fix_encumbrance_futures))
+    end_progress()
+    print_summary(modifications)
 
 
 # ---------------------------------------------------
 # Unrelease open orders encumbrances with non-zero amounts
 
-async def unrelease_encumbrances(order_id, encumbrances):
-    clear_print(f'  Unreleasing the following encumbrance(s) for order {order_id} :')
+async def unrelease_encumbrances(order_id, encumbrances) -> list:
+    modifications = []
     for encumbrance in encumbrances:
-        print(f"    {encumbrance['id']}")
+        modifications.append({ 'po_id': order_id, 'poline_id': encumbrance['encumbrance']['sourcePoLineId'], 'encumbrance_id': encumbrance['id'] })
         encumbrance['encumbrance']['status'] = 'Unreleased'
     await batch_update(encumbrances)
+    return modifications
 
 
-async def unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id, sem) -> int:
+async def unrelease_encumbrances_with_non_zero_amounts(order_id, fiscal_year_id, sem) -> list:
+    modifications = []
     query = f'amount<>0.0 AND encumbrance.status=="Released" AND encumbrance.sourcePurchaseOrderId=={order_id} AND ' \
             f'fiscalYearId=={fiscal_year_id}'
     order_encumbrances = await get_request(okapi_url + 'finance-storage/transactions', query, 'transactions')
 
     # unrelease encumbrances by order id
     if len(order_encumbrances) != 0:
-        await unrelease_encumbrances(order_id, order_encumbrances)
+        modifications = await unrelease_encumbrances(order_id, order_encumbrances)
 
     sem.release()
-    return len(order_encumbrances)
+    return modifications
 
 
 async def unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids):
-    print('Unreleasing open orders encumbrances with non-zero amounts...')
+    print('\nUnreleasing open orders encumbrances with non-zero amounts...')
     if len(open_orders_ids) == 0:
         print('  Found no open orders.')
         return
@@ -928,24 +990,25 @@ async def unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id
         progress(idx, len(open_orders_ids))
         enc_futures.append(asyncio.ensure_future(unrelease_encumbrances_with_non_zero_amounts(
             order_id, fiscal_year_id, sem)))
-    unreleased_encumbrances_amounts = await asyncio.gather(*enc_futures)
-    progress(len(open_orders_ids), len(open_orders_ids))
-
-    print(f'  Unreleased {sum(unreleased_encumbrances_amounts)} open order encumbrance(s) with non-zero amounts.')
+    modifications = flatten(await asyncio.gather(*enc_futures))
+    end_progress()
+    print_summary(modifications)
 
 
 # ---------------------------------------------------
 # Release open orders encumbrances with negative amounts (see MODFISTO-368)
 
-async def release_encumbrances(order_id, encumbrances):
-    clear_print(f'  Releasing the following encumbrances for order {order_id} :')
+async def release_encumbrances(order_id, encumbrances) -> list:
+    modifications = []
     for encumbrance in encumbrances:
-        print(f"    {encumbrance['id']}")
+        modifications.append({ 'po_id': order_id, 'poline_id': encumbrance['encumbrance']['sourcePoLineId'], 'encumbrance_id': encumbrance['id'] })
         encumbrance['encumbrance']['status'] = 'Released'
     await batch_update(encumbrances)
+    return modifications
 
 
-async def release_encumbrances_with_negative_amounts(order_id, fiscal_year_id, sem) -> int:
+async def release_encumbrances_with_negative_amounts(order_id, fiscal_year_id, sem) -> list:
+    modifications = []
     query = 'amount </number 0 AND encumbrance.status=="Unreleased" AND ' \
             f'(encumbrance.amountAwaitingPayment >/number 0 OR encumbrance.amountExpended >/number 0) AND ' \
             f'encumbrance.sourcePurchaseOrderId=={order_id} AND fiscalYearId=={fiscal_year_id}'
@@ -953,14 +1016,14 @@ async def release_encumbrances_with_negative_amounts(order_id, fiscal_year_id, s
 
     # release encumbrances by order id
     if len(order_encumbrances) != 0:
-        await release_encumbrances(order_id, order_encumbrances)
+        modifications = await release_encumbrances(order_id, order_encumbrances)
 
     sem.release()
-    return len(order_encumbrances)
+    return modifications
 
 
 async def release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids):
-    print('Releasing open orders encumbrances with negative amounts...')
+    print('\nReleasing open orders encumbrances with negative amounts...')
     if len(open_orders_ids) == 0:
         print('  Found no open orders.')
         return
@@ -971,10 +1034,9 @@ async def release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id,
         progress(idx, len(open_orders_ids))
         enc_futures.append(asyncio.ensure_future(release_encumbrances_with_negative_amounts(
             order_id, fiscal_year_id, sem)))
-    released_encumbrances_amounts = await asyncio.gather(*enc_futures)
-    progress(len(open_orders_ids), len(open_orders_ids))
-
-    print(f'  Released {sum(released_encumbrances_amounts)} open order encumbrance(s) with negative amounts.')
+    modifications = flatten(await asyncio.gather(*enc_futures))
+    end_progress()
+    print_summary(modifications)
 
 
 # ---------------------------------------------------
@@ -990,26 +1052,29 @@ def find_encumbrances_to_release(po_lines, order_encumbrances) -> list:
     return encumbrances_to_release
 
 
-async def release_cancelled_pol_encumbrances(order_id, fiscal_year_id, sem) -> int:
+async def release_cancelled_pol_encumbrances(order_id, fiscal_year_id, sem) -> list:
+    modifications = []
     po_lines = await get_polines_by_order_id(order_id)
     if len(po_lines) == 0:
         sem.release()
-        return 0
+        return modifications
     order_encumbrances = await get_order_encumbrances(order_id, fiscal_year_id)
     if len(order_encumbrances) == 0:
         sem.release()
-        return 0
+        return modifications
     encumbrances_to_release = find_encumbrances_to_release(po_lines, order_encumbrances)
     if len(encumbrances_to_release) == 0:
         sem.release()
-        return 0
+        return modifications
+    for enc in encumbrances_to_release:
+        modifications.append({ 'po_id': enc['encumbrance']['sourcePurchaseOrderId'], 'poline_id': enc['encumbrance']['sourcePoLineId'], 'encumbrance_id': enc['id'] })
     await release_encumbrances(order_id, encumbrances_to_release)
     sem.release()
-    return len(encumbrances_to_release)
+    return modifications
 
 
 async def release_cancelled_order_line_encumbrances(fiscal_year_id, open_orders_ids):
-    print('Releasing cancelled order line encumbrances...')
+    print('\nReleasing cancelled order line encumbrances...')
     if len(open_orders_ids) == 0:
         print('  Found no open orders.')
         return
@@ -1019,10 +1084,9 @@ async def release_cancelled_order_line_encumbrances(fiscal_year_id, open_orders_
         await sem.acquire()
         progress(idx, len(open_orders_ids))
         enc_futures.append(asyncio.ensure_future(release_cancelled_pol_encumbrances(order_id, fiscal_year_id, sem)))
-    released_encumbrances_amounts = await asyncio.gather(*enc_futures)
-    progress(len(open_orders_ids), len(open_orders_ids))
-
-    print(f'  Released {sum(released_encumbrances_amounts)} cancelled order line encumbrance(s).')
+    modifications = flatten(await asyncio.gather(*enc_futures))
+    end_progress()
+    print_summary(modifications)
 
 
 # ---------------------------------------------------
@@ -1047,7 +1111,7 @@ async def update_budgets(encumbered, fund_id, fiscal_year_id, sem) -> int:
 async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_id):
     # Recalculate the encumbered property for all the budgets related to these encumbrances
     # Take closed orders into account because we might have to set a budget encumbered to 0
-    print(f'Recalculating budget encumbered for {len(open_and_closed_orders_ids)} orders ...')
+    print(f'\nRecalculating budget encumbered for {len(open_and_closed_orders_ids)} orders ...')
     enc_future = []
     sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
     for idx, order_id in enumerate(open_and_closed_orders_ids):
@@ -1055,8 +1119,8 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
         progress(idx, len(open_and_closed_orders_ids))
         enc_future.append(asyncio.ensure_future(get_order_encumbrances(order_id, fiscal_year_id, sem)))
 
-    encumbrances = sum(await asyncio.gather(*enc_future), [])
-    progress(len(open_and_closed_orders_ids), len(open_and_closed_orders_ids))
+    encumbrances = flatten(await asyncio.gather(*enc_future))
+    end_progress()
 
     encumbered_for_fund = {}
     budgets = await get_budgets_by_fiscal_year(fiscal_year_id)
@@ -1080,7 +1144,6 @@ async def recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_
     nb_modified = sum(await asyncio.gather(*update_budget_futures))
 
     print(f'  Edited {nb_modified} budget(s).')
-    print('  Done recalculating budget encumbered.')
 
 
 # ---------------------------------------------------
@@ -1092,48 +1155,63 @@ async def get_order_encumbrances_to_release(order_id, fiscal_year_id) -> list:
     return await get_transactions_by_query(query)
 
 
-async def release_order_encumbrances(order_id, fiscal_year_id, sem) -> int:
+async def release_order_encumbrances(order_id, fiscal_year_id, sem) -> list:
+    modifications = []
     encumbrances = await get_order_encumbrances_to_release(order_id, fiscal_year_id)
     if len(encumbrances) != 0:
+        for enc in encumbrances:
+            modifications.append({ 'po_id': enc['encumbrance']['sourcePurchaseOrderId'], 'poline_id': enc['encumbrance']['sourcePoLineId'], 'encumbrance_id': enc['id'] })
         await release_encumbrances(order_id, encumbrances)
     sem.release()
-    return len(encumbrances)
+    return modifications
 
 
 async def release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, fiscal_year_id):
-    print('Releasing unreleased encumbrances for closed orders...')
+    print('\nReleasing unreleased encumbrances for closed orders...')
     if len(closed_orders_ids) == 0:
         print('  Found no closed orders.')
         return
-    nb_released_encumbrance_futures = []
+    futures = []
     sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
 
     for idx, order_id in enumerate(closed_orders_ids):
         await sem.acquire()
         progress(idx, len(closed_orders_ids))
-        nb_released_encumbrance_futures.append(asyncio.ensure_future(release_order_encumbrances(
-            order_id, fiscal_year_id, sem)))
-    nb_released_encumbrances = await asyncio.gather(*nb_released_encumbrance_futures)
-    progress(len(closed_orders_ids), len(closed_orders_ids))
-
-    print(f'  Released {sum(nb_released_encumbrances)} encumbrance(s).')
+        futures.append(asyncio.ensure_future(release_order_encumbrances(order_id, fiscal_year_id, sem)))
+    modifications = flatten(await asyncio.gather(*futures))
+    end_progress()
+    print_summary(modifications)
 
 
 # ---------------------------------------------------
 # All operations
 
+def print_hr():
+    print('\n---------------------------------------------------')
+
+
 async def all_operations(closed_orders_ids, open_orders_ids, pending_orders_ids, fiscal_year_id, fy_is_current):
     open_and_closed_orders_ids = closed_orders_ids + open_orders_ids
+    print_hr()
     await remove_duplicate_encumbrances(open_and_closed_orders_ids, fiscal_year_id, fy_is_current)
     if fy_is_current:
+        print_hr()
         await fix_poline_encumbrances_relations(open_orders_ids + closed_orders_ids + pending_orders_ids, fiscal_year_id)
+        print_hr()
         await fix_encumbrance_order_status_for_closed_orders(closed_orders_ids, fiscal_year_id)
+        print_hr()
         await fix_encumbrance_properties_for_open_and_pending_orders(fiscal_year_id)
+        print_hr()
         await remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_ids, fiscal_year_id)
+    print_hr()
     await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
+    print_hr()
     await release_open_orders_encumbrances_with_negative_amounts(fiscal_year_id, open_orders_ids)
+    print_hr()
     await release_cancelled_order_line_encumbrances(fiscal_year_id, open_orders_ids)
+    print_hr()
     await recalculate_budget_encumbered(open_and_closed_orders_ids, fiscal_year_id)
+    print_hr()
     await release_unreleased_encumbrances_for_closed_orders(closed_orders_ids, fiscal_year_id)
 
 
@@ -1225,7 +1303,7 @@ async def run_operation(choice, fiscal_year_code):
     delta = round(time.time() - initial_time)
     hours, remainder = divmod(delta, 3600)
     minutes, seconds = divmod(remainder, 60)
-    print(f'Elapsed time: {hours} hour(s), {minutes} minute(s) and {seconds} second(s).')
+    print(f'\nElapsed time: {hours} hour(s), {minutes} minute(s) and {seconds} second(s).')
 
 
 def menu(fiscal_year_code):
