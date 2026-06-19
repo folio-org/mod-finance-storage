@@ -4,10 +4,9 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.pgclient.impl.RowImpl;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.internal.RowDesc;
+import io.vertx.sqlclient.impl.RowBase;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRolloverBudget;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.DBConn;
@@ -84,8 +83,8 @@ public class RolloverBudgetDAOTest {
     LedgerFiscalYearRolloverBudget budget = new LedgerFiscalYearRolloverBudget().withId(id);
     List<LedgerFiscalYearRolloverBudget> budgets = List.of(budget);
 
-    RowDesc rowDesc = createRowDesc("foo");
-    Row row = new RowImpl(rowDesc);
+    var rowDesc = createRowDesc("foo");
+    Row row = new RowBase(rowDesc);
     row.addJsonObject(new JsonObject().put("id", id));
     RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
     doReturn(Future.succeededFuture(rows)).when(conn)
