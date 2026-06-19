@@ -27,10 +27,10 @@ Because of a change in the transaction API, there is a new version for Quesnelia
 - User password is required as a command-line input.
 
 ### Execution example :
-`python3 ./fix_encumbrances.py 'FY2025' 'http://localhost:9130/' 'diku' 'diku_admin'`
+`python3 ./fix_encumbrances.py 'FY2026' 'http://localhost:8000/' 'diku' 'diku_admin'`
 
 To save output in a file, use `tee` on Linux:\
-`python3 ./fix_encumbrances.py 'FY2025' 'http://localhost:9130/' 'diku' 'diku_admin' | tee my_latest_run.log`
+`python3 ./fix_encumbrances.py 'FY2026' 'http://localhost:8000/' 'diku' 'diku_admin' | tee my_latest_run.log`
 
 ### Required permissions for the user
 These can be set with a permission group created with the API.
@@ -97,3 +97,4 @@ After the mode selection, it is possible to select the operation(s) to execute:
 - [MODFISTO-417](https://folio-org.atlassian.net/browse/MODFISTO-417) - Fix encumbrances with a bad orderType
 - [MODFISTO-491](https://folio-org.atlassian.net/browse/MODFISTO-491) - Fix inconsistent reEncumber values
 - [MODFISTO-538](https://folio-org.atlassian.net/browse/MODFISTO-538) - Encumbrance script for fixing links does not consider expenseClassId when matching encumbrances
+- [MODFIN-462](https://folio-org.atlassian.net/browse/MODFIN-462) - Standardize Error Reporting Output Across All Fix Encumbrance Script Parts
