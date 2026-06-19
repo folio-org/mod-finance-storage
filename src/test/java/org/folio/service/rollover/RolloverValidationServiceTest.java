@@ -28,11 +28,10 @@ import io.vertx.core.Future;
 import org.folio.rest.exception.HttpException;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.pgclient.impl.RowImpl;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
-import io.vertx.sqlclient.internal.RowDesc;
+import io.vertx.sqlclient.impl.RowBase;
 
 @ExtendWith(VertxExtension.class)
 public class RolloverValidationServiceTest {
@@ -66,8 +65,8 @@ public class RolloverValidationServiceTest {
 
     when(conn.getTenantId()).thenReturn("test");
 
-    RowDesc rowDesc = createRowDesc("foo");
-    Row row = new RowImpl(rowDesc);
+    var rowDesc = createRowDesc("foo");
+    Row row = new RowBase(rowDesc);
     row.addBoolean(false);
     RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
     doReturn(Future.succeededFuture(rows))
@@ -91,8 +90,8 @@ public class RolloverValidationServiceTest {
 
     when(conn.getTenantId()).thenReturn("test");
 
-    RowDesc rowDesc = createRowDesc("foo");
-    Row row = new RowImpl(rowDesc);
+    var rowDesc = createRowDesc("foo");
+    Row row = new RowBase(rowDesc);
     row.addBoolean(true);
     RowSet<Row> rows = new LocalRowSet(1).withRows(List.of(row));
     doReturn(Future.succeededFuture(rows))
