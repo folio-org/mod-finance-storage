@@ -35,14 +35,12 @@ SELECT
     )
   ) as jsonb
 FROM ${myuniversity}_${mymodule}.fiscal_year
-INNER JOIN ${myuniversity}_${mymodule}.fiscal_year fy_one
-  ON fy_one.jsonb ->> 'series' = fiscal_year.jsonb ->> 'series'
-INNER JOIN ${myuniversity}_${mymodule}.ledger
-  ON ledger.fiscalyearoneid = fy_one.id
+INNER JOIN ${myuniversity}_${mymodule}.budget
+  ON budget.fiscalyearid = fiscal_year.id
 INNER JOIN ${myuniversity}_${mymodule}.fund
-  ON fund.ledgerid = ledger.id
-LEFT OUTER JOIN ${myuniversity}_${mymodule}.budget
-  ON budget.fundid = fund.id AND budget.fiscalyearid = fiscal_year.id
+  ON fund.id = budget.fundid
+INNER JOIN ${myuniversity}_${mymodule}.ledger
+  ON ledger.id = fund.ledgerid
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.group_fund_fiscal_year
   ON group_fund_fiscal_year.fundid = fund.id AND group_fund_fiscal_year.fiscalyearid = fiscal_year.id
 LEFT OUTER JOIN ${myuniversity}_${mymodule}.groups
