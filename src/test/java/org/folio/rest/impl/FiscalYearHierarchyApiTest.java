@@ -109,7 +109,7 @@ public class FiscalYearHierarchyApiTest extends TestBase {
       .withInitialAllocation(500.0);
     createEntity(BUDGET.getEndpoint(), ungroupedBudget, TENANT_HEADER);
 
-    var expenseClass = new ExpenseClass().withId(expenseClassId).withCode("PRINT").withName("Print");
+    var expenseClass = new ExpenseClass().withId(expenseClassId).withCode("HIERPRINT").withName("Hierarchy print");
     createEntity(EXPENSE_CLASS.getEndpoint(), expenseClass, TENANT_HEADER);
 
     var budgetExpenseClass = new BudgetExpenseClass()
