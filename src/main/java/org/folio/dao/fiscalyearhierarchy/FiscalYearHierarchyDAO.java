@@ -6,6 +6,6 @@ import org.folio.rest.persist.DBConn;
 
 public interface FiscalYearHierarchyDAO {
 
-  Future<FiscalYearHierarchyCollection> getFiscalYearHierarchy(DBConn conn, String fiscalYearId);
+  Future<FiscalYearHierarchyCollection> getFiscalYearHierarchy(DBConn conn, FiscalYearHierarchyFilter filter);
 
 }
