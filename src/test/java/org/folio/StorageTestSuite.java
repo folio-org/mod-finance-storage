@@ -26,6 +26,7 @@ import org.folio.rest.impl.BudgetTest;
 import org.folio.rest.impl.EntitiesCrudTest;
 import org.folio.rest.impl.ExchangeRateSourceTest;
 import org.folio.rest.impl.FinanceDataApiTest;
+import org.folio.rest.impl.FiscalYearHierarchyApiTest;
 import org.folio.rest.impl.FundTest;
 import org.folio.rest.impl.GroupBudgetTest;
 import org.folio.rest.impl.GroupFundFYTest;
@@ -238,6 +239,9 @@ public class StorageTestSuite {
 
   @Nested
   class FinanceDataApiTestNested extends FinanceDataApiTest {}
+
+  @Nested
+  class FiscalYearHierarchyApiTestNested extends FiscalYearHierarchyApiTest {}
 
   @Nested
   class FinanceDataServiceTestNested extends FinanceDataServiceTest {}

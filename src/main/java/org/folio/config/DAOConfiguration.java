@@ -10,6 +10,8 @@ import org.folio.dao.expense.ExpenseClassDAO;
 import org.folio.dao.expense.ExpenseClassDAOImpl;
 import org.folio.dao.fiscalyear.FiscalYearDAO;
 import org.folio.dao.fiscalyear.FiscalYearPostgresDAO;
+import org.folio.dao.fiscalyearhierarchy.FiscalYearHierarchyDAO;
+import org.folio.dao.fiscalyearhierarchy.FiscalYearHierarchyPostgresDAO;
 import org.folio.dao.fund.FundDAO;
 import org.folio.dao.fund.FundPostgresDAO;
 import org.folio.dao.group.GroupDAO;
@@ -110,6 +112,11 @@ public class DAOConfiguration {
   @Bean
   public TransactionTotalDAO transactionTotalDAO() {
     return new TransactionTotalPostgresDAO();
+  }
+
+  @Bean
+  public FiscalYearHierarchyDAO fiscalYearHierarchyDAO() {
+    return new FiscalYearHierarchyPostgresDAO();
   }
 
 }
