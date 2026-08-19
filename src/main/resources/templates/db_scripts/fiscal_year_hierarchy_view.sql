@@ -1,6 +1,7 @@
 CREATE OR REPLACE VIEW ${myuniversity}_${mymodule}.fiscal_year_hierarchy_view AS
 SELECT
   ledger.id as id,
+  fiscal_year.id as fiscalyearid,
   jsonb_build_object(
     'fiscalYearId', fiscal_year.id,
     'fiscalYearCode', fiscal_year.jsonb ->> 'code',

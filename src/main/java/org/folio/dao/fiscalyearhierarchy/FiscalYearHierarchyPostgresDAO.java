@@ -5,6 +5,7 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
@@ -28,8 +29,8 @@ public class FiscalYearHierarchyPostgresDAO implements FiscalYearHierarchyDAO {
   @Override
   public Future<FiscalYearHierarchyCollection> getFiscalYearHierarchy(DBConn conn, FiscalYearHierarchyFilter filter) {
     var tableName = getFullTableName(conn.getTenantId(), FISCAL_YEAR_HIERARCHY_VIEW);
-    var sql = new StringBuilder("SELECT jsonb FROM ").append(tableName).append(" WHERE jsonb ->> 'fiscalYearId' = $1");
-    var params = Tuple.of(filter.fiscalYearId());
+    var sql = new StringBuilder("SELECT jsonb FROM ").append(tableName).append(" WHERE fiscalyearid = $1");
+    var params = Tuple.of(UUID.fromString(filter.fiscalYearId()));
 
     appendStatusFilter(sql, params, "ledgerStatus", filter.ledgerStatus());
     appendStatusFilter(sql, params, "groupStatus", filter.groupStatus());
