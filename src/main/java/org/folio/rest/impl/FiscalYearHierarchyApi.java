@@ -13,6 +13,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.dao.fiscalyearhierarchy.FiscalYearHierarchyDAO;
+import org.folio.dao.fiscalyearhierarchy.FiscalYearHierarchyFilter;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.resource.FinanceStorageFiscalYearHierarchy;
 import org.folio.rest.persist.DBClient;
@@ -29,15 +30,20 @@ public class FiscalYearHierarchyApi implements FinanceStorageFiscalYearHierarchy
   }
 
   @Override
-  public void getFinanceStorageFiscalYearHierarchy(String fiscalYearId, Map<String, String> okapiHeaders,
+  public void getFinanceStorageFiscalYearHierarchy(String fiscalYearId, String ledgerStatus, String groupStatus,
+                                                    String fundStatus, String budgetStatus, String expenseClassStatus,
+                                                    Map<String, String> okapiHeaders,
                                                     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     if (StringUtils.isBlank(fiscalYearId)) {
       asyncResultHandler.handle(buildErrorResponse(new HttpException(400, "fiscalYearId is required")));
       return;
     }
 
+    var filter = new FiscalYearHierarchyFilter(fiscalYearId, ledgerStatus, groupStatus, fundStatus, budgetStatus,
+      expenseClassStatus);
+
     new DBClient(vertxContext, okapiHeaders)
-      .withConn(conn -> fiscalYearHierarchyDAO.getFiscalYearHierarchy(conn, fiscalYearId))
+      .withConn(conn -> fiscalYearHierarchyDAO.getFiscalYearHierarchy(conn, filter))
       .onComplete(hierarchy -> {
         if (hierarchy.succeeded()) {
           asyncResultHandler.handle(buildOkResponse(hierarchy.result()));

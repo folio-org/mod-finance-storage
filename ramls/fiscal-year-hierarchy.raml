@@ -19,6 +19,26 @@ types:
         description: UUID of the fiscal year to build the hierarchy for
         type: string
         required: true
+      ledgerStatus:
+        description: Only include ledgers with this status (Active, Inactive, Frozen)
+        type: string
+        required: false
+      groupStatus:
+        description: Only include groups with this status (Active, Frozen, Inactive); excludes ungrouped funds
+        type: string
+        required: false
+      fundStatus:
+        description: Only include funds with this status (Active, Frozen, Inactive)
+        type: string
+        required: false
+      budgetStatus:
+        description: Only include budgets with this status (Active, Frozen, Inactive, Planned, Closed)
+        type: string
+        required: false
+      expenseClassStatus:
+        description: Only include budget expense classes with this status (Active, Inactive)
+        type: string
+        required: false
     responses:
       200:
         body:

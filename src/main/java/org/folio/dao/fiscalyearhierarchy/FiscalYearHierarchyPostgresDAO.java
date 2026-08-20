@@ -5,6 +5,7 @@ import static org.folio.rest.persist.HelperUtils.getFullTableName;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
@@ -12,6 +13,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
+import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.jaxrs.model.FiscalYearHierarchy;
 import org.folio.rest.jaxrs.model.FiscalYearHierarchyBudget;
 import org.folio.rest.jaxrs.model.FiscalYearHierarchyCollection;
@@ -23,23 +25,38 @@ import org.folio.rest.persist.DBConn;
 public class FiscalYearHierarchyPostgresDAO implements FiscalYearHierarchyDAO {
 
   public static final String FISCAL_YEAR_HIERARCHY_VIEW = "fiscal_year_hierarchy_view";
-  private static final String SELECT_BY_FISCAL_YEAR_ID = "SELECT jsonb FROM %s WHERE jsonb ->> 'fiscalYearId' = $1";
 
   @Override
-  public Future<FiscalYearHierarchyCollection> getFiscalYearHierarchy(DBConn conn, String fiscalYearId) {
-    var sql = SELECT_BY_FISCAL_YEAR_ID.formatted(getFullTableName(conn.getTenantId(), FISCAL_YEAR_HIERARCHY_VIEW));
-    return conn.execute(sql, Tuple.of(fiscalYearId))
-      .map(this::buildHierarchyCollection);
+  public Future<FiscalYearHierarchyCollection> getFiscalYearHierarchy(DBConn conn, FiscalYearHierarchyFilter filter) {
+    var tableName = getFullTableName(conn.getTenantId(), FISCAL_YEAR_HIERARCHY_VIEW);
+    var sql = new StringBuilder("SELECT jsonb FROM ").append(tableName).append(" WHERE fiscalyearid = $1");
+    var params = Tuple.of(UUID.fromString(filter.fiscalYearId()));
+
+    appendStatusFilter(sql, params, "ledgerStatus", filter.ledgerStatus());
+    appendStatusFilter(sql, params, "groupStatus", filter.groupStatus());
+    appendStatusFilter(sql, params, "fundStatus", filter.fundStatus());
+    appendStatusFilter(sql, params, "budgetStatus", filter.budgetStatus());
+
+    return conn.execute(sql.toString(), params)
+      .map(rows -> buildHierarchyCollection(rows, filter.expenseClassStatus()));
   }
 
-  private FiscalYearHierarchyCollection buildHierarchyCollection(RowSet<Row> rows) {
+  private void appendStatusFilter(StringBuilder sql, Tuple params, String jsonbField, String value) {
+    if (StringUtils.isBlank(value)) {
+      return;
+    }
+    params.addValue(value);
+    sql.append(" AND jsonb ->> '").append(jsonbField).append("' = $").append(params.size());
+  }
+
+  private FiscalYearHierarchyCollection buildHierarchyCollection(RowSet<Row> rows, String expenseClassStatus) {
     Map<String, FiscalYearHierarchy> ledgers = new LinkedHashMap<>();
     Map<String, Map<String, FiscalYearHierarchyGroup>> groupsByLedger = new LinkedHashMap<>();
 
     for (Row row : rows) {
       JsonObject flatRow = row.getJsonObject("jsonb");
       var ledger = ledgers.computeIfAbsent(flatRow.getString("ledgerId"), id -> toLedgerNode(flatRow));
-      var fund = toFundNode(flatRow);
+      var fund = toFundNode(flatRow, expenseClassStatus);
       var groupId = flatRow.getString("groupId");
 
       if (groupId == null) {
@@ -76,15 +93,15 @@ public class FiscalYearHierarchyPostgresDAO implements FiscalYearHierarchyDAO {
       .withGroupName(flatRow.getString("groupName"));
   }
 
-  private FiscalYearHierarchyFund toFundNode(JsonObject flatRow) {
+  private FiscalYearHierarchyFund toFundNode(JsonObject flatRow, String expenseClassStatus) {
     return new FiscalYearHierarchyFund()
       .withFundId(flatRow.getString("fundId"))
       .withFundCode(flatRow.getString("fundCode"))
       .withFundName(flatRow.getString("fundName"))
-      .withBudget(toBudgetNode(flatRow));
+      .withBudget(toBudgetNode(flatRow, expenseClassStatus));
   }
 
-  private FiscalYearHierarchyBudget toBudgetNode(JsonObject flatRow) {
+  private FiscalYearHierarchyBudget toBudgetNode(JsonObject flatRow, String expenseClassStatus) {
     var budgetId = flatRow.getString("budgetId");
     if (budgetId == null) {
       return null;
@@ -96,15 +113,16 @@ public class FiscalYearHierarchyPostgresDAO implements FiscalYearHierarchyDAO {
       .withInitialAllocation(flatRow.getDouble("initialAllocation"))
       .withAllocated(flatRow.getDouble("allocated"))
       .withAvailable(flatRow.getDouble("available"))
-      .withBudgetExpenseClasses(toExpenseClasses(flatRow.getJsonArray("budgetExpenseClasses")));
+      .withBudgetExpenseClasses(toExpenseClasses(flatRow.getJsonArray("budgetExpenseClasses"), expenseClassStatus));
   }
 
-  private List<FiscalYearHierarchyExpenseClass> toExpenseClasses(JsonArray expenseClasses) {
+  private List<FiscalYearHierarchyExpenseClass> toExpenseClasses(JsonArray expenseClasses, String expenseClassStatus) {
     if (expenseClasses == null) {
       return List.of();
     }
     return expenseClasses.stream()
       .map(o -> ((JsonObject) o).mapTo(FiscalYearHierarchyExpenseClass.class))
+      .filter(ec -> StringUtils.isBlank(expenseClassStatus) || expenseClassStatus.equals(ec.getStatus()))
       .toList();
   }
 

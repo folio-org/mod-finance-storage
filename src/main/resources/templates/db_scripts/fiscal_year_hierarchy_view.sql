@@ -1,18 +1,22 @@
 CREATE OR REPLACE VIEW ${myuniversity}_${mymodule}.fiscal_year_hierarchy_view AS
 SELECT
   ledger.id as id,
+  fiscal_year.id as fiscalyearid,
   jsonb_build_object(
     'fiscalYearId', fiscal_year.id,
     'fiscalYearCode', fiscal_year.jsonb ->> 'code',
     'ledgerId', ledger.id,
     'ledgerCode', ledger.jsonb ->> 'code',
     'ledgerName', ledger.jsonb ->> 'name',
+    'ledgerStatus', ledger.jsonb ->> 'ledgerStatus',
     'groupId', groups.id,
     'groupCode', groups.jsonb ->> 'code',
     'groupName', groups.jsonb ->> 'name',
+    'groupStatus', groups.jsonb ->> 'status',
     'fundId', fund.id,
     'fundCode', fund.jsonb ->> 'code',
     'fundName', fund.jsonb ->> 'name',
+    'fundStatus', fund.jsonb ->> 'fundStatus',
     'budgetId', budget.id,
     'budgetName', budget.jsonb ->> 'name',
     'budgetStatus', budget.jsonb ->> 'budgetStatus',
