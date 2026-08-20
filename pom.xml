@@ -21,11 +21,11 @@
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <ramlfiles_util_path>${ramlfiles_path}/raml-util</ramlfiles_util_path>
     <ramlfiles_acq_models_path>${ramlfiles_path}/acq-models</ramlfiles_acq_models_path>
-    <raml-module-builder.version>36.0.0</raml-module-builder.version>
+    <raml-module-builder.version>36.0.1</raml-module-builder.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!--Dependency Properties-->
-    <vertx.version>5.1.2</vertx.version>
+    <vertx.version>5.1.6</vertx.version>
     <log4j.version>2.26.0</log4j.version>
     <aspectj.version>1.9.25.1</aspectj.version>
     <jackson-bom.version>2.22.0</jackson-bom.version>
@@ -50,7 +50,7 @@
     <!--Test Scope dependencies-->
     <jmockit.version>1.50</jmockit.version>
     <junit-bom.version>6.1.0</junit-bom.version>
-    <rest-assured.version>6.0.0</rest-assured.version>
+    <rest-assured.version>6.0.1</rest-assured.version>
     <awaitility.version>4.3.0</awaitility.version>
     <mockito.version>5.23.0</mockito.version>
 
