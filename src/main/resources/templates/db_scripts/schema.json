@@ -725,6 +725,18 @@
       "tableName": "exchange_rate_source",
       "fromModuleVersion": "mod-finance-storage-8.9.0",
       "withMetadata": true
+    },
+    {
+      "tableName": "settings",
+      "fromModuleVersion": "mod-finance-storage-9.0.0",
+      "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
+      "uniqueIndex": [
+        {
+          "fieldName": "key",
+          "tOps": "ADD"
+        }
+      ]
     }
   ]
 }

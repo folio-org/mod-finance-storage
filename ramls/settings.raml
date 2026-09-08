@@ -1,0 +1,50 @@
+#%RAML 1.0
+title: "mod-finance-storage"
+baseUri: https://github.com/folio-org/mod-finance-storage
+version: v1
+
+documentation:
+  - title: mod-finance-storage (Settings)
+    content: <b>CRUD APIs used to manage generic key/value settings for the Finance module.</b>
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+  setting: !include acq-models/common/schemas/setting.json
+  setting-collection: !include acq-models/common/schemas/setting_collection.json
+  UUID:
+    type: string
+    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+
+traits:
+  pageable: !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  validate: !include raml-util/traits/validation.raml
+
+resourceTypes:
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
+
+/finance-storage/settings:
+  type:
+    collection:
+      exampleCollection: !include acq-models/common/examples/setting_collection.sample
+      exampleItem: !include acq-models/common/examples/setting_get.sample
+      schemaCollection: setting-collection
+      schemaItem: setting
+  is: [validate]
+  get:
+    description: Get list of settings
+    is: [
+      searchable: {description: "with valid searchable fields: e.g. key", example: "[\"key\", \"ENABLE_BROWSE_TAB\", \"=\"]"},
+      pageable
+    ]
+  /{id}:
+    uriParameters:
+      id:
+        description: The UUID of a setting
+        type: UUID
+    type:
+      collection-item:
+        exampleItem: !include acq-models/common/examples/setting_get.sample
+        schema: setting
+    is: [validate]

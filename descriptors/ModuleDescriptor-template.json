@@ -559,6 +559,37 @@
       ]
     },
     {
+      "id": "finance-storage.settings",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/settings",
+          "permissionsRequired": ["finance-storage.settings.collection.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/finance-storage/settings",
+          "permissionsRequired": ["finance-storage.settings.item.post"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/finance-storage/settings/{id}",
+          "permissionsRequired": ["finance-storage.settings.item.get"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/finance-storage/settings/{id}",
+          "permissionsRequired": ["finance-storage.settings.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/finance-storage/settings/{id}",
+          "permissionsRequired": ["finance-storage.settings.item.delete"]
+        }
+      ]
+    },
+    {
       "id" : "_tenant",
       "version" : "2.0",
       "interfaceType" : "system",
@@ -1202,6 +1233,43 @@
       ]
     },
     {
+      "permissionName": "finance-storage.settings.collection.get",
+      "displayName": "get settings",
+      "description": "Get list of settings"
+    },
+    {
+      "permissionName": "finance-storage.settings.item.get",
+      "displayName": "get setting",
+      "description": "Get setting by id"
+    },
+    {
+      "permissionName": "finance-storage.settings.item.post",
+      "displayName": "save setting",
+      "description": "Save setting"
+    },
+    {
+      "permissionName": "finance-storage.settings.item.put",
+      "displayName": "update setting",
+      "description": "Update setting"
+    },
+    {
+      "permissionName": "finance-storage.settings.item.delete",
+      "displayName": "delete setting",
+      "description": "Delete setting"
+    },
+    {
+      "permissionName": "finance-storage.settings.all",
+      "displayName": "All settings perms",
+      "description": "All permissions for the generic Finance settings",
+      "subPermissions": [
+        "finance-storage.settings.collection.get",
+        "finance-storage.settings.item.get",
+        "finance-storage.settings.item.post",
+        "finance-storage.settings.item.put",
+        "finance-storage.settings.item.delete"
+      ]
+    },
+    {
       "permissionName" : "finance-storage.job-number.get",
       "displayName" : "job-number get",
       "description" : "Get job number"
@@ -1225,6 +1293,7 @@
         "finance-storage.finance-data.all",
         "finance-storage.fiscal-year-hierarchy.all",
         "finance-storage.exchange-rate-source.all",
+        "finance-storage.settings.all",
         "finance-storage.job-number.get"
       ]
     }
