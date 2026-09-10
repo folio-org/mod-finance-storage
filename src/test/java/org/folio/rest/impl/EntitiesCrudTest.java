@@ -15,6 +15,7 @@ import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_LOG;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_ERROR;
 import static org.folio.rest.utils.TestEntities.LEDGER_FISCAL_YEAR_ROLLOVER_PROGRESS;
+import static org.folio.rest.utils.TestEntities.SETTINGS;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +53,7 @@ public class EntitiesCrudTest extends TestBase {
    */
   static Stream<TestEntities> deleteOrder() {
     return Stream.of(GROUP_FUND_FY, BUDGET_EXPENSE_CLASS, BUDGET, LEDGER_FISCAL_YEAR_ROLLOVER_ERROR,
-      LEDGER_FISCAL_YEAR_ROLLOVER, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS, FUND_UPDATE_LOG);
+      LEDGER_FISCAL_YEAR_ROLLOVER, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS, FUND_UPDATE_LOG, SETTINGS);
   }
 
   static Stream<TestEntities> deleteFailOrder() {
@@ -72,7 +73,7 @@ public class EntitiesCrudTest extends TestBase {
    * @return stream of ordered entities list
    */
   static Stream<TestEntities> createDuplicateRecords() {
-    return Stream.of(BUDGET_EXPENSE_CLASS, BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS);
+    return Stream.of(BUDGET_EXPENSE_CLASS, BUDGET, GROUP_FUND_FY, FUND, FUND_TYPE, LEDGER, FISCAL_YEAR, GROUP, EXPENSE_CLASS, SETTINGS);
   }
 
 
