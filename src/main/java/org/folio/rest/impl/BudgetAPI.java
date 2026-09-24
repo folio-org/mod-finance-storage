@@ -26,6 +26,7 @@ import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.RestConstants.OKAPI_URL;
 import static org.folio.rest.jaxrs.resource.FinanceStorageBudgets.PostFinanceStorageBudgetsBatchResponse.respond200WithApplicationJson;
 import static org.folio.rest.util.ResponseUtils.buildErrorResponse;
+import static org.folio.rest.util.ResponseUtils.buildNoContentResponse;
 import static org.folio.rest.util.ResponseUtils.buildResponseWithLocation;
 
 public class BudgetAPI implements FinanceStorageBudgets {
@@ -98,6 +99,12 @@ public class BudgetAPI implements FinanceStorageBudgets {
   @Override
   @Validate
   public void putFinanceStorageBudgetsById(String id, Budget entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.put(BUDGET_TABLE, entity, id, okapiHeaders, vertxContext, PutFinanceStorageBudgetsByIdResponse.class, asyncResultHandler);
+    entity.setId(id);
+    budgetService.updateBudget(entity, new RequestContext(vertxContext, okapiHeaders))
+      .onSuccess(v -> asyncResultHandler.handle(buildNoContentResponse()))
+      .onFailure(t -> {
+        logger.error("Failed to update the finance storage budget with id {}", id, t);
+        asyncResultHandler.handle(buildErrorResponse(t));
+      });
   }
 }

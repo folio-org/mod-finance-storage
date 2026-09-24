@@ -7,6 +7,7 @@ import org.folio.dao.budget.BudgetPostgresDAO;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.DBConn;
+import org.folio.service.audit.AuditOutboxService;
 import org.folio.service.group.GroupService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,8 @@ public class BudgetServiceTest {
   @Mock
   private GroupService groupService;
   @Mock
+  private AuditOutboxService auditOutboxService;
+  @Mock
   private DBConn conn;
   @Captor
   private ArgumentCaptor<String> tableNameCaptor;
@@ -55,7 +58,7 @@ public class BudgetServiceTest {
   public void init() {
     mockitoMocks = MockitoAnnotations.openMocks(this);
     BudgetDAO budgetDAO = new BudgetPostgresDAO();
-    budgetService = new BudgetService(dbClientFactory, budgetDAO, groupService);
+    budgetService = new BudgetService(dbClientFactory, budgetDAO, groupService, auditOutboxService);
   }
 
   @AfterEach

@@ -21,6 +21,7 @@ import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.DBConn;
+import org.folio.service.audit.AuditOutboxService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fund.FundService;
 import org.folio.service.fund.StorageFundService;
@@ -57,6 +58,7 @@ import static org.folio.rest.jaxrs.model.Budget.BudgetStatus.INACTIVE;
 import static org.folio.service.ServiceTestUtils.createResults;
 import static org.folio.service.ServiceTestUtils.createRowSet;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -77,6 +79,8 @@ public abstract class BatchTransactionServiceTestBase {
   protected DBConn conn;
   @Mock
   private GroupService groupService;
+  @Mock
+  protected AuditOutboxService auditOutboxService;
   @Captor
   protected ArgumentCaptor<List<Object>> saveEntitiesCaptor;
   @Captor
@@ -87,9 +91,11 @@ public abstract class BatchTransactionServiceTestBase {
   public void init() {
     mockitoMocks = MockitoAnnotations.openMocks(this);
     FundDAO fundDAO = new FundPostgresDAO();
-    FundService fundService = new StorageFundService(fundDAO);
+    doReturn(Future.succeededFuture())
+      .when(auditOutboxService).saveBudgetOutboxLogs(any(), anyList(), anyList(), any());
+    FundService fundService = new StorageFundService(fundDAO, auditOutboxService);
     BudgetDAO budgetDAO = new BudgetPostgresDAO();
-    BudgetService budgetService = new BudgetService(dbClientFactory, budgetDAO, groupService);
+    BudgetService budgetService = new BudgetService(dbClientFactory, budgetDAO, groupService, auditOutboxService);
     LedgerDAO ledgerDAO = new LedgerPostgresDAO();
     LedgerService ledgerService = new StorageLedgerService(ledgerDAO, fundService);
     Set<BatchTransactionServiceInterface> batchTransactionStrategies = new HashSet<>();
@@ -100,7 +106,7 @@ public abstract class BatchTransactionServiceTestBase {
     batchTransactionStrategies.add(new BatchTransferService());
     BatchTransactionDAO transactionDAO = new BatchTransactionPostgresDAO();
     batchTransactionService = new BatchTransactionService(dbClientFactory, transactionDAO, fundService, budgetService,
-      ledgerService, batchTransactionStrategies);
+      ledgerService, auditOutboxService, batchTransactionStrategies);
     doReturn(dbClient)
       .when(dbClientFactory).getDbClient(requestContext);
     doAnswer(invocation -> {
