@@ -1,10 +1,5 @@
 package org.folio.service.audit;
 
-/**
- * Outbox payload wrapper carrying both the post-change entity and, for edits, its pre-change state.
- *
- * @param <T> the entity type
- */
 public class AuditEntityWrapper<T> {
 
   private T entity;

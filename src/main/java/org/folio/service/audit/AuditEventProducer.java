@@ -33,16 +33,6 @@ public class AuditEventProducer {
     this.kafkaConfig = kafkaConfig;
   }
 
-  /**
-   * Sends an event for a fund change (Create, Edit) to Kafka.
-   * FundId is used as a partition key to send all events for a particular fund to the same partition.
-   *
-   * @param fund         the event payload (post-change state)
-   * @param originalFund the pre-change fund state; null for Create
-   * @param eventAction  the event action
-   * @param okapiHeaders the okapi headers
-   * @return future completed when the event has been sent, failed future otherwise
-   */
   public Future<Void> sendFundEvent(Fund fund, Fund originalFund, FundAuditEvent.Action eventAction, Map<String, String> okapiHeaders) {
     var event = getAuditEvent(fund, originalFund, eventAction);
     logger.info("sendFundEvent:: Sending event with id '{}' and fundId '{}' to Kafka", event.getId(), fund.getId());
@@ -51,16 +41,6 @@ public class AuditEventProducer {
         event.getId(), fund.getId(), t));
   }
 
-  /**
-   * Sends an event for a budget change (Create, Edit) to Kafka.
-   * BudgetId is used as a partition key to send all events for a particular budget to the same partition.
-   *
-   * @param budget         the event payload (post-change state)
-   * @param originalBudget the pre-change budget state; null for Create
-   * @param eventAction    the event action
-   * @param okapiHeaders   the okapi headers
-   * @return future completed when the event has been sent, failed future otherwise
-   */
   public Future<Void> sendBudgetEvent(Budget budget, Budget originalBudget, BudgetAuditEvent.Action eventAction,
                                       Map<String, String> okapiHeaders) {
     var event = getAuditEvent(budget, originalBudget, eventAction);

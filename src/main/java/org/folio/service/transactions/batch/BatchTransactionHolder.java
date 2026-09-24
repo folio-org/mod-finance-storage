@@ -147,9 +147,6 @@ public class BatchTransactionHolder {
     return allBudgets;
   }
 
-  /**
-   * @return copies of the budgets as they were loaded, before any change made by the batch
-   */
   public List<Budget> getOriginalBudgets() {
     return originalBudgets;
   }

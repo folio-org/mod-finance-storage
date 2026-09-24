@@ -165,9 +165,6 @@ public class FinanceDataService {
     budget.setMetadata(md);
   }
 
-  /**
-   * @return future with the budgets as they were before the update
-   */
   private Future<List<Budget>> updateFundAndBudget(FyFinanceDataCollection entity, DBConn conn, Map<String, String> okapiHeaders) {
     var updateMetadata = generateMetadata(okapiHeaders);
     var updateFundFuture = processFundUpdate(entity, conn, updateMetadata);
@@ -193,9 +190,6 @@ public class FinanceDataService {
       .recover(t -> Future.failedFuture(new HttpException(500, ErrorCodes.FAILED_TO_UPDATE_FUNDS, t)));
   }
 
-  /**
-   * @return future with the budgets as they were before the update
-   */
   private Future<List<Budget>> processBudgetUpdate(FyFinanceDataCollection entity, DBConn conn, Metadata updateMetadata) {
     List<String> budgetIds = getBudgetIds(entity);
     if (budgetIds.isEmpty()) {

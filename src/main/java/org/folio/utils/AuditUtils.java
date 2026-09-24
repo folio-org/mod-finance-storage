@@ -14,14 +14,7 @@ public class AuditUtils {
   private static final String METADATA_FIELD = "metadata";
 
   /**
-   * Returns the entities that differ from their original state, so that audit events are not sent for entities
-   * a batch update did not really change. Metadata is ignored in the comparison, because it is refreshed
-   * on every batch update. An entity without an original is considered changed.
-   *
-   * @param entities         the entities (post-change state)
-   * @param originalEntities the entities before the change, matched by id
-   * @param idGetter         the entity id getter
-   * @return the changed entities
+   * Metadata is ignored in the comparison, because batch updates refresh it even when nothing else is changed.
    */
   public static <T> List<T> getChangedEntities(List<T> entities, List<T> originalEntities, Function<T, String> idGetter) {
     Map<String, T> originalsById = originalEntities.stream().collect(Collectors.toMap(idGetter, Function.identity()));

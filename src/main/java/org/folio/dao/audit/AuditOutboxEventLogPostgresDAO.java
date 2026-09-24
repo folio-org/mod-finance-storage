@@ -31,12 +31,6 @@ public class AuditOutboxEventLogPostgresDAO implements AuditOutboxEventLogDAO {
   private static final String INSERT_SQL = "INSERT INTO %s (event_id, entity_type, action, payload) VALUES ($1, $2, $3, $4)";
   private static final String BATCH_DELETE_SQL = "DELETE FROM %s WHERE event_id = ANY ($1)";
 
-  /**
-   * Gets event logs from the outbox table, locking them for the current transaction.
-   *
-   * @param conn the connection in transaction
-   * @return future with the list of fetched event logs
-   */
   @Override
   public Future<List<OutboxEventLog>> getEventLogs(DBConn conn) {
     logger.trace("getEventLogs:: Fetching event logs from outbox table for tenantId '{}'", conn.getTenantId());
@@ -48,13 +42,6 @@ public class AuditOutboxEventLogPostgresDAO implements AuditOutboxEventLogDAO {
       .onFailure(t -> logger.warn("getEventLogs:: Failed to fetch event logs for tenantId '{}'", conn.getTenantId(), t));
   }
 
-  /**
-   * Saves an event log to the outbox table.
-   *
-   * @param conn     the connection in transaction
-   * @param eventLog the event log to save
-   * @return future completed when the event log has been saved within the same transaction
-   */
   @Override
   public Future<Void> saveEventLog(DBConn conn, OutboxEventLog eventLog) {
     logger.debug("saveEventLog:: Saving event log to outbox table with eventId '{}'", eventLog.getEventId());
@@ -65,13 +52,6 @@ public class AuditOutboxEventLogPostgresDAO implements AuditOutboxEventLogDAO {
       .mapEmpty();
   }
 
-  /**
-   * Deletes outbox logs by event ids in batch.
-   *
-   * @param conn     the connection in transaction
-   * @param eventIds the event ids to delete
-   * @return future with the number of deleted records
-   */
   @Override
   public Future<Integer> deleteEventLogs(DBConn conn, List<String> eventIds) {
     logger.debug("deleteEventLogs:: Deleting outbox logs by event ids in batch: '{}'", eventIds);

@@ -36,14 +36,6 @@ public class AuditOutboxService {
     this.producer = producer;
   }
 
-  /**
-   * Reads outbox event logs from the DB, sends them to Kafka and deletes them from the outbox table
-   * in a single transaction.
-   *
-   * @param okapiHeaders the okapi headers
-   * @param vertxContext the vertx context
-   * @return future with the number of processed records
-   */
   public Future<Integer> processOutboxEventLogs(Map<String, String> okapiHeaders, Context vertxContext) {
     return new DBClient(vertxContext, okapiHeaders)
       .withTrans(conn -> outboxEventLogDAO.getEventLogs(conn)
@@ -62,78 +54,26 @@ public class AuditOutboxService {
       .onFailure(t -> logger.error("Failed to process outbox event logs", t));
   }
 
-  /**
-   * Saves a fund outbox log for a newly created fund.
-   *
-   * @param conn         the connection in transaction
-   * @param fund         the created fund
-   * @param action       the event action
-   * @return future completed when the outbox log has been saved within the same transaction
-   */
   public Future<Void> saveFundOutboxLog(DBConn conn, Fund fund, FundAuditEvent.Action action) {
     return saveFundOutboxLog(conn, fund, null, action);
   }
 
-  /**
-   * Saves a fund outbox log capturing the pre-edit state.
-   *
-   * @param conn         the connection in transaction
-   * @param fund         the fund (post-edit state)
-   * @param originalFund the fund before the edit; null for Create
-   * @param action       the event action
-   * @return future completed when the outbox log has been saved within the same transaction
-   */
   public Future<Void> saveFundOutboxLog(DBConn conn, Fund fund, Fund originalFund, FundAuditEvent.Action action) {
     return saveOutboxLog(conn, action.value(), EntityType.FUND, fund.getId(), AuditEntityWrapper.of(fund, originalFund));
   }
 
-  /**
-   * Saves a budget outbox log for a newly created budget.
-   *
-   * @param conn         the connection in transaction
-   * @param budget       the created budget
-   * @param action       the event action
-   * @return future completed when the outbox log has been saved within the same transaction
-   */
   public Future<Void> saveBudgetOutboxLog(DBConn conn, Budget budget, BudgetAuditEvent.Action action) {
     return saveBudgetOutboxLog(conn, budget, null, action);
   }
 
-  /**
-   * Saves a budget outbox log capturing the pre-edit state.
-   *
-   * @param conn           the connection in transaction
-   * @param budget         the budget (post-edit state)
-   * @param originalBudget the budget before the edit; null for Create
-   * @param action         the event action
-   * @return future completed when the outbox log has been saved within the same transaction
-   */
   public Future<Void> saveBudgetOutboxLog(DBConn conn, Budget budget, Budget originalBudget, BudgetAuditEvent.Action action) {
     return saveOutboxLog(conn, action.value(), EntityType.BUDGET, budget.getId(), AuditEntityWrapper.of(budget, originalBudget));
   }
 
-  /**
-   * Saves fund outbox logs for a batch of funds.
-   *
-   * @param conn          the connection in transaction
-   * @param funds         the funds (post-change state)
-   * @param originalFunds the funds before the change, matched by id; empty for Create
-   * @param action        the event action
-   * @return future completed when the outbox logs have been saved within the same transaction
-   */
   public Future<Void> saveFundOutboxLogs(DBConn conn, List<Fund> funds, List<Fund> originalFunds, FundAuditEvent.Action action) {
     return saveOutboxLogs(conn, action.value(), EntityType.FUND, funds, originalFunds, Fund::getId);
   }
 
-  /**
-   * Saves budget outbox logs for a batch of budgets.
-   *
-   * @param conn            the connection in transaction
-   * @param budgets         the budgets (post-change state)
-   * @param originalBudgets the budgets before the change, matched by id; empty for Create
-   * @param action          the event action
-   * @return future completed when the outbox logs have been saved within the same transaction
-   */
   public Future<Void> saveBudgetOutboxLogs(DBConn conn, List<Budget> budgets, List<Budget> originalBudgets,
                                            BudgetAuditEvent.Action action) {
     return saveOutboxLogs(conn, action.value(), EntityType.BUDGET, budgets, originalBudgets, Budget::getId);
