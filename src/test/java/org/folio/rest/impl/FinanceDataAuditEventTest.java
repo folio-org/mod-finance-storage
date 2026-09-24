@@ -27,6 +27,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.folio.CopilotGenerated;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.BudgetAuditEvent;
 import org.folio.rest.jaxrs.model.FiscalYear;
@@ -46,6 +47,7 @@ import io.restassured.http.Header;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 
+@CopilotGenerated(model = "Claude Opus 5.5")
 public class FinanceDataAuditEventTest extends TestBase {
 
   private static final String FINANCE_DATA_AUDIT_EVENT_TENANT = "financedataauditeventtenant";

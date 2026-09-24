@@ -6,12 +6,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import org.folio.CopilotGenerated;
 import org.folio.rest.jaxrs.model.Budget;
 import org.folio.rest.jaxrs.model.Metadata;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.core.json.Json;
 
+@CopilotGenerated(model = "Claude Opus 5.5")
 public class AuditUtilsTest {
 
   @Test

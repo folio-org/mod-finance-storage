@@ -13,24 +13,21 @@ import org.folio.rest.jaxrs.model.BudgetAuditEvent;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundAuditEvent;
 import org.folio.rest.jaxrs.model.Metadata;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @CopilotGenerated(model = "Claude Opus 5")
 public class AuditEventProducerTest {
 
-  private static final String USER_ID = "28d1057c-d137-11e8-a8d5-f2801f1b9fd1";
+  private static final String CREATOR_ID = "28d1057c-d137-11e8-a8d5-f2801f1b9fd1";
+  private static final String EDITOR_ID = "4b6c5a2e-8b2d-4f6e-9a3c-1d2e3f4a5b6c";
+  private static final Date CREATED_DATE = new Date(1_000_000L);
+  private static final Date EDITED_DATE = new Date(2_000_000L);
 
-  private AuditEventProducer producer;
-
-  @BeforeEach
-  void setUp() {
-    producer = new AuditEventProducer(null);
-  }
+  private final AuditEventProducer producer = new AuditEventProducer(null);
 
   @Test
-  void shouldBuildCreateEventWithoutOriginalSnapshot() {
-    var fund = fund(new Date(), new Date());
+  void shouldBuildFundCreateEvent() {
+    var fund = fund(metadata(CREATED_DATE, CREATOR_ID));
 
     var event = producer.getAuditEvent(fund, null, FundAuditEvent.Action.CREATE);
 
@@ -38,31 +35,30 @@ public class AuditEventProducerTest {
     assertNotNull(event.getEventDate());
     assertEquals(FundAuditEvent.Action.CREATE, event.getAction());
     assertEquals(fund.getId(), event.getFundId());
-    assertEquals(USER_ID, event.getUserId());
-    assertEquals(fund.getMetadata().getUpdatedDate(), event.getActionDate());
+    assertEquals(CREATOR_ID, event.getUserId());
+    assertEquals(CREATED_DATE, event.getActionDate());
     assertEquals(fund, event.getFundSnapshot());
     assertNull(event.getOriginalFundSnapshot());
   }
 
   @Test
-  void shouldRestoreCreationMetadataOnEditEvent() {
-    var createdDate = new Date(1_000_000L);
-    var original = fund(createdDate, createdDate);
-    // RMB stamps the PUT body metadata from the request headers, so the created fields describe the edit
-    var editedFund = fund(new Date(), new Date());
-    editedFund.setId(original.getId());
+  void shouldBuildFundEditEventWithCreationMetadataOfOriginal() {
+    var original = fund(metadata(CREATED_DATE, CREATOR_ID));
+    // RMB stamps all metadata fields of the PUT body with the edit, including the created ones
+    var edited = fund(metadata(EDITED_DATE, EDITOR_ID)).withId(original.getId());
 
-    var event = producer.getAuditEvent(editedFund, original, FundAuditEvent.Action.EDIT);
+    var event = producer.getAuditEvent(edited, original, FundAuditEvent.Action.EDIT);
 
     assertEquals(FundAuditEvent.Action.EDIT, event.getAction());
+    assertEquals(EDITOR_ID, event.getUserId());
+    assertEquals(EDITED_DATE, event.getActionDate());
     assertEquals(original, event.getOriginalFundSnapshot());
-    assertEquals(createdDate, event.getFundSnapshot().getMetadata().getCreatedDate());
-    assertEquals(USER_ID, event.getFundSnapshot().getMetadata().getCreatedByUserId());
+    assertCreatedByOriginalAndUpdatedByEdit(event.getFundSnapshot().getMetadata());
   }
 
   @Test
-  void shouldBuildEventWhenMetadataIsMissing() {
-    var fund = new Fund().withId(UUID.randomUUID().toString());
+  void shouldBuildFundEventWithoutMetadata() {
+    var fund = fund(null);
 
     var event = producer.getAuditEvent(fund, null, FundAuditEvent.Action.CREATE);
 
@@ -72,59 +68,64 @@ public class AuditEventProducerTest {
   }
 
   @Test
-  void shouldBuildBudgetCreateEventWithoutOriginalSnapshot() {
-    var budget = budget(new Date(), new Date());
+  void shouldBuildBudgetCreateEvent() {
+    var budget = budget(metadata(CREATED_DATE, CREATOR_ID));
 
     var event = producer.getAuditEvent(budget, null, BudgetAuditEvent.Action.CREATE);
 
     assertNotNull(event.getId());
     assertEquals(BudgetAuditEvent.Action.CREATE, event.getAction());
     assertEquals(budget.getId(), event.getBudgetId());
-    assertEquals(USER_ID, event.getUserId());
+    assertEquals(CREATOR_ID, event.getUserId());
     assertEquals(budget, event.getBudgetSnapshot());
     assertNull(event.getOriginalBudgetSnapshot());
   }
 
   @Test
-  void shouldRestoreCreationMetadataOnBudgetEditEvent() {
-    var createdDate = new Date(1_000_000L);
-    var original = budget(createdDate, createdDate);
-    var editedBudget = budget(new Date(), new Date());
-    editedBudget.setId(original.getId());
+  void shouldBuildBudgetEditEventWithCreationMetadataOfOriginal() {
+    var original = budget(metadata(CREATED_DATE, CREATOR_ID));
+    var edited = budget(metadata(EDITED_DATE, EDITOR_ID)).withId(original.getId());
 
-    var event = producer.getAuditEvent(editedBudget, original, BudgetAuditEvent.Action.EDIT);
+    var event = producer.getAuditEvent(edited, original, BudgetAuditEvent.Action.EDIT);
 
     assertEquals(BudgetAuditEvent.Action.EDIT, event.getAction());
+    assertEquals(EDITOR_ID, event.getUserId());
     assertEquals(original, event.getOriginalBudgetSnapshot());
-    assertEquals(createdDate, event.getBudgetSnapshot().getMetadata().getCreatedDate());
-    assertEquals(USER_ID, event.getBudgetSnapshot().getMetadata().getCreatedByUserId());
+    assertCreatedByOriginalAndUpdatedByEdit(event.getBudgetSnapshot().getMetadata());
   }
 
-  private Budget budget(Date createdDate, Date updatedDate) {
+  private void assertCreatedByOriginalAndUpdatedByEdit(Metadata metadata) {
+    assertEquals(CREATED_DATE, metadata.getCreatedDate());
+    assertEquals(CREATOR_ID, metadata.getCreatedByUserId());
+    assertEquals(EDITED_DATE, metadata.getUpdatedDate());
+    assertEquals(EDITOR_ID, metadata.getUpdatedByUserId());
+  }
+
+  private Metadata metadata(Date date, String userId) {
+    return new Metadata()
+      .withCreatedDate(date)
+      .withCreatedByUserId(userId)
+      .withUpdatedDate(date)
+      .withUpdatedByUserId(userId);
+  }
+
+  private Fund fund(Metadata metadata) {
+    return new Fund()
+      .withId(UUID.randomUUID().toString())
+      .withCode("HIST")
+      .withName("History")
+      .withFundStatus(Fund.FundStatus.ACTIVE)
+      .withMetadata(metadata);
+  }
+
+  private Budget budget(Metadata metadata) {
     return new Budget()
       .withId(UUID.randomUUID().toString())
       .withName("History FY2026")
       .withBudgetStatus(Budget.BudgetStatus.ACTIVE)
       .withFundId(UUID.randomUUID().toString())
       .withFiscalYearId(UUID.randomUUID().toString())
-      .withMetadata(new Metadata()
-        .withCreatedDate(createdDate)
-        .withCreatedByUserId(USER_ID)
-        .withUpdatedDate(updatedDate)
-        .withUpdatedByUserId(USER_ID));
-  }
-
-  private Fund fund(Date createdDate, Date updatedDate) {
-    return new Fund()
-      .withId(UUID.randomUUID().toString())
-      .withCode("HIST")
-      .withName("History")
-      .withFundStatus(Fund.FundStatus.ACTIVE)
-      .withMetadata(new Metadata()
-        .withCreatedDate(createdDate)
-        .withCreatedByUserId(USER_ID)
-        .withUpdatedDate(updatedDate)
-        .withUpdatedByUserId(USER_ID));
+      .withMetadata(metadata);
   }
 
 }

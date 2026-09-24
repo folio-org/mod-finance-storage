@@ -14,6 +14,8 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.folio.CopilotGenerated;
 import org.folio.dao.audit.AuditOutboxEventLogDAO;
@@ -22,6 +24,7 @@ import org.folio.rest.jaxrs.model.BudgetAuditEvent;
 import org.folio.rest.jaxrs.model.Fund;
 import org.folio.rest.jaxrs.model.FundAuditEvent;
 import org.folio.rest.jaxrs.model.OutboxEventLog;
+import org.folio.rest.jaxrs.model.OutboxEventLog.EntityType;
 import org.folio.rest.persist.DBConn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,106 +54,110 @@ public class AuditOutboxServiceTest {
   private ArgumentCaptor<OutboxEventLog> eventLogCaptor;
 
   @Test
-  void shouldSaveCreateOutboxLogWithoutOriginalEntity() {
+  void shouldSaveFundCreateOutboxLogWithoutOriginal() {
     var fund = fund();
-    when(outboxEventLogDAO.saveEventLog(any(), any())).thenReturn(Future.succeededFuture());
+    givenEventLogsAreSaved();
 
     auditOutboxService.saveFundOutboxLog(conn, fund, FundAuditEvent.Action.CREATE);
 
-    verify(outboxEventLogDAO).saveEventLog(any(), eventLogCaptor.capture());
-    var eventLog = eventLogCaptor.getValue();
+    var eventLog = savedEventLog();
     assertNotNull(eventLog.getEventId());
-    assertEquals(OutboxEventLog.EntityType.FUND, eventLog.getEntityType());
+    assertEquals(EntityType.FUND, eventLog.getEntityType());
     assertEquals(FundAuditEvent.Action.CREATE.value(), eventLog.getAction());
-
-    var wrapper = auditOutboxService.decodePayload(eventLog.getPayload(), Fund.class);
-    assertEquals(fund.getId(), wrapper.getEntity().getId());
-    assertNull(wrapper.getOriginalEntity());
+    var payload = decode(eventLog, Fund.class);
+    assertEquals(fund.getId(), payload.getEntity().getId());
+    assertNull(payload.getOriginalEntity());
   }
 
   @Test
-  void shouldSaveEditOutboxLogWithOriginalEntity() {
+  void shouldSaveFundEditOutboxLogWithOriginal() {
     var original = fund();
-    var fund = Json.decodeValue(Json.encode(original), Fund.class).withFundStatus(Fund.FundStatus.FROZEN);
-    when(outboxEventLogDAO.saveEventLog(any(), any())).thenReturn(Future.succeededFuture());
+    var fund = copy(original).withFundStatus(Fund.FundStatus.FROZEN);
+    givenEventLogsAreSaved();
 
     auditOutboxService.saveFundOutboxLog(conn, fund, original, FundAuditEvent.Action.EDIT);
 
-    verify(outboxEventLogDAO).saveEventLog(any(), eventLogCaptor.capture());
-    var eventLog = eventLogCaptor.getValue();
+    var eventLog = savedEventLog();
     assertEquals(FundAuditEvent.Action.EDIT.value(), eventLog.getAction());
-
-    var wrapper = auditOutboxService.decodePayload(eventLog.getPayload(), Fund.class);
-    assertEquals(Fund.FundStatus.FROZEN, wrapper.getEntity().getFundStatus());
-    assertEquals(Fund.FundStatus.ACTIVE, wrapper.getOriginalEntity().getFundStatus());
+    var payload = decode(eventLog, Fund.class);
+    assertEquals(Fund.FundStatus.FROZEN, payload.getEntity().getFundStatus());
+    assertEquals(Fund.FundStatus.ACTIVE, payload.getOriginalEntity().getFundStatus());
   }
 
   @Test
-  void shouldSaveEditOutboxLogForBudget() {
+  void shouldSaveBudgetEditOutboxLogWithOriginal() {
     var original = budget();
-    var budget = Json.decodeValue(Json.encode(original), Budget.class).withBudgetStatus(Budget.BudgetStatus.FROZEN);
-    when(outboxEventLogDAO.saveEventLog(any(), any())).thenReturn(Future.succeededFuture());
+    var budget = copy(original).withBudgetStatus(Budget.BudgetStatus.FROZEN);
+    givenEventLogsAreSaved();
 
     auditOutboxService.saveBudgetOutboxLog(conn, budget, original, BudgetAuditEvent.Action.EDIT);
 
-    verify(outboxEventLogDAO).saveEventLog(any(), eventLogCaptor.capture());
-    var eventLog = eventLogCaptor.getValue();
-    assertEquals(OutboxEventLog.EntityType.BUDGET, eventLog.getEntityType());
+    var eventLog = savedEventLog();
+    assertEquals(EntityType.BUDGET, eventLog.getEntityType());
     assertEquals(BudgetAuditEvent.Action.EDIT.value(), eventLog.getAction());
+    var payload = decode(eventLog, Budget.class);
+    assertEquals(Budget.BudgetStatus.FROZEN, payload.getEntity().getBudgetStatus());
+    assertEquals(Budget.BudgetStatus.ACTIVE, payload.getOriginalEntity().getBudgetStatus());
+  }
 
-    var wrapper = auditOutboxService.decodePayload(eventLog.getPayload(), Budget.class);
-    assertEquals(Budget.BudgetStatus.FROZEN, wrapper.getEntity().getBudgetStatus());
-    assertEquals(Budget.BudgetStatus.ACTIVE, wrapper.getOriginalEntity().getBudgetStatus());
+  @Test
+  void shouldSaveBudgetOutboxLogsInBatchWithMatchingOriginals() {
+    var changedOriginal = budget();
+    var changed = copy(changedOriginal).withBudgetStatus(Budget.BudgetStatus.FROZEN);
+    var withoutOriginal = budget();
+    var unrelatedOriginal = budget();
+    givenEventLogsAreSaved();
+
+    var result = auditOutboxService.saveBudgetOutboxLogs(conn, List.of(changed, withoutOriginal),
+      List.of(unrelatedOriginal, changedOriginal), BudgetAuditEvent.Action.EDIT);
+
+    assertTrue(result.succeeded());
+    var payloads = savedBudgetPayloadsById(2);
+    assertEquals(Budget.BudgetStatus.FROZEN, payloads.get(changed.getId()).getEntity().getBudgetStatus());
+    assertEquals(Budget.BudgetStatus.ACTIVE, payloads.get(changed.getId()).getOriginalEntity().getBudgetStatus());
+    assertNull(payloads.get(withoutOriginal.getId()).getOriginalEntity());
   }
 
   @Test
   void shouldSkipBrokenEventLogsAndSendValidOnes() {
-    var fund = fund();
-    var validLog = eventLog(OutboxEventLog.EntityType.FUND, FundAuditEvent.Action.CREATE.value(),
-      Json.encode(AuditEntityWrapper.of(fund, null)));
-    var unknownActionLog = eventLog(OutboxEventLog.EntityType.FUND, "Unknown", Json.encode(AuditEntityWrapper.of(fund, null)));
-    var malformedPayloadLog = eventLog(OutboxEventLog.EntityType.BUDGET, BudgetAuditEvent.Action.EDIT.value(), "not a json");
-    var missingEntityLog = eventLog(OutboxEventLog.EntityType.BUDGET, BudgetAuditEvent.Action.EDIT.value(), "{}");
-    var unknownEntityTypeLog = eventLog(null, FundAuditEvent.Action.CREATE.value(), Json.encode(AuditEntityWrapper.of(fund, null)));
+    var validPayload = Json.encode(AuditEntityWrapper.of(fund(), null));
+    var eventLogs = List.of(
+      eventLog(EntityType.FUND, "Unknown action", validPayload),
+      eventLog(EntityType.BUDGET, BudgetAuditEvent.Action.EDIT.value(), "not a json"),
+      eventLog(EntityType.BUDGET, BudgetAuditEvent.Action.EDIT.value(), "{}"), // no entity in the payload
+      eventLog(null, FundAuditEvent.Action.CREATE.value(), validPayload),
+      eventLog(EntityType.FUND, FundAuditEvent.Action.CREATE.value(), validPayload)); // the only valid one
     when(producer.sendFundEvent(any(), any(), any(), any())).thenReturn(Future.succeededFuture());
 
-    var futures = auditOutboxService.sendEventLogsToKafka(
-      List.of(unknownActionLog, malformedPayloadLog, missingEntityLog, unknownEntityTypeLog, validLog), Map.of());
+    var results = auditOutboxService.sendEventLogsToKafka(eventLogs, Map.of());
 
-    assertEquals(5, futures.size());
-    assertTrue(futures.stream().allMatch(Future::succeeded));
+    // broken logs complete successfully, so they are deleted together with the sent ones
+    assertTrue(results.stream().allMatch(Future::succeeded));
     verify(producer).sendFundEvent(any(), any(), eq(FundAuditEvent.Action.CREATE), any());
     verifyNoMoreInteractions(producer);
   }
 
-  @Test
-  void shouldSaveBatchOutboxLogsWithMatchingOriginalBudgets() {
-    var otherOriginal = budget();
-    var changedOriginal = budget();
-    var changed = copy(changedOriginal, Budget.class).withBudgetStatus(Budget.BudgetStatus.FROZEN);
-    var created = budget();
+  private void givenEventLogsAreSaved() {
     when(outboxEventLogDAO.saveEventLog(any(), any())).thenReturn(Future.succeededFuture());
-
-    var result = auditOutboxService.saveBudgetOutboxLogs(conn, List.of(changed, created),
-      List.of(otherOriginal, changedOriginal), BudgetAuditEvent.Action.EDIT);
-
-    assertTrue(result.succeeded());
-    verify(outboxEventLogDAO, times(2)).saveEventLog(any(), eventLogCaptor.capture());
-    var wrappers = eventLogCaptor.getAllValues().stream()
-      .map(eventLog -> auditOutboxService.decodePayload(eventLog.getPayload(), Budget.class))
-      .toList();
-    var changedWrapper = wrappers.stream()
-      .filter(wrapper -> changed.getId().equals(wrapper.getEntity().getId()))
-      .findFirst().orElseThrow();
-    assertEquals(Budget.BudgetStatus.FROZEN, changedWrapper.getEntity().getBudgetStatus());
-    assertEquals(Budget.BudgetStatus.ACTIVE, changedWrapper.getOriginalEntity().getBudgetStatus());
-    var createdWrapper = wrappers.stream()
-      .filter(wrapper -> created.getId().equals(wrapper.getEntity().getId()))
-      .findFirst().orElseThrow();
-    assertNull(createdWrapper.getOriginalEntity());
   }
 
-  private OutboxEventLog eventLog(OutboxEventLog.EntityType entityType, String action, String payload) {
+  private OutboxEventLog savedEventLog() {
+    verify(outboxEventLogDAO).saveEventLog(eq(conn), eventLogCaptor.capture());
+    return eventLogCaptor.getValue();
+  }
+
+  private Map<String, AuditEntityWrapper<Budget>> savedBudgetPayloadsById(int expectedCount) {
+    verify(outboxEventLogDAO, times(expectedCount)).saveEventLog(eq(conn), eventLogCaptor.capture());
+    return eventLogCaptor.getAllValues().stream()
+      .map(eventLog -> decode(eventLog, Budget.class))
+      .collect(Collectors.toMap(payload -> payload.getEntity().getId(), Function.identity()));
+  }
+
+  private <T> AuditEntityWrapper<T> decode(OutboxEventLog eventLog, Class<T> entityClass) {
+    return auditOutboxService.decodePayload(eventLog.getPayload(), entityClass);
+  }
+
+  private OutboxEventLog eventLog(EntityType entityType, String action, String payload) {
     return new OutboxEventLog()
       .withEventId(UUID.randomUUID().toString())
       .withEntityType(entityType)
@@ -158,8 +165,9 @@ public class AuditOutboxServiceTest {
       .withPayload(payload);
   }
 
-  private <T> T copy(T entity, Class<T> clazz) {
-    return Json.decodeValue(Json.encode(entity), clazz);
+  @SuppressWarnings("unchecked")
+  private <T> T copy(T entity) {
+    return (T) Json.decodeValue(Json.encode(entity), entity.getClass());
   }
 
   private Budget budget() {

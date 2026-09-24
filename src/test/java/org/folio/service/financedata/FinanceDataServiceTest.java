@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -242,21 +244,15 @@ public class FinanceDataServiceTest {
           assertEquals(90.0, updatedBudget1.getAllowableExpenditure());
           assertEquals(80.0, updatedBudget1.getAllowableEncumbrance());
 
-          // a single audit log per changed fund: fund2 has no changes
-          ArgumentCaptor<List<Fund>> auditFundCaptor = ArgumentCaptor.forClass(List.class);
-          verify(auditOutboxService).saveFundOutboxLogs(eq(dbConn), auditFundCaptor.capture(), any(),
+          // one audit log per changed fund: fund2 has no changes
+          verify(auditOutboxService).saveFundOutboxLogs(eq(dbConn), argThat(withIds(Fund::getId, fundId1)), any(),
             eq(FundAuditEvent.Action.EDIT));
-          assertEquals(List.of(fundId1), auditFundCaptor.getValue().stream().map(Fund::getId).toList());
-
-          // a single audit log per budget for the whole operation: Create for the new one, Edit for the existing one
-          ArgumentCaptor<List<Budget>> auditBudgetCaptor = ArgumentCaptor.forClass(List.class);
-          ArgumentCaptor<BudgetAuditEvent.Action> actionCaptor = ArgumentCaptor.forClass(BudgetAuditEvent.Action.class);
-          verify(auditOutboxService, times(2)).saveBudgetOutboxLogs(eq(dbConn), auditBudgetCaptor.capture(), any(),
-            actionCaptor.capture());
-          assertEquals(List.of(BudgetAuditEvent.Action.CREATE, BudgetAuditEvent.Action.EDIT), actionCaptor.getAllValues());
-          assertEquals(List.of(dataWithNullBudgetId.getBudgetId()),
-            auditBudgetCaptor.getAllValues().get(0).stream().map(Budget::getId).toList());
-          assertEquals(List.of(budgetId1), auditBudgetCaptor.getAllValues().get(1).stream().map(Budget::getId).toList());
+          // one audit log per budget for the whole operation: Create for the new budget, Edit for the existing one
+          var newBudgetId = dataWithNullBudgetId.getBudgetId();
+          verify(auditOutboxService).saveBudgetOutboxLogs(eq(dbConn), argThat(withIds(Budget::getId, newBudgetId)),
+            eq(List.of()), eq(BudgetAuditEvent.Action.CREATE));
+          verify(auditOutboxService).saveBudgetOutboxLogs(eq(dbConn), argThat(withIds(Budget::getId, budgetId1)), any(),
+            eq(BudgetAuditEvent.Action.EDIT));
         });
         testContext.completeNow();
       })));
@@ -340,6 +336,10 @@ public class FinanceDataServiceTest {
       .thenReturn(Future.succeededFuture());
     when(fiscalYearService.getFiscalYearById(anyString(), any(DBConn.class)))
       .thenReturn(Future.succeededFuture(fiscalYear));
+  }
+
+  private static <T> ArgumentMatcher<List<T>> withIds(Function<T, String> idGetter, String... ids) {
+    return entities -> entities.stream().map(idGetter).toList().equals(List.of(ids));
   }
 
   private void setupMocksForFailure(RuntimeException expectedError, FiscalYear fiscalYear) {
