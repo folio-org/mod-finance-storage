@@ -84,6 +84,16 @@ public class FinanceDataAuditEventTest extends TestBase {
       .withInitialAllocation(100.0)
       .withAllowableExpenditure(101.0)
       .withAllowableEncumbrance(102.0);
+    var fundWithUnchangedBudget = fund(ledgerId, "AUDITFUND3");
+    var unchangedBudget = new Budget()
+      .withId(UUID.randomUUID().toString())
+      .withName("AUDITFUND3-" + FISCAL_YEAR_CODE)
+      .withBudgetStatus(Budget.BudgetStatus.ACTIVE)
+      .withFiscalYearId(fiscalYearId)
+      .withFundId(fundWithUnchangedBudget.getId())
+      .withInitialAllocation(100.0)
+      .withAllowableExpenditure(101.0)
+      .withAllowableEncumbrance(102.0);
 
     var fiscalYear = new JsonObject(getFile(FISCAL_YEAR.getPathToSampleFile())).mapTo(FiscalYear.class)
       .withId(fiscalYearId)
@@ -100,6 +110,8 @@ public class FinanceDataAuditEventTest extends TestBase {
     createEntity(FUND.getEndpoint(), fundWithBudget, FINANCE_DATA_AUDIT_EVENT_TENANT_HEADER);
     createEntity(FUND.getEndpoint(), fundWithoutBudget, FINANCE_DATA_AUDIT_EVENT_TENANT_HEADER);
     createEntity(BUDGET.getEndpoint(), existingBudget, FINANCE_DATA_AUDIT_EVENT_TENANT_HEADER);
+    createEntity(FUND.getEndpoint(), fundWithUnchangedBudget, FINANCE_DATA_AUDIT_EVENT_TENANT_HEADER);
+    createEntity(BUDGET.getEndpoint(), unchangedBudget, FINANCE_DATA_AUDIT_EVENT_TENANT_HEADER);
 
     // the existing budget is changed twice in one request: by the update and by the allocation
     var existingBudgetData = new FyFinanceData()
@@ -121,10 +133,20 @@ public class FinanceDataAuditEventTest extends TestBase {
       .withFundStatus(Fund.FundStatus.ACTIVE.value())
       .withBudgetName("AUDITFUND2-" + FISCAL_YEAR_CODE)
       .withBudgetAllocationChange(25.0);
+    // the budget is updated in the DB with the same values, which only increments its version
+    var unchangedBudgetData = new FyFinanceData()
+      .withFiscalYearId(fiscalYearId)
+      .withFiscalYearCode(FISCAL_YEAR_CODE)
+      .withFundId(fundWithUnchangedBudget.getId())
+      .withFundStatus(Fund.FundStatus.ACTIVE.value())
+      .withBudgetId(unchangedBudget.getId())
+      .withBudgetStatus(Budget.BudgetStatus.ACTIVE.value())
+      .withBudgetAllowableExpenditure(101.0)
+      .withBudgetAllowableEncumbrance(102.0);
     var collection = new FyFinanceDataCollection()
-      .withFyFinanceData(List.of(existingBudgetData, newBudgetData))
+      .withFyFinanceData(List.of(existingBudgetData, newBudgetData, unchangedBudgetData))
       .withUpdateType(FyFinanceDataCollection.UpdateType.COMMIT)
-      .withTotalRecords(2);
+      .withTotalRecords(3);
 
     var updatedCollection = given()
       .header(FINANCE_DATA_AUDIT_EVENT_TENANT_HEADER)
@@ -140,8 +162,8 @@ public class FinanceDataAuditEventTest extends TestBase {
       .findFirst().orElseThrow()
       .getBudgetId();
 
-    // 2 Create events for the test data + 1 Edit event for the fund with the new description
-    var fundEvents = awaitEvents(ACQ_FUND_CHANGED_TOPIC, 3, FundAuditEvent.class);
+    // 3 Create events for the test data + 1 Edit event for the fund with the new description
+    var fundEvents = awaitEvents(ACQ_FUND_CHANGED_TOPIC, 4, FundAuditEvent.class);
     var fundEditEvents = filter(fundEvents, e -> e.getAction() == FundAuditEvent.Action.EDIT, FundAuditEvent::getFundId);
     assertEquals(List.of(fundWithBudget.getId()), fundEditEvents);
     var fundEditEvent = fundEvents.stream().filter(e -> e.getAction() == FundAuditEvent.Action.EDIT).findFirst().orElseThrow();
@@ -149,12 +171,13 @@ public class FinanceDataAuditEventTest extends TestBase {
     assertEquals("Updated description", fundEditEvent.getFundSnapshot().getDescription());
     assertEquals("Description", fundEditEvent.getOriginalFundSnapshot().getDescription());
 
-    // 1 Create event for the test data + 1 Create event for the new budget + 1 Edit event for the existing budget
-    var budgetEvents = awaitEvents(ACQ_BUDGET_CHANGED_TOPIC, 3, BudgetAuditEvent.class);
-    assertEquals(3, budgetEvents.size());
+    // 2 Create events for the test data + 1 Create event for the new budget + 1 Edit event for the existing budget;
+    // the unchanged budget has no Edit event
+    var budgetEvents = awaitEvents(ACQ_BUDGET_CHANGED_TOPIC, 4, BudgetAuditEvent.class);
+    assertEquals(4, budgetEvents.size());
     assertEquals(List.of(existingBudget.getId()),
       filter(budgetEvents, e -> e.getAction() == BudgetAuditEvent.Action.EDIT, BudgetAuditEvent::getBudgetId));
-    assertEquals(Stream.of(existingBudget.getId(), newBudgetId).sorted().toList(),
+    assertEquals(Stream.of(existingBudget.getId(), unchangedBudget.getId(), newBudgetId).sorted().toList(),
       filter(budgetEvents, e -> e.getAction() == BudgetAuditEvent.Action.CREATE, BudgetAuditEvent::getBudgetId));
 
     var budgetEditEvent = budgetEvents.stream()

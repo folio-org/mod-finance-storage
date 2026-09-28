@@ -17,16 +17,20 @@ import io.vertx.core.json.Json;
 public class AuditUtilsTest {
 
   @Test
-  void shouldReturnOnlyChangedEntitiesIgnoringMetadata() {
-    var unchangedOriginal = budget();
-    var metadataOnlyChanged = copy(unchangedOriginal)
+  void shouldReturnOnlyChangedEntitiesIgnoringMetadataAndVersion() {
+    var metadataOnlyOriginal = budget();
+    var metadataOnlyChanged = copy(metadataOnlyOriginal)
       .withMetadata(new Metadata().withUpdatedDate(new Date()).withUpdatedByUserId(UUID.randomUUID().toString()));
+    var versionOnlyOriginal = budget();
+    var versionOnlyChanged = copy(versionOnlyOriginal).withVersion(versionOnlyOriginal.getVersion() + 1);
     var changedOriginal = budget();
-    var changed = copy(changedOriginal).withBudgetStatus(Budget.BudgetStatus.FROZEN);
+    var changed = copy(changedOriginal)
+      .withBudgetStatus(Budget.BudgetStatus.FROZEN)
+      .withVersion(changedOriginal.getVersion() + 1);
     var withoutOriginal = budget();
 
-    var result = AuditUtils.getChangedEntities(List.of(metadataOnlyChanged, changed, withoutOriginal),
-      List.of(changedOriginal, unchangedOriginal), Budget::getId);
+    var result = AuditUtils.getChangedEntities(List.of(metadataOnlyChanged, versionOnlyChanged, changed, withoutOriginal),
+      List.of(changedOriginal, versionOnlyOriginal, metadataOnlyOriginal), Budget::getId);
 
     assertEquals(List.of(changed, withoutOriginal), result);
   }
@@ -34,6 +38,7 @@ public class AuditUtilsTest {
   private Budget budget() {
     return new Budget()
       .withId(UUID.randomUUID().toString())
+      .withVersion(1)
       .withName("History FY2026")
       .withBudgetStatus(Budget.BudgetStatus.ACTIVE)
       .withAllocated(100.0)
