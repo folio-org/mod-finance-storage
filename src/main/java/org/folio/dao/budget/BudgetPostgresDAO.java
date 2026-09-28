@@ -102,6 +102,15 @@ public class BudgetPostgresDAO implements BudgetDAO {
       .onFailure(e -> logger.error("Getting budgets by query: {} failed", criterion, e));
   }
 
+  @Override
+  public Future<Void> updateBudget(Budget budget, DBConn conn) {
+    logger.debug("Trying to update a budget by id {}", budget.getId());
+    return conn.update(BUDGET_TABLE, budget, budget.getId())
+      .onSuccess(rowSet -> logger.info("Successfully updated a budget with id {}", budget.getId()))
+      .onFailure(e -> logger.error("Updating a budget by id {} failed", budget.getId(), e))
+      .mapEmpty();
+  }
+
   public Future<Budget> getBudgetById(String id, DBConn conn) {
     logger.debug("Trying to get a budget by id {}", id);
     return conn.getById(BUDGET_TABLE, id, Budget.class)
@@ -117,7 +126,6 @@ public class BudgetPostgresDAO implements BudgetDAO {
       .onSuccess(budgets -> logger.info("Successfully retrieved a budget with id {}", id))
       .onFailure(e -> logger.error("Getting a budget by id {} failed", id, e));
   }
-
   public Future<Void> deleteBudget(String id, DBConn conn) {
     logger.debug("Trying to delete a budget by id {}", id);
     return conn.delete(BUDGET_TABLE, id)

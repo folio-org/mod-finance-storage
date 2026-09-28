@@ -23,6 +23,8 @@ public interface BudgetDAO {
 
   Future<List<Budget>> getBudgetsByCriterion(Criterion criterion, DBConn conn);
 
+  Future<Void> updateBudget(Budget budget, DBConn conn);
+
   Future<Budget> getBudgetById(String id, DBConn conn);
 
   Future<Void> deleteBudget(String id, DBConn conn);

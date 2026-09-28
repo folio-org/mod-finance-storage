@@ -82,6 +82,32 @@ Required when `SECRET_STORE_TYPE=FSSP`
 | SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE   | jks                   | Truststore file type (e.g., JKS, PKCS12).           |
 | SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD    | -                     | Truststore password for SSL connections.            |
 
+## Audit events
+
+Creating or editing a fund or a budget, including batch changes made by `POST /finance-storage/transactions/batch-all-or-nothing`
+and `PUT /finance-storage/finance-data`, publishes an audit event per changed entity to Kafka:
+
+| Entity | Topic                | Event payload       | Partition key |
+|--------|----------------------|---------------------|---------------|
+| Fund   | `ACQ_FUND_CHANGED`   | `FundAuditEvent`    | fund id       |
+| Budget | `ACQ_BUDGET_CHANGED` | `BudgetAuditEvent`  | budget id     |
+
+An event carries the full post-change snapshot and, for `Edit`, the pre-change one as well. Events are written to the
+`outbox_event_log` table inside the same transaction as the entity change (transactional outbox), and published right
+after the transaction commits. Anything left in the table - for example because the module went down before publishing -
+is picked up by the `POST /finance-storage/audit-outbox/process` timer, which Okapi calls every 6 hours.
+
+### Kafka environment variables
+
+| Name               | Default value           | Description                                        |
+|--------------------|-------------------------|----------------------------------------------------|
+| KAFKA_HOST         | kafka                   | Kafka broker host                                  |
+| KAFKA_PORT         | 9092                    | Kafka broker port                                  |
+| REPLICATION_FACTOR | 1                       | Replication factor of the created topics           |
+| MAX_REQUEST_SIZE   | 1048576                 | Maximum size of a produced record, in bytes        |
+| ENV                | folio                   | Environment name, used as a prefix of topic names  |
+| OKAPI_URL          | http://okapi:9130       | Okapi URL                                          |
+
 ## Code analysis
 
 [SonarQube analysis](https://sonarcloud.io/dashboard?id=org.folio%3Amod-finance-storage).

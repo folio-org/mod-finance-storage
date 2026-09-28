@@ -1,21 +1,32 @@
 package org.folio;
 
+import static org.folio.kafka.KafkaTopicNameHelper.getDefaultNameSpace;
 import static org.folio.rest.impl.TestBase.TENANT_HEADER;
 import static org.folio.rest.utils.TenantApiTestUtil.deleteTenant;
 import static org.folio.rest.utils.TenantApiTestUtil.prepareTenant;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.config.SecureStoreConfigurationTest;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAOTest;
+import org.folio.kafka.KafkaTopicNameHelper;
 import org.folio.dao.rollover.LedgerFiscalYearRolloverDAOTest;
 import org.folio.dao.rollover.RolloverErrorDAOTest;
 import org.folio.dao.rollover.RolloverProgressDAOTest;
@@ -26,7 +37,10 @@ import org.folio.rest.impl.BudgetTest;
 import org.folio.rest.impl.EntitiesCrudTest;
 import org.folio.rest.impl.ExchangeRateSourceTest;
 import org.folio.rest.impl.FinanceDataApiTest;
+import org.folio.rest.impl.FinanceDataAuditEventTest;
 import org.folio.rest.impl.FiscalYearHierarchyApiTest;
+import org.folio.rest.impl.BudgetAuditEventTest;
+import org.folio.rest.impl.FundAuditEventTest;
 import org.folio.rest.impl.FundTest;
 import org.folio.rest.impl.GroupBudgetTest;
 import org.folio.rest.impl.GroupFundFYTest;
@@ -42,6 +56,8 @@ import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.utils.DBClientTest;
+import org.folio.service.audit.AuditEventProducerTest;
+import org.folio.service.audit.AuditOutboxServiceTest;
 import org.folio.service.budget.BudgetServiceTest;
 import org.folio.service.email.EmailServiceTest;
 import org.folio.service.exchangerate.ExchangeRateSourceServiceTest;
@@ -54,11 +70,14 @@ import org.folio.service.transactions.AllocationTransferTest;
 import org.folio.service.transactions.EncumbranceTest;
 import org.folio.service.transactions.PaymentCreditTest;
 import org.folio.service.transactions.PendingPaymentTest;
+import org.folio.utils.AuditUtilsTest;
 import org.folio.utils.CalculationUtilsTest;
 import org.folio.utils.SecureStoreUtilsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import io.restassured.http.Header;
 import io.vertx.core.DeploymentOptions;
@@ -72,6 +91,13 @@ public class StorageTestSuite {
   private static final int port = NetworkUtils.nextFreePort();
   public static final Header URL_TO_HEADER = new Header("X-Okapi-Url-to", "http://localhost:" + port);
   private static TenantJob tenantJob;
+
+  private static final DockerImageName KAFKA_IMAGE_NAME = DockerImageName.parse("apache/kafka-native:4.2.0");
+  private static final KafkaContainer kafkaContainer = new KafkaContainer(KAFKA_IMAGE_NAME).withStartupAttempts(3);
+  public static final String KAFKA_ENV_VALUE = "test-env";
+  private static final String KAFKA_HOST = "KAFKA_HOST";
+  private static final String KAFKA_PORT = "KAFKA_PORT";
+  private static final String KAFKA_ENV = "ENV";
 
   private StorageTestSuite() {
   }
@@ -94,6 +120,13 @@ public class StorageTestSuite {
     Locale.setDefault(Locale.US);
 
     vertx = Vertx.vertx();
+
+    logger.info("Start kafka cluster");
+    kafkaContainer.start();
+    System.setProperty(KAFKA_HOST, kafkaContainer.getHost());
+    System.setProperty(KAFKA_PORT, String.valueOf(kafkaContainer.getFirstMappedPort()));
+    System.setProperty(KAFKA_ENV, KAFKA_ENV_VALUE);
+    logger.info("Kafka cluster started with bootstrap servers: {}", kafkaContainer.getBootstrapServers());
 
     logger.info("Start container database");
 
@@ -126,6 +159,31 @@ public class StorageTestSuite {
     undeploymentComplete.get(20, TimeUnit.SECONDS);
     logger.info("Stop database");
     PostgresClient.stopPostgresTester();
+    logger.info("Stop kafka cluster");
+    kafkaContainer.stop();
+  }
+
+  public static List<String> checkKafkaEventSent(String tenant, String eventType) {
+    var topic = KafkaTopicNameHelper.formatTopicName(KAFKA_ENV_VALUE, getDefaultNameSpace(), tenant, eventType);
+    List<String> result = new ArrayList<>();
+    ConsumerRecords<String, String> records;
+    try (var kafkaConsumer = createKafkaConsumer()) {
+      kafkaConsumer.subscribe(List.of(topic));
+      records = kafkaConsumer.poll(Duration.ofSeconds(30));
+    }
+    records.forEach(rec -> result.add(rec.value()));
+    return result;
+  }
+
+  private static KafkaConsumer<String, String> createKafkaConsumer() {
+    var consumerProperties = new Properties();
+    consumerProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+    consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+    consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+    // a fresh group per call so each observation starts from the beginning of the topic
+    consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "test-group-" + UUID.randomUUID());
+    consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    return new KafkaConsumer<>(consumerProperties);
   }
 
   private static void startVerticle(DeploymentOptions options)
@@ -248,6 +306,24 @@ public class StorageTestSuite {
 
   @Nested
   class FundTestNested extends FundTest {}
+
+  @Nested
+  class FundAuditEventTestNested extends FundAuditEventTest {}
+
+  @Nested
+  class BudgetAuditEventTestNested extends BudgetAuditEventTest {}
+
+  @Nested
+  class AuditEventProducerTestNested extends AuditEventProducerTest {}
+
+  @Nested
+  class AuditOutboxServiceTestNested extends AuditOutboxServiceTest {}
+
+  @Nested
+  class AuditUtilsTestNested extends AuditUtilsTest {}
+
+  @Nested
+  class FinanceDataAuditEventTestNested extends FinanceDataAuditEventTest {}
 
   @Nested
   class TransactionTotalApiTestNested extends TransactionTotalApiTest {}

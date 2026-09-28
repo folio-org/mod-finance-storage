@@ -1,6 +1,7 @@
 package org.folio.service.transactions.batch;
 
 import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections4.CollectionUtils;
 import org.folio.dao.transactions.BatchTransactionDAO;
@@ -73,6 +74,7 @@ public class BatchTransactionHolder {
   private List<Transaction> allTransactions;
   private List<Fund> allFunds;
   private List<Budget> allBudgets;
+  private List<Budget> originalBudgets;
   private List<Ledger> allLedgers;
   private Map<String, Boolean> budgetIdToRestrictedExpenditures;
   private Map<String, Boolean> budgetIdToRestrictedEncumbrance;
@@ -143,6 +145,10 @@ public class BatchTransactionHolder {
 
   public List<Budget> getBudgets() {
     return allBudgets;
+  }
+
+  public List<Budget> getOriginalBudgets() {
+    return originalBudgets;
   }
 
   public Map<String, Transaction> getLinkedEncumbranceMap() {
@@ -370,11 +376,15 @@ public class BatchTransactionHolder {
       flatMapping(tr -> Stream.of(tr.getFromFundId(), tr.getToFundId()).filter(Objects::nonNull), toSet())));
     if (fiscalYearIdToFundIds.isEmpty()) {
       allBudgets = emptyList();
+      originalBudgets = emptyList();
       return succeededFuture();
     }
     return budgetService.getBudgetsByFiscalYearIdsAndFundIdsForUpdate(fiscalYearIdToFundIds, conn)
       .map(budgets -> {
         allBudgets = budgets;
+        originalBudgets = budgets.stream()
+          .map(budget -> JsonObject.mapFrom(budget).mapTo(Budget.class))
+          .toList();
         return null;
       });
   }

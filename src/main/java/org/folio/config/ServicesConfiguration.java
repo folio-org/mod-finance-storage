@@ -2,6 +2,7 @@ package org.folio.config;
 
 import java.util.Set;
 
+import org.folio.dao.audit.AuditOutboxEventLogDAO;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.budget.BudgetExpenseClassDAO;
 import org.folio.dao.exchangerate.ExchangeRateSourceDAO;
@@ -17,9 +18,12 @@ import org.folio.dao.rollover.RolloverErrorDAO;
 import org.folio.dao.rollover.RolloverProgressDAO;
 import org.folio.dao.transactions.BatchTransactionDAO;
 import org.folio.dao.transactions.TemporaryEncumbranceDAO;
+import org.folio.kafka.KafkaConfig;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.service.PostgresFunctionExecutionService;
+import org.folio.service.audit.AuditEventProducer;
+import org.folio.service.audit.AuditOutboxService;
 import org.folio.service.budget.BudgetExpenseClassService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.budget.RolloverBudgetExpenseClassTotalsService;
@@ -54,8 +58,9 @@ import org.springframework.context.annotation.Bean;
 public class ServicesConfiguration {
 
   @Bean
-  public BudgetService budgetService(DBClientFactory dbClientFactory, BudgetDAO budgetDAO, GroupService groupService) {
-    return new BudgetService(dbClientFactory, budgetDAO, groupService);
+  public BudgetService budgetService(DBClientFactory dbClientFactory, BudgetDAO budgetDAO, GroupService groupService,
+      AuditOutboxService auditOutboxService) {
+    return new BudgetService(dbClientFactory, budgetDAO, groupService, auditOutboxService);
   }
 
   @Bean
@@ -64,8 +69,18 @@ public class ServicesConfiguration {
   }
 
   @Bean
-  public FundService fundService(FundDAO fundDAO) {
-    return new StorageFundService(fundDAO);
+  public FundService fundService(FundDAO fundDAO, AuditOutboxService auditOutboxService) {
+    return new StorageFundService(fundDAO, auditOutboxService);
+  }
+
+  @Bean
+  public AuditEventProducer auditEventProducer(KafkaConfig kafkaConfig) {
+    return new AuditEventProducer(kafkaConfig);
+  }
+
+  @Bean
+  public AuditOutboxService auditOutboxService(AuditOutboxEventLogDAO auditOutboxEventLogDAO, AuditEventProducer auditEventProducer) {
+    return new AuditOutboxService(auditOutboxEventLogDAO, auditEventProducer);
   }
 
   @Bean
@@ -111,9 +126,9 @@ public class ServicesConfiguration {
   @Bean
   public BatchTransactionService batchTransactionService(DBClientFactory dbClientFactory, BatchTransactionDAO batchTransactionDAO,
       FundService fundService, BudgetService budgetService, LedgerService ledgerService,
-      Set<BatchTransactionServiceInterface> batchTransactionStrategies) {
+      AuditOutboxService auditOutboxService, Set<BatchTransactionServiceInterface> batchTransactionStrategies) {
     return new BatchTransactionService(dbClientFactory, batchTransactionDAO, fundService, budgetService, ledgerService,
-      batchTransactionStrategies);
+      auditOutboxService, batchTransactionStrategies);
   }
 
   @Bean
@@ -181,8 +196,8 @@ public class ServicesConfiguration {
 
   @Bean
   public FinanceDataService financeDataService(FundService fundService, BudgetService budgetService, FiscalYearService fiscalYearService,
-      BatchTransactionService batchTransactionService) {
-    return new FinanceDataService(fundService, budgetService, fiscalYearService, batchTransactionService);
+      BatchTransactionService batchTransactionService, AuditOutboxService auditOutboxService) {
+    return new FinanceDataService(fundService, budgetService, fiscalYearService, batchTransactionService, auditOutboxService);
   }
 
   @Bean

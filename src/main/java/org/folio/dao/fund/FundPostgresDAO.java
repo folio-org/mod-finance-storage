@@ -34,6 +34,14 @@ public class FundPostgresDAO implements FundDAO {
     "AND (jsonb->>'periodEnd')::timestamp)));";
 
   @Override
+  public Future<Fund> createFund(Fund fund, DBConn conn) {
+    logger.debug("Trying to create finance storage fund with id {}", fund.getId());
+    return conn.saveAndReturnUpdatedEntity(FUND_TABLE, fund.getId(), fund)
+      .onSuccess(createdFund -> logger.info("Fund record '{}' was successfully created", createdFund.getId()))
+      .onFailure(e -> logger.error("Creating fund with id {} failed", fund.getId(), e));
+  }
+
+  @Override
   public Future<Fund> getFundById(String id, DBConn conn) {
     logger.debug("Trying to get fund by id {}", id);
     return conn.getById(FUND_TABLE, id, Fund.class)
@@ -58,12 +66,6 @@ public class FundPostgresDAO implements FundDAO {
     CriterionBuilder criterionBuilder = new CriterionBuilder("OR");
     ids.forEach(id -> criterionBuilder.with("id", id));
     return getFundsByCriterion(criterionBuilder.build(), conn);
-  }
-
-  @Override
-  public Future<Boolean> isFundStatusChanged(Fund fund, DBConn conn) {
-    return getFundById(fund.getId(), conn)
-      .map(existingFund -> existingFund.getFundStatus() != fund.getFundStatus());
   }
 
   @Override

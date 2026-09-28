@@ -12,6 +12,7 @@ import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.BudgetAuditEvent;
 import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.jaxrs.model.Transaction.TransactionType;
@@ -19,9 +20,11 @@ import org.folio.rest.jaxrs.model.TransactionPatch;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.DBConn;
+import org.folio.service.audit.AuditOutboxService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fund.FundService;
 import org.folio.service.ledger.LedgerService;
+import org.folio.utils.CalculationUtils;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -37,6 +40,7 @@ import static org.folio.rest.jaxrs.model.Transaction.TransactionType.ENCUMBRANCE
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.PENDING_PAYMENT;
 import static org.folio.rest.jaxrs.model.Transaction.TransactionType.TRANSFER;
+import static org.folio.utils.AuditUtils.getChangedEntities;
 import static org.folio.utils.MetadataUtils.generateMetadata;
 
 public class BatchTransactionService {
@@ -50,16 +54,19 @@ public class BatchTransactionService {
   private final FundService fundService;
   private final BudgetService budgetService;
   private final LedgerService ledgerService;
+  private final AuditOutboxService auditOutboxService;
   private final Map<TransactionType, BatchTransactionServiceInterface> serviceMap;
 
   public BatchTransactionService(DBClientFactory dbClientFactory, BatchTransactionDAO transactionDAO,
                                  FundService fundService, BudgetService budgetService, LedgerService ledgerService,
+                                 AuditOutboxService auditOutboxService,
                                  Set<BatchTransactionServiceInterface> batchTransactionStrategies) {
     this.dbClientFactory = dbClientFactory;
     this.transactionDAO = transactionDAO;
     this.fundService = fundService;
     this.budgetService = budgetService;
     this.ledgerService = ledgerService;
+    this.auditOutboxService = auditOutboxService;
     serviceMap = new EnumMap<>(TransactionType.class);
     batchTransactionStrategies.forEach(
       strategy -> serviceMap.put(strategy.getTransactionType(), strategy));
@@ -67,10 +74,28 @@ public class BatchTransactionService {
 
   public Future<Void> processBatch(Batch batch, RequestContext requestContext) {
     DBClient client = dbClientFactory.getDbClient(requestContext);
-    return client.withTrans(conn -> processBatch(batch, conn, requestContext.getHeaders()));
+    return client.withTrans(conn -> processBatchTransactions(batch, conn, requestContext.getHeaders())
+        .compose(holder -> saveBudgetOutboxLogs(holder, conn)))
+      .onSuccess(v -> auditOutboxService.processOutboxEventLogs(requestContext.getHeaders(), requestContext.getContext()));
   }
 
+  /**
+   * Processes the batch within the given transaction without saving audit outbox logs:
+   * the caller is responsible for auditing the budget changes of the whole operation.
+   */
   public Future<Void> processBatch(Batch batch, DBConn conn, Map<String, String> okapiHeaders) {
+    return processBatchTransactions(batch, conn, okapiHeaders).mapEmpty();
+  }
+
+  private Future<Void> saveBudgetOutboxLogs(BatchTransactionHolder holder, DBConn conn) {
+    // the calculated fields are cleared by the batch update, they are restored for the audit snapshots
+    holder.getBudgets().forEach(CalculationUtils::calculateBudgetSummaryFields);
+    var changedBudgets = getChangedEntities(holder.getBudgets(), holder.getOriginalBudgets(), Budget::getId);
+    return auditOutboxService.saveBudgetOutboxLogs(conn, changedBudgets, holder.getOriginalBudgets(),
+      BudgetAuditEvent.Action.EDIT);
+  }
+
+  private Future<BatchTransactionHolder> processBatchTransactions(Batch batch, DBConn conn, Map<String, String> okapiHeaders) {
     populateMetadata(batch, okapiHeaders);
     try {
       BatchTransactionChecks.sanityChecks(batch);
@@ -92,7 +117,8 @@ public class BatchTransactionService {
       .compose(v -> applyChanges(holder, conn))
       .onSuccess(v -> logger.info("All batch transaction operations were successful."))
       .onFailure(t -> logger.error("Error when batch processing transactions, batch={}",
-        Json.encode(batch), t));
+        Json.encode(batch), t))
+      .map(holder);
   }
 
   private void populateMetadata(Batch batch, Map<String, String> okapiHeaders) {
