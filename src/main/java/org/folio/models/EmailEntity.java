@@ -2,6 +2,7 @@ package org.folio.models;
 
 public class EmailEntity {
   private String notificationId;
+  private String from;
   private String to;
   private String header;
   private String body;
@@ -13,6 +14,14 @@ public class EmailEntity {
 
   public void setNotificationId(String notificationId) {
     this.notificationId = notificationId;
+  }
+
+  public String getFrom() {
+    return from;
+  }
+
+  public void setFrom(String from) {
+    this.from = from;
   }
 
   public String getTo() {

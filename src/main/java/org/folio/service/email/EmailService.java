@@ -11,12 +11,17 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.folio.dao.ledger.LedgerDAO;
 import org.folio.models.EmailEntity;
 import org.folio.rest.core.RestClient;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
+import org.folio.rest.jaxrs.model.Setting;
+import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBConn;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.service.settings.CommonSettingsService;
 import org.folio.utils.EmailOkapiClient;
 
@@ -39,6 +44,9 @@ public class EmailService {
   private static final String USERNAME_KEY = "username";
   private static final String PERSONAL_KEY = "personal";
   private static final String EMAIL_KEY = "email";
+  private static final String SETTINGS_TABLE = "settings";
+  private static final String SETTING_KEY_FIELD = "key";
+  static final String ROLLOVER_EMAIL_FROM_KEY = "ROLLOVER_EMAIL_FROM";
 
   private static final String COMMIT_MESSAGE = "<p>Hi %s,<br><br>The results of your fiscal year rollover from %s " +
     "for %s are ready for review. Click <a href=\"%s\">here</a> to review the results.<br><br>FOLIO</p>";
@@ -52,18 +60,25 @@ public class EmailService {
   public Future<Void> createAndSendEmail(RequestContext requestContext, LedgerFiscalYearRollover rollover, DBConn conn) {
     log.debug("createAndSendEmail:: Trying to create and send email for rollover id: {}, ledger id: {}", rollover.getId(), rollover.getLedgerId());
     return commonSettingsService.getHostAddress(requestContext)
-      .compose(hostAddress -> getCurrentUser(requestContext)
-        .compose(userResponse -> ledgerDAO.getLedgerById(rollover.getLedgerId(), conn)
-          .compose(ledger -> {
-            String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
-            Map<String, String> headers = getHeaders(requestContext);
-            EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse);
-            log.info("createAndSendEmail:: Sending email for rollover id: {}, ledger id: {}", rollover.getId(), rollover.getLedgerId());
+      .compose(hostAddress -> getRolloverEmailFrom(conn)
+        .compose(from -> getCurrentUser(requestContext)
+          .compose(userResponse -> ledgerDAO.getLedgerById(rollover.getLedgerId(), conn)
+            .compose(ledger -> {
+              String linkToRolloverLedger = createRolloverLedgerLink(hostAddress, rollover.getLedgerId());
+              Map<String, String> headers = getHeaders(requestContext);
+              EmailEntity emailEntity = getEmailEntity(rollover, linkToRolloverLedger, ledger.getName(), userResponse, from);
+              log.info("createAndSendEmail:: Sending email for rollover id: {}, ledger id: {}", rollover.getId(), rollover.getLedgerId());
 
-            return sendEmail(requestContext, headers, emailEntity);
-          })))
+              return sendEmail(requestContext, headers, emailEntity);
+            }))))
       .onSuccess(v -> log.info("createAndSendEmail:: Email sent"))
       .onFailure(t -> log.error("createAndSendEmail failed", t));
+  }
+
+  Future<String> getRolloverEmailFrom(DBConn conn) {
+    Criterion criterion = new CriterionBuilder().withJson(SETTING_KEY_FIELD, "=", ROLLOVER_EMAIL_FROM_KEY).build();
+    return conn.get(SETTINGS_TABLE, Setting.class, criterion, false)
+      .map(results -> CollectionUtils.isNotEmpty(results.getResults()) ? results.getResults().getFirst().getValue() : null);
   }
 
   private Future<Void> sendEmail(RequestContext requestContext, Map<String, String> headers, EmailEntity emailEntity) {
@@ -71,10 +86,14 @@ public class EmailService {
     return emailOkapiClient.sendEmail(EMAIL_ENDPOINT, JsonObject.mapFrom(emailEntity).toString());
   }
 
-  private EmailEntity getEmailEntity(LedgerFiscalYearRollover rollover, String linkToRolloverLedger, String ledgerName, JsonObject user) {
+  EmailEntity getEmailEntity(LedgerFiscalYearRollover rollover, String linkToRolloverLedger, String ledgerName, JsonObject user, String from) {
     String email = user.getJsonObject(PERSONAL_KEY).getString(EMAIL_KEY);
     EmailEntity emailEntity = new EmailEntity();
     emailEntity.setNotificationId(UUID.randomUUID().toString());
+    if (StringUtils.isNotBlank(from)) {
+      log.info("getEmailEntity:: Using From address '{}' configured by '{}' setting", from, ROLLOVER_EMAIL_FROM_KEY);
+      emailEntity.setFrom(from);
+    }
     emailEntity.setBody(getRolloverBody(rollover, linkToRolloverLedger, ledgerName, user));
     emailEntity.setHeader(EMAIL_HEADER);
     emailEntity.setTo(email);
