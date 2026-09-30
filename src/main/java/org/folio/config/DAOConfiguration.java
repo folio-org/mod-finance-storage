@@ -1,5 +1,7 @@
 package org.folio.config;
 
+import org.folio.dao.audit.AuditOutboxEventLogDAO;
+import org.folio.dao.audit.AuditOutboxEventLogPostgresDAO;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.dao.budget.BudgetExpenseClassDAO;
 import org.folio.dao.budget.BudgetExpenseClassDAOImpl;
@@ -33,6 +35,11 @@ import org.folio.dao.transactions.TransactionTotalPostgresDAO;
 import org.springframework.context.annotation.Bean;
 
 public class DAOConfiguration {
+
+  @Bean
+  public AuditOutboxEventLogDAO auditOutboxEventLogDAO() {
+    return new AuditOutboxEventLogPostgresDAO();
+  }
 
   @Bean
   public BudgetDAO budgetDAO() {

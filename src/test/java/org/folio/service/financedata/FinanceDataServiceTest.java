@@ -9,8 +9,10 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,14 +30,17 @@ import io.vertx.junit5.VertxTestContext;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.BudgetAuditEvent;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
+import org.folio.rest.jaxrs.model.FundAuditEvent;
 import org.folio.rest.jaxrs.model.FundTags;
 import org.folio.rest.jaxrs.model.FyFinanceData;
 import org.folio.rest.jaxrs.model.FyFinanceDataCollection;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBConn;
+import org.folio.service.audit.AuditOutboxService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
@@ -45,6 +50,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -66,6 +72,8 @@ public class FinanceDataServiceTest {
   private DBClient dbClient;
   @Mock
   private DBConn dbConn;
+  @Mock
+  private AuditOutboxService auditOutboxService;
 
   @InjectMocks
   private FinanceDataService financeDataService;
@@ -75,6 +83,8 @@ public class FinanceDataServiceTest {
   @BeforeEach
   void setUp() {
     mockitoMocks = MockitoAnnotations.openMocks(this);
+    when(auditOutboxService.saveFundOutboxLogs(any(), any(), any(), any())).thenReturn(Future.succeededFuture());
+    when(auditOutboxService.saveBudgetOutboxLogs(any(), any(), any(), any())).thenReturn(Future.succeededFuture());
   }
 
   @AfterEach
@@ -233,6 +243,16 @@ public class FinanceDataServiceTest {
           assertEquals(Budget.BudgetStatus.INACTIVE, updatedBudget1.getBudgetStatus());
           assertEquals(90.0, updatedBudget1.getAllowableExpenditure());
           assertEquals(80.0, updatedBudget1.getAllowableEncumbrance());
+
+          // one audit log per changed fund: fund2 has no changes
+          verify(auditOutboxService).saveFundOutboxLogs(eq(dbConn), argThat(withIds(Fund::getId, fundId1)), any(),
+            eq(FundAuditEvent.Action.EDIT));
+          // one audit log per budget for the whole operation: Create for the new budget, Edit for the existing one
+          var newBudgetId = dataWithNullBudgetId.getBudgetId();
+          verify(auditOutboxService).saveBudgetOutboxLogs(eq(dbConn), argThat(withIds(Budget::getId, newBudgetId)),
+            eq(List.of()), eq(BudgetAuditEvent.Action.CREATE));
+          verify(auditOutboxService).saveBudgetOutboxLogs(eq(dbConn), argThat(withIds(Budget::getId, budgetId1)), any(),
+            eq(BudgetAuditEvent.Action.EDIT));
         });
         testContext.completeNow();
       })));
@@ -318,6 +338,10 @@ public class FinanceDataServiceTest {
       .thenReturn(Future.succeededFuture(fiscalYear));
   }
 
+  private static <T> ArgumentMatcher<List<T>> withIds(Function<T, String> idGetter, String... ids) {
+    return entities -> entities.stream().map(idGetter).toList().equals(List.of(ids));
+  }
+
   private void setupMocksForFailure(RuntimeException expectedError, FiscalYear fiscalYear) {
     when(requestContext.toDBClient()).thenReturn(dbClient);
     when(dbClient.withTrans(any()))
@@ -360,7 +384,8 @@ public class FinanceDataServiceTest {
 
   private void verifyBudgetUpdates(FyFinanceDataCollection collection) {
     ArgumentCaptor<List<String>> budgetIdsCaptor = ArgumentCaptor.forClass(List.class);
-    verify(budgetService).getBudgetsByIds(budgetIdsCaptor.capture(), eq(dbConn));
+    // the budgets are read before the update and again after all the changes, for the audit
+    verify(budgetService, times(2)).getBudgetsByIds(budgetIdsCaptor.capture(), eq(dbConn));
     assertEquals(collection.getFyFinanceData().getFirst().getBudgetId(), budgetIdsCaptor.getValue().getFirst());
 
     ArgumentCaptor<List<Budget>> budgetCaptor = ArgumentCaptor.forClass(List.class);

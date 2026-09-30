@@ -21,11 +21,13 @@ import org.apache.logging.log4j.Logger;
 import org.folio.dao.budget.BudgetDAO;
 import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.BudgetAuditEvent;
 import org.folio.rest.jaxrs.model.LedgerFiscalYearRollover;
 import org.folio.rest.persist.CriterionBuilder;
 import org.folio.rest.persist.DBClient;
 import org.folio.rest.persist.DBClientFactory;
 import org.folio.rest.persist.DBConn;
+import org.folio.service.audit.AuditOutboxService;
 import org.folio.service.group.GroupService;
 import org.folio.utils.CalculationUtils;
 
@@ -45,19 +47,35 @@ public class BudgetService {
   private final DBClientFactory dbClientFactory;
   private final GroupService groupService;
   private final BudgetDAO budgetDAO;
+  private final AuditOutboxService auditOutboxService;
 
-  public BudgetService(DBClientFactory dbClientFactory, BudgetDAO budgetDAO, GroupService groupService) {
+  public BudgetService(DBClientFactory dbClientFactory, BudgetDAO budgetDAO, GroupService groupService,
+      AuditOutboxService auditOutboxService) {
     this.dbClientFactory = dbClientFactory;
     this.budgetDAO = budgetDAO;
     this.groupService = groupService;
+    this.auditOutboxService = auditOutboxService;
   }
 
   public Future<Budget> createBudget(Budget entity, RequestContext requestContext) {
     DBClient client = dbClientFactory.getDbClient(requestContext);
+    var okapiHeaders = requestContext.getHeaders();
     return client.withTrans(conn -> budgetDAO.createBudget(entity, conn)
-      .compose(budget -> groupService.updateBudgetIdForGroupFundFiscalYears(budget, conn)
-        .map(v -> budget))
-    );
+        .compose(budget -> groupService.updateBudgetIdForGroupFundFiscalYears(budget, conn)
+          .compose(v -> auditOutboxService.saveBudgetOutboxLog(conn, budget, BudgetAuditEvent.Action.CREATE))
+          .map(budget)))
+      .onSuccess(budget -> auditOutboxService.processOutboxEventLogs(okapiHeaders, requestContext.getContext()));
+  }
+
+  public Future<Void> updateBudget(Budget budget, RequestContext requestContext) {
+    logger.debug("updateBudget:: Trying to update budget '{}'", budget.getId());
+    var okapiHeaders = requestContext.getHeaders();
+    return dbClientFactory.getDbClient(requestContext)
+      .withTrans(conn -> budgetDAO.getBudgetById(budget.getId(), conn)
+        .compose(originalBudget -> budgetDAO.updateBudget(budget, conn)
+          .compose(v -> auditOutboxService
+            .saveBudgetOutboxLog(conn, budget, originalBudget, BudgetAuditEvent.Action.EDIT))))
+      .onSuccess(v -> auditOutboxService.processOutboxEventLogs(okapiHeaders, requestContext.getContext()));
   }
 
   public void deleteById(String id, Context vertxContext, Map<String, String> headers,

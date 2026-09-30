@@ -1,0 +1,20 @@
+#%RAML 1.0
+title: Audit outbox API
+version: v1.0
+protocols: [ HTTP, HTTPS ]
+baseUri: http://github.com/folio-org/mod-finance-storage
+
+documentation:
+  - title: Audit outbox API
+    content: This API is intended for internal use only by the Timer interface
+
+types:
+  outbox-event-log: !include acq-models/mod-finance-storage/schemas/outbox_event_log.json
+  fund-audit-event: !include acq-models/mod-finance-storage/schemas/fund_audit_event.json
+  budget-audit-event: !include acq-models/mod-finance-storage/schemas/budget_audit_event.json
+  event-topic: !include acq-models/mod-finance-storage/schemas/event_topic.json
+
+/finance-storage/audit-outbox:
+  /process:
+    post:
+      description: Read audit events from DB and send them to Kafka

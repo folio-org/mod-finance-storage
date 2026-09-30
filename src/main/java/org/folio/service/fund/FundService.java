@@ -8,6 +8,7 @@ import org.folio.rest.persist.DBConn;
 import java.util.List;
 
 public interface FundService {
+  Future<Fund> createFund(Fund fund, RequestContext requestContext);
   Future<Fund> getFundById(String fundId, DBConn conn);
   Future<List<Fund>> getFundsByIds(List<String> ids, DBConn conn);
   Future<Void> updateFund(Fund fund, RequestContext requestContext);

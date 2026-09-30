@@ -3,14 +3,19 @@ package org.folio.service.financedata;
 import static io.vertx.core.Future.succeededFuture;
 import static java.util.Objects.requireNonNullElse;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+import static org.folio.utils.AuditUtils.getChangedEntities;
+import static org.folio.utils.MetadataUtils.generateMetadata;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -21,8 +26,10 @@ import org.folio.rest.core.model.RequestContext;
 import org.folio.rest.exception.HttpException;
 import org.folio.rest.jaxrs.model.Batch;
 import org.folio.rest.jaxrs.model.Budget;
+import org.folio.rest.jaxrs.model.BudgetAuditEvent;
 import org.folio.rest.jaxrs.model.FiscalYear;
 import org.folio.rest.jaxrs.model.Fund;
+import org.folio.rest.jaxrs.model.FundAuditEvent;
 import org.folio.rest.jaxrs.model.FyFinanceData;
 import org.folio.rest.jaxrs.model.FyFinanceDataCollection;
 import org.folio.rest.jaxrs.model.Metadata;
@@ -30,6 +37,7 @@ import org.folio.rest.jaxrs.model.Tags;
 import org.folio.rest.jaxrs.model.Transaction;
 import org.folio.rest.persist.DBConn;
 import org.folio.rest.util.ErrorCodes;
+import org.folio.service.audit.AuditOutboxService;
 import org.folio.service.budget.BudgetService;
 import org.folio.service.fiscalyear.FiscalYearService;
 import org.folio.service.fund.FundService;
@@ -42,13 +50,15 @@ public class FinanceDataService {
   private final BudgetService budgetService;
   private final FiscalYearService fiscalYearService;
   private final BatchTransactionService batchTransactionService;
+  private final AuditOutboxService auditOutboxService;
 
   public FinanceDataService(FundService fundService, BudgetService budgetService, FiscalYearService fiscalYearService,
-                            BatchTransactionService batchTransactionService) {
+                            BatchTransactionService batchTransactionService, AuditOutboxService auditOutboxService) {
     this.fundService = fundService;
     this.budgetService = budgetService;
     this.fiscalYearService = fiscalYearService;
     this.batchTransactionService = batchTransactionService;
+    this.auditOutboxService = auditOutboxService;
   }
 
   public Future<FyFinanceDataCollection> update(FyFinanceDataCollection entity, RequestContext requestContext) {
@@ -57,12 +67,18 @@ public class FinanceDataService {
     }
     var dbClient = requestContext.toDBClient();
     Map<String, String> okapiHeaders = requestContext.getHeaders();
+    // collected before the budgets are created, as their ids are then set in the finance data
+    var existingBudgetIds = Set.copyOf(getBudgetIds(entity));
     return dbClient
       .withTrans(conn -> fiscalYearService.getFiscalYearById(getFiscalYearId(entity), conn)
         .compose(fiscalYear -> createBudgetsIfNeeded(entity, fiscalYear, conn, okapiHeaders)
-          .compose(v -> updateFundAndBudget(entity, conn))
-          .compose(v -> processAllocationTransaction(entity, fiscalYear, conn, okapiHeaders))))
-      .onSuccess(v -> logger.info("update:: Successfully updated finance data"))
+          .compose(v -> updateFundAndBudget(entity, conn, okapiHeaders))
+          .compose(originalBudgets -> processAllocationTransaction(entity, fiscalYear, conn, okapiHeaders)
+            .compose(v -> saveBudgetOutboxLogs(entity, existingBudgetIds, originalBudgets, conn)))))
+      .onSuccess(v -> {
+        logger.info("update:: Successfully updated finance data");
+        auditOutboxService.processOutboxEventLogs(okapiHeaders, requestContext.getContext());
+      })
       .onFailure(e -> logger.error("Failed to update finance data", e))
       .map(v -> entity);
   }
@@ -149,35 +165,91 @@ public class FinanceDataService {
     budget.setMetadata(md);
   }
 
-  private Future<Void> updateFundAndBudget(FyFinanceDataCollection entity, DBConn conn) {
-    var updateFundFuture = processFundUpdate(entity, conn);
-    var updateBudgetFuture = processBudgetUpdate(entity, conn);
-    return Future.all(List.of(updateFundFuture, updateBudgetFuture))
-      .mapEmpty();
+  private Future<List<Budget>> updateFundAndBudget(FyFinanceDataCollection entity, DBConn conn, Map<String, String> okapiHeaders) {
+    var updateMetadata = generateMetadata(okapiHeaders);
+    var updateFundFuture = processFundUpdate(entity, conn, updateMetadata);
+    var updateBudgetFuture = processBudgetUpdate(entity, conn, updateMetadata);
+    return Future.all(updateFundFuture, updateBudgetFuture)
+      .map(v -> updateBudgetFuture.result());
   }
 
-  private Future<Void> processFundUpdate(FyFinanceDataCollection entity, DBConn conn) {
+  private Future<Void> processFundUpdate(FyFinanceDataCollection entity, DBConn conn, Metadata updateMetadata) {
     List<String> fundIds = entity.getFyFinanceData().stream()
       .map(FyFinanceData::getFundId)
       .toList();
     return fundService.getFundsByIds(fundIds, conn)
-      .map(funds -> setNewValuesForFunds(funds, entity))
-      .compose(funds -> fundService.updateFunds(funds, conn))
+      .compose(funds -> {
+        var originalFunds = copyAll(funds, Fund.class);
+        var updatedFunds = setNewValuesForFunds(funds, entity);
+        updatedFunds.forEach(fund -> fund.setMetadata(withUpdateMetadata(fund.getMetadata(), updateMetadata)));
+        // funds are changed only here, so their audit logs can be saved right away
+        return fundService.updateFunds(updatedFunds, conn)
+          .compose(v -> auditOutboxService.saveFundOutboxLogs(conn,
+            getChangedEntities(updatedFunds, originalFunds, Fund::getId), originalFunds, FundAuditEvent.Action.EDIT));
+      })
       .recover(t -> Future.failedFuture(new HttpException(500, ErrorCodes.FAILED_TO_UPDATE_FUNDS, t)));
   }
 
-  private Future<Void> processBudgetUpdate(FyFinanceDataCollection entity, DBConn conn) {
-    List<String> budgetIds = entity.getFyFinanceData().stream()
-      .map(FyFinanceData::getBudgetId)
-      .filter(Objects::nonNull)
-      .toList();
+  private Future<List<Budget>> processBudgetUpdate(FyFinanceDataCollection entity, DBConn conn, Metadata updateMetadata) {
+    List<String> budgetIds = getBudgetIds(entity);
+    if (budgetIds.isEmpty()) {
+      return succeededFuture(List.of());
+    }
+    return budgetService.getBudgetsByIds(budgetIds, conn)
+      .compose(budgets -> {
+        var originalBudgets = copyAll(budgets, Budget.class);
+        var updatedBudgets = setNewValuesForBudgets(budgets, entity);
+        updatedBudgets.forEach(budget -> budget.setMetadata(withUpdateMetadata(budget.getMetadata(), updateMetadata)));
+        return budgetService.updateBatchBudgets(updatedBudgets, conn, false)
+          .map(originalBudgets);
+      })
+      .recover(t -> Future.failedFuture(new HttpException(500, ErrorCodes.FAILED_TO_UPDATE_BUDGETS, t)));
+  }
+
+  private Future<Void> saveBudgetOutboxLogs(FyFinanceDataCollection entity, Set<String> existingBudgetIds,
+                                            List<Budget> originalBudgets, DBConn conn) {
+    List<String> budgetIds = getBudgetIds(entity);
     if (budgetIds.isEmpty()) {
       return succeededFuture();
     }
+    var originalExistingBudgets = originalBudgets.stream()
+      .filter(budget -> existingBudgetIds.contains(budget.getId()))
+      .toList();
     return budgetService.getBudgetsByIds(budgetIds, conn)
-      .map(budgets -> setNewValuesForBudgets(budgets, entity))
-      .compose(budgets -> budgetService.updateBatchBudgets(budgets, conn, false))
-      .recover(t -> Future.failedFuture(new HttpException(500, ErrorCodes.FAILED_TO_UPDATE_BUDGETS, t)));
+      .compose(budgets -> {
+        var createdBudgets = budgets.stream()
+          .filter(budget -> !existingBudgetIds.contains(budget.getId()))
+          .toList();
+        var changedBudgets = getChangedEntities(
+          budgets.stream().filter(budget -> existingBudgetIds.contains(budget.getId())).toList(),
+          originalExistingBudgets, Budget::getId);
+        return auditOutboxService.saveBudgetOutboxLogs(conn, createdBudgets, List.of(), BudgetAuditEvent.Action.CREATE)
+          .compose(v -> auditOutboxService.saveBudgetOutboxLogs(conn, changedBudgets, originalExistingBudgets,
+            BudgetAuditEvent.Action.EDIT));
+      });
+  }
+
+  private List<String> getBudgetIds(FyFinanceDataCollection entity) {
+    return entity.getFyFinanceData().stream()
+      .map(FyFinanceData::getBudgetId)
+      .filter(Objects::nonNull)
+      .toList();
+  }
+
+  private <T> List<T> copyAll(List<T> entities, Class<T> clazz) {
+    return entities.stream()
+      .map(entity -> JsonObject.mapFrom(entity).mapTo(clazz))
+      .toList();
+  }
+
+  /**
+   * Batch updates do not populate metadata automatically, so the updated date and user are set here.
+   * They are used as the action date and the user of the audit events.
+   */
+  private Metadata withUpdateMetadata(Metadata metadata, Metadata updateMetadata) {
+    return Optional.ofNullable(metadata).orElseGet(Metadata::new)
+      .withUpdatedDate(updateMetadata.getUpdatedDate())
+      .withUpdatedByUserId(updateMetadata.getUpdatedByUserId());
   }
 
   private List<Fund> setNewValuesForFunds(List<Fund> funds, FyFinanceDataCollection entity) {
