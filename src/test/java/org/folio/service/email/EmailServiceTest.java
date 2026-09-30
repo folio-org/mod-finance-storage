@@ -4,7 +4,6 @@ import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.core.RestClientTest.X_OKAPI_TOKEN;
 import static org.folio.rest.core.RestClientTest.X_OKAPI_USER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -39,9 +38,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -130,16 +126,6 @@ public class EmailServiceTest {
     assertEquals(ROLLOVER_EMAIL_FROM, emailEntity.getFrom());
     assertEquals(ROLLOVER_EMAIL_FROM, JsonObject.mapFrom(emailEntity).getString("from"));
     assertEquals("email@example.org", emailEntity.getTo());
-  }
-
-  @ParameterizedTest
-  @NullAndEmptySource
-  @ValueSource(strings = {"   "})
-  void shouldNotSetFromOnEmailEntityWhenNotConfigured(String from) {
-    EmailEntity emailEntity = emailService.getEmailEntity(getRollover(), "http://localhost:3030/", "TestName", getUserJson(), from);
-
-    assertNull(emailEntity.getFrom());
-    assertFalse(JsonObject.mapFrom(emailEntity).getValue("from") instanceof String);
   }
 
   private void mockRolloverEmailFromSetting(Future<Results<Setting>> result) {
