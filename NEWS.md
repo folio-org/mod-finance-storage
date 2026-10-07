@@ -1,3 +1,8 @@
+## WIP
+
+### Stories
+* [MODFISTO-568](https://folio-org.atlassian.net/browse/MODFISTO-568) - Upgrade from Java 21 to Java 25
+
 ## 8.9.0 - Released (Trillium R1 2025)
 The primary focus of this release was to upgrade to Vert.x 5.0, implement batch endpoints, alternate exchange rate API and fix encumbrance issues.
 
