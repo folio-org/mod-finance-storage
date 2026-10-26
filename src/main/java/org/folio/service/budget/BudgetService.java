@@ -106,6 +106,9 @@ public class BudgetService {
   }
 
   public Future<Void> updateBatchBudgets(List<Budget> budgets, DBConn conn, boolean clearReadOnlyFields) {
+    if (budgets.isEmpty()) {
+      return Future.succeededFuture();
+    }
     if (Boolean.TRUE.equals(clearReadOnlyFields)) {
       budgets.forEach(this::clearReadOnlyFields);
     }
