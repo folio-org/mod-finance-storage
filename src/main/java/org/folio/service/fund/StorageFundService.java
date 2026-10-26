@@ -64,6 +64,9 @@ public class StorageFundService implements FundService {
 
   @Override
   public Future<Void> updateFunds(List<Fund> funds, DBConn conn) {
+    if (funds.isEmpty()) {
+      return Future.succeededFuture();
+    }
     logger.debug("updateFunds:: Trying to update '{}' fund(s) with minimal changes", funds.size());
     return fundDAO.updateFunds(funds, conn);
   }

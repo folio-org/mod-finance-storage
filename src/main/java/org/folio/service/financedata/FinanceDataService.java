@@ -180,12 +180,11 @@ public class FinanceDataService {
     return fundService.getFundsByIds(fundIds, conn)
       .compose(funds -> {
         var originalFunds = copyAll(funds, Fund.class);
-        var updatedFunds = setNewValuesForFunds(funds, entity);
-        updatedFunds.forEach(fund -> fund.setMetadata(withUpdateMetadata(fund.getMetadata(), updateMetadata)));
+        var changedFunds = getChangedEntities(setNewValuesForFunds(funds, entity), originalFunds, Fund::getId);
+        changedFunds.forEach(fund -> fund.setMetadata(withUpdateMetadata(fund.getMetadata(), updateMetadata)));
         // funds are changed only here, so their audit logs can be saved right away
-        return fundService.updateFunds(updatedFunds, conn)
-          .compose(v -> auditOutboxService.saveFundOutboxLogs(conn,
-            getChangedEntities(updatedFunds, originalFunds, Fund::getId), originalFunds, FundAuditEvent.Action.EDIT));
+        return fundService.updateFunds(changedFunds, conn)
+          .compose(v -> auditOutboxService.saveFundOutboxLogs(conn, changedFunds, originalFunds, FundAuditEvent.Action.EDIT));
       })
       .recover(t -> Future.failedFuture(new HttpException(500, ErrorCodes.FAILED_TO_UPDATE_FUNDS, t)));
   }
@@ -198,9 +197,9 @@ public class FinanceDataService {
     return budgetService.getBudgetsByIds(budgetIds, conn)
       .compose(budgets -> {
         var originalBudgets = copyAll(budgets, Budget.class);
-        var updatedBudgets = setNewValuesForBudgets(budgets, entity);
-        updatedBudgets.forEach(budget -> budget.setMetadata(withUpdateMetadata(budget.getMetadata(), updateMetadata)));
-        return budgetService.updateBatchBudgets(updatedBudgets, conn, false)
+        var changedBudgets = getChangedEntities(setNewValuesForBudgets(budgets, entity), originalBudgets, Budget::getId);
+        changedBudgets.forEach(budget -> budget.setMetadata(withUpdateMetadata(budget.getMetadata(), updateMetadata)));
+        return budgetService.updateBatchBudgets(changedBudgets, conn, false)
           .map(originalBudgets);
       })
       .recover(t -> Future.failedFuture(new HttpException(500, ErrorCodes.FAILED_TO_UPDATE_BUDGETS, t)));

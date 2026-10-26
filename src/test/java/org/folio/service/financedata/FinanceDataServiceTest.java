@@ -231,8 +231,9 @@ public class FinanceDataServiceTest {
         testContext.verify(() -> {
           ArgumentCaptor<List<Fund>> fundCaptor = ArgumentCaptor.forClass(List.class);
           verify(fundService).updateFunds(fundCaptor.capture(), eq(dbConn));
-          Fund updatedFund1 = fundCaptor.getValue().stream()
-            .filter(f -> f.getId().equals(fundId1)).findFirst().orElseThrow();
+          // fund2 has no changes, so it is not saved and its metadata is kept
+          assertEquals(List.of(fundId1), fundCaptor.getValue().stream().map(Fund::getId).toList());
+          Fund updatedFund1 = fundCaptor.getValue().get(0);
           assertEquals(Fund.FundStatus.INACTIVE, updatedFund1.getFundStatus());
           assertEquals("Updated Desc", updatedFund1.getDescription());
 
