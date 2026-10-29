@@ -880,7 +880,7 @@ async def fix_encumbrance_properties_for_open_and_pending_orders(fiscal_year_id)
 
 
 # ---------------------------------------------------
-# Remove pending order links to encumbrances in previous fiscal years
+# Remove open and pending order links to encumbrances in previous fiscal years
 
 async def get_orders_encumbrances_with_different_fy(order_ids, fiscal_year_id) -> list:
     url = okapi_url + 'finance-storage/transactions'
@@ -925,7 +925,7 @@ async def remove_links_to_encumbrances(encumbrances) -> list:
     return modifications
 
 
-async def remove_pending_order_links(order_ids, fiscal_year_id, sem) -> list:
+async def remove_order_links(order_ids, fiscal_year_id, sem) -> list:
     modifications = []
     encumbrances = await get_orders_encumbrances_with_different_fy(order_ids, fiscal_year_id)
     filtered_encumbrances = await select_encumbrances_without_active_budgets(encumbrances)
@@ -935,17 +935,17 @@ async def remove_pending_order_links(order_ids, fiscal_year_id, sem) -> list:
     return modifications
 
 
-async def remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_ids, fiscal_year_id):
-    print('\nRemove pending order links to encumbrances in previous fiscal years...')
-    if len(pending_orders_ids) == 0:
-        print('  Found no pending orders.')
+async def remove_order_links_to_encumbrances_in_other_fy(open_and_pending_orders_ids, fiscal_year_id):
+    print('\nRemove open and pending order links to encumbrances in previous fiscal years...')
+    if len(open_and_pending_orders_ids) == 0:
+        print('  Found no open or pending orders.')
         return
     fix_encumbrance_futures = []
     sem = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
-    for idx, order_ids in enumerate(chunks(pending_orders_ids, IDS_CHUNK)):
+    for idx, order_ids in enumerate(chunks(open_and_pending_orders_ids, IDS_CHUNK)):
         await sem.acquire()
-        progress(idx, len(pending_orders_ids))
-        fixed_encumbrance_future = asyncio.ensure_future(remove_pending_order_links(order_ids, fiscal_year_id, sem))
+        progress(idx, len(open_and_pending_orders_ids))
+        fixed_encumbrance_future = asyncio.ensure_future(remove_order_links(order_ids, fiscal_year_id, sem))
         fix_encumbrance_futures.append(fixed_encumbrance_future)
     modifications = flatten(await asyncio.gather(*fix_encumbrance_futures))
     end_progress()
@@ -1202,7 +1202,7 @@ async def all_operations(closed_orders_ids, open_orders_ids, pending_orders_ids,
         print_hr()
         await fix_encumbrance_properties_for_open_and_pending_orders(fiscal_year_id)
         print_hr()
-        await remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_ids, fiscal_year_id)
+        await remove_order_links_to_encumbrances_in_other_fy(open_orders_ids + pending_orders_ids, fiscal_year_id)
     print_hr()
     await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
     print_hr()
@@ -1279,10 +1279,11 @@ async def run_operation(choice, fiscal_year_code):
             await fix_encumbrance_properties_for_open_and_pending_orders(fiscal_year_id)
     elif choice == 6:
         if not fy_is_current:
-            print('Fiscal year is not current - removing pending orders encumbrance links is not needed.')
+            print('Fiscal year is not current - removing order encumbrance links is not needed.')
         else:
+            open_orders_ids = await get_ids_of_orders_with_status('Open')
             pending_orders_ids = await get_ids_of_orders_with_status('Pending')
-            await remove_pending_order_links_to_encumbrances_in_other_fy(pending_orders_ids, fiscal_year_id)
+            await remove_order_links_to_encumbrances_in_other_fy(open_orders_ids + pending_orders_ids, fiscal_year_id)
     elif choice == 7:
         open_orders_ids = await get_ids_of_orders_with_status('Open')
         await unrelease_open_orders_encumbrances_with_nonzero_amounts(fiscal_year_id, open_orders_ids)
@@ -1312,7 +1313,7 @@ def menu(fiscal_year_code):
     print('3) Fix order line - encumbrance relations')
     print('4) Fix encumbrance order status for closed orders (current fiscal year only)')
     print('5) Fix encumbrance properties for open and pending orders (current fiscal year only)')
-    print('6) Remove pending order links to encumbrances in previous fiscal years (current fiscal year only)')
+    print('6) Remove open and pending order links to encumbrances in previous fiscal years (current fiscal year only)')
     print('7) Unrelease open order encumbrances with nonzero amounts')
     print('8) Release open order encumbrances with negative amounts')
     print('9) Release cancelled order line encumbrances')
