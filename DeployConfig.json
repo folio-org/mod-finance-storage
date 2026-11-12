@@ -178,16 +178,16 @@
       {
         "name": "KAFKA_HOST",
         "value": null,
-        "description": "Kafka broker host for fund and budget audit events (module default 'kafka'). Not set in bugfest, whose 8.9.1 image predates these events.",
+        "description": "Kafka broker host for fund and budget audit events.",
         "type": "KAFKA",
-        "essential": false
+        "essential": true
       },
       {
         "name": "KAFKA_PORT",
         "value": "9092",
         "description": "Kafka broker port.",
         "type": "KAFKA",
-        "essential": false
+        "essential": true
       },
       {
         "name": "MAX_REQUEST_SIZE",
@@ -227,7 +227,7 @@
       {
         "name": "JAVA_OPTIONS",
         "value": null,
-        "description": "JVM options; the only variable read by run-java.sh in the folioci/alpine-jre-openjdk21 image (JAVA_OPTS is ignored).",
+        "description": "JVM options for the module process (heap sizing from the java block, GC and -D system properties).",
         "type": "CONFIG",
         "essential": false
       },
