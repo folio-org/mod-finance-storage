@@ -1,0 +1,482 @@
+{
+  "description": "mod-finance-storage configuration template. Default values are calibrated against a reference bugfest environment (tebfcon-mod-finance-storage revision 15, image 8.9.1); see ADR-0013 (Module configuration management). mod-finance-storage is an RMB (Vert.x) module: PostgreSQL settings are read by RMB, and Kafka is used only to publish fund and budget audit events. Resource values and JVM limits must be adjusted to the target host capacity.",
+  "moduleDefaults": {
+    "resources": [
+      {
+        "name": "cpu",
+        "value": "64",
+        "description": "CPU request/limit for the mod-finance-storage container"
+      },
+      {
+        "name": "memory",
+        "value": "1024",
+        "description": "Memory hard limit for the mod-finance-storage container in MiB"
+      },
+      {
+        "name": "memoryReservation",
+        "value": "896",
+        "description": "Memory reservation (soft limit) for the mod-finance-storage container in MiB"
+      }
+    ],
+    "java": [
+      {
+        "name": "xmx",
+        "value": "700m",
+        "description": "Maximum Java heap size. Value taken from bugfest; with MaxMetaspaceSize it leaves about 196 MiB of the container for non-heap memory"
+      },
+      {
+        "name": "MaxMetaspaceSize",
+        "value": "128m",
+        "description": "Maximum Java metaspace size. Value taken from bugfest"
+      },
+      {
+        "name": "MetaspaceSize",
+        "value": "88m",
+        "description": "Initial Java metaspace size (threshold for the first metaspace GC, not a limit). Value taken from bugfest"
+      }
+    ],
+    "deployment": {
+      "isHaSupported": true,
+      "replicasRecommendedCount": 2,
+      "description": "All state is in PostgreSQL and the audit outbox is drained with SELECT ... FOR UPDATE SKIP LOCKED, so replicas can run side by side. The only in-memory state is a short-lived settings cache. Two replicas are recommended for availability."
+    },
+    "kong": {
+      "timeouts": {
+        "connect": "60s",
+        "send": "60s",
+        "read": "60s"
+      },
+      "description": "Default Kong proxy timeouts are sufficient for mod-finance-storage, including batch transaction and rollover endpoints."
+    },
+    "EnvVars": [
+      {
+        "name": "DB_HOST",
+        "value": null,
+        "description": "PostgreSQL host (primary, read-write).",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_PORT",
+        "value": "5432",
+        "description": "PostgreSQL port.",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_USERNAME",
+        "value": null,
+        "description": "PostgreSQL user (from the secret store); needs rights to create tenant schemas.",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_PASSWORD",
+        "value": null,
+        "description": "PostgreSQL password (from the secret store).",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_DATABASE",
+        "value": null,
+        "description": "PostgreSQL database holding the per-tenant mod-finance-storage schemas.",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_MAXPOOLSIZE",
+        "value": "20",
+        "description": "Maximum connections per tenant pool (RMB). Value taken from bugfest; RMB default is 4.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_MAXSHAREDPOOLSIZE",
+        "value": null,
+        "description": "When set, all tenants share one RMB connection pool of this size instead of per-tenant pools.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_CONNECTIONRELEASEDELAY",
+        "value": "60000",
+        "description": "Idle time in ms before RMB closes a pooled connection (RMB default 60000; 0 keeps connections open).",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_MAX_LIFETIME",
+        "value": "1800000",
+        "description": "Maximum lifetime of a pooled connection in ms (RMB default 1800000).",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_RECONNECTATTEMPTS",
+        "value": null,
+        "description": "Number of reconnect attempts on connection failure; when unset the Vert.x default (0) applies.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_RECONNECTINTERVAL",
+        "value": null,
+        "description": "Interval in ms between reconnect attempts; when unset the Vert.x default (1000) applies.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_EXPLAIN_QUERY_THRESHOLD",
+        "value": "300000",
+        "description": "Queries slower than this many ms are logged with EXPLAIN ANALYZE. Value taken from bugfest; RMB default is 1000.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_ALLOW_SUPPRESS_OPTIMISTIC_LOCKING",
+        "value": null,
+        "description": "Timestamp until which clients may suppress RMB optimistic locking (for data migration); unset means never.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_SERVER_PEM",
+        "value": null,
+        "description": "PEM certificate of the PostgreSQL server; when set, connections use TLS.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_HOST_READER",
+        "value": null,
+        "description": "Optional read-only replica host for synchronous reads; unset means all reads go to DB_HOST.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_PORT_READER",
+        "value": null,
+        "description": "Port of the read-only replica; defaults to DB_PORT.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_HOST_READER_ASYNC",
+        "value": null,
+        "description": "Optional asynchronously replicated read-only host for lag-tolerant reads.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_PORT_READER_ASYNC",
+        "value": null,
+        "description": "Port of the asynchronous read-only replica.",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "KAFKA_HOST",
+        "value": null,
+        "description": "Kafka broker host for fund and budget audit events (module default 'kafka'). Not set in bugfest, whose 8.9.1 image predates these events.",
+        "type": "KAFKA",
+        "essential": false
+      },
+      {
+        "name": "KAFKA_PORT",
+        "value": "9092",
+        "description": "Kafka broker port.",
+        "type": "KAFKA",
+        "essential": false
+      },
+      {
+        "name": "MAX_REQUEST_SIZE",
+        "value": "1048576",
+        "description": "Maximum size in bytes of a produced Kafka record (producer max.request.size).",
+        "type": "KAFKA",
+        "essential": false
+      },
+      {
+        "name": "REPLICATION_FACTOR",
+        "value": "1",
+        "description": "Passed to the Kafka config but currently unused: the module does not create its topics.",
+        "type": "KAFKA",
+        "essential": false
+      },
+      {
+        "name": "KAFKA_PRODUCER_TENANT_COLLECTION",
+        "value": "ALL",
+        "description": "Enables tenant collection topics ({ENV}.Default.{value}.{EVENT}); must match [A-Z][A-Z0-9]{0,30}. Value taken from bugfest; unset means per-tenant topics.",
+        "type": "KAFKA",
+        "essential": false
+      },
+      {
+        "name": "ENV",
+        "value": null,
+        "description": "Environment name: Kafka topic prefix and first segment of secure store keys (module default 'folio').",
+        "type": "CONFIG",
+        "essential": true
+      },
+      {
+        "name": "OKAPI_URL",
+        "value": "http://okapi:9130",
+        "description": "Passed to the Kafka config but currently unused; outgoing calls use the x-okapi-url request header.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "JAVA_OPTIONS",
+        "value": null,
+        "description": "JVM options; the only variable read by run-java.sh in the folioci/alpine-jre-openjdk21 image (JAVA_OPTS is ignored).",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "LOG4J_CONFIGURATION_FILE",
+        "value": null,
+        "description": "Path or URL of an external Log4j2 configuration overriding the bundled log4j2.properties.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "loadReference",
+        "value": "false",
+        "description": "Default for loading reference data on tenant init; the loadReference tenant parameter takes precedence.",
+        "type": "FUNCTIONAL",
+        "essential": false
+      },
+      {
+        "name": "loadSample",
+        "value": "false",
+        "description": "Default for loading sample data on tenant init; the loadSample tenant parameter takes precedence.",
+        "type": "FUNCTIONAL",
+        "essential": false
+      },
+      {
+        "name": "FINANCE_STORAGE_CACHE_SETTINGS_EXPIRATION_TIME_SECONDS",
+        "value": "30",
+        "description": "Expiration in seconds of the in-memory finance settings cache (Spring property finance.storage.cache.settings.expiration.time.seconds).",
+        "type": "FUNCTIONAL",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_TYPE",
+        "value": null,
+        "description": "Secure store for exchange rate API credentials: EPHEMERAL (default; credentials kept in the DB), AWS_SSM, VAULT or FSSP.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_AWS_SSM_REGION",
+        "value": null,
+        "description": "AWS region of the SSM client; required when SECRET_STORE_TYPE=AWS_SSM.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_AWS_SSM_USE_IAM",
+        "value": "true",
+        "description": "Use the task IAM role for SSM instead of explicit credentials.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT",
+        "value": null,
+        "description": "HTTP endpoint for AWS credentials; ignored when SECRET_STORE_AWS_SSM_USE_IAM is true.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH",
+        "value": null,
+        "description": "Path appended to SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_TOKEN",
+        "value": null,
+        "description": "Vault token; required when SECRET_STORE_TYPE=VAULT.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_ADDRESS",
+        "value": null,
+        "description": "Vault address; required when SECRET_STORE_TYPE=VAULT.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_ENABLE_SSL",
+        "value": "false",
+        "description": "Use SSL when connecting to Vault.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_PEM_FILE_PATH",
+        "value": null,
+        "description": "X.509 PEM certificate used to verify Vault over SSL.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_KEYSTORE_PASSWORD",
+        "value": null,
+        "description": "Password of the Vault client JKS keystore.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_KEYSTORE_FILE_PATH",
+        "value": null,
+        "description": "JKS keystore with the Vault client certificate and key.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_TRUSTSTORE_FILE_PATH",
+        "value": null,
+        "description": "JKS truststore with trusted Vault server certificates.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_ADDRESS",
+        "value": null,
+        "description": "FSSP service URL; required when SECRET_STORE_TYPE=FSSP.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_SECRET_PATH",
+        "value": null,
+        "description": "FSSP path where secrets are stored (library default secure-store/entries).",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_KEYSTORE_PATH",
+        "value": null,
+        "description": "Key store file for the FSSP client.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_KEYSTORE_FILE_TYPE",
+        "value": "jks",
+        "description": "Type of the FSSP key store file.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_KEYSTORE_PASSWORD",
+        "value": null,
+        "description": "Password of the FSSP key store.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_TRUSTSTORE_PATH",
+        "value": null,
+        "description": "Trust store file for the FSSP client.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE",
+        "value": "jks",
+        "description": "Type of the FSSP trust store file.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD",
+        "value": null,
+        "description": "Password of the FSSP trust store.",
+        "type": "CONFIG",
+        "essential": false
+      }
+    ]
+  },
+  "sidecarDefaults": {
+    "resources": [
+      {
+        "name": "cpu",
+        "value": "64",
+        "description": "CPU request/limit for the sidecar container"
+      },
+      {
+        "name": "memory",
+        "value": "1024",
+        "description": "Memory hard limit for the sidecar container in MiB"
+      },
+      {
+        "name": "memoryReservation",
+        "value": "512",
+        "description": "Memory reservation (soft limit) for the sidecar container in MiB"
+      }
+    ],
+    "java": [
+      {
+        "name": "xms",
+        "value": "128m",
+        "description": "Initial Java heap size"
+      },
+      {
+        "name": "xmx",
+        "value": "256m",
+        "description": "Maximum Java heap size"
+      },
+      {
+        "name": "MaxMetaspaceSize",
+        "value": "96m",
+        "description": "Maximum Java metaspace size"
+      },
+      {
+        "name": "UseZGC",
+        "value": "true",
+        "description": "Use the ZGC low-pause collector"
+      }
+    ],
+    "EnvVars": [
+      {
+        "name": "ENV",
+        "value": null,
+        "description": "Deployment environment identifier. Must match the module's ENV.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "JAVA_OPTS",
+        "value": null,
+        "description": "JVM options for the sidecar process.",
+        "type": "CONFIG",
+        "essential": true
+      },
+      {
+        "name": "MODULE_NAME",
+        "value": "mod-finance-storage",
+        "description": "Name of the backend module the sidecar fronts.",
+        "type": "CONFIG",
+        "essential": true
+      },
+      {
+        "name": "MODULE_URL",
+        "value": null,
+        "description": "Internal URL (host:port) of the mod-finance-storage container; the port must match the module's -Dhttp.port.",
+        "type": "CONFIG",
+        "essential": true
+      },
+      {
+        "name": "MODULE_VERSION",
+        "value": null,
+        "description": "Version of mod-finance-storage deployed alongside this sidecar.",
+        "type": "CONFIG",
+        "essential": true
+      }
+    ]
+  }
+}
