@@ -58,7 +58,7 @@
       },
       {
         "name": "DB_PORT",
-        "value": 5432,
+        "value": "5432",
         "description": "PostgreSQL database port",
         "type": "DB",
         "essential": true
@@ -193,14 +193,14 @@
         "name": "ENV",
         "value": null,
         "description": "Environment name. It prefixes Kafka topic names and prefixes the secret-store key for tenant exchange-rate credentials",
-        "type": "KAFKA",
+        "type": "CONFIG",
         "essential": true
       },
       {
         "name": "OKAPI_URL",
         "value": null,
         "description": "Gateway URL",
-        "type": "KAFKA",
+        "type": "CONFIG",
         "essential": false
       },
       {
@@ -215,7 +215,7 @@
         "value": "EPHEMERAL",
         "description": "Secret store that holds per-tenant exchange-rate API key and secret. Supported values: EPHEMERAL, AWS_SSM, VAULT, FSSP. Default is EPHEMERAL",
         "type": "CONFIG",
-        "essential": true
+        "essential": false
       },
       {
         "name": "SECRET_STORE_AWS_SSM_REGION",
@@ -353,7 +353,7 @@
       {
         "name": "JAVA_OPTIONS",
         "value": "-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory -Dhttp.port=8082",
-        "description": "JVM flags read by run-java.sh in the folioci/alpine-jre-openjdk21 base image named in the Dockerfile. The default is the value in the module's launch descriptor and gives about 676 MiB of heap in a 1024 MiB container, close to the 700m in the java block. The tebfcon reference sets JAVA_OPTS instead; per the ADR-0013 notes this entrypoint does not read JAVA_OPTS, so the heap there would be the JVM default of 25% of the container. That was not verified against the image here and should be raised with the hosting team. The same variable also carries -Dhttp.port: the RMB default port is 8081 and the reference moves the module to 8082 because the sidecar owns 8081.",
+        "description": "JVM options for the module process. -Dhttp.port=8082 moves RMB off its default port 8081, which the Eureka sidecar uses; it must match the sidecar's MODULE_URL. Heap sizing comes from the java block.",
         "type": "CONFIG",
         "essential": false
       },
@@ -433,18 +433,18 @@
         "value": null,
         "description": "Deployment environment identifier",
         "type": "CONFIG",
-        "essential": true
+        "essential": false
       },
       {
         "name": "JAVA_OPTS",
         "value": null,
         "description": "Additional JVM options for the sidecar process",
         "type": "CONFIG",
-        "essential": false
+        "essential": true
       },
       {
         "name": "MODULE_NAME",
-        "value": null,
+        "value": "mod-finance-storage",
         "description": "Name of the module this sidecar fronts",
         "type": "CONFIG",
         "essential": true
