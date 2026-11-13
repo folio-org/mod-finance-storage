@@ -13,9 +13,7 @@
   </licenses>
 
   <properties>
-    <java.version>21</java.version>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
+    <java.version>25</java.version>
 
     <module_name>mod-finance-storage</module_name>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
@@ -28,6 +26,7 @@
     <vertx.version>5.1.2</vertx.version>
     <log4j.version>2.26.0</log4j.version>
     <aspectj.version>1.9.25.1</aspectj.version>
+    <lombok.version>1.18.48</lombok.version>
     <jackson-bom.version>2.22.0</jackson-bom.version>
     <caffeine.version>3.2.4</caffeine.version>
 
@@ -239,6 +238,13 @@
           <parameters>true</parameters>
           <release>${java.version}</release>
           <encoding>UTF-8</encoding>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>${lombok.version}</version>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
 
