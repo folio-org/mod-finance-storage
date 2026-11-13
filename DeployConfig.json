@@ -1,5 +1,5 @@
 {
-  "description": "Deployment configuration for mod-finance-storage (ADR-0013). Variable inventory comes from the 9.0.0-SNAPSHOT source (SecureStoreConfiguration, KafkaConfiguration, TenantReferenceAPI, CommonSettingsService), the RMB 36.0.0 runtime (Envs, PostgresClient, OptimisticLockingUtil) and the folio-kafka-wrapper 4.1.0-SNAPSHOT jar. Sizing and credentials-free values were calibrated against the tebfcon ECS task definition revision 15, which runs release 8.9.1. Resource figures are a proposal taken from that environment, not a load measurement, and any reduction below the PTF baseline needs PTF review. Defaults marked 'unset' are library defaults that were not read from the artifact.",
+  "description": "Deployment configuration for mod-finance-storage (ADR-0013). Default values are calibrated against a reference bugfest environment (tebfcon-mod-finance-storage revision 15).",
   "moduleDefaults": {
     "resources": [
       {
@@ -58,7 +58,7 @@
       },
       {
         "name": "DB_PORT",
-        "value": null,
+        "value": 5432,
         "description": "PostgreSQL database port",
         "type": "DB",
         "essential": true
@@ -87,42 +87,77 @@
       {
         "name": "DB_HOST_READER",
         "value": null,
-        "description": "Optional read-replica database host. When unset, reads go to DB_HOST",
+        "description": "Optional read-replica host for read queries; used only together with DB_PORT_READER",
         "type": "DB",
         "essential": false
       },
       {
         "name": "DB_PORT_READER",
         "value": null,
-        "description": "Port for DB_HOST_READER. Only meaningful when DB_HOST_READER is set",
+        "description": "Port of the read replica set in DB_HOST_READER",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_SERVER_PEM",
+        "value": null,
+        "description": "PEM certificate of the PostgreSQL server; when set, connections use TLSv1.3 with full verification",
         "type": "DB",
         "essential": false
       },
       {
         "name": "DB_MAXPOOLSIZE",
         "value": "20",
-        "description": "Maximum PostgreSQL connection pool size",
+        "description": "Maximum connections per tenant pool. Value taken from bugfest; RMB default is 4",
         "type": "DB",
         "essential": false
       },
       {
-        "name": "DB_QUERYTIMEOUT",
+        "name": "DB_MAXSHAREDPOOLSIZE",
+        "value": null,
+        "description": "When set, all tenants share one pool of this size instead of per-tenant pools of DB_MAXPOOLSIZE",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_CONNECTIONRELEASEDELAY",
         "value": "60000",
-        "description": "Query timeout in milliseconds",
+        "description": "Idle time in milliseconds before a pooled connection is closed (RMB default)",
         "type": "DB",
         "essential": false
       },
       {
-        "name": "DB_CHARSET",
-        "value": "UTF-8",
-        "description": "Character set that is requested for the database connection.",
+        "name": "DB_MAX_LIFETIME",
+        "value": "1800000",
+        "description": "Maximum lifetime of a pooled connection in milliseconds (RMB default)",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_RECONNECTATTEMPTS",
+        "value": "0",
+        "description": "Number of reconnect attempts when a database connection cannot be established (Vert.x default 0)",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_RECONNECTINTERVAL",
+        "value": "1000",
+        "description": "Interval in milliseconds between database reconnect attempts (Vert.x default)",
         "type": "DB",
         "essential": false
       },
       {
         "name": "DB_EXPLAIN_QUERY_THRESHOLD",
         "value": "300000",
-        "description": "Queries slower than this many milliseconds are logged with their EXPLAIN plan (RMB default 1000).",
+        "description": "Queries slower than this many milliseconds are logged with EXPLAIN ANALYZE. Value taken from bugfest; RMB default is 1000",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_ALLOW_SUPPRESS_OPTIMISTIC_LOCKING",
+        "value": null,
+        "description": "ISO-8601 timestamp until which clients may bypass optimistic locking (_version) on purchase orders, order lines and pieces; unset means never",
         "type": "DB",
         "essential": false
       },
