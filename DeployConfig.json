@@ -162,20 +162,6 @@
         "essential": false
       },
       {
-        "name": "DB_HOST_READER_ASYNC",
-        "value": null,
-        "description": "Optional asynchronously replicated read-only host for lag-tolerant reads.",
-        "type": "DB",
-        "essential": false
-      },
-      {
-        "name": "DB_PORT_READER_ASYNC",
-        "value": null,
-        "description": "Port of the asynchronous read-only replica.",
-        "type": "DB",
-        "essential": false
-      },
-      {
         "name": "KAFKA_HOST",
         "value": null,
         "description": "Kafka broker host for fund and budget audit events.",
