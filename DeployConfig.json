@@ -1,0 +1,461 @@
+{
+  "description": "Deployment configuration for mod-finance-storage (ADR-0013). Default values are calibrated against a reference bugfest environment (tebfcon-mod-finance-storage revision 15).",
+  "moduleDefaults": {
+    "resources": [
+      {
+        "name": "cpu",
+        "value": "64",
+        "description": "CPU request/limit for the mod-finance container"
+      },
+      {
+        "name": "memory",
+        "value": "1024",
+        "description": "Memory hard limit for the mod-finance container in MiB"
+      },
+      {
+        "name": "memoryReservation",
+        "value": "896",
+        "description": "Memory reservation (soft limit) for the mod-finance container in MiB"
+      }
+    ],
+    "java": [
+      {
+        "name": "xmx",
+        "value": "700m",
+        "description": "Maximum Java heap size (-Xmx)"
+      },
+      {
+        "name": "MetaspaceSize",
+        "value": "88m",
+        "description": "Initial Java metaspace size, threshold at which the first metaspace garbage collection runs (-XX:MetaspaceSize)"
+      },
+      {
+        "name": "MaxMetaspaceSize",
+        "value": "128m",
+        "description": "Maximum Java metaspace size (-XX:MaxMetaspaceSize)"
+      }
+    ],
+    "deployment": {
+      "isHaSupported": true,
+      "replicasRecommendedCount": 2,
+      "description": "The only in-memory state is the settings cache (Caffeine, 30 s expiry by default), which each instance refreshes on its own. The audit outbox reader selects rows with FOR UPDATE SKIP LOCKED, so concurrent instances do not publish the same event twice."
+    },
+    "kong": {
+      "timeouts": {
+        "connect": "60s",
+        "send": "60s",
+        "read": "60s"
+      },
+      "description": "Kong route timeouts in milliseconds for mod-organizations."
+    },
+    "EnvVars": [
+      {
+        "name": "DB_HOST",
+        "value": null,
+        "description": "PostgreSQL database host",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_PORT",
+        "value": "5432",
+        "description": "PostgreSQL database port",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_USERNAME",
+        "value": null,
+        "description": "PostgreSQL database user. Deployed from the secret store",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_PASSWORD",
+        "value": null,
+        "description": "Password for DB_USERNAME user. Deployed from the secret store.",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_DATABASE",
+        "value": null,
+        "description": "Database name that holds the per-tenant schemas.",
+        "type": "DB",
+        "essential": true
+      },
+      {
+        "name": "DB_HOST_READER",
+        "value": null,
+        "description": "Optional read-replica host for read queries; used only together with DB_PORT_READER",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_PORT_READER",
+        "value": null,
+        "description": "Port of the read replica set in DB_HOST_READER",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_SERVER_PEM",
+        "value": null,
+        "description": "PEM certificate of the PostgreSQL server; when set, connections use TLSv1.3 with full verification",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_MAXPOOLSIZE",
+        "value": "20",
+        "description": "Maximum connections per tenant pool. Value taken from bugfest; RMB default is 4",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_MAXSHAREDPOOLSIZE",
+        "value": null,
+        "description": "When set, all tenants share one pool of this size instead of per-tenant pools of DB_MAXPOOLSIZE",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_CONNECTIONRELEASEDELAY",
+        "value": "60000",
+        "description": "Idle time in milliseconds before a pooled connection is closed (RMB default)",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_MAX_LIFETIME",
+        "value": "1800000",
+        "description": "Maximum lifetime of a pooled connection in milliseconds (RMB default)",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_RECONNECTATTEMPTS",
+        "value": "0",
+        "description": "Number of reconnect attempts when a database connection cannot be established (Vert.x default 0)",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_RECONNECTINTERVAL",
+        "value": "1000",
+        "description": "Interval in milliseconds between database reconnect attempts (Vert.x default)",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_EXPLAIN_QUERY_THRESHOLD",
+        "value": "300000",
+        "description": "Queries slower than this many milliseconds are logged with EXPLAIN ANALYZE. Value taken from bugfest; RMB default is 1000",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "DB_ALLOW_SUPPRESS_OPTIMISTIC_LOCKING",
+        "value": null,
+        "description": "ISO-8601 timestamp until which clients may bypass optimistic locking (_version) on purchase orders, order lines and pieces; unset means never",
+        "type": "DB",
+        "essential": false
+      },
+      {
+        "name": "KAFKA_HOST",
+        "value": null,
+        "description": "Kafka broker host used to publish fund and budget audit events (ACQ_FUND_CHANGED, ACQ_BUDGET_CHANGED). 'kafka' is the code and README default for local development. Not present on the module container in the tebfcon reference revision 15, which predates the audit events; the 9.0.0 module needs it set there.",
+        "type": "KAFKA",
+        "essential": true
+      },
+      {
+        "name": "KAFKA_PORT",
+        "value": "9092",
+        "description": "Kafka broker port for KAFKA_HOST. Same deployment note as KAFKA_HOST",
+        "type": "KAFKA",
+        "essential": true
+      },
+      {
+        "name": "REPLICATION_FACTOR",
+        "value": "1",
+        "description": "Replication factor applied to Kafka topics the module creates",
+        "type": "KAFKA",
+        "essential": false
+      },
+      {
+        "name": "MAX_REQUEST_SIZE",
+        "value": "1048576",
+        "description": "Maximum size in bytes of a produced Kafka record",
+        "type": "KAFKA",
+        "essential": false
+      },
+      {
+        "name": "ENV",
+        "value": null,
+        "description": "Environment name. It prefixes Kafka topic names and prefixes the secret-store key for tenant exchange-rate credentials",
+        "type": "CONFIG",
+        "essential": true
+      },
+      {
+        "name": "OKAPI_URL",
+        "value": null,
+        "description": "Gateway URL",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "KAFKA_PRODUCER_TENANT_COLLECTION",
+        "value": "ALL",
+        "description": "This enables messages to be produced to a tenants consolidated topic. It must match [A-Z][A-Z0-9]{0,30}.",
+        "type": "KAFKA",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_TYPE",
+        "value": "EPHEMERAL",
+        "description": "Secret store that holds per-tenant exchange-rate API key and secret. Supported values: EPHEMERAL, AWS_SSM, VAULT, FSSP. Default is EPHEMERAL",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_AWS_SSM_REGION",
+        "value": null,
+        "description": "Required when SECRET_STORE_TYPE=AWS_SSM. Region of the AWS SSM Parameter Store that holds the secrets",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_AWS_SSM_USE_IAM",
+        "value": "true",
+        "description": "When true the SSM client uses the task's IAM role. When false it uses the ECS credentials endpoint set in SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT. Applies to AWS_SSM only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT",
+        "value": null,
+        "description": "HTTP endpoint for retrieving AWS credentials. Ignored when SECRET_STORE_AWS_SSM_USE_IAM is true. Applies to AWS_SSM only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_PATH",
+        "value": null,
+        "description": "Path appended to SECRET_STORE_AWS_SSM_ECS_CREDENTIALS_ENDPOINT to form the credentials URI. Ignored when SECRET_STORE_AWS_SSM_USE_IAM is true. Applies to AWS_SSM only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_TOKEN",
+        "value": null,
+        "description": "Token used to authenticate to Vault. Required when SECRET_STORE_TYPE=VAULT",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_ADDRESS",
+        "value": null,
+        "description": "Vault server address. Required when SECRET_STORE_TYPE=VAULT",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_ENABLE_SSL",
+        "value": "false",
+        "description": "Whether to use SSL when connecting to Vault. When true, the PEM, keystore and truststore variables below supply the certificates. Applies to VAULT only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_PEM_FILE_PATH",
+        "value": null,
+        "description": "Path to an unencrypted PEM X.509 certificate (UTF-8) for verifying Vault. Applies to VAULT with SSL enabled.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_KEYSTORE_PASSWORD",
+        "value": null,
+        "description": "Password for the JKS keystore at SECRET_STORE_VAULT_KEYSTORE_FILE_PATH. Optional. Applies to VAULT only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_KEYSTORE_FILE_PATH",
+        "value": null,
+        "description": "Path to a JKS keystore holding the client certificate and private key for Vault. Applies to VAULT only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_VAULT_TRUSTSTORE_FILE_PATH",
+        "value": null,
+        "description": "Path to a JKS truststore holding the Vault server certificates to trust. Applies to VAULT only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_ADDRESS",
+        "value": null,
+        "description": "Address (URL) of the FOLIO Secure Store Proxy. Required when SECRET_STORE_TYPE=FSSP; startup fails without it. Note that exchange-rate credentials are not stored through FSSP in this module (see SECRET_STORE_TYPE).",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_SECRET_PATH",
+        "value": null,
+        "description": "Path in FSSP where secrets are stored. The value is the documented README default.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_KEYSTORE_PATH",
+        "value": null,
+        "description": "Path to the key store file used for client authentication to FSSP. Applies to FSSP only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_KEYSTORE_FILE_TYPE",
+        "value": "jks",
+        "description": "Type of the FSSP key store file, for example jks or pem. Applies to FSSP only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_KEYSTORE_PASSWORD",
+        "value": null,
+        "description": "Password for the FSSP key store file. Inject from a secret. Applies to FSSP only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_TRUSTSTORE_PATH",
+        "value": null,
+        "description": "Path to the trust store file used to verify the FSSP server. Applies to FSSP only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_TRUSTSTORE_FILE_TYPE",
+        "value": "jks",
+        "description": "Type of the FSSP trust store file, for example JKS or PKCS12. Applies to FSSP only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "SECRET_STORE_FSSP_TRUSTSTORE_PASSWORD",
+        "value": null,
+        "description": "Password for the FSSP trust store file. Inject from a secret. Applies to FSSP only.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "JAVA_OPTIONS",
+        "value": "-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory -Dhttp.port=8082",
+        "description": "JVM options for the module process. -Dhttp.port=8082 moves RMB off its default port 8081, which the Eureka sidecar uses; it must match the sidecar's MODULE_URL. Heap sizing comes from the java block.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "LOG4J_CONFIGURATION_FILE",
+        "value": null,
+        "description": "Location (file path or URL) of an external Log4j2 configuration. Read by Log4j2 itself and used instead of the bundled log4j2.properties. The tebfcon reference points it at an S3-hosted file. Unset uses the bundled configuration.",
+        "type": "CONFIG",
+        "essential": false
+      },
+      {
+        "name": "FINANCE_STORAGE_CACHE_SETTINGS_EXPIRATION_TIME_SECONDS",
+        "value": "30",
+        "description": "Seconds a cached tenant setting is served before it is reloaded. This is the Spring property finance.storage.cache.settings.expiration.time.seconds, which Spring also resolves from this environment-variable form. A change made through the settings endpoint on one instance becomes visible on the other instances only after this time.",
+        "type": "CACHE",
+        "essential": false
+      },
+      {
+        "name": "loadReference",
+        "value": "false",
+        "description": "Environment variable name is lowercase camelCase, exactly as the code reads it (TenantReferenceAPI). Sets the default for loading reference data when a tenant is enabled; a loadReference parameter on the tenant request overrides it. Left false because reference data is loaded on request.",
+        "type": "FUNCTIONAL",
+        "essential": false
+      },
+      {
+        "name": "loadSample",
+        "value": "false",
+        "description": "Environment variable name is lowercase camelCase, exactly as the code reads it (TenantReferenceAPI). Sets the default for loading sample data when a tenant is enabled; a loadSample parameter on the tenant request overrides it. Keep false outside demo and test environments.",
+        "type": "FUNCTIONAL",
+        "essential": false
+      }
+    ]
+  },
+  "sidecarDefaults": {
+    "resources": [
+      {
+        "name": "cpu",
+        "value": "64",
+        "description": "CPU request/limit for the sidecar container"
+      },
+      {
+        "name": "memory",
+        "value": "1024",
+        "description": "Memory hard limit for the sidecar container, in MB"
+      },
+      {
+        "name": "memoryReservation",
+        "value": "512",
+        "description": "Memory reservation for the sidecar container, in MB"
+      }
+    ],
+    "java": [
+      {
+        "name": "xms",
+        "value": "128m",
+        "description": "Initial Java heap size"
+      },
+      {
+        "name": "xmx",
+        "value": "256m",
+        "description": "Maximum Java heap size"
+      },
+      {
+        "name": "MaxMetaspaceSize",
+        "value": "96m",
+        "description": "Maximum Java metaspace size"
+      },
+      {
+        "name": "UseZGC",
+        "value": "true",
+        "description": "Use ZGC low-pause collector; preferred for a proxy-shaped workload where tail latency matters more than throughput"
+      }
+    ],
+    "EnvVars": [
+      {
+        "name": "ENV",
+        "value": null,
+        "description": "Deployment environment identifier",
+        "type": "CONFIG",
+        "essential": true
+      },
+      {
+        "name": "MODULE_NAME",
+        "value": "mod-finance-storage",
+        "description": "Name of the module this sidecar fronts",
+        "type": "CONFIG",
+        "essential": true
+      },
+      {
+        "name": "MODULE_URL",
+        "value": null,
+        "description": "Internal URL (host:port) at which the mod-finance backend container is reachable from its sidecar",
+        "type": "CONFIG",
+        "essential": true
+      },
+      {
+        "name": "MODULE_VERSION",
+        "value": null,
+        "description": "Version of the mod-finance module deployed alongside this sidecar",
+        "type": "CONFIG",
+        "essential": true
+      }
+    ]
+  }
+}
