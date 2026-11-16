@@ -1,3 +1,11 @@
+## 8.9.2 - Released (Trillium R1 2026 Bug Fix)
+The primary focus of this release was to add DeployConfig.json file.
+
+[Full Changelog](https://github.com/folio-org/mod-finance-storage/compare/v8.9.1...v8.9.2)
+
+### Stories
+* [MODFISTO-565](https://folio-org.atlassian.net/browse/MODFISTO-565) - Add DeployConfig.json to mod-finance-storage
+
 ## 8.9.1 - Released (Trillium R1 2026 Bug Fix)
 This release fixes issue with ledger rollover logic to handle encumbrances correctly when only one type is selected.
 
